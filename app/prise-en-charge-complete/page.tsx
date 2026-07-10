@@ -75,7 +75,7 @@ export default function PriseEnChargePage() {
 
       <CtaBanner
         title="Laissez-nous nous occuper de votre lot"
-        text="Obtenez une estimation gratuite avec une réponse dans un délai de 24 heures — ramassage inclus et paiement avant notre départ."
+        text="Obtenez une estimation gratuite avec une réponse dans un délai de 24 heures — ramassage inclus et paiement rapide et garanti."
       />
     </>
   );

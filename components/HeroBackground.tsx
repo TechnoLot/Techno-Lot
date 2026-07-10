@@ -19,13 +19,13 @@ export default function HeroBackground() {
             "radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent)",
         }}
       />
-      {/* Halos animés */}
+      {/* Halos animés — uniquement le vert du logo, en douceur */}
       <div
         className="aurora-blob animate-aurora bg-accent/15"
         style={{ width: 520, height: 520, top: "-15%", left: "8%" }}
       />
       <div
-        className="aurora-blob animate-aurora bg-accent-cyan/15"
+        className="aurora-blob animate-aurora bg-accent/10"
         style={{
           width: 460,
           height: 460,

@@ -84,6 +84,26 @@ body {
   }
 }
 
+/* Orbites du visuel « économie circulaire » : l'anneau tourne, chaque
+   icône contre-tourne à la même vitesse pour rester droite. */
+@keyframes spin-slow {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.orbit-spin {
+  animation: spin-slow 30s linear infinite;
+}
+.orbit-spin .orbit-item {
+  animation: spin-slow 30s linear infinite reverse;
+}
+.orbit-spin-reverse {
+  animation: spin-slow 42s linear infinite reverse;
+}
+.orbit-spin-reverse .orbit-item {
+  animation: spin-slow 42s linear infinite;
+}
+
 /* Halo animé du hero */
 .aurora-blob {
   position: absolute;

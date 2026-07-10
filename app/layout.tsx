@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Chakra_Petch, Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -13,8 +13,9 @@ const inter = Inter({
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-display",
   display: "swap",
 });
@@ -75,7 +76,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr-CA" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="fr-CA" className={`${inter.variable} ${chakraPetch.variable}`}>
       <body className="flex min-h-screen flex-col font-sans">
         <script
           type="application/ld+json"

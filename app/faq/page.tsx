@@ -30,7 +30,7 @@ const faq = [
   {
     question: "Quel est le délai de paiement lorsque vous achetez un lot ?",
     answer:
-      "Le paiement sera fait avant que notre équipe quitte le lieu de ramassage.",
+      "Nous vous payons rapidement : le paiement est garanti et effectué dès la validation finale de votre lot.",
   },
   {
     question: "Où êtes-vous situés ?",

@@ -33,8 +33,7 @@ const config: Config = {
         card: "0 8px 32px rgba(2, 6, 16, 0.45)",
       },
       backgroundImage: {
-        "accent-gradient":
-          "linear-gradient(120deg, #5ECB33, #34D399, #22D3EE)",
+        "accent-gradient": "linear-gradient(120deg, #5ECB33, #34D399)",
       },
       animation: {
         marquee: "marquee 32s linear infinite",

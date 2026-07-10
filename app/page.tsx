@@ -6,15 +6,15 @@ import {
   BadgeDollarSign,
   Clock,
   FileText,
-  Leaf,
   Recycle,
   Truck,
 } from "lucide-react";
 import Reveal from "@/components/Reveal";
 import Counter from "@/components/Counter";
 import Marquee from "@/components/Marquee";
-import TiltCard from "@/components/TiltCard";
-import HeroBackground from "@/components/HeroBackground";
+import Hero from "@/components/Hero";
+import SpotlightCard from "@/components/SpotlightCard";
+import OrbitVisual from "@/components/OrbitVisual";
 import SubmissionForm from "@/components/SubmissionForm";
 import MapEmbed from "@/components/MapEmbed";
 import { site } from "@/lib/site";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   title:
     "Techno Lot — Le spécialiste de l'achat de lots informatiques et électroniques au Québec",
   description:
-    "Nous donnons une seconde vie à votre matériel high-tech usagé — et on vous paie pour ça. Réponse en 24 h, ramassage gratuit, paiement avant notre départ. Unique au Québec.",
+    "Nous donnons une seconde vie à votre matériel high-tech usagé — et on vous paie pour ça. Réponse en 24 h, ramassage gratuit, paiement rapide et garanti. Unique au Québec.",
   alternates: { canonical: "/" },
 };
 
@@ -55,40 +55,7 @@ export default function HomePage() {
   return (
     <>
       {/* ===== Hero ===== */}
-      <section className="relative overflow-hidden">
-        <HeroBackground />
-        <div className="container-site relative flex min-h-[calc(100vh-5rem)] flex-col items-center justify-center py-24 text-center">
-          <Reveal>
-            <span className="eyebrow">Unique au Québec</span>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <h1 className="mx-auto max-w-4xl font-display text-4xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
-              Techno Lot — Le spécialiste de{" "}
-              <span className="text-gradient">
-                l&apos;achat de lots informatiques et électroniques
-              </span>{" "}
-              au Québec.
-            </h1>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300 sm:text-xl">
-              Nous donnons une seconde vie à votre matériel high-tech usagé —
-              et on vous paie pour ça.
-            </p>
-          </Reveal>
-          <Reveal delay={0.3}>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-              <Link href="/contact" className="btn-primary">
-                Faire une soumission
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <Link href="/consultation" className="btn-secondary">
-                Comment ça marche
-              </Link>
-            </div>
-          </Reveal>
-        </div>
-      </section>
+      <Hero />
 
       {/* ===== Marquee des catégories ===== */}
       <Marquee />
@@ -110,7 +77,7 @@ export default function HomePage() {
             {
               icon: BadgeDollarSign,
               stat: <span className="text-gradient">Payé</span>,
-              label: "Paiement avant notre départ",
+              label: "Paiement rapide et garanti",
             },
             {
               icon: Award,
@@ -134,7 +101,7 @@ export default function HomePage() {
       </section>
 
       {/* ===== Notre service clé en main ===== */}
-      <section className="container-site py-16">
+      <section className="container-site scroll-mt-24 py-16" id="services">
         <Reveal>
           <span className="eyebrow">Ce que nous faisons</span>
           <h2 className="section-title">Notre service clé en main</h2>
@@ -142,9 +109,9 @@ export default function HomePage() {
         <div className="mt-12 grid gap-6 lg:grid-cols-3">
           {services.map(({ icon: Icon, title, text, href, cta }, i) => (
             <Reveal key={href} delay={i * 0.12} className="h-full">
-              <TiltCard className="h-full">
+              <SpotlightCard className="h-full">
                 <div className="glass glass-hover flex h-full flex-col p-8">
-                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/30">
+                  <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/30 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                     <Icon className="h-6 w-6 text-accent" aria-hidden />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-white">
@@ -164,7 +131,7 @@ export default function HomePage() {
                     />
                   </Link>
                 </div>
-              </TiltCard>
+              </SpotlightCard>
             </Reveal>
           ))}
         </div>
@@ -197,30 +164,7 @@ export default function HomePage() {
             </Link>
           </Reveal>
           <Reveal delay={0.15}>
-            <div className="glass relative flex aspect-square items-center justify-center overflow-hidden p-8">
-              <div
-                className="absolute inset-0 opacity-60"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 30%, rgba(94,203,51,0.18), transparent 55%), radial-gradient(circle at 75% 70%, rgba(34,211,238,0.14), transparent 55%)",
-                }}
-                aria-hidden
-              />
-              <Leaf
-                className="relative h-40 w-40 text-accent/80"
-                strokeWidth={1}
-                aria-hidden
-              />
-              <div className="absolute bottom-8 left-8 right-8 text-center">
-                <p className="font-display text-lg font-semibold text-white">
-                  Économie circulaire
-                </p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Prolonger la vie du matériel, réduire les déchets
-                  électroniques.
-                </p>
-              </div>
-            </div>
+            <OrbitVisual />
           </Reveal>
         </div>
       </section>
