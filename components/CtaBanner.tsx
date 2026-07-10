@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import Reveal from "@/components/Reveal";
 
@@ -19,6 +20,13 @@ export default function CtaBanner({
     <section className="container-site py-16">
       <Reveal>
         <div className="glass relative overflow-hidden p-10 text-center sm:p-14">
+          <Image
+            src="/photos/circuit.jpg"
+            alt=""
+            fill
+            sizes="(min-width: 1280px) 1152px, 100vw"
+            className="object-cover opacity-[0.07]"
+          />
           <div
             className="absolute inset-0 opacity-70"
             style={{

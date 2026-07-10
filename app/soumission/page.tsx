@@ -37,6 +37,7 @@ export default function SoumissionPage() {
         eyebrow="Soumission"
         title="Soumission pour rachat de matériel informatique et électronique"
         subtitle="Nous sommes fiers d'être la seule entreprise dans le domaine au Québec à offrir ce service. Obtenez une estimation gratuite avec une réponse dans un délai de 24 heures."
+        image="/photos/bureau.jpg"
       />
 
       <section className="container-site pb-8">

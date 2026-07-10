@@ -12,6 +12,8 @@ export type Post = {
   dateLabel: string;
   excerpt: string;
   readingTime: string;
+  cover: string;
+  coverAlt: string;
   sections: PostSection[];
 };
 
@@ -29,6 +31,9 @@ export const posts: Post[] = [
     excerpt:
       "Le rachat de matériel informatique joue un rôle clé dans la réduction de l'empreinte écologique des entreprises. Découvrez pourquoi revendre votre matériel TI plutôt que de le jeter change la donne.",
     readingTime: "6 min de lecture",
+    cover: "/photos/ewaste.jpg",
+    coverAlt:
+      "Clavier, casque d'écoute et souris — du matériel électronique prêt pour une seconde vie",
     sections: [
       {
         paragraphs: [

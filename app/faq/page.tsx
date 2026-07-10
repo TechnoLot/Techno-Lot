@@ -65,6 +65,7 @@ export default function FaqPage() {
         eyebrow="FAQ"
         title="Questions fréquentes"
         subtitle="Bienvenue sur la page FAQ de Techno Lot, la seule entreprise dans le domaine de l'achat de lots au Québec. Découvrez les réponses aux questions fréquemment posées sur nos services de rachat."
+        image="/photos/circuit.jpg"
       />
 
       <section className="container-site pb-8">

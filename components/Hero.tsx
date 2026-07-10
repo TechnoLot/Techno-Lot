@@ -84,12 +84,12 @@ export default function Hero() {
 
         <motion.p
           {...fadeUp(0.95)}
-          className="mx-auto mt-5 max-w-xl text-lg text-slate-300"
+          className="mx-auto mt-5 max-w-3xl text-lg text-white"
         >
-          On donne une seconde vie à votre matériel —{" "}
-          <span className="font-semibold text-white">
-            et on vous paie pour ça.
-          </span>
+          <span className="text-slate-300">
+            On donne une seconde vie à votre matériel
+          </span>{" "}
+          <span className="text-accent">|</span> et on vous paie pour ça !
         </motion.p>
 
         <motion.div

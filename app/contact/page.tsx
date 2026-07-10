@@ -46,6 +46,7 @@ export default function ContactPage() {
         eyebrow="Contact"
         title="Soumission"
         subtitle="Pour une estimation sur mesure du rachat de votre matériel technologique, veuillez remplir ce formulaire !"
+        image="/photos/serveurs.jpg"
       />
 
       <section className="container-site pb-20">

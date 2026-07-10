@@ -93,6 +93,7 @@ export default function AchatDeLotPage() {
         eyebrow="Nos catégories"
         title="Ce que nous rachetons"
         subtitle="Du poste de travail au centre de données : Techno Lot valorise tout votre matériel informatique et électronique."
+        image="/photos/datacenter.jpg"
       />
 
       <section className="container-site pb-16">

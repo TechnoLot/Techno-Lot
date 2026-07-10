@@ -18,6 +18,7 @@ export default function AProposPage() {
         eyebrow="Notre histoire"
         title="À Propos de Techno Lot"
         subtitle="La référence en matière de rachat de lots au Québec."
+        image="/photos/equipe.jpg"
       />
 
       <section className="container-site pb-8">

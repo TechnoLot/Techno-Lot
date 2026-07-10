@@ -65,6 +65,7 @@ export default function PriseEnChargePage() {
           </>
         }
         subtitle="Lorsque notre offre est acceptée, notre équipe se rend sur place pour emballer, charger et transporter le matériel. Voici comment ça se passe."
+        image="/photos/entrepot.jpg"
       />
 
       <section className="container-site pb-16">

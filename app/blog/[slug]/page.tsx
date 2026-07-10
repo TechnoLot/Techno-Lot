@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarDays, Clock } from "lucide-react";
 import Reveal from "@/components/Reveal";
@@ -76,6 +77,23 @@ export default function BlogPostPage({ params }: Props) {
               </span>
             </div>
             <div className="mt-8 h-px w-full bg-gradient-to-r from-accent/50 via-white/10 to-transparent" />
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <div className="relative mt-10 aspect-[21/9] overflow-hidden rounded-2xl border border-white/10">
+              <Image
+                src={post.cover}
+                alt={post.coverAlt}
+                fill
+                priority
+                sizes="(min-width: 768px) 720px, 100vw"
+                className="object-cover"
+              />
+              <div
+                className="absolute inset-0 bg-gradient-to-t from-night-950/45 via-transparent to-transparent"
+                aria-hidden
+              />
+            </div>
           </Reveal>
 
           <div className="mt-10 space-y-10">

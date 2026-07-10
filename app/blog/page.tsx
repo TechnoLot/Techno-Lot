@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
@@ -19,6 +20,7 @@ export default function BlogPage() {
         eyebrow="Blog"
         title="Nos articles"
         subtitle="Conseils, bonnes pratiques et actualités sur le rachat de matériel informatique et l'économie circulaire."
+        image="/photos/datacenter.jpg"
       />
 
       <section className="container-site pb-24">
@@ -29,15 +31,19 @@ export default function BlogPage() {
                 href={`/blog/${post.slug}`}
                 className="glass glass-hover group flex h-full flex-col overflow-hidden"
               >
-                <div
-                  className="relative h-44 w-full"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 25% 30%, rgba(94,203,51,0.35), transparent 60%), radial-gradient(circle at 80% 75%, rgba(34,211,238,0.3), transparent 55%), #0F1628",
-                  }}
-                  aria-hidden
-                >
-                  <span className="absolute bottom-4 left-5 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+                <div className="relative h-44 w-full overflow-hidden">
+                  <Image
+                    src={post.cover}
+                    alt={post.coverAlt}
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-night-950/85 via-night-950/25 to-transparent"
+                    aria-hidden
+                  />
+                  <span className="absolute bottom-4 left-5 font-display text-xs font-semibold uppercase tracking-[0.2em] text-white/90">
                     Écologie &amp; TI
                   </span>
                 </div>

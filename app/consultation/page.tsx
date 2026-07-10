@@ -40,6 +40,7 @@ export default function ConsultationPage() {
         eyebrow="Comment ça marche"
         title="Estimation de votre lot"
         subtitle="Un processus simple, rapide et sans engagement, en trois étapes."
+        image="/photos/clavier.jpg"
       />
 
       <section className="container-site pb-16">
