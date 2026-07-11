@@ -5,6 +5,30 @@ export const runtime = "nodejs";
 
 const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15 Mo
 
+/** Messages d'erreur renvoyés au navigateur, selon la langue du formulaire. */
+const messages = {
+  fr: {
+    invalid: "Requête invalide.",
+    required: "Veuillez remplir tous les champs obligatoires.",
+    email: "L'adresse courriel fournie n'est pas valide.",
+    files: "Les pièces jointes dépassent 15 Mo au total.",
+    notConfigured:
+      "Le service de courriel n'est pas encore configuré (RESEND_API_KEY manquante). Veuillez nous appeler au 514-944-3939.",
+    sendFailed:
+      "L'envoi du courriel a échoué. Veuillez réessayer ou nous appeler au 514-944-3939.",
+  },
+  en: {
+    invalid: "Invalid request.",
+    required: "Please fill in all required fields.",
+    email: "The email address provided is not valid.",
+    files: "Attachments exceed 15 MB in total.",
+    notConfigured:
+      "The email service is not configured yet (missing RESEND_API_KEY). Please call us at 514-944-3939.",
+    sendFailed:
+      "The email could not be sent. Please try again or call us at 514-944-3939.",
+  },
+} as const;
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -19,10 +43,13 @@ export async function POST(request: Request) {
     data = await request.formData();
   } catch {
     return NextResponse.json(
-      { error: "Requête invalide." },
+      { error: messages.fr.invalid },
       { status: 400 },
     );
   }
+
+  const t =
+    String(data.get("locale") ?? "fr") === "en" ? messages.en : messages.fr;
 
   // Honeypot : un robot qui remplit ce champ est ignoré silencieusement.
   if (String(data.get("entreprise_site") ?? "").trim() !== "") {
@@ -35,16 +62,10 @@ export async function POST(request: Request) {
   const message = String(data.get("message") ?? "").trim();
 
   if (!nom || !courriel || !telephone) {
-    return NextResponse.json(
-      { error: "Veuillez remplir tous les champs obligatoires." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: t.required }, { status: 400 });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(courriel)) {
-    return NextResponse.json(
-      { error: "L'adresse courriel fournie n'est pas valide." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: t.email }, { status: 400 });
   }
 
   const files = [...data.getAll("inventaire"), ...data.getAll("photos")].filter(
@@ -52,10 +73,7 @@ export async function POST(request: Request) {
   );
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
   if (totalSize > MAX_TOTAL_SIZE) {
-    return NextResponse.json(
-      { error: "Les pièces jointes dépassent 15 Mo au total." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: t.files }, { status: 400 });
   }
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -63,13 +81,7 @@ export async function POST(request: Request) {
     console.warn(
       "[soumission] RESEND_API_KEY manquante dans .env.local — le courriel n'a pas été envoyé.",
     );
-    return NextResponse.json(
-      {
-        error:
-          "Le service de courriel n'est pas encore configuré (RESEND_API_KEY manquante). Veuillez nous appeler au 514-944-3939.",
-      },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: t.notConfigured }, { status: 503 });
   }
 
   const attachments = await Promise.all(
@@ -104,23 +116,11 @@ export async function POST(request: Request) {
     });
     if (error) {
       console.error("[soumission] Erreur Resend :", error);
-      return NextResponse.json(
-        {
-          error:
-            "L'envoi du courriel a échoué. Veuillez réessayer ou nous appeler au 514-944-3939.",
-        },
-        { status: 502 },
-      );
+      return NextResponse.json({ error: t.sendFailed }, { status: 502 });
     }
   } catch (err) {
     console.error("[soumission] Erreur d'envoi :", err);
-    return NextResponse.json(
-      {
-        error:
-          "L'envoi du courriel a échoué. Veuillez réessayer ou nous appeler au 514-944-3939.",
-      },
-      { status: 502 },
-    );
+    return NextResponse.json({ error: t.sendFailed }, { status: 502 });
   }
 
   return NextResponse.json({ ok: true });

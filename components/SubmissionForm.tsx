@@ -10,13 +10,15 @@ import {
   Send,
   TriangleAlert,
 } from "lucide-react";
+import { getDict, type Locale } from "@/lib/i18n";
 
 type Errors = Partial<Record<"nom" | "courriel" | "telephone" | "fichiers", string>>;
 type Status = "idle" | "loading" | "success" | "error";
 
 const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15 Mo (limite des pièces jointes)
 
-export default function SubmissionForm() {
+export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
+  const t = getDict(locale).form;
   const formRef = useRef<HTMLFormElement>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<Status>("idle");
@@ -30,16 +32,16 @@ export default function SubmissionForm() {
     const courriel = String(data.get("courriel") ?? "").trim();
     const telephone = String(data.get("telephone") ?? "").trim();
 
-    if (!nom) errs.nom = "Veuillez entrer votre nom.";
+    if (!nom) errs.nom = t.nameError;
     if (!courriel) {
-      errs.courriel = "Veuillez entrer votre adresse courriel.";
+      errs.courriel = t.emailErrorEmpty;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(courriel)) {
-      errs.courriel = "Cette adresse courriel ne semble pas valide.";
+      errs.courriel = t.emailErrorInvalid;
     }
     if (!telephone) {
-      errs.telephone = "Veuillez entrer votre numéro de téléphone.";
+      errs.telephone = t.phoneErrorEmpty;
     } else if (!/^[\d\s\-().+]{7,20}$/.test(telephone)) {
-      errs.telephone = "Ce numéro de téléphone ne semble pas valide.";
+      errs.telephone = t.phoneErrorInvalid;
     }
 
     const files = [
@@ -48,8 +50,7 @@ export default function SubmissionForm() {
     ].filter((f): f is File => f instanceof File && f.size > 0);
     const total = files.reduce((sum, f) => sum + f.size, 0);
     if (total > MAX_TOTAL_SIZE) {
-      errs.fichiers =
-        "Les fichiers joints dépassent 15 Mo au total. Veuillez réduire leur taille.";
+      errs.fichiers = t.filesError;
     }
 
     return errs;
@@ -73,10 +74,7 @@ export default function SubmissionForm() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(
-          json?.error ??
-            "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
-        );
+        throw new Error(json?.error ?? t.genericError);
       }
       setStatus("success");
       form.reset();
@@ -84,11 +82,7 @@ export default function SubmissionForm() {
       setPhotoCount(0);
     } catch (err) {
       setStatus("error");
-      setServerError(
-        err instanceof Error
-          ? err.message
-          : "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
-      );
+      setServerError(err instanceof Error ? err.message : t.genericError);
     }
   }
 
@@ -109,18 +103,15 @@ export default function SubmissionForm() {
           <CheckCircle2 className="h-14 w-14 text-accent" aria-hidden />
         </motion.div>
         <h3 className="font-display text-2xl font-bold text-white">
-          Soumission envoyée !
+          {t.successTitle}
         </h3>
-        <p className="max-w-md text-slate-300">
-          Merci ! Nous avons bien reçu votre demande. Notre équipe vous
-          répondra dans un délai de 24 heures.
-        </p>
+        <p className="max-w-md text-slate-300">{t.successText}</p>
         <button
           type="button"
           onClick={() => setStatus("idle")}
           className="btn-secondary mt-2"
         >
-          Envoyer une autre demande
+          {t.successAgain}
         </button>
       </motion.div>
     );
@@ -133,9 +124,12 @@ export default function SubmissionForm() {
       noValidate
       className="glass space-y-5 p-6 sm:p-8"
     >
+      {/* Langue pour les messages d'erreur du serveur */}
+      <input type="hidden" name="locale" value={locale} />
+
       {/* Honeypot anti-spam — caché aux humains */}
       <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
-        <label htmlFor="entreprise-site">Ne pas remplir ce champ</label>
+        <label htmlFor="entreprise-site">{t.honeypotLabel}</label>
         <input
           type="text"
           id="entreprise-site"
@@ -148,14 +142,14 @@ export default function SubmissionForm() {
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="nom" className="mb-1.5 block text-sm font-medium text-slate-300">
-            Nom <span className="text-accent">*</span>
+            {t.nameLabel} <span className="text-accent">*</span>
           </label>
           <input
             id="nom"
             name="nom"
             type="text"
             autoComplete="name"
-            placeholder="Votre nom complet"
+            placeholder={t.namePlaceholder}
             className={`field ${errors.nom ? "field-error" : ""}`}
             aria-invalid={!!errors.nom}
           />
@@ -165,14 +159,14 @@ export default function SubmissionForm() {
         </div>
         <div>
           <label htmlFor="courriel" className="mb-1.5 block text-sm font-medium text-slate-300">
-            Adresse courriel <span className="text-accent">*</span>
+            {t.emailLabel} <span className="text-accent">*</span>
           </label>
           <input
             id="courriel"
             name="courriel"
             type="email"
             autoComplete="email"
-            placeholder="vous@entreprise.ca"
+            placeholder={t.emailPlaceholder}
             className={`field ${errors.courriel ? "field-error" : ""}`}
             aria-invalid={!!errors.courriel}
           />
@@ -184,14 +178,14 @@ export default function SubmissionForm() {
 
       <div>
         <label htmlFor="telephone" className="mb-1.5 block text-sm font-medium text-slate-300">
-          Numéro de téléphone <span className="text-accent">*</span>
+          {t.phoneLabel} <span className="text-accent">*</span>
         </label>
         <input
           id="telephone"
           name="telephone"
           type="tel"
           autoComplete="tel"
-          placeholder="514-555-1234"
+          placeholder={t.phonePlaceholder}
           className={`field ${errors.telephone ? "field-error" : ""}`}
           aria-invalid={!!errors.telephone}
         />
@@ -202,13 +196,13 @@ export default function SubmissionForm() {
 
       <div>
         <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-slate-300">
-          Message
+          {t.messageLabel}
         </label>
         <textarea
           id="message"
           name="message"
           rows={5}
-          placeholder="Décrivez votre lot de matériel électronique (quantités, modèles, état…)"
+          placeholder={t.messagePlaceholder}
           className="field resize-y"
         />
       </div>
@@ -221,11 +215,9 @@ export default function SubmissionForm() {
           >
             <FileSpreadsheet className="h-6 w-6 text-accent" aria-hidden />
             <span className="text-sm font-medium text-slate-300 group-hover:text-white">
-              {inventaireName || "Inventaire (Excel, PDF, CSV)"}
+              {inventaireName || t.inventoryLabel}
             </span>
-            <span className="text-xs text-slate-500">
-              Cliquez pour joindre un fichier
-            </span>
+            <span className="text-xs text-slate-500">{t.inventoryHint}</span>
           </label>
           <input
             id="inventaire"
@@ -245,13 +237,9 @@ export default function SubmissionForm() {
           >
             <ImagePlus className="h-6 w-6 text-accent" aria-hidden />
             <span className="text-sm font-medium text-slate-300 group-hover:text-white">
-              {photoCount > 0
-                ? `${photoCount} photo${photoCount > 1 ? "s" : ""} sélectionnée${photoCount > 1 ? "s" : ""}`
-                : "Photos du lot"}
+              {photoCount > 0 ? t.photosSelected(photoCount) : t.photosLabel}
             </span>
-            <span className="text-xs text-slate-500">
-              Plusieurs images acceptées
-            </span>
+            <span className="text-xs text-slate-500">{t.photosHint}</span>
           </label>
           <input
             id="photos"
@@ -291,19 +279,16 @@ export default function SubmissionForm() {
         {status === "loading" ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Envoi en cours…
+            {t.submitting}
           </>
         ) : (
           <>
             <Send className="h-4 w-4" aria-hidden />
-            Envoyer ma soumission
+            {t.submit}
           </>
         )}
       </button>
-      <p className="text-center text-xs text-slate-500">
-        Réponse garantie dans un délai de 24 heures. Vos informations restent
-        confidentielles.
-      </p>
+      <p className="text-center text-xs text-slate-500">{t.footnote}</p>
     </form>
   );
 }

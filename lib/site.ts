@@ -17,6 +17,8 @@ export const site = {
     "Le spécialiste de l'achat de lots informatiques et électroniques au Québec.",
   description:
     "Techno Lot est une entreprise unique au Québec, spécialisée dans le rachat de lots de produits électroniques et informatiques. Ramassage gratuit, paiement rapide et garanti, réponse en 24 h.",
+  descriptionEn:
+    "Techno Lot is a one-of-a-kind company in Québec specializing in the purchase of electronic and IT equipment lots. Free pickup, fast and guaranteed payment, response within 24 hours.",
 };
 
 export const navLinks = [

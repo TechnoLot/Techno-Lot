@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n";
+
 export type PostSection = {
   heading?: string;
   level?: 2 | 3;
@@ -18,11 +20,11 @@ export type Post = {
 };
 
 /**
- * Pour ajouter un article : ajoutez simplement un nouvel objet `Post`
- * dans le tableau ci-dessous. Il apparaîtra automatiquement sur /blog,
- * dans le sitemap et aura sa propre page /blog/[slug].
+ * Pour ajouter un article : ajoutez un objet `Post` dans `postsFr` et sa
+ * traduction (même `slug`) dans `postsEn`. Il apparaîtra automatiquement
+ * sur /blog et /en/blog, dans le sitemap et aura sa propre page.
  */
-export const posts: Post[] = [
+const postsFr: Post[] = [
   {
     slug: "l-impact-ecologique",
     title: "L'impact écologique",
@@ -121,6 +123,110 @@ export const posts: Post[] = [
   },
 ];
 
-export function getPost(slug: string): Post | undefined {
-  return posts.find((p) => p.slug === slug);
+const postsEn: Post[] = [
+  {
+    slug: "l-impact-ecologique",
+    title: "The ecological impact",
+    date: "2024-10-22",
+    dateLabel: "October 22, 2024",
+    excerpt:
+      "IT equipment buyback plays a key role in reducing companies' ecological footprint. Find out why reselling your IT equipment instead of throwing it away changes everything.",
+    readingTime: "6 min read",
+    cover: "/photos/ewaste.jpg",
+    coverAlt:
+      "Keyboard, headphones and mouse — electronic equipment ready for a second life",
+    sections: [
+      {
+        paragraphs: [
+          "IT equipment buyback plays a key role in reducing companies' ecological footprint.",
+          "The technology industry generates a significant amount of electronic waste, which is often difficult to recycle and harmful to the environment. By reselling your IT equipment instead of throwing it away, you help reduce this waste by extending the life of equipment through reuse and refurbishment.",
+          "IT equipment buyback is part of a circular economy, where equipment is not simply used and discarded but reintegrated into the consumption cycle. This reduces the demand for manufacturing new equipment, which means lower consumption of natural resources and energy to produce new products.",
+          "Manufacturing new IT equipment requires raw materials (rare metals, plastics, etc.) and consumes a significant amount of energy, resulting in CO2 emissions. By opting for buyback and resale, you avoid feeding this intensive production chain and limit your contribution to greenhouse gas emissions.",
+          "Mining for the rare metals needed to produce electronic components has a major environmental impact. By extending the life of equipment through buyback and resale, you indirectly reduce demand for these raw materials, helping preserve ecosystems.",
+        ],
+      },
+      {
+        heading: "The downsides",
+        level: 2,
+        paragraphs: [
+          "Although IT equipment buyback offers many advantages, there are a few aspects to consider before committing to the process. Here are some potential downsides:",
+        ],
+        list: [
+          {
+            title: "Lower valuation than expected",
+            text: "The buyback price of your IT equipment may fall below your expectations, particularly if the equipment is too old, in poor condition, or if demand for that type of device is low. The amount recovered may not match the original value or the investment made.",
+          },
+          {
+            title: "A sometimes complex process",
+            text: "Managing an equipment buyback can involve a number of steps, including sorting, auditing and secure data erasure. This process can be time-consuming for companies that are not equipped or that lack the expertise to manage it effectively.",
+          },
+          {
+            title: "Data security risks",
+            text: "If equipment is not properly processed before being sold, there is a risk that sensitive data could be recovered. Companies must make sure their providers use reliable data-erasure methods, which can add cost or complexity to the process.",
+          },
+          {
+            title: "Buyback limited to certain types of equipment",
+            text: "Not all IT equipment is eligible for buyback. Some equipment that is too obsolete, damaged or tied to specific configurations may not interest buyers, limiting the number of items you can monetize.",
+          },
+        ],
+      },
+      {
+        heading: "Why choose Techno Lot for your electronic equipment buyback?",
+        level: 2,
+        paragraphs: [
+          "Techno Lot is a key player in IT infrastructure life-cycle management, offering a complete and reliable solution for IT equipment buyback.",
+          "We have in-depth knowledge of technology infrastructures and the specific needs of businesses. We provide an accurate appraisal of your equipment, guaranteeing you a fair and competitive price for your buyback.",
+          "Techno Lot offers a complete service that includes equipment audits, collection, secure data erasure and asset revalorization. We make managing your IT fleet easier without adding complexity to your operations.",
+          "We are committed to promoting a circular economy by refurbishing and revalorizing your IT equipment. This not only helps reduce electronic waste but also minimizes your company's carbon footprint, while meeting the strictest environmental standards.",
+          "Protecting your data is our priority. Techno Lot offers certified data-erasure services, guaranteeing that all sensitive information is permanently deleted before your equipment is resold or recycled.",
+          "We can manage buyback projects for companies of all sizes, across Québec.",
+        ],
+      },
+      {
+        heading: "Best practices for getting the most from your IT equipment",
+        level: 2,
+        paragraphs: [
+          "To take full advantage of IT equipment buyback and maximize its benefits, it is essential to follow a few best practices.",
+        ],
+      },
+      {
+        heading: "Audit your equipment",
+        level: 3,
+        paragraphs: [
+          "Before selling your IT equipment, take a detailed inventory of your fleet. Identify which devices can be resold, refurbished or recycled. This allows you to maximize asset value and avoid selling equipment that could still be useful.",
+        ],
+      },
+      {
+        heading: "Erase data securely",
+        level: 3,
+        paragraphs: [
+          "Make sure all sensitive information stored on your devices is permanently deleted using certified erasure methods. This protects you from data breaches and ensures the confidentiality of your company's and your clients' information.",
+        ],
+      },
+      {
+        heading: "Choose a quality provider",
+        level: 3,
+        paragraphs: [
+          "Choosing a trusted partner for your equipment buyback is crucial. Make sure the company holds the necessary certifications for secure equipment handling, responsible recycling and data erasure. An experienced provider like Techno Lot can offer you a complete, reliable service.",
+        ],
+      },
+      {
+        heading: "Prepare your equipment for resale",
+        level: 3,
+        paragraphs: [
+          "If possible, make sure your equipment is in optimal condition before offering it for buyback. Clean the devices, remove unnecessary accessories and check that everything works properly. Well-maintained equipment commands a better resale value.",
+        ],
+      },
+    ],
+  },
+];
+
+const postsByLocale: Record<Locale, Post[]> = { fr: postsFr, en: postsEn };
+
+export function getPosts(locale: Locale): Post[] {
+  return postsByLocale[locale];
+}
+
+export function getPost(locale: Locale, slug: string): Post | undefined {
+  return postsByLocale[locale].find((p) => p.slug === slug);
 }

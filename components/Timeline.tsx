@@ -11,7 +11,13 @@ export type TimelineStep = {
 };
 
 /** Timeline verticale animée (reveal séquentiel au scroll). */
-export default function Timeline({ steps }: { steps: TimelineStep[] }) {
+export default function Timeline({
+  steps,
+  stepLabel = "Étape",
+}: {
+  steps: TimelineStep[];
+  stepLabel?: string;
+}) {
   const reduceMotion = useReducedMotion();
 
   return (
@@ -41,7 +47,7 @@ export default function Timeline({ steps }: { steps: TimelineStep[] }) {
             </span>
             <div className="glass glass-hover p-6">
               <p className="mb-1 font-display text-xs font-semibold uppercase tracking-[0.2em] text-accent">
-                Étape {i + 1}
+                {stepLabel} {i + 1}
               </p>
               <h3 className="font-display text-lg font-semibold text-white">
                 {step.title}

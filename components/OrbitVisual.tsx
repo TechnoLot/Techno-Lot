@@ -7,6 +7,7 @@ import {
   Server,
   Smartphone,
 } from "lucide-react";
+import { getDict, type Locale } from "@/lib/i18n";
 
 const chip =
   "flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-night-800/90 shadow-card backdrop-blur-md";
@@ -16,7 +17,8 @@ const chip =
  * de l'économie circulaire. Animations CSS pures (GPU), neutralisées
  * par prefers-reduced-motion.
  */
-export default function OrbitVisual() {
+export default function OrbitVisual({ locale = "fr" }: { locale?: Locale }) {
+  const t = getDict(locale);
   return (
     <div className="glass relative flex aspect-square items-center justify-center overflow-hidden">
       <div
@@ -79,11 +81,9 @@ export default function OrbitVisual() {
 
       <div className="absolute bottom-7 left-8 right-8 z-10 text-center">
         <p className="font-display text-lg font-semibold text-white">
-          Économie circulaire
+          {t.orbit.title}
         </p>
-        <p className="mt-1 text-sm text-slate-400">
-          Prolonger la vie du matériel, réduire les déchets électroniques.
-        </p>
+        <p className="mt-1 text-sm text-slate-400">{t.orbit.text}</p>
       </div>
     </div>
   );

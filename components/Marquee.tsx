@@ -10,22 +10,25 @@ import {
   Tablet,
   Camera,
 } from "lucide-react";
+import { getDict, type Locale } from "@/lib/i18n";
 
-const items = [
-  { icon: Laptop, label: "Ordinateurs et portables" },
-  { icon: Server, label: "Serveurs" },
-  { icon: Network, label: "Équipements réseau" },
-  { icon: HardDrive, label: "Stockage" },
-  { icon: Phone, label: "Télécommunication" },
-  { icon: Printer, label: "Bureautique" },
-  { icon: Monitor, label: "Écrans et moniteurs" },
-  { icon: Cpu, label: "Composants" },
-  { icon: Tablet, label: "Tablettes" },
-  { icon: Camera, label: "Audio / Vidéo" },
+const icons = [
+  Laptop,
+  Server,
+  Network,
+  HardDrive,
+  Phone,
+  Printer,
+  Monitor,
+  Cpu,
+  Tablet,
+  Camera,
 ];
 
 /** Bandeau défilant des catégories d'équipements rachetés. */
-export default function Marquee() {
+export default function Marquee({ locale }: { locale: Locale }) {
+  const t = getDict(locale);
+  const items = t.marquee.map((label, i) => ({ icon: icons[i], label }));
   const row = [...items, ...items];
   return (
     <div className="relative overflow-hidden border-y border-white/5 bg-night-950/60 py-5">

@@ -2,20 +2,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import Reveal from "@/components/Reveal";
+import { getDict, localePath, type Locale } from "@/lib/i18n";
 
 type CtaBannerProps = {
   title: string;
   text?: string;
   buttonLabel?: string;
   href?: string;
+  locale?: Locale;
 };
 
 export default function CtaBanner({
   title,
   text,
-  buttonLabel = "Faire une soumission",
-  href = "/contact",
+  buttonLabel,
+  href,
+  locale = "fr",
 }: CtaBannerProps) {
+  const t = getDict(locale);
+  const label = buttonLabel ?? t.cta.defaultButton;
+  const target = href ?? localePath(locale, "/contact");
   return (
     <section className="container-site py-16">
       <Reveal>
@@ -42,8 +48,8 @@ export default function CtaBanner({
             {text && (
               <p className="mx-auto mt-4 max-w-2xl text-slate-300">{text}</p>
             )}
-            <Link href={href} className="btn-primary mt-8">
-              {buttonLabel}
+            <Link href={target} className="btn-primary mt-8">
+              {label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>

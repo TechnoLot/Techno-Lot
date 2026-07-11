@@ -12,10 +12,12 @@ import { ArrowRight, ChevronDown } from "lucide-react";
 import HeroBackground from "@/components/HeroBackground";
 import ParticleField from "@/components/ParticleField";
 import Magnetic from "@/components/Magnetic";
+import { getDict, localePath, type Locale } from "@/lib/i18n";
 
 const ease = [0.21, 0.47, 0.32, 0.98] as const;
 
-export default function Hero() {
+export default function Hero({ locale }: { locale: Locale }) {
+  const t = getDict(locale);
   const reduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const contentY = useTransform(scrollY, [0, 600], [0, 110]);
@@ -30,6 +32,9 @@ export default function Hero() {
       : { opacity: 1, y: 0, filter: "blur(0px)" },
     transition: { duration: 0.7, delay, ease },
   });
+
+  const startWords = t.hero.titleStart.split(" ");
+  const accentWords = t.hero.titleAccent.split(" ");
 
   return (
     <section className="relative overflow-hidden">
@@ -62,7 +67,7 @@ export default function Hero() {
         </motion.div>
 
         <h1 className="mx-auto mt-10 max-w-3xl font-display text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
-          {"Vos lots informatiques ont".split(" ").map((word, i) => (
+          {startWords.map((word, i) => (
             <motion.span
               key={i}
               className="inline-block whitespace-pre"
@@ -71,11 +76,11 @@ export default function Hero() {
               {word}{" "}
             </motion.span>
           ))}
-          {"de la valeur".split(" ").map((word, i) => (
+          {accentWords.map((word, i) => (
             <motion.span
               key={`a-${i}`}
               className="inline-block whitespace-pre text-accent"
-              {...fadeUp(0.63 + i * 0.07)}
+              {...fadeUp(0.35 + (startWords.length + i) * 0.07)}
             >
               {word}{" "}
             </motion.span>
@@ -86,10 +91,8 @@ export default function Hero() {
           {...fadeUp(0.95)}
           className="mx-auto mt-5 max-w-3xl text-lg text-white"
         >
-          <span className="text-slate-300">
-            On donne une seconde vie à votre matériel
-          </span>{" "}
-          <span className="text-accent">|</span> et on vous paie pour ça !
+          <span className="text-slate-300">{t.hero.subtitleStart}</span>{" "}
+          <span className="text-accent">|</span> {t.hero.subtitleEnd}
         </motion.p>
 
         <motion.div
@@ -97,14 +100,17 @@ export default function Hero() {
           className="mt-10 flex flex-col items-center gap-4 sm:flex-row"
         >
           <Magnetic>
-            <Link href="/contact" className="btn-primary">
-              Faire une soumission
+            <Link href={localePath(locale, "/contact")} className="btn-primary">
+              {t.hero.ctaPrimary}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </Magnetic>
           <Magnetic>
-            <Link href="/consultation" className="btn-secondary">
-              Comment ça marche
+            <Link
+              href={localePath(locale, "/consultation")}
+              className="btn-secondary"
+            >
+              {t.hero.ctaSecondary}
             </Link>
           </Magnetic>
         </motion.div>
@@ -116,7 +122,7 @@ export default function Hero() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8, delay: 1.7 }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2 text-slate-500 transition-colors hover:text-accent"
-          aria-label="Défiler vers nos services"
+          aria-label={t.hero.scrollAria}
         >
           <motion.span
             className="block"
