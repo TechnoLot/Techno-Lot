@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import RootShell from "@/components/RootShell";
+import LocaleShell from "@/components/LocaleShell";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
   title: {
     default: "Techno Lot — Purchase of IT and Electronic Lots in Québec",
     template: "%s | Techno Lot",
@@ -35,5 +34,5 @@ export const metadata: Metadata = {
 export default function EnLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <RootShell locale="en">{children}</RootShell>;
+  return <LocaleShell locale="en">{children}</LocaleShell>;
 }
