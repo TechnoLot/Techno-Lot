@@ -1,0 +1,5 @@
+# Configuration Supabase pour l'intégration GitHub.
+# Le project_id lie ce dossier au projet Supabase Techno Lot ; il apparaît
+# dans l'URL du dashboard (https://<project_id>.supabase.co).
+
+project_id = "aznelukkwitvttycwnjb"

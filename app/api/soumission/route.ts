@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient as createSupabaseClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
@@ -90,6 +91,25 @@ export async function POST(request: Request) {
       content: Buffer.from(await file.arrayBuffer()),
     })),
   );
+
+  // Sauvegarde dans Supabase — ne bloque pas l'envoi du courriel en cas d'échec.
+  // Note : les pièces jointes ne sont pas stockées ici, seulement leurs noms.
+  try {
+    const supabase = createSupabaseClient();
+    const { error: dbError } = await supabase.from("soumissions").insert({
+      nom,
+      courriel,
+      telephone,
+      message: message || null,
+      locale: String(data.get("locale") ?? "fr") === "en" ? "en" : "fr",
+      fichiers: attachments.map((a) => a.filename),
+    });
+    if (dbError) {
+      console.error("[soumission] Erreur Supabase :", dbError);
+    }
+  } catch (err) {
+    console.error("[soumission] Erreur Supabase (exception) :", err);
+  }
 
   const html = `
     <h2>Nouvelle soumission — technolot.ca</h2>

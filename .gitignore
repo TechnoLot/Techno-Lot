@@ -6,4 +6,7 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .claude/settings.local.json
+.claude/skills
+.agents
+skills-lock.json
 ~$*
