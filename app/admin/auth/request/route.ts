@@ -43,8 +43,14 @@ export async function POST(request: Request) {
 
   if (error) {
     console.error("[admin/auth/request] Supabase :", error);
+    // Endpoint privé (whitelist ADMIN_EMAILS) : on peut exposer le message
+    // Supabase directement, ça aide à diagnostiquer les problèmes de config.
     return NextResponse.json(
-      { error: "Impossible d'envoyer le lien pour le moment." },
+      {
+        error: `Supabase : ${error.message}`,
+        code: error.code ?? null,
+        status: error.status ?? null,
+      },
       { status: 502 },
     );
   }
