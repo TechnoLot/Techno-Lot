@@ -112,6 +112,83 @@ body {
   pointer-events: none;
 }
 
+/* Signature du hero : balayage lumineux diagonal qui traverse la scène
+   toutes les 14 secondes. Très faible opacité — on veut le ressentir
+   plutôt que le voir. */
+.hero-sweep {
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 40%;
+  height: 220%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(94, 203, 51, 0.05) 40%,
+    rgba(143, 229, 99, 0.12) 50%,
+    rgba(94, 203, 51, 0.05) 60%,
+    transparent 100%
+  );
+  transform: rotate(20deg);
+  filter: blur(24px);
+  animation: hero-sweep 14s ease-in-out infinite;
+}
+
+@keyframes hero-sweep {
+  0% {
+    transform: translateX(0) rotate(20deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(280vw) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+/* Grain film discret : bruit fractal en SVG data-URI, mélangé en overlay.
+   Donne une texture argentique subtile sans charger d'image externe. */
+.hero-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px;
+  mix-blend-mode: overlay;
+  opacity: 0.05;
+}
+
+/* Petit trait vertical au-dessus du chevron de défilement */
+.hero-scroll-line {
+  display: block;
+  width: 1px;
+  height: 34px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(94, 203, 51, 0.5),
+    transparent
+  );
+}
+
+/* Halo pulsant derrière le CTA principal du hero */
+@keyframes btn-halo {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.85;
+  }
+}
+.animate-btn-halo {
+  animation: btn-halo 3.2s ease-in-out infinite;
+}
+
 /* Respect de prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   html {
