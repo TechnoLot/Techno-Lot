@@ -275,15 +275,26 @@ export async function POST(request: Request) {
 
     await client.logout();
   } catch (err) {
-    const e = err instanceof Error ? err : new Error(String(err));
+    const e = err as Error & {
+      response?: string;
+      responseStatus?: string;
+      serverResponseCode?: string;
+      authenticationFailed?: boolean;
+      code?: string;
+    };
     return NextResponse.json(
       {
         error: "Erreur connexion IMAP",
         details: e.message,
-        stack: e.stack?.split("\n").slice(0, 5),
+        code: e.code,
+        response: e.response,
+        responseStatus: e.responseStatus,
+        serverResponseCode: e.serverResponseCode,
+        authenticationFailed: e.authenticationFailed,
         host: imapConfig.host,
         port: imapConfig.port,
         user: imapConfig.auth.user,
+        passLength: imapConfig.auth.pass.length,
       },
       { status: 500 },
     );
