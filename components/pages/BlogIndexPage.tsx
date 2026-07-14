@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
+import SoroBlogEmbed from "@/components/SoroBlogEmbed";
 import { getPosts } from "@/lib/posts";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 
@@ -12,12 +13,16 @@ const content = {
     title: "Nos articles",
     subtitle:
       "Conseils, bonnes pratiques et actualités sur le rachat de matériel informatique et l'économie circulaire.",
+    soroEyebrow: "Publications récentes",
+    soroTitle: "Les derniers articles",
   },
   en: {
     eyebrow: "Blog",
     title: "Our articles",
     subtitle:
       "Advice, best practices and news about IT equipment buyback and the circular economy.",
+    soroEyebrow: "Recent posts",
+    soroTitle: "Latest articles",
   },
 };
 
@@ -35,7 +40,7 @@ export default function BlogIndexPage({ locale }: { locale: Locale }) {
         image="/photos/datacenter.jpg"
       />
 
-      <section className="container-site pb-24">
+      <section className="container-site pb-16">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post, i) => (
             <Reveal key={post.slug} delay={i * 0.1} className="h-full">
@@ -88,6 +93,19 @@ export default function BlogIndexPage({ locale }: { locale: Locale }) {
             </Reveal>
           ))}
         </div>
+      </section>
+
+      {/* Widget Soro : blog dynamique publié depuis app.trysoro.com */}
+      <section className="container-site pb-24">
+        <div className="mb-8 border-t border-white/5 pt-12">
+          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
+            {t.soroEyebrow}
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+            {t.soroTitle}
+          </h2>
+        </div>
+        <SoroBlogEmbed />
       </section>
     </>
   );
