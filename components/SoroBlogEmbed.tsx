@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const SORO_EMBED_URL =
-  "https://app.trysoro.com/api/embed/bd88392c-6733-413d-81de-c32ad9627262";
+  "https://app.trysoro.com/api/embed/bd88392c-6733-413d-81de-c32ad9627262?theme=dark";
 
 /**
  * Widget de blog Soro : le composant rend uniquement le conteneur
