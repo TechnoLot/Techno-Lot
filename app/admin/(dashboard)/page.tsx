@@ -8,6 +8,7 @@ import KpiCards, { type KpiSpec } from "@/components/admin/KpiCards";
 import LotsChart from "@/components/admin/LotsChart";
 import TopClients from "@/components/admin/TopClients";
 import RecentActivity from "@/components/admin/RecentActivity";
+import PendingSales from "@/components/admin/PendingSales";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +17,13 @@ type Metrics = { count: number; spent: number; revenue: number; profit: number }
 
 function computeMetrics(lots: Lot[], sales: Sale[]): Metrics {
   let spent = 0;
+  let revenue = 0;
   for (const l of lots) {
     spent += Number(l.purchase_price);
+    if (l.sale_price != null) {
+      revenue += Number(l.sale_price);
+    }
   }
-  let revenue = 0;
   for (const s of sales) {
     revenue += Number(s.sale_price);
   }
@@ -57,6 +61,14 @@ export default async function DashboardPage({
     ? await salesQuery.gte("sold_at", start)
     : await salesQuery;
   const sales = (salesRaw ?? []) as Sale[];
+
+  const { data: pendingRaw } = await supabase
+    .from("lots")
+    .select("*")
+    .eq("status", "purchased")
+    .is("sale_price", null)
+    .order("purchased_at", { ascending: false });
+  const pendingLots = (pendingRaw ?? []) as Lot[];
 
   const prevBounds = previousPeriodBounds(period);
   let prevLots: Lot[] = [];
@@ -152,9 +164,10 @@ export default async function DashboardPage({
         <LotsChart lots={lots} period={period} />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <TopClients lots={lots} />
         <RecentActivity lots={lots.slice(0, 8)} />
+        <PendingSales lots={pendingLots} />
       </div>
     </div>
   );
