@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getAdminEmails } from "@/lib/admin/config";
+import { getRequestOrigin } from "@/lib/admin/origin";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   const next = String(form.get("next") ?? "/admin");
 
   const supabase = createClient();
-  const origin = new URL(request.url).origin;
+  const origin = getRequestOrigin(request);
   const redirectTo = `${origin}/admin/auth/callback?next=${encodeURIComponent(next)}`;
 
   const { error } = await supabase.auth.signInWithOtp({

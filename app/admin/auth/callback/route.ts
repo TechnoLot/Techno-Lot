@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestOrigin } from "@/lib/admin/origin";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,7 @@ export const runtime = "nodejs";
  */
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const origin = getRequestOrigin(request);
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
@@ -26,7 +28,7 @@ export async function GET(request: Request) {
   // (lien expiré, déjà utilisé, etc.)
   if (supabaseError) {
     return redirectToLogin(
-      url.origin,
+      origin,
       supabaseErrorDesc ?? supabaseError,
     );
   }
@@ -41,9 +43,9 @@ export async function GET(request: Request) {
         "[admin/auth/callback] exchangeCodeForSession :",
         error,
       );
-      return redirectToLogin(url.origin, `Échange code : ${error.message}`);
+      return redirectToLogin(origin, `Échange code : ${error.message}`);
     }
-    return NextResponse.redirect(new URL(next, url.origin));
+    return NextResponse.redirect(new URL(next, origin));
   }
 
   // — Flow OTP magic link : ?token_hash=xxx&type=magiclink
@@ -55,11 +57,11 @@ export async function GET(request: Request) {
     if (error) {
       console.error("[admin/auth/callback] verifyOtp :", error);
       return redirectToLogin(
-        url.origin,
+        origin,
         `Vérification du lien : ${error.message}`,
       );
     }
-    return NextResponse.redirect(new URL(next, url.origin));
+    return NextResponse.redirect(new URL(next, origin));
   }
 
   // — Aucun paramètre reconnu : lien mal formé
@@ -68,7 +70,7 @@ export async function GET(request: Request) {
     request.url,
   );
   return redirectToLogin(
-    url.origin,
+    origin,
     "Lien invalide : aucun code trouvé dans l'URL.",
   );
 }
