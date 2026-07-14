@@ -295,6 +295,8 @@ export async function POST(request: Request) {
         port: imapConfig.port,
         user: imapConfig.auth.user,
         passLength: imapConfig.auth.pass.length,
+        passFirstChar: imapConfig.auth.pass.charCodeAt(0),
+        passLastChar: imapConfig.auth.pass.charCodeAt(imapConfig.auth.pass.length - 1),
       },
       { status: 500 },
     );
