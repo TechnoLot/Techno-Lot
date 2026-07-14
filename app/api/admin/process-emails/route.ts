@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       pass: process.env.IMAP_PASS ?? "",
     },
     secure: true,
+    tls: { rejectUnauthorized: false },
     logger: false as const,
   };
 
