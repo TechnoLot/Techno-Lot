@@ -11,22 +11,24 @@ import RecentActivity from "@/components/admin/RecentActivity";
 
 export const dynamic = "force-dynamic";
 
+type Sale = { sale_price: number | string; sold_at: string };
 type Metrics = { count: number; spent: number; revenue: number; profit: number };
 
-function computeMetrics(lots: Lot[]): Metrics {
+function computeMetrics(lots: Lot[], sales: Sale[]): Metrics {
   let spent = 0;
-  let revenue = 0;
-  let profit = 0;
   for (const l of lots) {
-    const price = Number(l.purchase_price);
-    spent += price;
-    if (l.sale_price != null) {
-      const sale = Number(l.sale_price);
-      revenue += sale;
-      profit += sale - price;
-    }
+    spent += Number(l.purchase_price);
   }
-  return { count: lots.length, spent, revenue, profit };
+  let revenue = 0;
+  for (const s of sales) {
+    revenue += Number(s.sale_price);
+  }
+  return {
+    count: lots.length,
+    spent,
+    revenue,
+    profit: revenue - spent,
+  };
 }
 
 export default async function DashboardPage({
@@ -50,19 +52,34 @@ export default async function DashboardPage({
     : await query;
   const lots = (lotsRaw ?? []) as Lot[];
 
+  const salesQuery = supabase.from("sales").select("sale_price, sold_at");
+  const { data: salesRaw } = start
+    ? await salesQuery.gte("sold_at", start)
+    : await salesQuery;
+  const sales = (salesRaw ?? []) as Sale[];
+
   const prevBounds = previousPeriodBounds(period);
   let prevLots: Lot[] = [];
+  let prevSales: Sale[] = [];
   if (prevBounds) {
-    const { data } = await supabase
-      .from("lots")
-      .select("*")
-      .gte("purchased_at", prevBounds.start)
-      .lte("purchased_at", prevBounds.end);
-    prevLots = (data ?? []) as Lot[];
+    const [{ data: pl }, { data: ps }] = await Promise.all([
+      supabase
+        .from("lots")
+        .select("*")
+        .gte("purchased_at", prevBounds.start)
+        .lte("purchased_at", prevBounds.end),
+      supabase
+        .from("sales")
+        .select("sale_price, sold_at")
+        .gte("sold_at", prevBounds.start)
+        .lte("sold_at", prevBounds.end),
+    ]);
+    prevLots = (pl ?? []) as Lot[];
+    prevSales = (ps ?? []) as Sale[];
   }
 
-  const current = computeMetrics(lots);
-  const prev = computeMetrics(prevLots);
+  const current = computeMetrics(lots, sales);
+  const prev = computeMetrics(prevLots, prevSales);
   const hasPrev = prevBounds !== null;
 
   const cards: KpiSpec[] = [
