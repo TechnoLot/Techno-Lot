@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Calculator, LayoutDashboard, Package, Plus } from "lucide-react";
+import {
+  Calculator,
+  LayoutDashboard,
+  Mail,
+  Package,
+  Plus,
+  Send,
+  Target,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { OPEN_CALCULATRICE_EVENT } from "@/components/admin/CalculatriceOverlay";
 
@@ -23,6 +31,9 @@ const items: NavItem[] = [
     icon: Calculator,
     action: "open-calculatrice",
   },
+  { href: "/admin/crm", label: "Prospection", icon: Target },
+  { href: "/admin/crm/relances", label: "Relances", icon: Send },
+  { href: "/admin/crm/modeles", label: "Modèles courriel", icon: Mail },
 ];
 
 export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
@@ -59,10 +70,16 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
             </button>
           );
         }
-        const active =
-          href === "/admin"
+        // Le lien le plus spécifique qui correspond au chemin gagne
+        // (évite que "Prospection" reste actif sur /admin/crm/relances).
+        const matches = (h: string) =>
+          h === "/admin"
             ? pathname === "/admin"
-            : pathname === href || pathname.startsWith(href + "/");
+            : pathname === h || pathname.startsWith(h + "/");
+        const bestMatch = items
+          .filter((it) => !it.action && matches(it.href))
+          .sort((a, b) => b.href.length - a.href.length)[0];
+        const active = bestMatch?.href === href;
         return (
           <Link
             key={href}
