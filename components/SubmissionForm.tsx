@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import {
   CheckCircle2,
   FileSpreadsheet,
@@ -88,20 +88,20 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
 
   if (status === "success") {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="glass flex flex-col items-center gap-4 p-10 text-center"
         role="status"
       >
-        <motion.div
+        <m.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 200, damping: 14, delay: 0.15 }}
         >
           <CheckCircle2 className="h-14 w-14 text-accent" aria-hidden />
-        </motion.div>
+        </m.div>
         <h3 className="font-display text-2xl font-bold text-white">
           {t.successTitle}
         </h3>
@@ -113,7 +113,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
         >
           {t.successAgain}
         </button>
-      </motion.div>
+      </m.div>
     );
   }
 
@@ -258,7 +258,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
 
       <AnimatePresence>
         {status === "error" && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
@@ -267,7 +267,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
           >
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {serverError}
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

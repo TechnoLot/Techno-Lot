@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 export type AccordionItem = {
@@ -32,7 +32,7 @@ export default function Accordion({ items }: { items: AccordionItem[] }) {
               <span className="font-display text-base font-semibold text-white sm:text-lg">
                 {item.question}
               </span>
-              <motion.span
+              <m.span
                 animate={{ rotate: isOpen ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
                 className={`shrink-0 rounded-full border p-1.5 ${
@@ -42,18 +42,18 @@ export default function Accordion({ items }: { items: AccordionItem[] }) {
                 }`}
               >
                 <ChevronDown className="h-4 w-4" aria-hidden />
-              </motion.span>
+              </m.span>
             </button>
             <AnimatePresence initial={false}>
               {isOpen && (
-                <motion.div
+                <m.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
                 >
                   <p className="px-6 pb-6 text-slate-300">{item.answer}</p>
-                </motion.div>
+                </m.div>
               )}
             </AnimatePresence>
           </div>

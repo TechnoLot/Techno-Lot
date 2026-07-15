@@ -24,11 +24,17 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cssDir = join(root, ".next", "static", "css");
-const htmlDir = join(root, ".next", "server", "app");
+// Certains hébergeurs (mode standalone) servent une COPIE de
+// .next/server/app faite pendant `next build` : on patche donc les deux
+// emplacements s'ils existent.
+const htmlDirs = [
+  join(root, ".next", "server", "app"),
+  join(root, ".next", "standalone", ".next", "server", "app"),
+].filter((d) => existsSync(d));
 
 // Exécuté aussi en "prestart" : si le build n'a pas encore eu lieu (ou a
 // déjà été patché), on sort proprement sans faire échouer le démarrage.
-if (!existsSync(cssDir) || !existsSync(htmlDir)) {
+if (!existsSync(cssDir) || htmlDirs.length === 0) {
   console.log("[inline-critical-css] build absent — rien à faire.");
   process.exit(0);
 }
@@ -53,7 +59,7 @@ const linkRe =
   /<link rel="stylesheet" href="(\/_next\/static\/css\/[^"]+\.css)"[^>]*\/?>/g;
 
 let patched = 0;
-for (const file of walk(htmlDir)) {
+for (const file of htmlDirs.flatMap((d) => [...walk(d)])) {
   const html = readFileSync(file, "utf8");
   let changed = false;
   const out = html.replace(linkRe, (match, href) => {

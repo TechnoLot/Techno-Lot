@@ -2,7 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import {
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
@@ -42,7 +42,7 @@ export default function Magnetic({
   }
 
   return (
-    <motion.div
+    <m.div
       ref={ref}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -50,6 +50,6 @@ export default function Magnetic({
       className={`inline-block ${className}`}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

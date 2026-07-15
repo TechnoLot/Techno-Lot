@@ -2,7 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import {
-  motion,
+  m,
   useMotionValue,
   useSpring,
   useTransform,
@@ -43,7 +43,7 @@ export default function TiltCard({ children, className }: TiltCardProps) {
   }
 
   return (
-    <motion.div
+    <m.div
       ref={ref}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -55,6 +55,6 @@ export default function TiltCard({ children, className }: TiltCardProps) {
       className={className}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }

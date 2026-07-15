@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 export type TimelineStep = {
@@ -24,7 +24,7 @@ export default function Timeline({
     <ol className="relative ml-4 border-l border-white/10 sm:ml-6">
       {steps.map((step, i) => {
         return (
-          <motion.li
+          <m.li
             key={i}
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24 }}
             whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
@@ -56,7 +56,7 @@ export default function Timeline({
                 {step.text}
               </p>
             </div>
-          </motion.li>
+          </m.li>
         );
       })}
     </ol>

@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  animate,
-  useInView,
-  useReducedMotion,
-} from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
 
 type CounterProps = {
   to: number;
@@ -34,14 +30,20 @@ export default function Counter({
       el.textContent = `${prefix}${to}${suffix}`;
       return;
     }
-    const controls = animate(0, to, {
-      duration,
-      ease: "easeOut",
-      onUpdate: (v) => {
-        el.textContent = `${prefix}${Math.round(v)}${suffix}`;
-      },
-    });
-    return () => controls.stop();
+    // Animation en requestAnimationFrame pur (même courbe easeOut
+    // cubique) : évite d'embarquer le moteur d'animation complet de
+    // framer-motion dans le bundle initial.
+    let raf = 0;
+    const start = performance.now();
+    const durationMs = duration * 1000;
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = `${prefix}${Math.round(eased * to)}${suffix}`;
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [inView, to, suffix, prefix, duration, reduceMotion]);
 
   return (

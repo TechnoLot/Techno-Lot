@@ -4,7 +4,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { m, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import HeroBackground from "@/components/HeroBackground";
 import Magnetic from "@/components/Magnetic";
@@ -54,7 +54,7 @@ export default function Hero({ locale }: { locale: Locale }) {
         className="hero-grain pointer-events-none absolute inset-0"
       />
 
-      <motion.div
+      <m.div
         style={
           reduceMotion ? undefined : { y: contentY, opacity: contentOpacity }
         }
@@ -66,7 +66,7 @@ export default function Hero({ locale }: { locale: Locale }) {
             aria-hidden
             className="absolute inset-0 -z-10 rounded-full bg-accent/10 blur-3xl"
           />
-          <motion.div
+          <m.div
             animate={reduceMotion ? undefined : { scale: [1, 1.015, 1] }}
             transition={{
               duration: 8,
@@ -83,7 +83,7 @@ export default function Hero({ locale }: { locale: Locale }) {
               sizes="(min-width: 1024px) 384px, (min-width: 640px) 320px, 256px"
               className="h-auto w-64 sm:w-80 lg:w-96"
             />
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Titre : « Vos lots informatiques ont de la valeur »
@@ -168,15 +168,15 @@ export default function Hero({ locale }: { locale: Locale }) {
           aria-label={t.hero.scrollAria}
         >
           <span className="hero-scroll-line" aria-hidden />
-          <motion.span
+          <m.span
             className="block"
             animate={reduceMotion ? undefined : { y: [0, 4, 0] }}
             transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           >
             <ChevronDown className="h-5 w-5" aria-hidden />
-          </motion.span>
+          </m.span>
         </a>
-      </motion.div>
+      </m.div>
     </section>
   );
 }

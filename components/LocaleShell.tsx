@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import MotionProvider from "@/components/MotionProvider";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -52,11 +53,13 @@ export default function LocaleShell({
           __html: JSON.stringify(localBusinessJsonLd),
         }}
       />
-      <ScrollProgress />
-      <Header locale={locale} />
-      <main className="flex-1 pt-20">{children}</main>
-      <Footer locale={locale} />
-      <FloatingCall locale={locale} />
+      <MotionProvider>
+        <ScrollProgress />
+        <Header locale={locale} />
+        <main className="flex-1 pt-20">{children}</main>
+        <Footer locale={locale} />
+        <FloatingCall locale={locale} />
+      </MotionProvider>
     </>
   );
 }

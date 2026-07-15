@@ -2,7 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import {
-  motion,
+  m,
   useMotionValue,
   useReducedMotion,
   useSpring,
@@ -53,7 +53,7 @@ export default function SpotlightCard({
   }
 
   return (
-    <motion.div
+    <m.div
       ref={ref}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -74,6 +74,6 @@ export default function SpotlightCard({
         }}
       />
       {children}
-    </motion.div>
+    </m.div>
   );
 }
