@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/inline-critical-css.mjs",
     "start": "next start"
   },
   "dependencies": {
@@ -19,7 +20,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.13.0",
-    "resend": "^4.0.1"
+    "resend": "^4.0.1",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@types/mailparser": "^3.4.6",

@@ -14,6 +14,21 @@ const nextConfig = {
     // charger tout le paquet — allège le JavaScript envoyé au navigateur.
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
+  async headers() {
+    return [
+      {
+        // Photos et logo servis depuis /public : contenu stable, on
+        // autorise un cache navigateur/CDN d'un an.
+        source: "/:path(photos/.*|logo\\.png|favicon\\.ico)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

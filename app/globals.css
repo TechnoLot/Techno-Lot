@@ -173,6 +173,89 @@ body {
   );
 }
 
+/* Entrées du héros en CSS pur : elles démarrent dès le premier rendu du
+   HTML (sans attendre l'hydratation JavaScript), ce qui est décisif pour
+   le LCP. L'état de départ reste légèrement visible (opacité 0.3) pour
+   que le navigateur comptabilise la première peinture immédiatement. */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0.3;
+    transform: translateY(28px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.hero-enter {
+  animation: hero-fade-up 0.45s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+  animation-delay: var(--enter-delay, 0s);
+}
+
+/* Variante pour les éléments secondaires (CTA, indicateurs) : fondu
+   complet, sans incidence sur le LCP. */
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-enter-soft {
+  animation: hero-fade-in 0.5s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+  animation-delay: var(--enter-delay, 0s);
+}
+
+/* Fondu pur (sans transform) pour les éléments déjà positionnés via
+   translate, comme l'indicateur de défilement. */
+@keyframes hero-opacity {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.hero-fade {
+  animation: hero-opacity 0.8s ease both;
+  animation-delay: var(--enter-delay, 0s);
+}
+
+/* Apparition du logo du héros */
+@keyframes hero-pop {
+  from {
+    opacity: 0.3;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-enter-logo {
+  animation: hero-pop 0.5s cubic-bezier(0.21, 0.47, 0.32, 0.98) both;
+}
+
+/* Soulignement accent qui se dessine sous le titre */
+@keyframes hero-underline {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.hero-underline-enter {
+  transform-origin: left;
+  animation: hero-underline 0.5s cubic-bezier(0.21, 0.47, 0.32, 0.98) 0.35s
+    both;
+}
+
 /* Halo pulsant derrière le CTA principal du hero */
 @keyframes btn-halo {
   0%,

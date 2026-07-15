@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import Image from "next/image";
 import HeroBackground from "@/components/HeroBackground";
-import Reveal from "@/components/Reveal";
 
 type PageHeroProps = {
   eyebrow?: string;
@@ -10,6 +9,12 @@ type PageHeroProps = {
   /** Photo d'ambiance derrière le titre — un voile sombre est appliqué par-dessus. */
   image?: string;
 };
+
+/* Entrées en CSS pur (voir globals.css) plutôt qu'en framer-motion : le
+   titre — souvent l'élément LCP de la page — est peint dès le premier
+   rendu HTML, sans attendre l'hydratation JavaScript. */
+const enterDelay = (delay: number): CSSProperties =>
+  ({ "--enter-delay": `${delay}s` }) as CSSProperties;
 
 export default function PageHero({
   eyebrow,
@@ -36,21 +41,21 @@ export default function PageHero({
       )}
       <div className="container-site relative py-20 text-center sm:py-28">
         {eyebrow && (
-          <Reveal>
+          <div className="hero-enter">
             <span className="eyebrow">{eyebrow}</span>
-          </Reveal>
+          </div>
         )}
-        <Reveal delay={0.08}>
+        <div className="hero-enter" style={enterDelay(0.08)}>
           <h1 className="mx-auto max-w-3xl font-display text-4xl font-bold leading-tight text-white sm:text-5xl">
             {title}
           </h1>
-        </Reveal>
+        </div>
         {subtitle && (
-          <Reveal delay={0.18}>
+          <div className="hero-enter" style={enterDelay(0.18)}>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
               {subtitle}
             </p>
-          </Reveal>
+          </div>
         )}
       </div>
     </section>

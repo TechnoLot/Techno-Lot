@@ -11,7 +11,10 @@ const inter = Inter({
 
 const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  // Seules les graisses réellement utilisées : 400 (admin), 600 (semibold),
+  // 700 (bold). La 500 n'apparaît nulle part — la retirer évite un
+  // préchargement de police inutile sur chaque page.
+  weight: ["400", "600", "700"],
   variable: "--font-display",
   display: "swap",
 });
