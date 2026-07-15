@@ -740,7 +740,7 @@ Dell Latitude 5420    12
     <div class="champ-modal">
       <label>Courriel du client</label>
       <input type="email" id="devisEmail" placeholder="contact@exemple.com" required>
-      <div class="aide">Ton logiciel de courriel s'ouvrira avec le message prêt à envoyer.</div>
+      <div class="aide">Envoyé depuis info@technolot.ca avec la signature TechnoLot.</div>
     </div>
     <div class="champ-modal">
       <label>Mot personnel (optionnel)</label>
@@ -752,7 +752,7 @@ Dell Latitude 5420    12
     <div class="modal-actions">
       <button class="btn-sec" onclick="fermerDevis()">Annuler</button>
       <button class="btn-sec" onclick="copierDevis()">Copier le texte</button>
-      <button class="btn-principal" onclick="envoyerDevis()">Ouvrir le courriel →</button>
+      <button class="btn-principal" onclick="envoyerDevis()">✉ Envoyer maintenant</button>
     </div>
   </div>
 </div>
@@ -1066,6 +1066,17 @@ function calculerTotaux(){
   return { totalBas, totalMoyen, valeurLot, offre: valeurLot / 2.5, unites, nbItems: items.length };
 }
 
+function messageParDefaut(nomClient, offre){
+  const nom = nomClient && nomClient.trim() ? nomClient.trim() : '[nom du client]';
+  return `Bonjour ${nom},
+
+Après avoir pris connaissance de votre lot, voici le prix que nous pouvons vous payer : ${offre}.
+
+Veuillez communiquer avec nous pour aller de l'avant.
+
+Merci de votre confiance,`;
+}
+
 function ouvrirDevis(){
   if (items.length === 0){ toast("Ajoute des items avant d'envoyer un devis."); return; }
   const t = calculerTotaux();
@@ -1074,28 +1085,17 @@ function ouvrirDevis(){
     <div class="lig total"><span>Notre offre au client</span><span>${fmt(t.offre)}</span></div>
   `;
   const zoneMsg = document.getElementById('devisMessage');
-  if (!zoneMsg.value.trim()){
-    zoneMsg.value = `Bonjour, après avoir pris connaissance de votre lot, voici le prix que nous pouvons vous payer : ${fmt(t.offre)}. Veuillez communiquer avec nous pour aller de l'avant.`;
-  }
+  const nomClient = document.getElementById('devisNomClient').value;
+  zoneMsg.value = messageParDefaut(nomClient, fmt(t.offre));
   document.getElementById('modalDevis').classList.add('visible');
 }
 
 function fermerDevis(){ document.getElementById('modalDevis').classList.remove('visible'); }
 
 function texteDevis(){
-  const nomClient = document.getElementById('devisNomClient').value.trim();
-  const t = calculerTotaux();
-  let message = document.getElementById('devisMessage').value.trim();
-  if (!message){
-    message = `Bonjour, après avoir pris connaissance de votre lot, voici le prix que nous pouvons vous payer : ${fmt(t.offre)}. Veuillez communiquer avec nous pour aller de l'avant.`;
-  }
-  const salutation = nomClient
-    ? message.replace(/^Bonjour,?\s*/i, `Bonjour ${nomClient},\n\n`)
-    : message;
+  const message = document.getElementById('devisMessage').value.trim();
 
-  return `${salutation}
-
-Merci de votre confiance,
+  return `${message}
 
 —
 Eric Després
@@ -1111,21 +1111,42 @@ Demander une soumission : https://technolot.ca/soumission
 `;
 }
 
-function envoyerDevis(){
+async function envoyerDevis(){
   const email = document.getElementById('devisEmail').value.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
     toast("Entre un courriel valide pour le client.");
     return;
   }
+  const message = document.getElementById('devisMessage').value.trim();
+  if (!message){ toast("Le message est vide."); return; }
   const nomLot = document.getElementById('nomLot').value.trim() || 'votre lot';
-  const sujet = `Offre TechnoLot — ${nomLot}`;
-  const corps = texteDevis();
-  const url = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
-  window.location.href = url;
-  setTimeout(() => {
+  const nomClient = document.getElementById('devisNomClient').value.trim();
+
+  const btn = document.querySelector('#modalDevis .btn-principal');
+  const labelOrig = btn ? btn.textContent : '';
+  if (btn){ btn.disabled = true; btn.textContent = 'Envoi…'; }
+
+  try {
+    const rep = await fetch('/admin/calculatrice/api/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ to: email, nomClient, nomLot, message }),
+    });
+    const data = await rep.json().catch(() => null);
+    if (!rep.ok || !data || data.ok !== true){
+      const msg = (data && data.error) ||
+        (rep.redirected ? "Ta session admin a expiré — reconnecte-toi." : "L'envoi a échoué.");
+      toast(msg);
+      return;
+    }
     fermerDevis();
-    toast("Courriel prêt dans ton logiciel de mail ✓", 'vert');
-  }, 400);
+    toast("Devis envoyé à " + email + " ✓", 'vert');
+  } catch (e){
+    toast("Impossible de joindre le serveur.");
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = labelOrig; }
+  }
 }
 
 function copierDevis(){

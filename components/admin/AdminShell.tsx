@@ -6,6 +6,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Menu, X } from "lucide-react";
 import AdminNav from "@/components/admin/AdminNav";
+import CalculatriceOverlay from "@/components/admin/CalculatriceOverlay";
 
 export default function AdminShell({
   email,
@@ -47,6 +48,9 @@ export default function AdminShell({
           {children}
         </div>
       </div>
+
+      {/* Overlay calculatrice global — ouvert par événement custom */}
+      <CalculatriceOverlay />
 
       {/* Drawer mobile */}
       <AnimatePresence>
