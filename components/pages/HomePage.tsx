@@ -152,6 +152,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
           src="/photos/circuit.jpg"
           alt=""
           fill
+          quality={50}
           sizes="100vw"
           className="object-cover opacity-[0.18]"
         />

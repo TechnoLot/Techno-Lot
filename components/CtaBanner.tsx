@@ -30,6 +30,7 @@ export default function CtaBanner({
             src="/photos/circuit.jpg"
             alt=""
             fill
+            quality={40}
             sizes="(min-width: 1280px) 1152px, 100vw"
             className="object-cover opacity-[0.07]"
           />

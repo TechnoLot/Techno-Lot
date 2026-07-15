@@ -27,6 +27,7 @@ export default function PageHero({
             alt=""
             fill
             priority
+            quality={45}
             sizes="100vw"
             className="object-cover opacity-30 saturate-[0.85]"
           />
