@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import {
   motion,
   useReducedMotion,
@@ -10,9 +11,14 @@ import {
 } from "framer-motion";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import HeroBackground from "@/components/HeroBackground";
-import ParticleField from "@/components/ParticleField";
 import Magnetic from "@/components/Magnetic";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
+
+// Décor purement esthétique : chargé après le rendu initial pour ne pas
+// alourdir le JavaScript critique ni retarder l'interactivité de la page.
+const ParticleField = dynamic(() => import("@/components/ParticleField"), {
+  ssr: false,
+});
 
 const ease = [0.21, 0.47, 0.32, 0.98] as const;
 
@@ -30,7 +36,7 @@ export default function Hero({ locale }: { locale: Locale }) {
     animate: reduceMotion
       ? { opacity: 1 }
       : { opacity: 1, y: 0, filter: "blur(0px)" },
-    transition: { duration: 0.7, delay, ease },
+    transition: { duration: 0.45, delay, ease },
   });
 
   const startWords = t.hero.titleStart.split(" ");
@@ -67,7 +73,7 @@ export default function Hero({ locale }: { locale: Locale }) {
         <motion.div
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.9, ease }}
+          transition={{ duration: 0.5, ease }}
           className="relative"
         >
           <div
@@ -100,7 +106,7 @@ export default function Hero({ locale }: { locale: Locale }) {
             <motion.span
               key={i}
               className="inline-block whitespace-pre"
-              {...fadeUp(0.35 + i * 0.07)}
+              {...fadeUp(0.1 + i * 0.03)}
             >
               {word}{" "}
             </motion.span>
@@ -110,7 +116,7 @@ export default function Hero({ locale }: { locale: Locale }) {
               <motion.span
                 key={`a-${i}`}
                 className="inline-block whitespace-pre text-accent"
-                {...fadeUp(0.35 + (startWords.length + i) * 0.07)}
+                {...fadeUp(0.1 + (startWords.length + i) * 0.03)}
               >
                 {word}
                 {i < accentWords.length - 1 ? " " : ""}
@@ -122,14 +128,14 @@ export default function Hero({ locale }: { locale: Locale }) {
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
               style={{ transformOrigin: "left" }}
-              transition={{ duration: 1.0, delay: 0.9, ease }}
+              transition={{ duration: 0.5, delay: 0.35, ease }}
             />
           </span>
         </h1>
 
         {/* Sous-titre : structure approuvée (gris • | vert • blanc) */}
         <motion.p
-          {...fadeUp(1.05)}
+          {...fadeUp(0.3)}
           className="mx-auto mt-6 max-w-3xl text-lg text-white"
         >
           <span className="text-slate-300">{t.hero.subtitleStart}</span>{" "}
@@ -138,7 +144,7 @@ export default function Hero({ locale }: { locale: Locale }) {
 
         {/* CTAs — bouton principal avec halo pulsant */}
         <motion.div
-          {...fadeUp(1.2)}
+          {...fadeUp(0.38)}
           className="mt-10 flex flex-col items-center gap-4 sm:flex-row"
         >
           <div className="relative">
@@ -176,7 +182,7 @@ export default function Hero({ locale }: { locale: Locale }) {
           href="#services"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1.8 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
           className="group absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-slate-500 transition-colors hover:text-accent"
           aria-label={t.hero.scrollAria}
         >
