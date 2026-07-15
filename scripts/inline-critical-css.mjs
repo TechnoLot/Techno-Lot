@@ -12,13 +12,26 @@
  *
  * Exécuté automatiquement après chaque build via le script npm "postbuild".
  */
-import { readdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  statSync,
+} from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const cssDir = join(root, ".next", "static", "css");
 const htmlDir = join(root, ".next", "server", "app");
+
+// Exécuté aussi en "prestart" : si le build n'a pas encore eu lieu (ou a
+// déjà été patché), on sort proprement sans faire échouer le démarrage.
+if (!existsSync(cssDir) || !existsSync(htmlDir)) {
+  console.log("[inline-critical-css] build absent — rien à faire.");
+  process.exit(0);
+}
 
 // Charge chaque fichier CSS généré, indexé par son nom public.
 const cssByHref = {};

@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "postbuild": "node scripts/inline-critical-css.mjs",
+    "build": "next build && node scripts/inline-critical-css.mjs",
+    "prestart": "node scripts/inline-critical-css.mjs",
     "start": "next start"
   },
   "dependencies": {
