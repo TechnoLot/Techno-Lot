@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Plus } from "lucide-react";
+import { Calculator, LayoutDashboard, Package, Plus } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const items: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
   { href: "/admin/lots", label: "Lots", icon: Package },
   { href: "/admin/lots/nouveau", label: "Nouveau lot", icon: Plus },
+  { href: "/admin/calculatrice", label: "Calculatrice", icon: Calculator },
 ];
 
 export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {

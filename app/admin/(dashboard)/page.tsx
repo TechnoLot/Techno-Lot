@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Calculator, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { PERIODS, type Lot, type PeriodKey } from "@/lib/admin/types";
 import { previousPeriodBounds, startOfPeriod } from "@/lib/admin/dates";
@@ -139,6 +139,13 @@ export default async function DashboardPage({
         </div>
         <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <PeriodPills current={period} />
+          <Link
+            href="/admin/calculatrice"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-semibold text-slate-200 transition hover:border-accent/40 hover:text-accent-bright"
+          >
+            <Calculator className="h-4 w-4" aria-hidden />
+            Calculatrice
+          </Link>
           <Link
             href="/admin/lots/nouveau"
             className="btn-primary !px-4 !py-2.5 !text-xs"
