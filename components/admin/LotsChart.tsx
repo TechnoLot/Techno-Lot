@@ -18,8 +18,9 @@ function buildBuckets(lots: Lot[], period: PeriodKey): Bucket[] {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  // Départ de la fenêtre à afficher
+  // Départ et fin de la fenêtre à afficher
   let start: Date;
+  let end = new Date(today);
   if (period === "all") {
     if (lots.length === 0) return [];
     const earliest = lots.reduce(
@@ -29,8 +30,15 @@ function buildBuckets(lots: Lot[], period: PeriodKey): Bucket[] {
     start = new Date(earliest + "T00:00:00Z");
   } else if (period === "month") {
     start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+  } else if (period === "lastmonth") {
+    start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
+    end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 0));
   } else if (period === "ytd") {
     start = new Date(Date.UTC(today.getUTCFullYear(), 0, 1));
+  } else if (period === "6m") {
+    start = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 6, today.getUTCDate()),
+    );
   } else {
     const back: Record<string, number> = { "7d": 6, "30d": 29, "3m": 89 };
     start = new Date(today);
@@ -39,7 +47,7 @@ function buildBuckets(lots: Lot[], period: PeriodKey): Bucket[] {
 
   const days = new Map<string, Bucket>();
   const cursor = new Date(start);
-  while (cursor <= today) {
+  while (cursor <= end) {
     const key = cursor.toISOString().slice(0, 10);
     days.set(key, { day: key, spent: 0, earned: 0 });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
@@ -92,11 +100,11 @@ export default function LotsChart({
         <div className="flex items-center gap-4 text-xs">
           <span className="flex items-center gap-2 text-slate-400">
             <span className="inline-block h-2 w-2 rounded-full bg-white/70" />
-            Investi
+            Acheté
           </span>
           <span className="flex items-center gap-2 text-slate-400">
             <span className="inline-block h-2 w-2 rounded-full bg-accent" />
-            Revenus
+            Vente
           </span>
         </div>
       </div>
@@ -159,7 +167,7 @@ export default function LotsChart({
                 itemStyle={{ color: "white", padding: "2px 0" }}
                 formatter={(value: number, name: string) => [
                   formatMoney(value),
-                  name === "spent" ? "Investi" : "Revenus",
+                  name === "spent" ? "Acheté" : "Vente",
                 ]}
                 labelFormatter={longDate}
               />

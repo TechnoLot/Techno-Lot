@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
 import { createClient } from "@/lib/supabase/server";
 import { PERIODS, type Lot, type PeriodKey } from "@/lib/admin/types";
-import { previousPeriodBounds, startOfPeriod } from "@/lib/admin/dates";
+import { endOfPeriod, previousPeriodBounds, startOfPeriod } from "@/lib/admin/dates";
 import PeriodPills from "@/components/admin/PeriodPills";
 import KpiCards, { type KpiSpec } from "@/components/admin/KpiCards";
 import LotsChart from "@/components/admin/LotsChart";
@@ -48,19 +48,21 @@ export default async function DashboardPage({
   const supabase = createClient();
 
   const start = startOfPeriod(period);
-  const query = supabase
+  const end = endOfPeriod(period);
+
+  let lotsQuery = supabase
     .from("lots")
     .select("*")
     .order("purchased_at", { ascending: false });
-  const { data: lotsRaw, error } = start
-    ? await query.gte("purchased_at", start)
-    : await query;
+  if (start) lotsQuery = lotsQuery.gte("purchased_at", start);
+  if (end) lotsQuery = lotsQuery.lte("purchased_at", end);
+  const { data: lotsRaw, error } = await lotsQuery;
   const lots = (lotsRaw ?? []) as Lot[];
 
-  const salesQuery = supabase.from("sales").select("sale_price, sold_at");
-  const { data: salesRaw } = start
-    ? await salesQuery.gte("sold_at", start)
-    : await salesQuery;
+  let salesQuery = supabase.from("sales").select("sale_price, sold_at");
+  if (start) salesQuery = salesQuery.gte("sold_at", start);
+  if (end) salesQuery = salesQuery.lte("sold_at", end);
+  const { data: salesRaw } = await salesQuery;
   const sales = (salesRaw ?? []) as Sale[];
 
   const { data: pendingRaw } = await supabase
@@ -103,13 +105,13 @@ export default async function DashboardPage({
       format: "count",
     },
     {
-      label: "Investi",
+      label: "Acheté",
       value: current.spent,
       prev: hasPrev ? prev.spent : null,
       format: "money",
     },
     {
-      label: "Revenus",
+      label: "Vente",
       value: current.revenue,
       prev: hasPrev ? prev.revenue : null,
       format: "money",
