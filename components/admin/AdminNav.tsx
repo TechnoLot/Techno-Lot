@@ -10,6 +10,7 @@ import {
   Plus,
   Send,
   Target,
+  Trophy,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { OPEN_CALCULATRICE_EVENT } from "@/components/admin/CalculatriceOverlay";
@@ -32,6 +33,7 @@ const items: NavItem[] = [
     action: "open-calculatrice",
   },
   { href: "/admin/crm", label: "Prospection", icon: Target },
+  { href: "/admin/crm/clients", label: "Clients", icon: Trophy },
   { href: "/admin/crm/relances", label: "Relances", icon: Send },
   { href: "/admin/crm/modeles", label: "Modèles courriel", icon: Mail },
 ];
