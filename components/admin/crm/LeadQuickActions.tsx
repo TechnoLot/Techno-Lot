@@ -2,7 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, Check, Loader2, StickyNote, X } from "lucide-react";
+import {
+  CalendarClock,
+  Check,
+  Loader2,
+  StickyNote,
+  Trash2,
+  X,
+} from "lucide-react";
 import { updateCompanyNotes, updateLeadStatus } from "@/lib/crm/actions";
 import {
   LEAD_STATUSES,
@@ -66,6 +73,24 @@ export default function LeadQuickActions({
         setError(res.error);
       } else {
         setFollowupDate(res.followupOn ?? "");
+        setNoteOpen(false);
+        router.refresh();
+      }
+    });
+  }
+
+  function deleteNote() {
+    setBusy("note");
+    setError(null);
+    startTransition(async () => {
+      // Note vide → le serveur efface aussi la date de rappel associée.
+      const res = await updateCompanyNotes(companyId, "", null);
+      setBusy(null);
+      if (!res.ok) {
+        setError(res.error);
+      } else {
+        setNote("");
+        setFollowupDate("");
         setNoteOpen(false);
         router.refresh();
       }
@@ -196,6 +221,19 @@ export default function LeadQuickActions({
             )}
           </label>
           <div className="flex justify-end gap-1.5">
+            {hasNote && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={deleteNote}
+                title="Supprimer la note (et son rappel planifié)"
+                aria-label="Supprimer la note"
+                className="mr-auto inline-flex h-6 items-center justify-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-red-300 transition-colors hover:border-red-500/60 disabled:opacity-50"
+              >
+                <Trash2 className="h-3 w-3" aria-hidden />
+                Supprimer
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setNoteOpen(false)}

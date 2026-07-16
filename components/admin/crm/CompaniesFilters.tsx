@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Search } from "lucide-react";
-import { RESEARCH_STATUS_LABELS } from "@/lib/crm/types";
+import { LEAD_STATUS_LABELS, RESEARCH_STATUS_LABELS } from "@/lib/crm/types";
 
 const SCORE_TABS: { key: string; label: string }[] = [
   { key: "all", label: "Tous" },
@@ -19,6 +19,7 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
   const score = params?.get("score") ?? "all";
   const region = params?.get("region") ?? "all";
   const status = params?.get("status") ?? "all";
+  const suivi = params?.get("suivi") ?? "all";
   const partners = params?.get("partenaires") === "1";
   const [, startTransition] = useTransition();
 
@@ -89,6 +90,25 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
             </button>
           ))}
         </div>
+
+        <select
+          value={suivi}
+          onChange={(e) =>
+            push((p) => {
+              if (e.target.value === "all") p.delete("suivi");
+              else p.set("suivi", e.target.value);
+            })
+          }
+          aria-label="Filtrer par suivi"
+          className={selectClass}
+        >
+          <option value="all">Tous les suivis</option>
+          {Object.entries(LEAD_STATUS_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
+        </select>
 
         <select
           value={region}

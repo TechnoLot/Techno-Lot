@@ -35,6 +35,7 @@ export default async function CrmPage({
     score?: string;
     region?: string;
     status?: string;
+    suivi?: string;
     partenaires?: string;
   };
 }) {
@@ -62,6 +63,7 @@ export default async function CrmPage({
   const minScore = Number(searchParams.score) || null;
   const region = searchParams.region;
   const status = searchParams.status;
+  const suivi = searchParams.suivi;
   const includePartners = searchParams.partenaires === "1";
 
   const companies = all.filter((c) => {
@@ -71,6 +73,7 @@ export default async function CrmPage({
     if (minScore && (c.fit_score ?? 0) < minScore) return false;
     if (region && c.region !== region) return false;
     if (status && c.research_status !== status) return false;
+    if (suivi && c.lead_status !== suivi) return false;
     return true;
   });
 
