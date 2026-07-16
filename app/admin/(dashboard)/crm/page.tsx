@@ -6,10 +6,19 @@ import CompaniesTable from "@/components/admin/crm/CompaniesTable";
 import FollowupDoneButton from "@/components/admin/crm/FollowupDoneButton";
 import {
   LEAD_STATUS_LABELS,
+  daysSince,
   followupOverdueDays,
   type Company,
   type Contact,
 } from "@/lib/crm/types";
+
+function formatFollowupDate(iso: string): string {
+  return new Intl.DateTimeFormat("fr-CA", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(iso + "T00:00:00"));
+}
 
 export const dynamic = "force-dynamic";
 
@@ -76,18 +85,41 @@ export default async function CrmPage({
     }
   }
 
-  // Rappels de suivi : leads contactés (≥ 7 j) ou intéressés (≥ 3 j) sans
-  // changement de statut depuis — triés du plus en retard au moins en retard.
-  const dueFollowups = all
-    .filter((c) => !c.is_partner_not_client)
-    .map((c) => ({ company: c, overdue: followupOverdueDays(c) }))
-    .filter((x): x is { company: Company; overdue: number } => x.overdue !== null)
-    .sort(
-      (a, b) =>
-        b.overdue - a.overdue ||
-        (b.company.lead_status === "interested" ? 1 : 0) -
-          (a.company.lead_status === "interested" ? 1 : 0),
-    );
+  // Rappels de suivi, deux sources :
+  // 1. date planifiée (next_followup_on — saisie ou détectée dans la note) ;
+  // 2. délai après changement de statut (contacté ≥ 7 j, intéressé ≥ 3 j).
+  // Triés du plus en retard au moins en retard.
+  const todayIso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+  }).format(new Date());
+
+  type Followup = { company: Company; overdue: number; plannedOn: string | null };
+  const dueFollowups: Followup[] = [];
+  const upcomingFollowups: { company: Company; plannedOn: string }[] = [];
+
+  for (const c of all) {
+    if (c.is_partner_not_client) continue;
+    const planned = c.next_followup_on;
+    if (planned && planned > todayIso) {
+      upcomingFollowups.push({ company: c, plannedOn: planned });
+      continue;
+    }
+    const noteOverdue = planned ? daysSince(planned + "T00:00:00") : null;
+    const statusOverdue = followupOverdueDays(c);
+    if (noteOverdue === null && statusOverdue === null) continue;
+    dueFollowups.push({
+      company: c,
+      overdue: Math.max(noteOverdue ?? 0, statusOverdue ?? 0),
+      plannedOn: planned,
+    });
+  }
+  dueFollowups.sort(
+    (a, b) =>
+      b.overdue - a.overdue ||
+      (b.company.lead_status === "interested" ? 1 : 0) -
+        (a.company.lead_status === "interested" ? 1 : 0),
+  );
+  upcomingFollowups.sort((a, b) => a.plannedOn.localeCompare(b.plannedOn));
 
   // Mini-KPIs du matin
   const callDone = contacts.filter((c) => c.stage === "call_done").length;
@@ -142,18 +174,19 @@ export default async function CrmPage({
         ))}
       </div>
 
-      {/* Notifications de suivi : contacté ≥ 7 j / intéressé ≥ 3 j */}
-      {dueFollowups.length > 0 && (
+      {/* Notifications de suivi : date planifiée (note) ou délai de statut */}
+      {(dueFollowups.length > 0 || upcomingFollowups.length > 0) && (
         <div className="mb-6 rounded-2xl border border-amber-400/25 bg-amber-400/5 p-5">
           <div className="flex items-center gap-2">
             <BellRing className="h-4 w-4 text-amber-300" aria-hidden />
             <p className="font-display text-sm font-semibold uppercase tracking-wider text-amber-200">
-              {dueFollowups.length} suivi{dueFollowups.length > 1 ? "s" : ""} à
-              faire
+              {dueFollowups.length > 0
+                ? `${dueFollowups.length} suivi${dueFollowups.length > 1 ? "s" : ""} à faire`
+                : "Suivis planifiés"}
             </p>
           </div>
           <ul className="mt-3 flex flex-col gap-1.5">
-            {dueFollowups.slice(0, 8).map(({ company: c, overdue }) => (
+            {dueFollowups.slice(0, 8).map(({ company: c, overdue, plannedOn }) => (
               <li
                 key={c.id}
                 className="flex flex-wrap items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 transition-colors hover:border-amber-400/40 hover:bg-white/[0.04]"
@@ -175,15 +208,19 @@ export default async function CrmPage({
                     {LEAD_STATUS_LABELS[c.lead_status]}
                   </span>
                   <span className="text-xs text-amber-200/80">
-                    {overdue === 0
-                      ? "suivi dû aujourd'hui"
-                      : `en retard de ${overdue} jour${overdue > 1 ? "s" : ""}`}
+                    {plannedOn
+                      ? overdue === 0
+                        ? "à rappeler aujourd'hui"
+                        : `à rappeler depuis ${formatFollowupDate(plannedOn)} (${overdue} j de retard)`
+                      : overdue === 0
+                        ? "suivi dû aujourd'hui"
+                        : `en retard de ${overdue} jour${overdue > 1 ? "s" : ""}`}
                   </span>
                   {c.main_phone && (
                     <span className="text-xs text-slate-400">{c.main_phone}</span>
                   )}
                 </Link>
-                <FollowupDoneButton companyId={c.id} status={c.lead_status} />
+                <FollowupDoneButton companyId={c.id} />
               </li>
             ))}
           </ul>
@@ -193,6 +230,36 @@ export default async function CrmPage({
               {dueFollowups.length - 8 > 1 ? "s" : ""} — mets à jour les statuts
               pour faire redescendre la liste.
             </p>
+          )}
+
+          {/* Rappels planifiés à venir (note datée ou date manuelle) */}
+          {upcomingFollowups.length > 0 && (
+            <div className="mt-4 border-t border-amber-400/15 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/60">
+                À venir
+              </p>
+              <ul className="mt-2 flex flex-col gap-1">
+                {upcomingFollowups.slice(0, 5).map(({ company: c, plannedOn }) => (
+                  <li key={c.id}>
+                    <Link
+                      href={`/admin/crm/${c.id}`}
+                      className="group inline-flex flex-wrap items-center gap-x-2 text-xs text-slate-400 hover:text-amber-100"
+                    >
+                      <span className="font-medium text-slate-300 group-hover:text-amber-100">
+                        {c.name}
+                      </span>
+                      <span>— {formatFollowupDate(plannedOn)}</span>
+                    </Link>
+                  </li>
+                ))}
+                {upcomingFollowups.length > 5 && (
+                  <li className="text-xs text-amber-200/60">
+                    + {upcomingFollowups.length - 5} autre
+                    {upcomingFollowups.length - 5 > 1 ? "s" : ""}
+                  </li>
+                )}
+              </ul>
+            </div>
           )}
         </div>
       )}

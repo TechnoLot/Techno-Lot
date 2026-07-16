@@ -98,6 +98,7 @@ export default function CompaniesTable({
                     companyId={c.id}
                     status={c.lead_status}
                     notes={c.notes}
+                    followupOn={c.next_followup_on}
                     compact
                   />
                 </Td>

@@ -159,6 +159,7 @@ export default async function CompanyPage({
               companyId={company.id}
               status={company.lead_status}
               notes={company.notes}
+              followupOn={company.next_followup_on}
             />
           </div>
         </div>

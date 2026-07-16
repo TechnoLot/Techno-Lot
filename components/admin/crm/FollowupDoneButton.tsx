@@ -3,20 +3,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
-import { updateLeadStatus } from "@/lib/crm/actions";
-import type { LeadStatus } from "@/lib/crm/types";
+import { markFollowupDone } from "@/lib/crm/actions";
 
 /**
- * « Suivi fait » : réenregistre le même statut, ce qui remet à zéro le
- * compteur (lead_status_changed_at = maintenant) et fait disparaître le
- * rappel jusqu'au prochain délai.
+ * « Suivi fait » : remet le compteur de statut à zéro et efface la date
+ * de rappel planifiée — le rappel disparaît jusqu'au prochain délai ou
+ * à la prochaine note datée.
  */
 export default function FollowupDoneButton({
   companyId,
-  status,
 }: {
   companyId: string;
-  status: LeadStatus;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -29,7 +26,7 @@ export default function FollowupDoneButton({
       onClick={() => {
         setError(false);
         startTransition(async () => {
-          const res = await updateLeadStatus(companyId, status);
+          const res = await markFollowupDone(companyId);
           if (!res.ok) setError(true);
           else router.refresh();
         });

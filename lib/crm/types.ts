@@ -54,6 +54,7 @@ export type Company = {
   fit_score: number | null;
   lead_status: LeadStatus;
   lead_status_changed_at: string;
+  next_followup_on: string | null; // date « YYYY-MM-DD » de rappel planifié
 };
 
 /**

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, StickyNote, X } from "lucide-react";
+import { CalendarClock, Check, Loader2, StickyNote, X } from "lucide-react";
 import { updateCompanyNotes, updateLeadStatus } from "@/lib/crm/actions";
 import {
   LEAD_STATUSES,
@@ -26,11 +26,13 @@ export default function LeadQuickActions({
   companyId,
   status,
   notes,
+  followupOn,
   compact = false,
 }: {
   companyId: string;
   status: LeadStatus;
   notes: string | null;
+  followupOn: string | null;
   compact?: boolean;
 }) {
   const router = useRouter();
@@ -38,6 +40,7 @@ export default function LeadQuickActions({
   const [busy, setBusy] = useState<"status" | "note" | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState(notes ?? "");
+  const [followupDate, setFollowupDate] = useState(followupOn ?? "");
   const [error, setError] = useState<string | null>(null);
 
   function saveStatus(next: LeadStatus) {
@@ -55,15 +58,26 @@ export default function LeadQuickActions({
     setBusy("note");
     setError(null);
     startTransition(async () => {
-      const res = await updateCompanyNotes(companyId, note);
+      // Sans date choisie, le serveur détecte « à rappeler lundi »,
+      // « le 21 juillet », « dans 2 semaines »… dans la note.
+      const res = await updateCompanyNotes(companyId, note, followupDate || null);
       setBusy(null);
       if (!res.ok) {
         setError(res.error);
       } else {
+        setFollowupDate(res.followupOn ?? "");
         setNoteOpen(false);
         router.refresh();
       }
     });
+  }
+
+  function formatFollowup(iso: string): string {
+    return new Intl.DateTimeFormat("fr-CA", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(new Date(iso + "T00:00:00"));
   }
 
   const hasNote = !!(notes && notes.trim());
@@ -132,6 +146,16 @@ export default function LeadQuickActions({
         >
           <StickyNote className="h-3 w-3" aria-hidden />
         </button>
+
+        {followupOn && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200"
+            title={`Rappel planifié le ${followupOn}`}
+          >
+            <CalendarClock className="h-3 w-3" aria-hidden />
+            {formatFollowup(followupOn)}
+          </span>
+        )}
       </div>
 
       {!compact && hasNote && !noteOpen && (
@@ -146,10 +170,31 @@ export default function LeadQuickActions({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={compact ? 2 : 3}
-            placeholder="Note sur ce lead…"
+            placeholder="Note sur ce lead… (« à rappeler lundi » planifie un suivi)"
             className="field !px-3 !py-2 text-xs"
             autoFocus
           />
+          <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
+            Rappel
+            <input
+              type="date"
+              value={followupDate}
+              onChange={(e) => setFollowupDate(e.target.value)}
+              aria-label="Date de rappel (laisser vide pour détecter depuis la note)"
+              className="field !w-auto !px-2 !py-1 text-xs [color-scheme:dark]"
+            />
+            {followupDate && (
+              <button
+                type="button"
+                onClick={() => setFollowupDate("")}
+                aria-label="Effacer la date de rappel"
+                className="text-slate-500 hover:text-white"
+              >
+                <X className="h-3 w-3" aria-hidden />
+              </button>
+            )}
+          </label>
           <div className="flex justify-end gap-1.5">
             <button
               type="button"

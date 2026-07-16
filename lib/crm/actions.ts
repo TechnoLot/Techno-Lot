@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
 import { renderTemplate, sendProspectEmail } from "@/lib/crm/email";
+import { parseFollowupDate } from "@/lib/crm/parse-followup-date";
 import type {
   Company,
   Contact,
@@ -54,16 +55,53 @@ export async function updateLeadStatus(
   return { ok: true };
 }
 
-/** Note libre sur la compagnie (champ notes), éditable depuis la liste et la fiche. */
+/**
+ * Note libre sur la compagnie + date de rappel. Si `followupOn` est vide,
+ * on tente de détecter une date dans la note (« à rappeler lundi »,
+ * « le 21 juillet », « dans 2 semaines »…) ; la date détectée alimente
+ * le panneau « Suivis à faire ».
+ */
 export async function updateCompanyNotes(
   companyId: string,
   notes: string,
-): Promise<Result> {
+  followupOn?: string | null,
+): Promise<{ ok: true; followupOn: string | null } | { ok: false; error: string }> {
   const { supabase } = await requireAdmin();
+
+  const trimmed = notes.trim();
+  const resolved =
+    followupOn?.trim() || (trimmed ? parseFollowupDate(trimmed) : null);
 
   const { error } = await supabase
     .from("companies")
-    .update({ notes: notes.trim() || null, updated_at: new Date().toISOString() })
+    .update({
+      notes: trimmed || null,
+      next_followup_on: resolved,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm(companyId);
+  return { ok: true, followupOn: resolved };
+}
+
+/**
+ * « Suivi fait » : remet le compteur de statut à zéro et efface la date
+ * de rappel planifiée — le lead disparaît du panneau jusqu'au prochain
+ * délai ou à la prochaine note datée.
+ */
+export async function markFollowupDone(companyId: string): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("companies")
+    .update({
+      lead_status_changed_at: now,
+      next_followup_on: null,
+      updated_at: now,
+    })
     .eq("id", companyId);
   if (error) return { ok: false, error: error.message };
 
