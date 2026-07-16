@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { RefreshCw, Search, Shuffle } from "lucide-react";
 import { LEAD_STATUS_LABELS, RESEARCH_STATUS_LABELS } from "@/lib/crm/types";
 
 const SCORE_TABS: { key: string; label: string }[] = [
@@ -21,6 +21,7 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
   const status = params?.get("status") ?? "all";
   const suivi = params?.get("suivi") ?? "all";
   const partners = params?.get("partenaires") === "1";
+  const shuffled = params?.get("ordre") === "aleatoire";
   const [, startTransition] = useTransition();
 
   function push(mutate: (p: URLSearchParams) => void) {
@@ -147,6 +148,51 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
             </option>
           ))}
         </select>
+
+        {/* Ordre aléatoire : stable tant qu'on ne relance pas le mélange */}
+        <div className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            aria-pressed={shuffled}
+            title={
+              shuffled
+                ? "Revenir au tri par score"
+                : "Mélanger les leads aléatoirement"
+            }
+            onClick={() =>
+              push((p) => {
+                if (shuffled) {
+                  p.delete("ordre");
+                  p.delete("seed");
+                } else {
+                  p.set("ordre", "aleatoire");
+                  p.set("seed", Date.now().toString(36));
+                }
+              })
+            }
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors ${
+              shuffled
+                ? "border-accent/50 bg-accent/15 text-accent-bright shadow-glow"
+                : "border-white/10 bg-white/[0.04] text-slate-400 hover:text-white"
+            }`}
+          >
+            <Shuffle className="h-3.5 w-3.5" aria-hidden />
+            Aléatoire
+          </button>
+          {shuffled && (
+            <button
+              type="button"
+              title="Relancer le mélange"
+              aria-label="Relancer le mélange"
+              onClick={() =>
+                push((p) => p.set("seed", Date.now().toString(36)))
+              }
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-400 transition-colors hover:border-accent/40 hover:text-accent-bright"
+            >
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          )}
+        </div>
 
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           <input

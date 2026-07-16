@@ -12,6 +12,33 @@ import {
   type Contact,
 } from "@/lib/crm/types";
 
+/**
+ * Mélange déterministe (Fisher-Yates + PRNG mulberry32 dérivé du seed) :
+ * l'ordre reste le même tant qu'on ne relance pas le mélange, même si la
+ * page se rafraîchit après une action.
+ */
+function seededShuffle<T>(items: T[], seed: string): T[] {
+  let h = 1779033703 ^ seed.length;
+  for (let i = 0; i < seed.length; i++) {
+    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let state = h >>> 0;
+  const rand = () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 function formatFollowupDate(iso: string): string {
   return new Intl.DateTimeFormat("fr-CA", {
     weekday: "long",
@@ -37,6 +64,8 @@ export default async function CrmPage({
     status?: string;
     suivi?: string;
     partenaires?: string;
+    ordre?: string;
+    seed?: string;
   };
 }) {
   const supabase = createClient();
@@ -76,6 +105,13 @@ export default async function CrmPage({
     if (suivi && c.lead_status !== suivi) return false;
     return true;
   });
+
+  // Ordre aléatoire demandé : on remplace le tri par score par un mélange
+  // stable (seed dans l'URL, relancé par le bouton ↻).
+  const companiesOrdered =
+    searchParams.ordre === "aleatoire"
+      ? seededShuffle(companies, searchParams.seed ?? "technolot")
+      : companies;
 
   const regions = Array.from(
     new Set(all.map((c) => c.region).filter((r): r is string => !!r)),
@@ -276,7 +312,7 @@ export default async function CrmPage({
         {!includePartners && " (partenaires masqués)"}
       </p>
 
-      <CompaniesTable companies={companies} contactCounts={contactCounts} />
+      <CompaniesTable companies={companiesOrdered} contactCounts={contactCounts} />
     </div>
   );
 }
