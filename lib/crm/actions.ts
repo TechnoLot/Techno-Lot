@@ -39,9 +39,14 @@ export async function updateLeadStatus(
 ): Promise<Result> {
   const { supabase } = await requireAdmin();
 
+  const now = new Date().toISOString();
   const { error } = await supabase
     .from("companies")
-    .update({ lead_status: status, updated_at: new Date().toISOString() })
+    .update({
+      lead_status: status,
+      lead_status_changed_at: now,
+      updated_at: now,
+    })
     .eq("id", companyId);
   if (error) return { ok: false, error: error.message };
 

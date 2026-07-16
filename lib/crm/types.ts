@@ -53,7 +53,36 @@ export type Company = {
   main_phone: string | null;
   fit_score: number | null;
   lead_status: LeadStatus;
+  lead_status_changed_at: string;
 };
+
+/**
+ * Délai (en jours) avant qu'un lead contacté/intéressé remonte dans les
+ * rappels de suivi. Un lead « intéressé » se relance plus vite.
+ */
+export const FOLLOWUP_DELAY_DAYS: Partial<Record<LeadStatus, number>> = {
+  interested: 3,
+  contacted: 7,
+};
+
+/** Jours entiers écoulés depuis une date ISO. */
+export function daysSince(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
+/**
+ * Nombre de jours de retard de suivi d'un lead (0 = dû aujourd'hui,
+ * null = aucun suivi requis pour ce statut ou pas encore dû).
+ */
+export function followupOverdueDays(company: {
+  lead_status: LeadStatus;
+  lead_status_changed_at: string;
+}): number | null {
+  const delay = FOLLOWUP_DELAY_DAYS[company.lead_status];
+  if (delay == null) return null;
+  const overdue = daysSince(company.lead_status_changed_at) - delay;
+  return overdue >= 0 ? overdue : null;
+}
 
 export type Contact = {
   id: string;
