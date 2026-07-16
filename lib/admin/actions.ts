@@ -98,11 +98,17 @@ export async function updateLot(
   return { ok: true };
 }
 
-/** Supprime un lot et redirige vers la liste. */
-export async function deleteLot(id: string): Promise<void> {
+/**
+ * Supprime un lot et redirige vers la liste. En cas d'échec (ex. :
+ * contrainte de clé étrangère), renvoie l'erreur au lieu de lancer une
+ * exception — sinon Next affiche une page « server-side exception ».
+ */
+export async function deleteLot(
+  id: string,
+): Promise<{ ok: false; error: string } | never> {
   const { supabase } = await requireAdmin();
   const { error } = await supabase.from("lots").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return { ok: false, error: error.message };
 
   revalidatePath("/admin");
   revalidatePath("/admin/lots");

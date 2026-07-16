@@ -6,6 +6,7 @@ import { deleteLot } from "@/lib/admin/actions";
 
 export default function DeleteLotButton({ id }: { id: string }) {
   const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   // Le mode "confirmation" se ré-arme après 3 s d'inactivité
@@ -20,12 +21,24 @@ export default function DeleteLotButton({ id }: { id: string }) {
       setConfirming(true);
       return;
     }
+    setError(null);
     startTransition(async () => {
-      await deleteLot(id);
+      // En cas de succès, deleteLot redirige et ne retourne jamais.
+      const res = await deleteLot(id);
+      if (res && !res.ok) setError(res.error);
     });
   }
 
   return (
+    <>
+      {error && (
+        <p
+          role="alert"
+          className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+        >
+          Suppression impossible : {error}
+        </p>
+      )}
     <button
       type="button"
       onClick={handleClick}
@@ -48,5 +61,6 @@ export default function DeleteLotButton({ id }: { id: string }) {
         </>
       )}
     </button>
+    </>
   );
 }
