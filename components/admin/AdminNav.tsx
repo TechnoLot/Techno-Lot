@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BellRing,
   Calculator,
   LayoutDashboard,
   Mail,
@@ -33,6 +34,7 @@ const items: NavItem[] = [
     action: "open-calculatrice",
   },
   { href: "/admin/crm", label: "Prospection", icon: Target },
+  { href: "/admin/crm/suivis", label: "Suivis à faire", icon: BellRing },
   { href: "/admin/crm/clients", label: "Clients", icon: Trophy },
   { href: "/admin/crm/relances", label: "Relances", icon: Send },
   { href: "/admin/crm/modeles", label: "Modèles courriel", icon: Mail },
