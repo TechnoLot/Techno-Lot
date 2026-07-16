@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   BadgeCheck,
@@ -12,12 +12,14 @@ import {
   Send,
   Star,
   StickyNote,
+  Trash2,
   Trophy,
 } from "lucide-react";
 import StageBadge from "@/components/admin/crm/StageBadge";
 import VerifiedBadge from "@/components/admin/crm/VerifiedBadge";
 import {
   convertToClient,
+  deleteContact,
   logActivity,
   markVerified,
   sendTemplateEmail,
@@ -40,6 +42,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
   const [success, setSuccess] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function run(
     key: string,
@@ -63,6 +66,13 @@ export default function ContactCard({ contact }: { contact: Contact }) {
 
   const name = contactName(contact);
   const isWorking = pending || busy !== null;
+
+  // La confirmation de suppression se ré-arme après 3 s d'inactivité
+  useEffect(() => {
+    if (!confirmingDelete) return;
+    const timeout = setTimeout(() => setConfirmingDelete(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [confirmingDelete]);
 
   return (
     <div className="glass p-5">
@@ -330,6 +340,32 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             Voir le lot
           </a>
         )}
+
+        <button
+          type="button"
+          disabled={isWorking}
+          onClick={() => {
+            if (!confirmingDelete) {
+              setConfirmingDelete(true);
+              return;
+            }
+            setConfirmingDelete(false);
+            run("delete", () => deleteContact(contact.id));
+          }}
+          title="Supprime le contact et son historique (le lot lié n'est pas touché)"
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+            confirmingDelete
+              ? "border-red-500/60 bg-red-500/20 text-red-200"
+              : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-red-500/40 hover:text-red-300"
+          }`}
+        >
+          {busy === "delete" ? (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+          ) : (
+            <Trash2 className="h-3 w-3" aria-hidden />
+          )}
+          {confirmingDelete ? "Confirmer" : "Supprimer"}
+        </button>
       </div>
 
       {noteOpen && (

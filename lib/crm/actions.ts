@@ -66,6 +66,25 @@ export async function createContact(input: {
   return { ok: true };
 }
 
+/**
+ * Supprime un contact et son historique d'activités (FK en cascade).
+ * Le lot lié éventuel n'est pas touché.
+ */
+export async function deleteContact(contactId: string): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .delete()
+    .eq("id", contactId)
+    .select("company_id")
+    .maybeSingle();
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm(data?.company_id);
+  return { ok: true };
+}
+
 /** Change le stage d'un contact (menu déroulant sur la fiche). */
 export async function updateContactStage(
   contactId: string,
