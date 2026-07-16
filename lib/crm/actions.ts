@@ -9,6 +9,7 @@ import type {
   Contact,
   ContactStage,
   EmailTemplate,
+  LeadStatus,
   TemplateType,
 } from "@/lib/crm/types";
 
@@ -29,6 +30,40 @@ function revalidateCrm(companyId?: string | null) {
   revalidatePath("/admin/crm");
   revalidatePath("/admin/crm/relances");
   if (companyId) revalidatePath(`/admin/crm/${companyId}`);
+}
+
+/** Statut rapide du lead : non contacté / contacté / intéressé / pas intéressé. */
+export async function updateLeadStatus(
+  companyId: string,
+  status: LeadStatus,
+): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ lead_status: status, updated_at: new Date().toISOString() })
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm(companyId);
+  return { ok: true };
+}
+
+/** Note libre sur la compagnie (champ notes), éditable depuis la liste et la fiche. */
+export async function updateCompanyNotes(
+  companyId: string,
+  notes: string,
+): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
+    .from("companies")
+    .update({ notes: notes.trim() || null, updated_at: new Date().toISOString() })
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm(companyId);
+  return { ok: true };
 }
 
 /** Ajoute un contact manuellement sur une compagnie. */

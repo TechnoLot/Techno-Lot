@@ -5,6 +5,12 @@ export type ResearchStatus =
   | "no_it_contact"
   | "converted";
 
+export type LeadStatus =
+  | "not_contacted"
+  | "contacted"
+  | "interested"
+  | "not_interested";
+
 export type ContactStage =
   | "new"
   | "contacted"
@@ -46,6 +52,7 @@ export type Company = {
   is_partner_not_client: boolean;
   main_phone: string | null;
   fit_score: number | null;
+  lead_status: LeadStatus;
 };
 
 export type Contact = {
@@ -113,6 +120,20 @@ export const STAGES: ContactStage[] = [
   "sequence_active",
   "converted",
   "lost",
+];
+
+export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
+  not_contacted: "Non contacté",
+  contacted: "Contacté",
+  interested: "Intéressé",
+  not_interested: "Pas intéressé",
+};
+
+export const LEAD_STATUSES: LeadStatus[] = [
+  "not_contacted",
+  "contacted",
+  "interested",
+  "not_interested",
 ];
 
 export const RESEARCH_STATUS_LABELS: Record<ResearchStatus, string> = {

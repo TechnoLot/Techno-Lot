@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, Globe, Handshake, Phone, Users } from "lucide-react";
 import FitScoreBadge from "@/components/admin/crm/FitScoreBadge";
+import LeadQuickActions from "@/components/admin/crm/LeadQuickActions";
 import { RESEARCH_STATUS_LABELS, type Company } from "@/lib/crm/types";
 
 export default function CompaniesTable({
@@ -31,6 +32,7 @@ export default function CompaniesTable({
             <tr className="border-b border-white/10">
               <Th>Score</Th>
               <Th>Compagnie</Th>
+              <Th>Suivi</Th>
               <Th>Région</Th>
               <Th>Secteur</Th>
               <Th>Taille</Th>
@@ -90,6 +92,14 @@ export default function CompaniesTable({
                       )}
                     </div>
                   </RowLink>
+                </Td>
+                <Td>
+                  <LeadQuickActions
+                    companyId={c.id}
+                    status={c.lead_status}
+                    notes={c.notes}
+                    compact
+                  />
                 </Td>
                 <Td>
                   <span className="text-sm text-slate-300 whitespace-nowrap">

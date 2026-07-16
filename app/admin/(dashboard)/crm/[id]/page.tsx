@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import FitScoreBadge from "@/components/admin/crm/FitScoreBadge";
+import LeadQuickActions from "@/components/admin/crm/LeadQuickActions";
 import ContactCard from "@/components/admin/crm/ContactCard";
 import AddContactForm from "@/components/admin/crm/AddContactForm";
 import ActivityTimeline from "@/components/admin/crm/ActivityTimeline";
@@ -152,11 +153,14 @@ export default async function CompanyPage({
             </div>
           )}
 
-          {company.notes && (
-            <p className="mt-4 max-w-2xl rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-sm text-slate-400">
-              {company.notes}
-            </p>
-          )}
+          {/* Suivi rapide du lead : statut + note libre */}
+          <div className="mt-4">
+            <LeadQuickActions
+              companyId={company.id}
+              status={company.lead_status}
+              notes={company.notes}
+            />
+          </div>
         </div>
       </header>
 
