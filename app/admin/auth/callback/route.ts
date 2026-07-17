@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   const type = url.searchParams.get("type") as EmailOtpType | null;
   const supabaseError = url.searchParams.get("error");
   const supabaseErrorDesc = url.searchParams.get("error_description");
-  const next = url.searchParams.get("next") ?? "/admin";
+  const next = safeNext(url.searchParams.get("next"));
 
   // Supabase peut inclure une erreur directement dans les query params
   // (lien expiré, déjà utilisé, etc.)
@@ -73,6 +73,19 @@ export async function GET(request: Request) {
     origin,
     "Lien invalide : aucun code trouvé dans l'URL.",
   );
+}
+
+/**
+ * N'accepte qu'un chemin relatif interne (/admin, /admin/crm, …).
+ * Bloque les valeurs pirates du type "//evil.com", "https://evil.com",
+ * "/\\evil.com" qui pourraient sortir l'utilisateur du site après une
+ * connexion réussie.
+ */
+function safeNext(value: string | null): string {
+  if (!value) return "/admin";
+  if (!value.startsWith("/")) return "/admin";
+  if (value.startsWith("//") || value.startsWith("/\\")) return "/admin";
+  return value;
 }
 
 function redirectToLogin(origin: string, error: string) {

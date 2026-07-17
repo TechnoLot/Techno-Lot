@@ -28,7 +28,14 @@ export async function POST(request: Request) {
 
   // Lecture optionnelle de la destination souhaitée après connexion
   const form = await request.formData().catch(() => new FormData());
-  const next = String(form.get("next") ?? "/admin");
+  const rawNext = String(form.get("next") ?? "/admin");
+  // Chemin interne uniquement — bloque les redirections externes ("//evil.com")
+  const next =
+    rawNext.startsWith("/") &&
+    !rawNext.startsWith("//") &&
+    !rawNext.startsWith("/\\")
+      ? rawNext
+      : "/admin";
 
   const supabase = createClient();
   const origin = getRequestOrigin(request);

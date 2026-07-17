@@ -15,7 +15,28 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },
   async headers() {
+    // Headers de sécurité appliqués à toutes les réponses.
+    // Pas de CSP ici — elle peut casser du contenu (fonts, scripts inline
+    // Next.js) et demande un test en Report-Only avant activation.
+    const securityHeaders = [
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+      },
+    ];
+
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
       {
         // Photos et logo servis depuis /public : contenu stable, on
         // autorise un cache navigateur/CDN d'un an.
