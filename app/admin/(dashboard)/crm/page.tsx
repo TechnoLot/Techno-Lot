@@ -54,6 +54,7 @@ export default async function CrmPage({
     status?: string;
     suivi?: string;
     partenaires?: string;
+    appel?: string;
     ordre?: string;
     seed?: string;
   };
@@ -84,6 +85,12 @@ export default async function CrmPage({
   const status = searchParams.status;
   const suivi = searchParams.suivi;
   const includePartners = searchParams.partenaires === "1";
+  const appel = searchParams.appel;
+
+  // Compagnies avec au moins un contact `call_done` (= appel logué)
+  const companiesWithCall = new Set(
+    contacts.filter((ct) => ct.stage === "call_done" && ct.company_id).map((ct) => ct.company_id!),
+  );
 
   const companies = all.filter((c) => {
     if (!includePartners && c.is_partner_not_client) return false;
@@ -93,6 +100,8 @@ export default async function CrmPage({
     if (region && c.region !== region) return false;
     if (status && c.research_status !== status) return false;
     if (suivi && c.lead_status !== suivi) return false;
+    if (appel === "oui" && !companiesWithCall.has(c.id)) return false;
+    if (appel === "non" && companiesWithCall.has(c.id)) return false;
     return true;
   });
 

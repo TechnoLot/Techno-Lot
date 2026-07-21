@@ -63,8 +63,16 @@ export default async function CompanyPage({
 
   const contactsById = Object.fromEntries(contacts.map((c) => [c.id, c]));
 
+  const addressValue = [company.street_address, company.region].filter(Boolean).join(" · ");
+  const mapsQuery = [company.name, company.street_address, company.region].filter(Boolean).join(", ");
   const facts = [
-    { icon: MapPin, value: [company.street_address, company.region].filter(Boolean).join(" · ") },
+    {
+      icon: MapPin,
+      value: addressValue,
+      href: mapsQuery
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+        : null,
+    },
     { icon: Phone, value: company.main_phone },
     {
       icon: Globe,

@@ -20,6 +20,7 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
   const region = params?.get("region") ?? "all";
   const status = params?.get("status") ?? "all";
   const suivi = params?.get("suivi") ?? "all";
+  const appel = params?.get("appel") ?? "all";
   const partners = params?.get("partenaires") === "1";
   const shuffled = params?.get("ordre") === "aleatoire";
   const [, startTransition] = useTransition();
@@ -128,6 +129,22 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
               {r}
             </option>
           ))}
+        </select>
+
+        <select
+          value={appel}
+          onChange={(e) =>
+            push((p) => {
+              if (e.target.value === "all") p.delete("appel");
+              else p.set("appel", e.target.value);
+            })
+          }
+          aria-label="Filtrer par appel fait"
+          className={selectClass}
+        >
+          <option value="all">Appel : tous</option>
+          <option value="oui">Appel fait</option>
+          <option value="non">Pas encore appelé</option>
         </select>
 
         <select
