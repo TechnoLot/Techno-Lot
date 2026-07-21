@@ -269,12 +269,33 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             ),
           )}
 
+        {contact.phone && (
+          <a
+            href={`tel:${contact.phone}`}
+            onClick={() =>
+              run(
+                "call",
+                () =>
+                  logActivity({
+                    contact_id: contact.id,
+                    activity_type: "call_logged",
+                  }),
+              )
+            }
+            className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright transition-colors hover:border-accent hover:shadow-glow"
+            title="Lance l'appel sur ton appareil (cell, Teams, FaceTime…) et journalise l'activité"
+          >
+            <PhoneCall className="h-3 w-3" aria-hidden />
+            Appeler
+          </a>
+        )}
+
         <button
           type="button"
           disabled={isWorking}
           onClick={() =>
             run(
-              "call",
+              "log-call",
               () =>
                 logActivity({
                   contact_id: contact.id,
@@ -285,7 +306,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           }
           className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-accent/40 hover:text-accent-bright disabled:opacity-50"
         >
-          {busy === "call" ? (
+          {busy === "log-call" ? (
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
           ) : (
             <PhoneCall className="h-3 w-3" aria-hidden />
