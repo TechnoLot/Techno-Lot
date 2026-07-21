@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DollarSign, PhoneCall } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import CompaniesFilters from "@/components/admin/crm/CompaniesFilters";
 import CompaniesTable from "@/components/admin/crm/CompaniesTable";
@@ -145,17 +146,34 @@ export default async function CrmPage({
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
-      <header className="mb-8">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Prospection
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
-          CRM
-        </h1>
-        <p className="mt-2 max-w-lg text-sm text-slate-400">
-          Meilleurs prospects du jour, triés par pertinence. Clique une
-          compagnie pour voir ses contacts TI et envoyer l&apos;info Techno Lot.
-        </p>
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
+            Prospection
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+            CRM
+          </h1>
+          <p className="mt-2 max-w-lg text-sm text-slate-400">
+            Meilleurs prospects du jour, triés par pertinence. Clique une
+            compagnie pour voir ses contacts TI et envoyer l&apos;info Techno Lot.
+          </p>
+        </div>
+        <div
+          className="shrink-0 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 shadow-glow sm:max-w-xs sm:text-right"
+          role="note"
+          aria-label="Rappel motivation"
+        >
+          <p className="flex items-center justify-center gap-2 font-display text-sm font-black uppercase tracking-wider text-accent-bright sm:justify-end sm:text-base">
+            <DollarSign className="h-4 w-4" aria-hidden />
+            <span>
+              Pick up the phone
+              <br />
+              and start dialing
+            </span>
+            <PhoneCall className="h-4 w-4" aria-hidden />
+          </p>
+        </div>
       </header>
 
       {error && (

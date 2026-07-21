@@ -171,8 +171,18 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             <>
               <a
                 href={`tel:${contact.phone}`}
-                className="text-slate-200 hover:text-accent-bright"
+                onClick={() =>
+                  run("call", () =>
+                    logActivity({
+                      contact_id: contact.id,
+                      activity_type: "call_logged",
+                    }),
+                  )
+                }
+                className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent-bright transition-colors hover:border-accent hover:shadow-glow"
+                title="Lance l'appel (iPhone, Android, Teams…) et journalise l'activité"
               >
+                <PhoneCall className="h-3 w-3" aria-hidden />
                 {contact.phone}
               </a>
               <VerifiedBadge verified={contact.phone_verified} />
