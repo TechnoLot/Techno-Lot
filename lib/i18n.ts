@@ -172,6 +172,12 @@ const fr = {
     successAgain: "Envoyer une autre demande",
     footnote:
       "Réponse garantie dans un délai de 24 heures. Vos informations restent confidentielles.",
+    paymentClauseTitle: "Notre engagement de paiement",
+    paymentClauseText: [
+      "La **moitié** du paiement sera émis lors du ramassage.",
+      "Nous disposons ensuite d'un **maximum de 15 jours ouvrables** pour inspecter le matériel afin de nous assurer de sa **fonctionnalité** et de sa **condition esthétique**.",
+      "Le solde vous est versé après inspection, **sans délai** ; sinon, nous ajustons l'offre en **conséquence**.",
+    ],
   },
   cta: {
     defaultButton: "Faire une soumission",
@@ -341,6 +347,12 @@ const en: Dict = {
     successAgain: "Send another request",
     footnote:
       "Guaranteed response within 24 hours. Your information remains confidential.",
+    paymentClauseTitle: "Our payment commitment",
+    paymentClauseText: [
+      "**Half** of the payment is issued at pickup.",
+      "We then have **up to 15 business days** to inspect the equipment to confirm its **functionality** and **cosmetic condition**.",
+      "The balance is paid **immediately** after inspection; otherwise, we adjust the offer **accordingly**.",
+    ],
   },
   cta: {
     defaultButton: "Get a quote",

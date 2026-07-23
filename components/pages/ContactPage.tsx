@@ -1,10 +1,10 @@
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Phone, ShieldCheck } from "lucide-react";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
 import SubmissionForm from "@/components/SubmissionForm";
 import MapEmbed from "@/components/MapEmbed";
 import { site } from "@/lib/site";
-import type { Locale } from "@/lib/i18n";
+import { getDict, type Locale } from "@/lib/i18n";
 
 const icons = [MapPin, Phone, Mail, Clock];
 
@@ -29,6 +29,7 @@ const content = {
 
 export default function ContactPage({ locale }: { locale: Locale }) {
   const t = content[locale];
+  const form = getDict(locale).form;
 
   const coordonnees = [
     { label: t.labels[0], value: site.address.full, href: site.address.mapsUrl },
@@ -88,6 +89,31 @@ export default function ContactPage({ locale }: { locale: Locale }) {
                   </div>
                 );
               })}
+              <div className="glass flex items-start gap-3 p-5">
+                <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 ring-1 ring-accent/30">
+                  <ShieldCheck className="h-5 w-5 text-accent" aria-hidden />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {form.paymentClauseTitle}
+                  </p>
+                  <div className="mt-1 space-y-2 text-sm text-slate-300">
+                    {form.paymentClauseText.map((line, i) => (
+                      <p key={i}>
+                        {line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+                          part.startsWith("**") && part.endsWith("**") ? (
+                            <strong key={j} className="font-semibold text-white">
+                              {part.slice(2, -2)}
+                            </strong>
+                          ) : (
+                            <span key={j}>{part}</span>
+                          )
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <MapEmbed locale={locale} className="h-[320px]" />
             </div>
           </Reveal>

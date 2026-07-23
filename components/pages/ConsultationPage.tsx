@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, CalendarCheck, ClipboardList, Mail } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarCheck,
+  ClipboardList,
+  HandCoins,
+  Mail,
+} from "lucide-react";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
 import Timeline from "@/components/Timeline";
@@ -12,13 +18,14 @@ const stepIcons = [
   <ClipboardList key="i0" className={iconClass} aria-hidden />,
   <Mail key="i1" className={iconClass} aria-hidden />,
   <CalendarCheck key="i2" className={iconClass} aria-hidden />,
+  <HandCoins key="i3" className={iconClass} aria-hidden />,
 ];
 
 const content = {
   fr: {
     eyebrow: "Comment ça marche",
     title: "Estimation de votre lot",
-    subtitle: "Un processus simple, rapide et sans engagement, en trois étapes.",
+    subtitle: "Un processus simple, rapide et sans engagement.",
     steps: [
       {
         title: "Décrivez votre lot",
@@ -32,6 +39,36 @@ const content = {
         title: "Récupération sans frais",
         text: "Si vous êtes d'accord, nous prenons rendez-vous pour la récupération du lot sans aucuns frais.",
       },
+      {
+        title: "Paiement de la moitié sur place",
+        text: (
+          <div className="space-y-2">
+            <p>
+              La <strong className="font-semibold text-white">moitié</strong> du
+              paiement sera émis lors du ramassage.
+            </p>
+            <p>
+              Nous disposons ensuite d&apos;un{" "}
+              <strong className="font-semibold text-white">
+                maximum de 15 jours ouvrables
+              </strong>{" "}
+              pour inspecter le matériel afin de nous assurer de sa{" "}
+              <strong className="font-semibold text-white">fonctionnalité</strong>{" "}
+              et de sa{" "}
+              <strong className="font-semibold text-white">
+                condition esthétique
+              </strong>
+              .
+            </p>
+            <p>
+              Le solde vous est versé après inspection,{" "}
+              <strong className="font-semibold text-white">sans délai</strong> ;
+              sinon, nous ajustons l&apos;offre en{" "}
+              <strong className="font-semibold text-white">conséquence</strong>.
+            </p>
+          </div>
+        ),
+      },
     ],
     boxTitle: "Pas le temps de procéder à un inventaire ?",
     boxText:
@@ -44,7 +81,7 @@ const content = {
   en: {
     eyebrow: "How it works",
     title: "Get your lot appraised",
-    subtitle: "A simple, fast, no-obligation process in three steps.",
+    subtitle: "A simple, fast, no-obligation process.",
     steps: [
       {
         title: "Describe your lot",
@@ -57,6 +94,36 @@ const content = {
       {
         title: "Free pickup",
         text: "If you agree, we schedule an appointment to pick up the lot at no charge.",
+      },
+      {
+        title: "Half paid on site",
+        text: (
+          <div className="space-y-2">
+            <p>
+              <strong className="font-semibold text-white">Half</strong> of the
+              payment is issued at pickup.
+            </p>
+            <p>
+              We then have{" "}
+              <strong className="font-semibold text-white">
+                up to 15 business days
+              </strong>{" "}
+              to inspect the equipment to confirm its{" "}
+              <strong className="font-semibold text-white">functionality</strong>{" "}
+              and{" "}
+              <strong className="font-semibold text-white">
+                cosmetic condition
+              </strong>
+              .
+            </p>
+            <p>
+              The balance is paid{" "}
+              <strong className="font-semibold text-white">immediately</strong>{" "}
+              after inspection; otherwise, we adjust the offer{" "}
+              <strong className="font-semibold text-white">accordingly</strong>.
+            </p>
+          </div>
+        ),
       },
     ],
     boxTitle: "No time to build an inventory?",

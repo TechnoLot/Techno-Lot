@@ -1,10 +1,10 @@
-import { Handshake, PiggyBank, Sparkles } from "lucide-react";
+import { Handshake, PiggyBank, ShieldCheck, Sparkles } from "lucide-react";
 import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
 import CtaBanner from "@/components/CtaBanner";
 import { localePath, type Locale } from "@/lib/i18n";
 
-const icons = [Sparkles, Handshake, PiggyBank];
+const icons = [Sparkles, Handshake, PiggyBank, ShieldCheck];
 
 const content = {
   fr: {
@@ -55,6 +55,32 @@ const content = {
           </>
         ),
       },
+      {
+        title: "Notre engagement de paiement",
+        text: (
+          <>
+            <span className="block">
+              La <strong className="text-white">moitié</strong> du paiement sera
+              émis lors du ramassage.
+            </span>
+            <span className="mt-3 block">
+              Nous disposons ensuite d&apos;un{" "}
+              <strong className="text-white">
+                maximum de 15 jours ouvrables
+              </strong>{" "}
+              pour inspecter le matériel afin de nous assurer de sa{" "}
+              <strong className="text-white">fonctionnalité</strong> et de sa{" "}
+              <strong className="text-white">condition esthétique</strong>.
+            </span>
+            <span className="mt-3 block">
+              Le solde vous est versé après inspection,{" "}
+              <strong className="text-white">sans délai</strong> ; sinon, nous
+              ajustons l&apos;offre en{" "}
+              <strong className="text-white">conséquence</strong>.
+            </span>
+          </>
+        ),
+      },
     ],
     ctaTitle: "Besoin de nos services ?",
     ctaText:
@@ -102,6 +128,30 @@ const content = {
               recover part of your initial investment
             </strong>{" "}
             instead of letting these assets pile up and lose all value.
+          </>
+        ),
+      },
+      {
+        title: "Our payment commitment",
+        text: (
+          <>
+            <span className="block">
+              <strong className="text-white">Half</strong> of the payment is
+              issued at pickup.
+            </span>
+            <span className="mt-3 block">
+              We then have{" "}
+              <strong className="text-white">up to 15 business days</strong> to
+              inspect the equipment to confirm its{" "}
+              <strong className="text-white">functionality</strong> and{" "}
+              <strong className="text-white">cosmetic condition</strong>.
+            </span>
+            <span className="mt-3 block">
+              The balance is paid{" "}
+              <strong className="text-white">immediately</strong> after
+              inspection; otherwise, we adjust the offer{" "}
+              <strong className="text-white">accordingly</strong>.
+            </span>
           </>
         ),
       },

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 export type TimelineStep = {
   title: string;
-  text: string;
+  text: ReactNode;
   /** Élément JSX déjà rendu (ex. <Truck className="…" />) pour rester sérialisable. */
   icon?: ReactNode;
 };
@@ -52,9 +52,9 @@ export default function Timeline({
               <h3 className="font-display text-lg font-semibold text-white">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-300">
+              <div className="mt-2 text-sm leading-relaxed text-slate-300">
                 {step.text}
-              </p>
+              </div>
             </div>
           </m.li>
         );
