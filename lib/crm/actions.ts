@@ -109,6 +109,57 @@ export async function markFollowupDone(companyId: string): Promise<Result> {
   return { ok: true };
 }
 
+/**
+ * Ajoute une compagnie (prospect) manuellement. Seul `name` est requis ;
+ * les autres champs héritent des defaults SQL. Renvoie l'id pour rediriger
+ * vers la fiche.
+ */
+export async function createCompany(input: {
+  name: string;
+  domain?: string | null;
+  industry?: string | null;
+  region?: string | null;
+  employee_count?: number | null;
+  main_phone?: string | null;
+  fit_score?: number | null;
+  street_address?: string | null;
+  notes?: string | null;
+}): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const { supabase } = await requireAdmin();
+
+  const name = input.name.trim();
+  if (!name) return { ok: false, error: "Le nom de la compagnie est requis." };
+
+  const fitScore =
+    input.fit_score != null && Number.isFinite(input.fit_score)
+      ? Math.min(10, Math.max(1, Math.round(input.fit_score)))
+      : null;
+
+  const { data, error } = await supabase
+    .from("companies")
+    .insert({
+      name,
+      domain: input.domain?.trim() || null,
+      industry: input.industry?.trim() || null,
+      region: input.region?.trim() || null,
+      employee_count:
+        input.employee_count != null && Number.isFinite(input.employee_count)
+          ? input.employee_count
+          : null,
+      main_phone: input.main_phone?.trim() || null,
+      fit_score: fitScore,
+      street_address: input.street_address?.trim() || null,
+      notes: input.notes?.trim() || null,
+      research_status: "found",
+    })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm();
+  return { ok: true, id: data.id };
+}
+
 /** Ajoute un contact manuellement sur une compagnie. */
 export async function createContact(input: {
   company_id: string;

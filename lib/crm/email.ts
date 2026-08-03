@@ -52,12 +52,12 @@ function signatureHtml(): string {
     </td>
     <td bgcolor="#3ec96b" width="3" style="background-color:#3ec96b;width:3px;line-height:0;font-size:0;">&nbsp;</td>
     <td bgcolor="#2b2b2b" valign="middle" style="background-color:#2b2b2b;padding:26px 28px;border-radius:0 10px 10px 0;">
-      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;line-height:1.15;-webkit-text-size-adjust:100%;">Eric Després</div>
+      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;line-height:1.15;-webkit-text-size-adjust:100%;">Anthony Després</div>
       <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#3ec96b;letter-spacing:3px;text-transform:uppercase;margin-top:4px;margin-bottom:16px;-webkit-text-size-adjust:100%;">Président &nbsp;&middot;&nbsp; Techno&nbsp;Lot</div>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
           <td style="${label}">TEL</td>
-          <td style="padding:2px 0;"><a href="tel:+15149443939" style="${link}">(514)&nbsp;944&#8209;3939</a></td>
+          <td style="padding:2px 0;"><a href="tel:+15144047496" style="${link}">(514)&nbsp;404&#8209;7496</a></td>
         </tr>
         <tr>
           <td style="${label}">MAIL</td>
@@ -137,10 +137,10 @@ function wrapText(message: string): string {
   return `${message}
 
 —
-Eric Després
+Anthony Després
 Président · Techno Lot
 
-TEL   (514) 944-3939
+TEL   (514) 404-7496
 MAIL  info@technolot.ca
 WEB   technolot.ca
 ADR   3235 Av. de la Gare

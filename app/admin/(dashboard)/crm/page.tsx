@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DollarSign, PhoneCall } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import AddCompanyButton from "@/components/admin/crm/AddCompanyButton";
 import CompaniesFilters from "@/components/admin/crm/CompaniesFilters";
 import CompaniesTable from "@/components/admin/crm/CompaniesTable";
 import {
@@ -226,8 +227,11 @@ export default async function CrmPage({
         })}
       </div>
 
-      <div className="mb-4">
-        <CompaniesFilters regions={regions} />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex-1">
+          <CompaniesFilters regions={regions} />
+        </div>
+        <AddCompanyButton />
       </div>
 
       <p className="mb-3 text-xs text-slate-500">
