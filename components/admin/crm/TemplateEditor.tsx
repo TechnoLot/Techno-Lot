@@ -4,14 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, Save } from "lucide-react";
 import { updateTemplate } from "@/lib/crm/actions";
-import type { EmailTemplate } from "@/lib/crm/types";
+import { TEMPLATE_TYPE_LABELS, type EmailTemplate } from "@/lib/crm/types";
 
-const TYPE_LABELS: Record<EmailTemplate["template_type"], string> = {
-  post_call_intro: "Intro post-appel",
-  followup_1: "Relance 1",
-  followup_2: "Relance 2",
-  followup_3: "Relance 3",
-};
+const TYPE_LABELS = TEMPLATE_TYPE_LABELS;
 
 /** Éditeur d'un modèle de courriel — sujet, corps, actif. */
 export default function TemplateEditor({ template }: { template: EmailTemplate }) {

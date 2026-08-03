@@ -26,8 +26,10 @@ import {
   updateContactStage,
 } from "@/lib/crm/actions";
 import {
+  INTRO_TEMPLATE_TYPES,
   STAGE_LABELS,
   STAGES,
+  TEMPLATE_TYPE_LABELS,
   contactName,
   type Contact,
   type ContactStage,
@@ -43,6 +45,9 @@ export default function ContactCard({ contact }: { contact: Contact }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [introTemplate, setIntroTemplate] = useState<TemplateType>(
+    contact.stage === "call_done" ? "post_call_intro" : "cold_outreach",
+  );
 
   function run(
     key: string,
@@ -226,32 +231,50 @@ export default function ContactCard({ contact }: { contact: Contact }) {
 
       {/* Actions */}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
-        {contact.stage === "call_done" && (
-          <button
-            type="button"
-            disabled={isWorking || !contact.email}
-            title={
-              contact.email
-                ? "Envoie le modèle « Intro post-appel » personnalisé et démarre la séquence"
-                : "Ajoute d'abord un courriel à ce contact"
-            }
-            onClick={() =>
-              run(
-                "intro",
-                () => sendTemplateEmail(contact.id, "post_call_intro"),
-                "Email d'intro envoyé — contact en séquence.",
-              )
-            }
-            className="btn-primary !px-4 !py-2 !text-[11px] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy === "intro" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Send className="h-3.5 w-3.5" aria-hidden />
-            )}
-            Envoyer info Techno Lot
-          </button>
-        )}
+        {contact.stage !== "converted" &&
+          contact.stage !== "lost" &&
+          contact.stage !== "sequence_active" && (
+            <div className="inline-flex items-stretch overflow-hidden rounded-full border border-accent/40 bg-accent/10">
+              <select
+                value={introTemplate}
+                disabled={isWorking}
+                onChange={(e) => setIntroTemplate(e.target.value as TemplateType)}
+                aria-label="Choisir le modèle à envoyer"
+                title="Choisir le modèle à envoyer"
+                className="border-r border-accent/30 bg-transparent px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright focus:outline-none"
+              >
+                {INTRO_TEMPLATE_TYPES.map((t) => (
+                  <option key={t} value={t} className="bg-night-800">
+                    {TEMPLATE_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={isWorking || !contact.email}
+                title={
+                  contact.email
+                    ? `Envoie le modèle « ${TEMPLATE_TYPE_LABELS[introTemplate]} » et démarre la séquence`
+                    : "Ajoute d'abord un courriel à ce contact"
+                }
+                onClick={() =>
+                  run(
+                    "intro",
+                    () => sendTemplateEmail(contact.id, introTemplate),
+                    "Courriel envoyé — contact en séquence.",
+                  )
+                }
+                className="inline-flex items-center gap-1.5 bg-accent px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-night-950 transition-colors hover:bg-accent-bright disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy === "intro" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <Send className="h-3.5 w-3.5" aria-hidden />
+                )}
+                Envoyer
+              </button>
+            </div>
+          )}
 
         {contact.stage === "sequence_active" &&
           (["followup_1", "followup_2", "followup_3"] as TemplateType[]).map(

@@ -30,9 +30,24 @@ export type ActivityType =
 
 export type TemplateType =
   | "post_call_intro"
+  | "cold_outreach"
   | "followup_1"
   | "followup_2"
   | "followup_3";
+
+export const TEMPLATE_TYPE_LABELS: Record<TemplateType, string> = {
+  post_call_intro: "Intro post-appel",
+  cold_outreach: "Cold outreach (offre paiement + destruction)",
+  followup_1: "Relance 1",
+  followup_2: "Relance 2",
+  followup_3: "Relance 3",
+};
+
+/** Modèles proposés dans le bouton « Envoyer info Techno Lot » (hors relances). */
+export const INTRO_TEMPLATE_TYPES: TemplateType[] = [
+  "post_call_intro",
+  "cold_outreach",
+];
 
 export type Company = {
   id: string;

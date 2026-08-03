@@ -6,7 +6,13 @@ import type { EmailTemplate } from "@/lib/crm/types";
 
 export const dynamic = "force-dynamic";
 
-const TYPE_ORDER = ["post_call_intro", "followup_1", "followup_2", "followup_3"];
+const TYPE_ORDER = [
+  "cold_outreach",
+  "post_call_intro",
+  "followup_1",
+  "followup_2",
+  "followup_3",
+];
 
 /** Modèles de courriels de prospection — modifiables sans redéployer. */
 export default async function ModelesPage() {
