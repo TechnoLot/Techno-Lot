@@ -710,7 +710,8 @@ Dell Latitude 5420    12
       <button class="btn-principal" onclick="ouvrirDevis()">✉ Envoyer un devis au client</button>
       <button class="btn-sec" onclick="window.print()">🖨 Imprimer / PDF</button>
       <button class="btn-sec" onclick="exporterCSV()">Exporter Excel</button>
-      <button class="btn-sec" onclick="archiverLot()">Archiver le lot</button>
+      <button class="btn-sec" onclick="enregistrerLot()">💾 Enregistrer le lot</button>
+      <button class="btn-sec" onclick="ouvrirLotsEnregistres()">📂 Lots enregistrés</button>
       <button class="btn-danger" onclick="toutEffacer()">Tout effacer</button>
     </div>
     <div id="lotsSauvegardes"></div>
@@ -1010,45 +1011,47 @@ function telecharger(contenu, nom, type){
   URL.revokeObjectURL(a.href);
 }
 
-/* ============ ARCHIVES ============ */
-function archiverLot(){
+/* ============ LOTS ENREGISTRES (Supabase, partagés entre admins) ============ */
+async function enregistrerLot(){
+  const d = donneesLot();
+  if (!d.nom || d.nom === 'Lot sans nom'){
+    if (!confirm('Ce lot n\'a pas de nom — l\'enregistrer sous « Lot sans nom » ?')) return;
+  }
   try {
-    const lots = JSON.parse(localStorage.getItem('technolot_lots') || '[]');
-    const d = donneesLot();
-    const idx = lots.findIndex(l => l.nom === d.nom);
-    if (idx >= 0) lots[idx] = d; else lots.push(d);
-    localStorage.setItem('technolot_lots', JSON.stringify(lots));
-    afficherLots();
-    toast('Lot « ' + d.nom + ' » archivé', 'vert');
-  } catch { toast("Archive non disponible."); }
-}
-
-function afficherLots(){
-  let lots = [];
-  try { lots = JSON.parse(localStorage.getItem('technolot_lots') || '[]'); } catch {}
-  const zone = document.getElementById('lotsSauvegardes');
-  if (lots.length === 0){ zone.innerHTML = ''; return; }
-  zone.innerHTML = '<div class="indice" style="margin-bottom:6px;">Lots archivés — clique pour rouvrir&nbsp;:</div>' +
-    lots.map((l, i) =>
-      `<span class="puce-lot"><a onclick="ouvrirLot(${i})">${echap(l.nom)} · ${l.date}</a><span class="x" title="Supprimer" onclick="supprimerLot(${i})">✕</span></span>`
-    ).join('');
-}
-
-function ouvrirLot(i){
-  try {
-    const lots = JSON.parse(localStorage.getItem('technolot_lots') || '[]');
-    if (lots[i]){ chargerLot(lots[i]); autoSauver(); }
-  } catch {}
-}
-
-function supprimerLot(i){
-  try {
-    const lots = JSON.parse(localStorage.getItem('technolot_lots') || '[]');
-    if (lots[i] && confirm('Supprimer le lot archivé « ' + lots[i].nom + ' » ?')){
-      lots.splice(i, 1);
-      localStorage.setItem('technolot_lots', JSON.stringify(lots));
-      afficherLots();
+    const res = await fetch('/admin/calculatrice/api/saved', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: d.nom, data: d })
+    });
+    if (!res.ok){
+      const b = await res.json().catch(() => ({}));
+      toast('Erreur : ' + (b.error || res.statusText));
+      return;
     }
+    const b = await res.json();
+    toast('Lot « ' + d.nom + ' » ' + (b.updated ? 'mis à jour' : 'enregistré'), 'vert');
+  } catch (e) {
+    toast('Enregistrement impossible (hors ligne ?)');
+  }
+}
+
+function ouvrirLotsEnregistres(){
+  // Navigation au niveau du parent (au cas où la calculatrice est en iframe).
+  const url = '/admin/calculatrice/enregistres';
+  try {
+    if (window.top && window.top !== window) window.top.location.href = url;
+    else window.location.href = url;
+  } catch {
+    window.location.href = url;
+  }
+}
+
+async function chargerLotDepuisSupabase(id){
+  try {
+    const res = await fetch('/admin/calculatrice/api/saved/' + encodeURIComponent(id));
+    if (!res.ok) return;
+    const b = await res.json();
+    if (b.lot && b.lot.data) chargerLot(b.lot.data);
   } catch {}
 }
 
@@ -1178,8 +1181,16 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') fermerDevis();
 });
 
-restaurer();
-afficherLots();
+// Si l'URL contient ?lot=<id>, on charge ce lot depuis Supabase — sinon
+// on restaure le brouillon local en cours (technolot_encours).
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const lotId = params.get('lot');
+    if (lotId) { chargerLotDepuisSupabase(lotId); return; }
+  } catch {}
+  restaurer();
+})();
 rendre();
 </script>
 </body>

@@ -7,13 +7,16 @@ import {
   Linkedin,
   Loader2,
   Mail,
+  Pencil,
   Phone,
   PhoneCall,
+  Save,
   Send,
   Star,
   StickyNote,
   Trash2,
   Trophy,
+  X,
 } from "lucide-react";
 import StageBadge from "@/components/admin/crm/StageBadge";
 import VerifiedBadge from "@/components/admin/crm/VerifiedBadge";
@@ -23,6 +26,7 @@ import {
   logActivity,
   markVerified,
   sendTemplateEmail,
+  updateContact,
   updateContactStage,
 } from "@/lib/crm/actions";
 import {
@@ -48,6 +52,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
   const [introTemplate, setIntroTemplate] = useState<TemplateType>(
     contact.stage === "call_done" ? "post_call_intro" : "cold_outreach",
   );
+  const [editOpen, setEditOpen] = useState(false);
 
   function run(
     key: string,
@@ -357,6 +362,17 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           Note
         </button>
 
+        <button
+          type="button"
+          disabled={isWorking}
+          onClick={() => setEditOpen((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-accent/40 hover:text-accent-bright disabled:opacity-50"
+          title="Modifier les infos du contact"
+        >
+          <Pencil className="h-3 w-3" aria-hidden />
+          Modifier
+        </button>
+
         {contact.stage !== "converted" && (
           <button
             type="button"
@@ -421,6 +437,113 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           {confirmingDelete ? "Confirmer" : "Supprimer"}
         </button>
       </div>
+
+      {editOpen && (
+        <form
+          className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            run(
+              "edit",
+              () =>
+                updateContact(contact.id, {
+                  first_name: fd.get("first_name") as string,
+                  last_name: fd.get("last_name") as string,
+                  title: fd.get("title") as string,
+                  email: fd.get("email") as string,
+                  phone: fd.get("phone") as string,
+                  linkedin_url: fd.get("linkedin_url") as string,
+                  notes: fd.get("notes") as string,
+                }),
+              "Contact mis à jour.",
+            );
+            setEditOpen(false);
+          }}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-display text-xs font-semibold uppercase tracking-wider text-slate-300">
+              Modifier le contact
+            </p>
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              aria-label="Fermer"
+              className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-slate-400 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              name="first_name"
+              defaultValue={contact.first_name ?? ""}
+              placeholder="Prénom"
+              className="field !py-2.5 text-sm"
+            />
+            <input
+              name="last_name"
+              defaultValue={contact.last_name ?? ""}
+              placeholder="Nom"
+              className="field !py-2.5 text-sm"
+            />
+            <input
+              name="title"
+              defaultValue={contact.title ?? ""}
+              placeholder="Titre (ex. : Directeur TI)"
+              className="field !py-2.5 text-sm sm:col-span-2"
+            />
+            <input
+              name="email"
+              type="email"
+              defaultValue={contact.email ?? ""}
+              placeholder="Courriel"
+              className="field !py-2.5 text-sm"
+            />
+            <input
+              name="phone"
+              defaultValue={contact.phone ?? ""}
+              placeholder="Téléphone"
+              className="field !py-2.5 text-sm"
+            />
+            <input
+              name="linkedin_url"
+              type="url"
+              defaultValue={contact.linkedin_url ?? ""}
+              placeholder="URL LinkedIn"
+              className="field !py-2.5 text-sm sm:col-span-2"
+            />
+            <textarea
+              name="notes"
+              defaultValue={contact.notes ?? ""}
+              placeholder="Notes"
+              rows={2}
+              className="field !py-2.5 text-sm sm:col-span-2"
+            />
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEditOpen(false)}
+              className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isWorking}
+              className="btn-primary !px-5 !py-2 !text-xs disabled:opacity-50"
+            >
+              {busy === "edit" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Save className="h-3.5 w-3.5" aria-hidden />
+              )}
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      )}
 
       {noteOpen && (
         <form

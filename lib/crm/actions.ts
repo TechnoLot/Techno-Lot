@@ -195,6 +195,49 @@ export async function createContact(input: {
   return { ok: true };
 }
 
+/** Met à jour les infos éditables d'un contact (nom, titre, coordonnées, notes). */
+export async function updateContact(
+  contactId: string,
+  input: {
+    first_name?: string | null;
+    last_name?: string | null;
+    title?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    linkedin_url?: string | null;
+    notes?: string | null;
+  },
+): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const email = input.email?.trim() || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "Courriel invalide." };
+  }
+
+  const patch: Record<string, unknown> = {
+    first_name: input.first_name?.trim() || null,
+    last_name: input.last_name?.trim() || null,
+    title: input.title?.trim() || null,
+    email,
+    phone: input.phone?.trim() || null,
+    linkedin_url: input.linkedin_url?.trim() || null,
+    notes: input.notes?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .update(patch)
+    .eq("id", contactId)
+    .select("company_id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  revalidateCrm(data?.company_id);
+  return { ok: true };
+}
+
 /**
  * Supprime un contact et son historique d'activités (FK en cascade).
  * Le lot lié éventuel n'est pas touché.

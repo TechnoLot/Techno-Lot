@@ -40,45 +40,45 @@ export function renderTemplate(
  * (calculatrice) : largeurs fixes, styles inline, compatible iOS Mail.
  */
 function signatureHtml(): string {
-  const link = "color:#ffffff !important;text-decoration:none;font-size:14px;font-weight:500;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;";
-  const label = "padding:2px 12px 2px 0;font-size:10px;font-weight:700;color:#3ec96b;letter-spacing:1.5px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;";
+  const link = "color:#ffffff !important;text-decoration:none;font-size:12px;font-weight:500;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;";
+  const label = "padding:1px 10px 1px 0;font-size:9px;font-weight:700;color:#3ec96b;letter-spacing:1.3px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;";
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="480" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;background-color:#2b2b2b;border-radius:10px;margin-top:24px;width:480px;max-width:100%;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="380" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;background-color:#2b2b2b;border-radius:8px;margin-top:20px;width:380px;max-width:100%;">
   <tr>
-    <td bgcolor="#2b2b2b" width="170" valign="middle" align="center" style="background-color:#2b2b2b;padding:28px 20px;border-radius:10px 0 0 10px;width:170px;">
+    <td bgcolor="#2b2b2b" width="130" valign="middle" align="center" style="background-color:#2b2b2b;padding:20px 14px;border-radius:8px 0 0 8px;width:130px;">
       <a href="https://technolot.ca" target="_blank" style="text-decoration:none;display:inline-block;line-height:0;">
-        <img src="https://www.technolot.ca/logo.png" alt="Techno Lot" width="130" height="78" border="0" style="display:block;border:0;outline:none;text-decoration:none;width:130px;height:auto;max-width:130px;">
+        <img src="https://www.technolot.ca/logo.png" alt="Techno Lot" width="100" height="60" border="0" style="display:block;border:0;outline:none;text-decoration:none;width:100px;height:auto;max-width:100px;">
       </a>
     </td>
-    <td bgcolor="#3ec96b" width="3" style="background-color:#3ec96b;width:3px;line-height:0;font-size:0;">&nbsp;</td>
-    <td bgcolor="#2b2b2b" valign="middle" style="background-color:#2b2b2b;padding:26px 28px;border-radius:0 10px 10px 0;">
-      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;line-height:1.15;-webkit-text-size-adjust:100%;">Anthony Després</div>
-      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#3ec96b;letter-spacing:3px;text-transform:uppercase;margin-top:4px;margin-bottom:16px;-webkit-text-size-adjust:100%;">Président &nbsp;&middot;&nbsp; Techno&nbsp;Lot</div>
+    <td bgcolor="#3ec96b" width="2" style="background-color:#3ec96b;width:2px;line-height:0;font-size:0;">&nbsp;</td>
+    <td bgcolor="#2b2b2b" valign="middle" style="background-color:#2b2b2b;padding:20px 22px;border-radius:0 8px 8px 0;">
+      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:17px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;line-height:1.15;-webkit-text-size-adjust:100%;">Anthony Després</div>
+      <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;color:#3ec96b;letter-spacing:2.5px;text-transform:uppercase;margin-top:3px;margin-bottom:12px;-webkit-text-size-adjust:100%;">Président &nbsp;&middot;&nbsp; Techno&nbsp;Lot</div>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;mso-table-lspace:0;mso-table-rspace:0;">
         <tr>
           <td style="${label}">TEL</td>
-          <td style="padding:2px 0;"><a href="tel:+15144047496" style="${link}">(514)&nbsp;404&#8209;7496</a></td>
+          <td style="padding:1px 0;"><a href="tel:+15144047496" style="${link}">(514)&nbsp;404&#8209;7496</a></td>
         </tr>
         <tr>
           <td style="${label}">MAIL</td>
-          <td style="padding:2px 0;"><a href="mailto:info@technolot.ca" style="${link}">info@technolot.ca</a></td>
+          <td style="padding:1px 0;"><a href="mailto:info@technolot.ca" style="${link}">info@technolot.ca</a></td>
         </tr>
         <tr>
           <td style="${label}">WEB</td>
-          <td style="padding:2px 0;"><a href="https://technolot.ca" target="_blank" style="${link}">technolot.ca</a></td>
+          <td style="padding:1px 0;"><a href="https://technolot.ca" target="_blank" style="${link}">technolot.ca</a></td>
         </tr>
         <tr>
-          <td valign="top" style="${label}padding-top:4px;">ADR</td>
-          <td valign="top" style="padding:2px 0;">
-            <a href="https://maps.app.goo.gl/stDBgbHi1GQzjWdV6" target="_blank" style="color:#cccccc !important;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.4;text-decoration:none;-webkit-text-size-adjust:100%;">
+          <td valign="top" style="${label}padding-top:3px;">ADR</td>
+          <td valign="top" style="padding:1px 0;">
+            <a href="https://maps.app.goo.gl/stDBgbHi1GQzjWdV6" target="_blank" style="color:#cccccc !important;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10px;line-height:1.4;text-decoration:none;-webkit-text-size-adjust:100%;">
               3235&nbsp;Av.&nbsp;de&nbsp;la&nbsp;Gare<br>
               Mascouche,&nbsp;QC&nbsp;&nbsp;J7K&nbsp;3C1,&nbsp;Canada
             </a>
           </td>
         </tr>
       </table>
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid #444444;">
-        <a href="https://technolot.ca/soumission" target="_blank" style="display:inline-block;background-color:#3ec96b;color:#0f2a1a !important;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:11px 20px;border-radius:4px;text-decoration:none;text-transform:uppercase;mso-padding-alt:0;-webkit-text-size-adjust:100%;">
+      <div style="margin-top:14px;padding-top:11px;border-top:1px solid #444444;">
+        <a href="https://technolot.ca/soumission" target="_blank" style="display:inline-block;background-color:#3ec96b;color:#0f2a1a !important;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.3px;padding:9px 16px;border-radius:4px;text-decoration:none;text-transform:uppercase;mso-padding-alt:0;-webkit-text-size-adjust:100%;">
           Demander une soumission &nbsp;&rarr;
         </a>
       </div>
