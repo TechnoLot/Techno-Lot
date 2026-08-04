@@ -150,7 +150,12 @@ export default async function CrmPage({
       href: "/admin/crm/suivis",
     },
     { label: "Appels faits — à envoyer", value: callDone, accent: callDone > 0 },
-    { label: "En séquence", value: inSequence, accent: false },
+    {
+      label: "En séquence",
+      value: inSequence,
+      accent: false,
+      href: "/admin/crm/sequence",
+    },
     { label: "Convertis", value: converted, accent: false },
   ];
 
