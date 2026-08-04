@@ -239,6 +239,26 @@ export async function updateContact(
 }
 
 /**
+ * Supprime une compagnie et tout ce qui lui est rattaché (contacts +
+ * activités, via CASCADE FK). Les lots liés éventuels restent — leur
+ * `contacts.lot_id` est simplement décroché avant la suppression.
+ */
+export async function deleteCompany(companyId: string): Promise<Result> {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
+    .from("companies")
+    .delete()
+    .eq("id", companyId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/crm");
+  revalidatePath("/admin/crm/relances");
+  revalidatePath("/admin/crm/suivis");
+  return { ok: true };
+}
+
+/**
  * Supprime un contact et son historique d'activités (FK en cascade).
  * Le lot lié éventuel n'est pas touché.
  */

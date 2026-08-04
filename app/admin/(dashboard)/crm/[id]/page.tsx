@@ -15,6 +15,7 @@ import LeadQuickActions from "@/components/admin/crm/LeadQuickActions";
 import ContactCard from "@/components/admin/crm/ContactCard";
 import AddContactForm from "@/components/admin/crm/AddContactForm";
 import ActivityTimeline from "@/components/admin/crm/ActivityTimeline";
+import DeleteCompanyButton from "@/components/admin/crm/DeleteCompanyButton";
 import {
   RESEARCH_STATUS_LABELS,
   type Company,
@@ -171,6 +172,12 @@ export default async function CompanyPage({
             />
           </div>
         </div>
+
+        <DeleteCompanyButton
+          companyId={company.id}
+          companyName={company.name}
+          hasConvertedContacts={contacts.some((c) => c.lot_id !== null)}
+        />
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
