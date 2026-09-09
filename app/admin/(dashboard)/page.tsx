@@ -10,6 +10,7 @@ import LotsChart from "@/components/admin/LotsChart";
 import TopClients from "@/components/admin/TopClients";
 import RecentActivity from "@/components/admin/RecentActivity";
 import PendingSales from "@/components/admin/PendingSales";
+import SavedCalcLots, { type CalcLotSummary } from "@/components/admin/SavedCalcLots";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,42 @@ export default async function DashboardPage({
   const prev = computeMetrics(prevLots, prevSales);
   const hasPrev = prevBounds !== null;
 
+  const { data: savedLotsRaw } = await supabase
+    .from("saved_lots")
+    .select("id, name, data, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(5);
+
+  type SavedLotRow = {
+    id: string;
+    name: string;
+    data: { items?: { desc: string; qte: number; bas: number | null; moyen: number | null }[]; usd?: boolean; taux?: number } | null;
+    updated_at: string;
+  };
+
+  const calcLots: CalcLotSummary[] = ((savedLotsRaw ?? []) as SavedLotRow[]).map((l) => {
+    const items = l.data?.items ?? [];
+    const usd = l.data?.usd ?? false;
+    const taux = usd ? (l.data?.taux ?? 1.37) : 1;
+    let totalBas = 0;
+    let totalMoyen = 0;
+    let unites = 0;
+    for (const it of items) {
+      unites += it.qte;
+      if (it.bas != null) totalBas += it.bas * it.qte * taux;
+      if (it.moyen != null) totalMoyen += it.moyen * it.qte * taux;
+    }
+    const valeurLot = totalBas > 0 ? totalBas : totalMoyen;
+    return {
+      id: l.id,
+      name: l.name,
+      offerPrice: Math.round((valeurLot / 2.5) * 100) / 100,
+      itemCount: items.length,
+      unitCount: unites,
+      updatedAt: l.updated_at,
+    };
+  });
+
   const cards: KpiSpec[] = [
     {
       label: "Lots",
@@ -173,6 +210,12 @@ export default async function DashboardPage({
         <RecentActivity lots={lots.slice(0, 8)} />
         <PendingSales lots={pendingLots} />
       </div>
+
+      {calcLots.length > 0 && (
+        <div className="mt-6">
+          <SavedCalcLots lots={calcLots} />
+        </div>
+      )}
     </div>
   );
 }
