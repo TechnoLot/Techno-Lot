@@ -11,6 +11,9 @@ import TopClients from "@/components/admin/TopClients";
 import RecentActivity from "@/components/admin/RecentActivity";
 import PendingSales from "@/components/admin/PendingSales";
 import SavedCalcLots, { type CalcLotSummary } from "@/components/admin/SavedCalcLots";
+import TrackingSources from "@/components/admin/TrackingSources";
+import TrackingFunnel from "@/components/admin/TrackingFunnel";
+import TrackingRoi from "@/components/admin/TrackingRoi";
 
 export const dynamic = "force-dynamic";
 
@@ -216,6 +219,19 @@ export default async function DashboardPage({
           <SavedCalcLots lots={calcLots} />
         </div>
       )}
+
+      <div className="mt-8">
+        <h2 className="mb-4 font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
+          Tracking & Attribution
+        </h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <TrackingSources />
+          <TrackingFunnel />
+        </div>
+        <div className="mt-6">
+          <TrackingRoi />
+        </div>
+      </div>
     </div>
   );
 }
