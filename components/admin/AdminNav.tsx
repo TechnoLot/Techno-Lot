@@ -12,6 +12,7 @@ import {
   Package,
   Plus,
   Send,
+  ShoppingBag,
   Target,
   Trophy,
 } from "lucide-react";
@@ -37,6 +38,7 @@ const items: NavItem[] = [
     icon: Calculator,
     action: "open-calculatrice",
   },
+  { href: "/admin/ebay", label: "Description eBay", icon: ShoppingBag },
   {
     href: "/admin/crm",
     label: "Prospection",
