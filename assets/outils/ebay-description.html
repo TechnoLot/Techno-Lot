@@ -29,7 +29,8 @@
   .step h2{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:15px;color:#fff}
   .step h2 i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--g);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;flex:none}
   .step h2 .done{margin-left:auto;font-size:12px;color:var(--ga);font-weight:700}
-  .sub{font-size:12px;color:#8a958f;margin:-4px 0 10px}
+  .sub{font-size:12px;color:#8a958f;margin:-4px 0 10px;line-height:1.5}
+  .sub kbd{background:#26322b;border-radius:4px;padding:1px 6px;font-size:11px;color:#fff}
   label.f{display:block;font-size:12px;font-weight:700;color:#9aa59f;margin:10px 0 5px}
   label.f small{font-weight:400;color:#6b766f}
   input[type=text],textarea{width:100%;background:#0b110d;border:1px solid #26322b;border-radius:7px;color:#fff;padding:9px 10px;font:14px Arial,Helvetica,sans-serif}
@@ -101,6 +102,13 @@
 <main>
   <section class="editor">
     <div class="scroll">
+
+      <div class="step">
+        <h2><i>&#9889;</i> Copier une annonce <span class="done" id="impstate"></span></h2>
+        <p class="sub">Sur l'annonce eBay d'un autre vendeur : <kbd>Ctrl</kbd>+<kbd>A</kbd>, <kbd>Ctrl</kbd>+<kbd>C</kbd>, puis colle ici. Le type, l'état, le titre, le modèle, les specs et la description se remplissent tout seuls.</p>
+        <textarea id="imp" placeholder="Colle le texte de l'annonce ici (Ctrl+V)"></textarea>
+        <button class="btn sm" id="impgo" style="margin-top:6px">Remplir à partir de ce texte</button>
+      </div>
 
       <div class="step">
         <h2><i>1</i> Photos <span class="done" id="pcount"></span></h2>
@@ -244,21 +252,30 @@ const DEFAULTS = {
   tested: "Tested and working\nCondition: see photos\nSerial number recorded to prevent fraud",
   included: "Item shown in photos\nOnly items listed are included",
   serial: "SERIAL NUMBER IS RECORDED TO PREVENT ANY POTENTIAL FRAUD",
-  shipping: "WE DON'T DO INTERNATIONAL SHIPPING (ONLY CANADA & USA)\nSHIPPING COSTS INCLUDE PACKAGING, HANDLING, MATERIAL, AND SHIPPING COST\nSHIPPING TIME FOR CANADA IS BETWEEN 2 TO 7 BUSINESS DAYS\nSHIPPING TIME FOR THE USA IS BETWEEN 4 TO 12 BUSINESS DAYS\nCOMBINE SHIPMENT AVAILABLE\nLOCAL PICKUP IS AVAILABLE\nWE SHIP A MAXIMUM 48H AFTER RECEIPT OF CLEAR PAYMENT\nWE DO NOT SHIP WEEKENDS AND HOLIDAYS\nSHIPPING CHARGES ARE NOT RETURNED, AND RETURN SHIPPING IS AT THE BUYER EXPENSE IF APPLICABLE.",
-  returns: "PAYMENT THROUGH EBAY CHECKOUT ONLY\nPAYMENT REQUIRED WITHIN 7 DAYS FROM THE END OF THE AUCTION\nWE SHIP ONLY TO THE ADDRESS ON YOUR EBAY ORDER\nMAKE SURE YOUR FUNDS ARE AVAILABLE\nIF YOU LIVE IN QUEBEC, ADD GST & QST (TPS & TVQ) TAXES\nIF YOU LIVE IN CANADA, ADD GST/HST TAXES OF YOUR PROVINCE",
+  shipping: "WE SHIP WORLDWIDE\nSHIPPING COSTS INCLUDE PACKAGING, HANDLING, MATERIAL, AND SHIPPING COST\nSHIPPING TIME FOR CANADA IS BETWEEN 2 TO 7 BUSINESS DAYS\nSHIPPING TIME FOR THE USA IS BETWEEN 4 TO 12 BUSINESS DAYS\nCOMBINE SHIPMENT AVAILABLE\nLOCAL PICKUP IS AVAILABLE\nWE SHIP A MAXIMUM 48H AFTER RECEIPT OF CLEAR PAYMENT\nWE DO NOT SHIP WEEKENDS AND HOLIDAYS\nSHIPPING CHARGES ARE NOT RETURNED, AND RETURN SHIPPING IS AT THE BUYER EXPENSE IF APPLICABLE.",
+  returns: "PAYMENT THROUGH EBAY CHECKOUT ONLY\nPAYMENT REQUIRED WITHIN 7 DAYS FROM THE END OF THE AUCTION\nWE SHIP ONLY TO THE ADDRESS ON YOUR EBAY ORDER\nMAKE SURE YOUR FUNDS ARE AVAILABLE",
   rules: "IF THE BUYER DOES NOT FOLLOW THE RULES, THE ITEM WILL BE RELISTED",
   fbTitle: "Please give us a 5-star rating so we can keep selling our products at a LOW COST!!",
   feedback: "Please keep us in business! eBay can shut down sellers who receive a low star rating! Please leave us a 5-star rating so we can pass on the value to you and your business.\nIf you have any problem with your item, please email us before giving negative feedback, we will resolve your problem.",
-  specs: [["Brand",""],["Model",""],["Type",""],["Part Number",""],["Key Specs",""],["Condition",""],["Warranty",""],["Serial Number","Recorded to prevent fraud"]],
+  specs: [["Brand",""],["Model",""],["Type",""],["Part Number",""],["Key Specs",""],["Condition",""],["Warranty","30 days"],["Serial Number","Recorded to prevent fraud"]],
   photos: []
 };
+// Specs pre-filled on every listing
+const SPEC_DEFAULTS = {"Warranty":"30 days","Serial Number":"Recorded to prevent fraud"};
 
 let S = load();
 
 function load(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY));
-    if(s){ if(/PAYPAL/.test(s.returns||"")) delete s.returns; return Object.assign(structuredClone(DEFAULTS), s); }
+    if(s){
+      if(/PAYPAL/.test(s.returns||"")) delete s.returns;
+      // Older saved settings: worldwide shipping, no tax lines, 30-day warranty
+      if(s.shipping) s.shipping = s.shipping.replace(/^.*INTERNATIONAL SHIPPING.*$/im, "WE SHIP WORLDWIDE");
+      if(s.returns) s.returns = s.returns.split("\n").filter(l=>!/^\s*IF YOU LIVE IN (QUEBEC|CANADA)/i.test(l)).join("\n");
+      (s.specs||[]).forEach(r=>{ if(r[0]==="Warranty" && !String(r[1]||"").trim()) r[1] = SPEC_DEFAULTS.Warranty; });
+      return Object.assign(structuredClone(DEFAULTS), s);
+    }
   }catch(e){}
   return structuredClone(DEFAULTS);
 }
@@ -452,7 +469,7 @@ function drawChips(){
 $("#types").onclick = e=>{
   const k = e.target.dataset.type; if(!k) return;
   const t = TYPES[k];
-  S.specs = [...t.specs, ...TAIL].map(l=>[l, getSpec(l) || (l==="Serial Number" ? "Recorded to prevent fraud" : "")]);
+  S.specs = [...t.specs, ...TAIL].map(l=>[l, getSpec(l) || SPEC_DEFAULTS[l] || ""]);
   if(S.cond) setSpec("Condition", S.cond);
   S.type = k; S.b3t = "Great for"; S.b3d = t.b3d;
   S.included = t.item + "\nOnly items listed are included";
@@ -493,6 +510,150 @@ $("#addbulk").onclick = ()=>{
   if(!k) return toast("Format attendu : Label: valeur (une par ligne)");
   $("#bulk").value = ""; drawSpecs(); render(); toast(k + " spec" + (k>1?"s":"") + " importée" + (k>1?"s":""));
 };
+
+/* Import another seller's listing: AI route first, simple local parser as fallback */
+const IMP_LABELS = {
+  "brand":"Brand","manufacturer":"Brand","marque":"Brand","fabricant":"Brand",
+  "model":"Model","modèle":"Model","modele":"Model","mpn":"Part Number","part number":"Part Number",
+  "processor":"Processor","processor model":"Processor","cpu":"Processor","processeur":"Processor",
+  "ram size":"RAM","ram":"RAM","memory":"RAM","mémoire":"RAM","mémoire vive":"RAM","memoire vive":"RAM",
+  "ssd capacity":"Storage","hard drive capacity":"Storage","storage":"Storage","storage capacity":"Storage","stockage":"Storage","disque dur":"Storage",
+  "gpu":"Graphics","graphics":"Graphics","graphics card":"Graphics","graphics processing type":"Graphics","carte graphique":"Graphics",
+  "operating system":"Operating System","os":"Operating System","système d'exploitation":"Operating System",
+  "screen size":"Screen Size","taille de l'écran":"Screen Size","maximum resolution":"Resolution","max. resolution":"Resolution","resolution":"Resolution","résolution":"Resolution",
+  "panel type":"Panel Type","display technology":"Panel Type","form factor":"Form Factor","type":"Type",
+  "capacity":"Capacity","interface":"Interface","connectivity":"Ports","ports":"Ports",
+  "battery":"Battery","batterie":"Battery","charger":"Charger","chargeur":"Charger","power supply":"Power Supplies"
+};
+// When the chosen type has no row with that label, use its closest one
+const IMP_ALT = {"Processor":["Processor(s)"],"Storage":["Drive Bays / Storage","Capacity"],"Ports":["Inputs"],"Power Supplies":["Charger"]};
+const BRANDS = ["HPE","HP","Dell","Lenovo","Apple","Asus","Acer","Microsoft","Samsung","LG","Cisco","Ubiquiti","Netgear","Supermicro","Toshiba","Fujitsu","Synology","QNAP","ViewSonic","BenQ","AOC","Seagate","Western Digital","WD","Crucial","Kingston","Juniper","Aruba","MSI","Gigabyte","TP-Link","Intel","AMD","NetApp","IBM"];
+const SERIES = ["OptiPlex","Latitude","Precision","Vostro","Inspiron","XPS","PowerEdge","PowerVault","Wyse","ThinkPad","ThinkCentre","ThinkStation","ThinkSystem","ThinkVision","IdeaPad","IdeaCentre","EliteBook","ProBook","ZBook","EliteDesk","ProDesk","EliteOne","ProLiant","MacBook Pro","MacBook Air","iMac","Mac mini","Mac Pro","Surface Pro","Surface Laptop","Surface Book","Catalyst","Meraki","UniFi","ProArt","ROG","TravelMate","Aspire","UltraSharp","P Series"];
+const reEsc = s => s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const SPEC_TOKEN = /^(intel|amd|core|i[3579]|i[3579]-\S+|ryzen|xeon|\d+\s?(gb|tb|ghz)|ssd|hdd|nvme|ram|ddr\d|win(dows)?|w10|w11|pc|computer|desktop|laptop|notebook|tested|working|wifi|webcam|\d+(\.\d+)?("|”|in|inch)|fhd|hd|\d+u|server|-|\||,)$/i;
+
+function parseListing(text){
+  const L = text.split(/\r?\n/).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean);
+  const specs = {}; let condTxt = "";
+  for(let i=0;i<L.length;i++){
+    let key, val, m = L[i].match(/^([^:\t]{2,40}?)\s*[:\t]\s*(.+)$/);
+    if(m){ key = m[1]; val = m[2]; }
+    else { const k0 = L[i].toLowerCase().replace(/:$/,""); if(IMP_LABELS[k0] || k0==="condition" || k0==="état"){ key = k0; val = L[i+1]; i++; } }
+    if(!key || !val) continue;
+    const k = key.toLowerCase().trim();
+    if(k==="condition" || k==="état"){ condTxt = condTxt || val; continue; }
+    const lab = IMP_LABELS[k];
+    if(!lab || specs[lab]) continue;
+    // French listings: units and common words in English
+    val = val.replace(/^["“]|["”]$/g,"").replace(/(\d)\s?Go\b/g,"$1GB").replace(/(\d)\s?To\b/g,"$1TB")
+      .replace(/^inclus$/i,"Included").replace(/^oui$/i,"Yes").replace(/^non$/i,"No").slice(0,120);
+    if(k==="ssd capacity" && !/ssd/i.test(val)) val += " SSD";
+    if(k==="hard drive capacity" && !/hdd|ssd/i.test(val)) val += " HDD";
+    specs[lab] = val;
+  }
+  // Title: the line that looks most like a product title
+  let best = "", bestScore = 0;
+  L.slice(0,80).forEach(l=>{
+    if(l.length < 12 || l.length > 140 || /^[^:]{2,40}:/.test(l) || /\$|https?:/i.test(l)) return;
+    let s = 0;
+    if(BRANDS.some(b=>new RegExp("\\b"+reEsc(b)+"\\b","i").test(l))) s += 3;
+    if(SERIES.some(x=>new RegExp("\\b"+reEsc(x)+"\\b","i").test(l))) s += 3;
+    s += (l.match(/\b(\d+\s?(GB|TB)|i[3579]|Ryzen|Xeon|SSD|HDD|Windows|Win ?1[01])\b/gi)||[]).length;
+    if(s > bestScore){ bestScore = s; best = l; }
+  });
+  best = best.replace(/\s*\|\s*eBay.*$/i,"");
+  const all = best + "\n" + text;
+  const find = re => { const m = all.match(re); return m ? m[0].replace(/\s+/g," ").trim() : ""; };
+  if(!specs.Processor) specs.Processor = find(/\b(Intel\s+)?(Core\s+)?i[3579][- ]\d{4,5}[A-Z]{0,2}\b|\bRyzen\s+[3579]\s+(PRO\s+)?\d{4}[A-Z]{0,2}\b|\bXeon\s+(?:(?:Gold|Silver|Bronze|Platinum)\s+)?[A-Z]?-?\d{4}[A-Z]?(\s+v\d)?\b/i);
+  if(!specs.RAM){ const r = find(/\b\d{1,3}\s?GB\s*(DDR\d\s*)?(RAM|Memory)\b|\b\d{1,3}\s?GB\s+DDR\d\b/i); specs.RAM = r.replace(/\s*(RAM|Memory)$/i,""); }
+  if(!specs.Storage) specs.Storage = find(/\b\d{2,4}\s?(GB|TB)\s*(NVMe\s*)?(M\.2\s*)?(SSD|HDD)\b/i);
+  if(!specs["Operating System"]){ const o = find(/\bWin(dows)?\s?1[01](\s?Pro|\s?Home)?\b/i); if(o) specs["Operating System"] = "Windows " + o.match(/1[01]/)[0] + (/pro/i.test(o)?" Pro":/home/i.test(o)?" Home":""); }
+  if(!specs["Screen Size"]) specs["Screen Size"] = find(/\b[1-4]\d(\.\d)?\s?("|”|''|-?inch\b|in\b)/i);
+
+  const brand = (specs.Brand && BRANDS.find(b=>b.toLowerCase()===specs.Brand.toLowerCase())) || specs.Brand || BRANDS.find(b=>new RegExp("\\b"+reEsc(b)+"\\b","i").test(best)) || "";
+  const series = SERIES.find(x=>new RegExp("\\b"+reEsc(x)+"\\b","i").test(best + " " + (specs.Model||"")));
+  let title = "", model = "";
+  if(series){
+    title = (brand ? brand + " " : "") + series;
+    const after = (best.split(new RegExp("\\b"+reEsc(series)+"\\b","i"))[1] || "").trim().split(" ");
+    const tk = []; for(const w of after){ if(SPEC_TOKEN.test(w) || tk.length >= 3) break; tk.push(w); }
+    model = tk.join(" ") || (specs.Model||"").replace(new RegExp("\\b"+reEsc(series)+"\\b","i"),"").trim();
+  } else if(brand){ title = brand; model = (specs.Model||"").replace(new RegExp("^"+reEsc(brand)+"\\s*","i"),""); }
+  else title = best.split(" ").slice(0,4).join(" ");
+
+  const hay = (best + " " + (specs.Type||"") + " " + (specs["Form Factor"]||"")).toLowerCase(), body = text.toLowerCase();
+  const TYPE_RE = [
+    ["server",/\b(server|serveur|poweredge|proliant|thinksystem|supermicro)\b/],
+    ["laptop",/\b(laptop|notebook|portable|thinkpad|latitude|elitebook|probook|zbook|macbook|ideapad|chromebook|travelmate|surface (pro|laptop|book))\b/],
+    ["monitor",/\b(monitor|moniteur|écran|ultrasharp|thinkvision)\b/],
+    ["network",/\b(switch|router|routeur|firewall|access point|catalyst|meraki|unifi)\b/],
+    ["desktop",/\b(desktop|optiplex|thinkcentre|thinkstation|elitedesk|prodesk|vostro|tower|sff|usff|mini pc|tiny|imac|mac mini|all-in-one)\b/],
+    ["parts",/\b(ssd|hdd|hard drive|nvme|dimm|sodimm|caddy|tray|power supply|psu|ram)\b/]
+  ];
+  const type = (TYPE_RE.find(([,re])=>re.test(hay)) || TYPE_RE.find(([,re])=>re.test(body)) || ["other"])[0];
+  const c = (condTxt + " " + best).toLowerCase();
+  const cond = /for parts|not working|pour pi[eè]ces|as[- ]is/.test(c) ? "For parts / not working"
+    : /open box|new|neuf/.test(c) && !/used|pre-owned|usag/.test(c) ? "New – Open box"
+    : /excellent|like new|comme neuf/.test(c) ? "Used – Excellent"
+    : /\bfair\b|correct|heavy wear/.test(c) ? "Used – Fair"
+    : /used|pre-owned|refurbished|usag|reconditionn/.test(c) ? "Used – Good" : "";
+
+  delete specs.Model; delete specs.Brand;
+  return {type, cond, title, model, desc:"", specs:Object.entries(specs).filter(r=>r[1])};
+}
+// Short English description written from the extracted specs
+function genDesc(d){
+  const sp = Object.fromEntries(d.specs);
+  const word = {desktop:"desktop computer",laptop:"laptop",server:"server",monitor:"monitor",network:"network device"}[d.type] || "";
+  const parts = [sp.Processor || sp["Processor(s)"], sp.RAM && sp.RAM + " RAM", sp.Storage || sp.Capacity, sp["Screen Size"] && sp["Screen Size"] + " screen"].filter(Boolean);
+  const name = [d.title, d.model, word].filter(Boolean).join(" ");
+  if(!name.trim()) return "";
+  const list = parts.length > 1 ? parts.slice(0,-1).join(", ") + " and " + parts.at(-1) : parts[0];
+  return name + (list ? " with " + list : "") + "." + (sp["Operating System"] ? " " + sp["Operating System"] + " installed." : "") +
+    (d.cond === "For parts / not working" ? " Sold as-is for parts or repair." : " Tested and ready to use.");
+}
+function specLabel(l){
+  const has = x => S.specs.some(r=>r[0].toLowerCase()===x.toLowerCase());
+  if(has(l)) return l;
+  return (IMP_ALT[l]||[]).find(has) || l;
+}
+function applyImport(d){
+  const t = TYPES[d.type];
+  if(t){ S.type = d.type; S.specs = [...t.specs, ...TAIL].map(l=>[l, SPEC_DEFAULTS[l] || ""]); S.b3t = "Great for"; S.b3d = t.b3d; S.included = t.item + "\nOnly items listed are included"; }
+  else S.specs.forEach(r=>{ r[1] = SPEC_DEFAULTS[r[0]] || ""; });
+  const c = CONDS[d.cond];
+  if(c){ S.cond = d.cond; S.b1t = c.b1t; S.b1d = c.b1d; S.tested = c.tested; }
+  if(S.cond) setSpec("Condition", S.cond);
+  S.title = d.title || ""; S.model = d.model || ""; S.desc = d.desc || genDesc(d);
+  d.specs.forEach(([l,v])=>{
+    const lab = specLabel(l), at = S.specs.findIndex(r=>r[0].toLowerCase()===lab.toLowerCase());
+    if(at>=0) S.specs[at][1] = v;
+    else { const tail = S.specs.findIndex(r=>TAIL.includes(r[0])); S.specs.splice(tail<0?S.specs.length:tail, 0, [lab,v]); }
+  });
+  fillFields(); drawChips(); drawSpecs(); render();
+}
+let impBusy = false;
+async function importListing(text){
+  text = String(text||"").trim();
+  if(text.length < 20) return toast("Colle le texte complet de l'annonce");
+  if(impBusy) return;
+  impBusy = true; $("#impgo").disabled = true; $("#impstate").textContent = "Analyse en cours…";
+  let d = null;
+  try{
+    const r = await fetch("/api/admin/ebay-import", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({text})});
+    const j = await r.json();
+    if(r.ok && j.listing && (j.listing.title || j.listing.specs.length)) d = j.listing;
+  }catch(e){}
+  const ai = !!d;
+  if(!d) d = parseListing(text);
+  impBusy = false; $("#impgo").disabled = false;
+  if(!d.title && !d.specs.length){ $("#impstate").textContent = ""; return toast("Rien trouvé dans ce texte"); }
+  applyImport(d);
+  $("#impstate").textContent = ai ? "✓ Rempli" : "✓ Rempli (mode simple)";
+  toast("Rempli : " + [d.title, d.model].filter(Boolean).join(" ") + " — vérifie les specs");
+}
+$("#imp").addEventListener("paste", ()=>setTimeout(()=>importListing($("#imp").value), 0));
+$("#impgo").onclick = ()=>importListing($("#imp").value);
 
 /* Photos */
 let dragFrom = null;
@@ -580,13 +741,16 @@ $("#file").onchange = e=>{ addFiles(e.target.files); e.target.value=""; };
 document.addEventListener("drop",e=>{ if(dragFrom!==null) return; e.preventDefault(); if(!addFiles(e.dataTransfer.files)) addUrls(e.dataTransfer.getData("text/uri-list")||e.dataTransfer.getData("text")); });
 $("#addurls").onclick = ()=>{ if(addUrls($("#urls").value)) $("#urls").value=""; else toast("Aucun lien http(s) valide"); };
 
-// Ctrl+V anywhere: images are always captured; URLs only when not typing in a field
+// Ctrl+V anywhere: images are always captured; outside a field, links become photos and a listing's text is imported
 document.addEventListener("paste", e=>{
   const cd = e.clipboardData; if(!cd) return;
   const files = [...cd.items].filter(i=>i.kind==="file").map(i=>i.getAsFile()).filter(Boolean);
   if(files.length){ e.preventDefault(); addFiles(files); return; }
   const t = e.target, typing = t.matches && t.matches("input,textarea");
-  if(!typing && addUrls(cd.getData("text"))) e.preventDefault();
+  if(typing) return;
+  const text = cd.getData("text").trim();
+  if(text && text.split(/\s+/).every(u=>/^https?:\/\/\S+$/i.test(u))){ e.preventDefault(); addUrls(text); }
+  else if(text.length > 80){ e.preventDefault(); $("#imp").value = text; importListing(text); }
 });
 
 /* Output */
@@ -608,7 +772,7 @@ $("#dl").onclick = ()=>{
 $("#newl").onclick = ()=>{
   if(!confirm("Nouvelle annonce ? Les photos et les infos du produit seront vidées (tes réglages de livraison/retours sont gardés).")) return;
   S.title = S.model = S.desc = ""; S.photos = [];
-  S.specs.forEach(r=>{ r[1] = r[0]==="Serial Number" ? "Recorded to prevent fraud" : (r[0]==="Condition" && S.cond ? S.cond : ""); });
+  S.specs.forEach(r=>{ r[1] = SPEC_DEFAULTS[r[0]] || (r[0]==="Condition" && S.cond ? S.cond : ""); });
   fillFields(); drawSpecs(); drawPhotos(); render(); window.scrollTo(0,0); $(".scroll").scrollTop = 0;
 };
 $("#reset").onclick = ()=>{
