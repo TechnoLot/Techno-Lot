@@ -140,7 +140,7 @@ export function counterShot({ W, H, vertical: V, K }) {
 
     // caméra : collée au « $ » (raccord LCD), recul en ressort, lente poussée, recentrage
     const pull = spring(t - K.counterIn, 1.5, 0.82);
-    const wide = new THREE.Vector3(fbm1(t * 0.5, 31) * 0.05, (baseY + ly + lcap) / 2 + fbm1(t * 0.45, 32) * 0.04, D - 0.6 * smooth(12.3, K.irisMap, t));
+    const wide = new THREE.Vector3(fbm1(t * 0.5, 31) * 0.05, (baseY + ly + lcap) / 2 + fbm1(t * 0.45, 32) * 0.04, D - 0.6 * smooth(K.rapide - 0.1, K.irisMap, t));
     const close = new THREE.Vector3(dollarCenter.x, dollarCenter.y, cap * 1.9);
     const pos = close.clone().lerp(wide, clamp(pull, 0, 1.08));
     // centre du bloc (étiquette + montant)

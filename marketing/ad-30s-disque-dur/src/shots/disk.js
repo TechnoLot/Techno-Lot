@@ -53,7 +53,7 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
     { name: "Paie_2024.pdf", ang: 2.2, r: 0.034, d: 0.12 },
     { name: "Courriels", ang: 3.9, r: 0.028, d: 0.24 },
   ];
-  const cardW = V ? 0.022 : 0.027, cardH = V ? 0.0088 : 0.0108;
+  const cardW = V ? 0.019 : 0.027, cardH = V ? 0.0076 : 0.0108;
   const COLS = 15, ROWS = 9;
   const files = FILES.map((f, i) => {
     const g = new THREE.Group();
@@ -152,6 +152,12 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
   const cs = cardHH * 0.17;
   const check = strokePath([v3(-0.5, 0.0, 0), v3(-0.14, -0.38, 0), v3(0.55, 0.36, 0)].map((p) => p.multiplyScalar(cs).add(checkC)), cardHH * 0.045, new THREE.Color().copy(C.green).multiplyScalar(1.5));
   face.add(icon, brand, when, title, amount, checkRing, check);
+  face.traverse((o) => {
+    if (o.material) {
+      o.material.depthTest = false;
+      o.renderOrder = 6;
+    }
+  });
   // ondes
   const waves = [0, 1, 2].map(() => {
     const r = ring(1, 1.012, new THREE.Color().copy(C.green), 128);
@@ -198,38 +204,62 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
   // position finale de la carte (repère monde)
   const cardPos = V ? v3(0, -0.2 * ph, 0) : v3(-0.09 + 0.235 * pw, -0.03 * ph, 0);
 
+  // ---------------------------------------------------------------- repères (rapides)
+  const T0 = K.irisDisk; // vue de dessus (iris depuis le siège)
+  const T1 = K.diskIn; // bascule vers l'angle rasant
+  const TG = K.donnees; // « Et vos données? » : les fichiers sortent
+  const TW0 = K.crush - 0.13, TW1 = K.crush + 0.1; // recul éclair sur tout le disque
+  const TX0 = K.crush, TX1 = K.impact - 0.19; // éclatement, puis écrasement sec
+  const TC = K.pivot + 0.48; // le cube devient la carte
+
   // ---------------------------------------------------------------- caméra
   const camMacroTop = { p: v3(0.0, 0.085, 0.0001), l: v3(0, 0, 0) };
   const camGraze = (t) => {
-    const a = 0.9 + 0.12 * (t - 16.1);
-    return { p: v3(Math.cos(a) * 0.088, platterTop + 0.026 - 0.006 * smooth(16.1, 17.8, t), Math.sin(a) * 0.088), l: v3(Math.cos(a) * 0.004, platterTop + 0.004, Math.sin(a) * 0.004) };
+    const a = 0.9 + 0.12 * (t - T1);
+    return { p: v3(Math.cos(a) * 0.088, platterTop + 0.026 - 0.006 * smooth(T1, TW0, t), Math.sin(a) * 0.088), l: v3(Math.cos(a) * 0.004, platterTop + 0.004, Math.sin(a) * 0.004) };
   };
   const camWide = (t) => {
-    const a = 0.75 + 0.18 * (t - 18.2);
-    return { p: v3(Math.cos(a) * 0.34, 0.21 + 0.02 * (t - 18.2), Math.sin(a) * 0.34), l: v3(0, 0.026, 0) };
+    const a = 0.75 + 0.18 * (t - TW0);
+    return { p: v3(Math.cos(a) * 0.34, 0.21 + 0.02 * (t - TW0), Math.sin(a) * 0.34), l: v3(0, 0.026, 0) };
   };
+  // vertical : cadre étroit, les fichiers se rangent en cascade au centre de l'image.
+  // Positions tirées de la vue rasante (écran normalisé x, y et distance à la caméra).
+  let endsV = null;
+  function verticalEnds() {
+    const g = camGraze(K.donnees + 0.35);
+    const c = cam.clone();
+    c.position.copy(g.p);
+    c.up.set(0, 1, 0);
+    c.lookAt(g.l);
+    c.updateProjectionMatrix();
+    c.updateMatrixWorld();
+    return [[-0.12, 0.1, 0.074], [0.12, 0.36, 0.081], [-0.06, 0.6, 0.088]].map(([nx, ny, d]) => {
+      const dir = new THREE.Vector3(nx, ny, 0.5).unproject(c).sub(c.position).normalize();
+      return c.position.clone().addScaledVector(dir, d);
+    });
+  }
   function camPose(t) {
     let p, l;
-    if (t < 16.1) {
+    if (t < T1) {
       // descente verticale sur le moyeu (raccord iris)
-      const k = expoOut(invLerp(15.8, 16.25, t));
+      const k = expoOut(invLerp(T0 - 0.05, T1 + 0.15, t));
       p = camMacroTop.p.clone().setY(lerp(0.11, 0.075, k));
       l = camMacroTop.l.clone();
       cam.up.set(0, 0, -1);
-    } else if (t < 17.9) {
+    } else if (t < TW0) {
       // la caméra bascule de la vue de dessus à un angle rasant
-      const k = cubicInOut(invLerp(16.1, 16.95, t));
+      const k = cubicInOut(invLerp(T1, T1 + 0.3, t));
       const g = camGraze(t);
       p = camMacroTop.p.clone().setY(0.075).lerp(g.p, k);
       l = camMacroTop.l.clone().lerp(g.l, k);
-      cam.up.set(0, 0, -1).lerp(v3(0, 1, 0), smooth(16.1, 16.6, t)).normalize();
-    } else if (t < 19.42) {
-      const k = expoInOut(invLerp(17.9, 18.45, t));
-      const g = camGraze(17.9), w = camWide(t);
+      cam.up.set(0, 0, -1).lerp(v3(0, 1, 0), smooth(T1, T1 + 0.25, t)).normalize();
+    } else if (t < K.impact + 0.02) {
+      const k = expoInOut(invLerp(TW0, TW1, t));
+      const g = camGraze(TW0), w = camWide(t);
       p = g.p.lerp(w.p, k);
       l = g.l.lerp(w.l, k);
       // compression : la caméra s'approche juste avant l'impact
-      const c = expoIn(invLerp(19.15, K.impact, t));
+      const c = expoIn(invLerp(TX1, K.impact, t));
       const a = camAfter;
       p.lerp(a.p.clone().multiplyScalar(0.92), c);
       l.lerp(a.l, c);
@@ -244,7 +274,7 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
       const k = cubicInOut(invLerp(K.pivot, K.pivot + 0.6, t));
       p = camAfter.p.clone().add(v3(0, 0, 0.01 * (K.pivot - K.impact))).lerp(camPay.p, k);
       l = camAfter.l.clone().lerp(camPay.l, k);
-      p.z -= 0.006 * smooth(23.3, K.flash, t);
+      p.z -= 0.006 * smooth(K.white2 + 0.25, K.flash, t);
       cam.up.set(0, 1, 0);
     }
     // secousse d'impact (bruit amorti) + micro-secousses sur les mots
@@ -257,13 +287,13 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
 
   // ---------------------------------------------------------------- mise à jour
   function update(t) {
-    const exploded = expoOut(invLerp(K.explode, 19.15, t));
-    const crush = expoIn(invLerp(19.16, K.impact, t));
-    const spin = t * 2.1 * Math.PI * (1 - 0.5 * smooth(16.0, 16.8, t)); // ralenti
+    const exploded = expoOut(invLerp(TX0, TX1, t));
+    const crush = expoIn(invLerp(TX1, K.impact, t));
+    const spin = t * 2.1 * Math.PI * (1 - 0.5 * smooth(T0, T1 + 0.3, t)); // ralenti
     drive.visible = t < K.impact;
     for (const pl of P.platters) pl.rotation.y = spin;
     P.clamp.rotation.y = spin;
-    P.arm.rotation.y = ARM_REST + 0.06 * Math.sin(t * 2.3) + 0.12 * smooth(16.6, 17.2, t) * Math.sin(t * 9) * (1 - smooth(17.4, 17.8, t));
+    P.arm.rotation.y = ARM_REST + 0.06 * Math.sin(t * 2.3) + 0.12 * smooth(TG - 0.1, TG + 0.3, t) * Math.sin(t * 9) * (1 - smooth(TG + 0.4, TW0, t));
     // vue éclatée : décalages (repère du disque)
     const EX = {
       cover: v3(0, 0.07, 0), magnet: v3(0.01, 0.05, 0.01), clamp: v3(0, 0.04, 0), spacer: v3(0, 0.026, 0),
@@ -279,26 +309,27 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
     for (const [k, off] of Object.entries(EX)) setPart(P[k], off);
     // le capot n'est pas là pendant la macro : il descend du ciel pour la vue éclatée
     P.cover.position.y += 0.25 * Math.pow(1 - exploded, 2) * (1 - crush);
-    P.magnet.position.y += 0.12 * Math.pow(1 - exploded, 2) * (1 - crush) * (t < 18.0 ? 0 : 1);
+    P.magnet.position.y += 0.12 * Math.pow(1 - exploded, 2) * (1 - crush) * (t < TX0 ? 0 : 1);
     P.platters.forEach((pl, i) => setPart(pl, v3(0, 0.012 + i * 0.012, 0)));
-    drive.rotation.y = 0.5 * exploded + 0.15 * (t - K.explode) * (t > K.explode ? 1 : 0);
+    drive.rotation.y = 0.5 * exploded + 0.15 * (t - TX0) * (t > TX0 ? 1 : 0);
     drive.rotation.x = 0.12 * exploded;
 
     // fichiers : montent du plateau, font face, puis se pixelisent
     for (const f of files) {
-      const t0 = K.donnees + f.d, tP = K.donnees + 0.72 + f.d * 0.8;
-      const rise = expoOut(invLerp(t0, t0 + 1.1, t));
-      f.g.visible = t > t0 && t < tP + 1.0;
+      const t0 = TG + f.d * 0.5, tP = TG + 0.38 + f.d * 0.4;
+      const rise = expoOut(invLerp(t0, t0 + 0.55, t));
+      f.g.visible = t > t0 && t < tP + 0.6;
       if (!f.g.visible) continue;
       const a = f.ang + spin * 0.0; // part d'un secteur du plateau
       const start = v3(Math.cos(a) * f.r, platterTop + 0.0008, Math.sin(a) * f.r);
-      const end = v3(Math.cos(a) * f.r * 0.75, platterTop + 0.011 + 0.003 * f.i, Math.sin(a) * f.r * 0.75);
+      const rr = f.r * 0.75;
+      const end = V ? (endsV ||= verticalEnds())[f.i].clone() : v3(Math.cos(a) * rr, platterTop + 0.011 + 0.003 * f.i, Math.sin(a) * rr);
       f.g.position.copy(start.lerp(end, rise));
       f.g.position.y += 0.0015 * Math.sin(t * 3 + f.i);
       // couché sur le plateau → face caméra
       const qFlat = new THREE.Quaternion().setFromEuler(new THREE.Euler(-HALF, 0, a));
-      f.g.quaternion.copy(qFlat).slerp(cam.quaternion, quintOut(invLerp(t0 + 0.05, t0 + 0.8, t)));
-      const pk = invLerp(tP, tP + 0.7, t);
+      f.g.quaternion.copy(qFlat).slerp(cam.quaternion, quintOut(invLerp(t0 + 0.03, t0 + 0.45, t)));
+      const pk = invLerp(tP, tP + 0.45, t);
       const show = pk <= 0;
       f.panel.visible = f.icon.visible = f.label.visible = f.sub.visible = show;
       f.panel.material.opacity = smooth(t0, t0 + 0.15, t);
@@ -328,18 +359,18 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
 
     // cube : apparaît à l'écrasement, pivote ensuite et devient la carte
     const ck = spring(t - (K.impact - 0.06), 4.0, 0.42);
-    cube.visible = t > K.impact - 0.06 && t < 23.2;
+    cube.visible = t > K.impact - 0.06 && t < TC;
     const cubeSpin = 0.62 + 0.16 * Math.max(0, t - K.impact);
     const pv = spring(t - K.pivot, 1.9, 0.72);
-    const morph = cubicInOut(invLerp(K.pivot + 0.12, 23.2, t));
+    const morph = cubicInOut(invLerp(K.pivot + 0.12, TC, t));
     // après le quart de tour, la face visible est la face −X locale : épaisseur en X, largeur en Z
     cube.scale.set(lerp(1, 0.08, morph), lerp(1, cardHH / CUBE, morph), lerp(1, cardWW / CUBE, morph)).multiplyScalar(Math.max(1e-3, clamp(ck, 0, 1.2)));
     cube.rotation.set(lerp(0.36, 0, clamp(pv)), lerp(cubeSpin, HALF, clamp(pv)), 0);
     cube.position.copy(v3(0, 0.0, 0).lerp(cardPos, morph));
-    card.visible = t >= 23.2;
+    card.visible = t >= TC;
     card.position.copy(cardPos);
-    card.rotation.set(0, 0.0 + 0.04 * Math.sin((t - 23.2) * 1.3), 0);
-    card.scale.setScalar(1 + 0.03 * smooth(23.2, K.flash, t));
+    card.rotation.set(0, 0.04 * Math.sin((t - TC) * 1.3), 0);
+    card.scale.setScalar(1 + 0.03 * smooth(TC, K.flash, t));
 
     // éclats et étincelles (balistique, amortie)
     const dt = t - K.impact;
@@ -378,7 +409,7 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
     lines.forEach((tx, i) => {
       const t0 = times[i];
       const k = spring(t - t0, 3.6, 0.48);
-      const out = cubicInOut(invLerp(22.5 + i * 0.05, 22.72 + i * 0.05, t));
+      const out = cubicInOut(invLerp(K.pivot - 0.2 + i * 0.05, K.pivot + 0.02 + i * 0.05, t));
       tx.visible = t > t0 - 0.02 && out < 1;
       tx.glyphs.forEach((g, gi) => {
         const b = g.userData.base;
@@ -391,12 +422,12 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
     });
     const mk = Math.floor(clamp((t - K.securisee) / 0.014, 0, 99));
     mention.glyphs.forEach((g, i) => (g.visible = i < mk));
-    mention.setOpacity(1 - smooth(22.45, 22.65, t));
+    mention.setOpacity(1 - smooth(K.pivot - 0.25, K.pivot - 0.05, t));
 
     // fond blanc (iris depuis la carte), environnement clair
     const wk = expoIn(invLerp(K.white2 - 0.05, K.white2 + 0.3, t));
     scene.environment = t > K.white2 ? envBright : envDark;
-    scene.environmentIntensity = t > K.white2 ? 0.9 : t > K.impact - 0.1 ? 0.75 : lerp(0.1, 0.45, smooth(16.0, 16.7, t));
+    scene.environmentIntensity = t > K.white2 ? 0.9 : t > K.impact - 0.1 ? 0.75 : lerp(0.1, 0.45, smooth(T0, T1 + 0.4, t));
     cubeRim.intensity = t > K.impact - 0.1 && t < K.white2 ? 0.9 : 0;
     cubeKey.intensity = t > K.impact - 0.1 && t < K.white2 ? 0.35 : 0;
     const cPos = card.visible ? card.position : cube.position;
@@ -408,11 +439,11 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
 
     // contenu de la carte
     const ci = (t0) => smooth(t0, t0 + 0.2, t);
-    icon.material.opacity = ci(23.3);
-    brand.setOpacity(ci(23.34));
-    when.setOpacity(ci(23.4));
-    title.setOpacity(ci(23.45));
-    amount.setOpacity(ci(23.55));
+    icon.material.opacity = ci(K.white2 + 0.12);
+    brand.setOpacity(ci(K.white2 + 0.16));
+    when.setOpacity(ci(K.white2 + 0.22));
+    title.setOpacity(ci(K.white2 + 0.27));
+    amount.setOpacity(ci(K.white2 + 0.37));
     const ringK = spring(t - (K.check - 0.1), 3.0, 0.5);
     checkRing.scale.setScalar(Math.max(1e-3, ringK));
     checkRing.visible = t > K.check - 0.1;
@@ -447,8 +478,8 @@ export function diskShot({ W, H, vertical: V, K, envDark, envBright, logoTex }) 
     cam.updateMatrixWorld();
     // mise au point
     let focus = cam.position.distanceTo(l), aperture = 0.0016;
-    if (t < 16.1) aperture = 0.0003;
-    else if (t < 17.9) {
+    if (t < T1) aperture = 0.0003;
+    else if (t < TW0) {
       focus = cam.position.distanceTo(v3(0, platterTop, 0)) * 0.8;
       aperture = 0.00055;
     } else if (t < K.impact) aperture = 0.0018;

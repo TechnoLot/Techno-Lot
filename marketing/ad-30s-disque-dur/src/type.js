@@ -4,6 +4,7 @@
 // peut passer à travers les lettres sans aucune perte de netteté.
 import * as THREE from "three";
 import opentype from "opentype";
+import { area, cleanLoop, splitLoop, loopsToShapes } from "./contours.js";
 
 export const FONTS = {};
 const FILES = {
@@ -33,7 +34,18 @@ function glyphGeometry(fontKey, glyph, segs) {
     else if (c.type === "Q") sp.quadraticCurveTo(c.x1, -c.y1, c.x, -c.y);
     else if (c.type === "C") sp.bezierCurveTo(c.x1, -c.y1, c.x2, -c.y2, c.x, -c.y);
   }
-  const geo = sp.subPaths.length ? new THREE.ShapeGeometry(sp.toShapes(false), segs) : new THREE.BufferGeometry();
+  // Contours dont le croisement forme un trou (« 8 » de JetBrains Mono) : boucles
+  // simples, sinon toShapes() bouche les trous. Les autres glyphes ne changent pas.
+  const loops = sp.subPaths.map((p) => cleanLoop(p.getPoints(segs)));
+  const split = loops.map(splitLoop);
+  const shapes = split.some((s) => s.length > 1 && s.some((l) => area(l) > 0))
+    ? loopsToShapes(split.flat()).map(({ outer, holes }) => {
+        const s = new THREE.Shape(outer);
+        s.holes = holes.map((h) => new THREE.Path(h));
+        return s;
+      })
+    : sp.toShapes(false);
+  const geo = sp.subPaths.length ? new THREE.ShapeGeometry(shapes, segs) : new THREE.BufferGeometry();
   geoCache.set(key, geo);
   return geo;
 }
@@ -42,6 +54,25 @@ export function metrics(fontKey) {
   const f = FONTS[fontKey];
   const os2 = f.tables.os2;
   return { cap: (os2.sCapHeight || 0.7 * f.unitsPerEm) / f.unitsPerEm, xh: (os2.sxHeight || 0.5 * f.unitsPerEm) / f.unitsPerEm };
+}
+
+// Contre-forme d'un glyphe (le plus petit contour fermé, ex. l'intérieur du « O »),
+// en em, repère y vers le haut : { cx, cy, rx, ry }
+export function glyphHole(fontKey, ch) {
+  const g = FONTS[fontKey].charToGlyph(ch);
+  const subs = [];
+  let cur = null;
+  for (const c of g.getPath(0, 0, 1).commands) {
+    if (c.type === "M") subs.push((cur = []));
+    if (c.x !== undefined) cur.push([c.x, -c.y]);
+  }
+  const box = (pts) => {
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
+  const boxes = subs.map(box).sort((a, b) => (a[2] - a[0]) * (a[3] - a[1]) - (b[2] - b[0]) * (b[3] - b[1]));
+  const [x0, y0, x1, y1] = boxes[0];
+  return { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, rx: (x1 - x0) / 2, ry: (y1 - y0) / 2, adv: g.advanceWidth / FONTS[fontKey].unitsPerEm };
 }
 
 // Mesure sans construire (pour la mise en page)

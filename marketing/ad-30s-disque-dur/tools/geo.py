@@ -82,6 +82,32 @@ for k, (lon, lat) in CITIES.items():
     x, y = proj(lon, lat)
     cities[k] = [round((x - cx) * s, 4), round((y - cy) * s, 4)]
 
+# Grand Montréal, Laurentides, Rive-Sud : villes et cours d'eau (tracés à la main,
+# précision ~2 km, suffisante à cette échelle), même projection et même normalisation.
+METRO_CITIES = {
+    "Montréal": (-73.567, 45.502), "Laval": (-73.730, 45.570), "Longueuil": (-73.518, 45.531),
+    "Brossard": (-73.466, 45.458), "Terrebonne": (-73.648, 45.701), "Repentigny": (-73.450, 45.742),
+    "Saint-Jérôme": (-74.004, 45.780), "Blainville": (-73.880, 45.673), "Saint-Eustache": (-73.906, 45.565),
+    "Mirabel": (-74.086, 45.650), "Boucherville": (-73.436, 45.591), "Châteauguay": (-73.749, 45.380),
+    "Vaudreuil-Dorion": (-74.033, 45.400), "Saint-Jean-sur-Richelieu": (-73.263, 45.307), "Mascouche": (-73.601, 45.746),
+}
+METRO_RIVERS = {
+    "Saint-Laurent": [(-74.40, 45.20), (-74.17, 45.26), (-74.02, 45.34), (-73.92, 45.39), (-73.80, 45.41), (-73.68, 45.42),
+                      (-73.60, 45.43), (-73.54, 45.48), (-73.53, 45.52), (-73.50, 45.58), (-73.47, 45.63), (-73.43, 45.69),
+                      (-73.35, 45.77), (-73.25, 45.86), (-73.15, 45.97), (-73.11, 46.04)],
+    "Outaouais": [(-74.50, 45.58), (-74.38, 45.56), (-74.20, 45.50), (-74.05, 45.47), (-73.95, 45.455), (-73.92, 45.42), (-73.92, 45.39)],
+    "Rivière des Prairies": [(-73.89, 45.49), (-73.82, 45.51), (-73.75, 45.53), (-73.68, 45.57), (-73.62, 45.60), (-73.55, 45.65),
+                             (-73.50, 45.68), (-73.47, 45.70)],
+    "Rivière des Mille Îles": [(-73.90, 45.53), (-73.83, 45.57), (-73.78, 45.60), (-73.70, 45.63), (-73.64, 45.66), (-73.56, 45.69),
+                               (-73.50, 45.71), (-73.47, 45.72)],
+    "Richelieu": [(-73.11, 46.04), (-73.13, 45.95), (-73.17, 45.85), (-73.20, 45.73), (-73.21, 45.60), (-73.25, 45.45),
+                  (-73.26, 45.31), (-73.27, 45.15)],
+}
+norm = lambda lon, lat: [round((proj(lon, lat)[0] - cx) * s, 5), round((proj(lon, lat)[1] - cy) * s, 5)]
+metro = {
+    "cities": {k: norm(*v) for k, v in METRO_CITIES.items()},
+    "rivers": {k: [norm(lon, lat) for lon, lat in pts] for k, pts in METRO_RIVERS.items()},
+}
 w = (max(xs) - min(xs)) * s
-json.dump({"aspect": round(w / 2, 4), "rings": out, "cities": cities}, open(dst, "w", encoding="utf-8"), ensure_ascii=False)
+json.dump({"aspect": round(w / 2, 4), "rings": out, "cities": cities, "metro": metro}, open(dst, "w", encoding="utf-8"), ensure_ascii=False)
 print(f"{len(out)} contours, points : {[len(r) for r in out]}, largeur/hauteur = {w / 2:.3f}")

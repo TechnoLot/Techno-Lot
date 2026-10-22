@@ -46,7 +46,7 @@ void main() {
 export function endShot({ W, H, vertical: V, K, logoTex }) {
   const scene = new THREE.Scene();
   scene.userData.clear = NIGHT;
-  const cam = camera(W, H, V ? 46 : 30, 0.01, 100);
+  const cam = camera(W, H, V ? 46 : 30, 0.5, 100); // proche à 0,5 : bonne précision de profondeur
   const D = 10;
   cam.position.set(0, 0, D);
   cam.lookAt(0, 0, 0);
@@ -91,8 +91,15 @@ export function endShot({ W, H, vertical: V, K, logoTex }) {
   const pillY = headY - capH * 1.0 - pillH * 0.9;
   const pillG = new THREE.Group();
   pillG.position.set(0, pillY, 0);
-  url.position.set(0, -url.cap / 2, 0.001);
+  url.position.set(0, -url.cap / 2, 0.01);
   pillG.add(pill, url);
+  // pilule puis texte, toujours dans cet ordre : sinon les lettres du bout (« .ca »)
+  // passaient une image sur deux derrière la pilule (clignotement)
+  pill.renderOrder = 1;
+  for (const g of url.glyphs) {
+    g.userData.mesh.material.depthTest = false;
+    g.userData.mesh.renderOrder = 2;
+  }
   G.add(pillG);
 
   // ligne monospace

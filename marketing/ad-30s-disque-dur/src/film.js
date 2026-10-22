@@ -1,12 +1,14 @@
-// Le film : six plans enchaînés sans coupe franche (raccords dans l'écran, iris,
-// morphings), et les réglages d'image instant par instant.
+// Le film : sept plans enchaînés sans coupe franche (iris à travers les lettres
+// « O », plongée dans un « $ », pastilles, morphing cube → notification), et les
+// réglages d'image instant par instant.
 import * as THREE from "three";
 import * as MD from "./models.js";
 import { loadCanvasFonts } from "./textures.js";
 import { makeTimeline } from "./timeline.js";
 import { smooth, invLerp, expoIn, lerp } from "./ease.js";
-import { closetShot } from "./shots/closet.js";
-import { whiteShot } from "./shots/white.js";
+import { hookShot } from "./shots/hook.js";
+import { toutShot } from "./shots/tout.js";
+import { scanShot } from "./shots/scan.js";
 import { counterShot } from "./shots/counter.js";
 import { mapShot } from "./shots/map.js";
 import { diskShot } from "./shots/disk.js";
@@ -31,33 +33,42 @@ export async function buildFilm({ engine, W, H, vertical, timings }) {
     envBright: MD.brightStudioEnv(engine.renderer),
     logoTex: { full, icon },
   };
-  const s1 = closetShot(ctx);
-  const s2 = whiteShot(ctx);
-  const s3 = counterShot(ctx);
-  const s4 = mapShot(ctx);
-  const s5 = diskShot(ctx);
-  const s6 = endShot(ctx);
+  const hook = hookShot(ctx);
+  const tout = toutShot(ctx);
+  const scan = scanShot(ctx);
+  const counter = counterShot(ctx);
+  const map = mapShot(ctx);
+  const disk = diskShot(ctx);
+  const end = endShot(ctx);
   const diag = Math.hypot(W, H);
 
+  // iris elliptique dans la contre-forme d'un « O » : grandit jusqu'à couvrir l'image
+  const holeIris = (shot, t0, t1, t) => {
+    const h = shot.holeScreen();
+    const k = expoIn(invLerp(t0, t1, t));
+    const g = lerp(1, (1.2 * diag) / Math.max(1, Math.min(h.rx, h.ry)), k);
+    return new THREE.Vector4(h.x, h.y, h.rx * g, h.ry * g);
+  };
+  const dotIris = (d, t0, t1, t) => new THREE.Vector4(d.x, d.y, lerp(d.r, diag, expoIn(invLerp(t0, t1, t))), 1.2);
+
   const director = (t) => {
-    if (t < K.whiteout) return { a: s1.update(t) };
-    if (t < K.counterIn) return { a: s2.update(t) };
-    if (t < K.irisMap) return { a: s3.update(t) };
+    if (t < K.hookOut) return { a: hook.update(t) };
+    if (t < K.toutIn) return { a: hook.update(t), b: tout.update(t), mode: 4, p: holeIris(hook, K.hookOut, K.toutIn, t) };
+    if (t < K.toutOut) return { a: tout.update(t) };
+    if (t < K.scanIn) return { a: tout.update(t), b: scan.update(t), mode: 4, p: holeIris(tout, K.toutOut, K.scanIn, t) };
+    if (t < K.counterIn) return { a: scan.update(t) };
+    if (t < K.irisMap) return { a: counter.update(t) };
     if (t < K.mapIn) {
-      // iris : la carte s'ouvre dans la pastille verte du compteur
-      const a = s3.update(t), b = s4.update(t), d = s3.dotScreen();
-      const k = expoIn(invLerp(K.irisMap, K.mapIn, t));
-      return { a, b, mode: 1, p: new THREE.Vector4(d.x, d.y, lerp(d.r, diag, k), 1.2) };
+      const a = counter.update(t), b = map.update(t);
+      return { a, b, mode: 1, p: dotIris(counter.dotScreen(), K.irisMap, K.mapIn, t) };
     }
-    if (t < K.irisDisk) return { a: s4.update(t) };
+    if (t < K.irisDisk) return { a: map.update(t) };
     if (t < K.diskIn) {
-      // iris : le disque dur apparaît dans la pastille du siège
-      const a = s4.update(t), b = s5.update(t), d = s4.hqScreen();
-      const k = expoIn(invLerp(K.irisDisk, K.diskIn, t));
-      return { a, b, mode: 1, p: new THREE.Vector4(d.x, d.y, lerp(d.r, diag, k), 1.2) };
+      const a = map.update(t), b = disk.update(t);
+      return { a, b, mode: 1, p: dotIris(map.hqScreen(), K.irisDisk, K.diskIn, t) };
     }
-    if (t < K.end) return { a: s5.update(t) };
-    return { a: s6.update(t) };
+    if (t < K.end) return { a: disk.update(t) };
+    return { a: end.update(t) };
   };
 
   // Réglages d'image par instant (exposition, halo, grain, éclairs…)
@@ -66,32 +77,33 @@ export async function buildFilm({ engine, W, H, vertical, timings }) {
     let samples = 24;
     const dark = () => Object.assign(post, { bloom: 0.3, threshold: 1.0, vignette: 0.42, grain: 0.042 });
     const light = () => Object.assign(post, { bloom: 0.14, threshold: 1.35, vignette: 0.16, grain: 0.03 });
-    if (t < K.whiteout) {
+    const near = (a, w = 0.25) => Math.abs(t - a) < w;
+    if (t < K.toutIn) {
       dark();
-      post.exposure = 1 + 6 * Math.pow(smooth(K.dive + 0.35, K.whiteout, t), 2);
-      if (t > K.dive) samples = 48; // plongée rapide : plus de sous-images
-    } else if (t < K.counterIn) {
+      if (t > K.hookOut - 0.5) samples = 44; // plongée dans le « O »
+    } else if (t < K.scanIn) {
       light();
-      // sortie de l'écran : surexposé → normal
-      post.exposure = 1 + 6 * Math.pow(1 - smooth(K.whiteout, K.whiteout + 0.5, t), 2.2);
-      if ((t > 9.5 && t < 10.2) || t > K.lcdZoom) samples = 44; // rampes de vitesse
+      if (t > K.toutOut - 0.45) samples = 44;
+    } else if (t < K.counterIn) {
+      dark();
+      samples = t > K.dollarZoom - 0.1 ? 44 : 28;
     } else if (t < K.irisMap) {
       dark();
       samples = 40; // rouleaux en mouvement
     } else if (t < K.irisDisk) {
       light();
-      samples = t < K.mapIn + 0.2 || t > 15.3 ? 40 : 28;
+      samples = t < K.mapIn + 0.4 || t > K.irisDisk - 0.45 ? 40 : 28;
     } else if (t < K.end) {
       if (t < K.white2) dark();
       else light();
-      samples = t < K.impact ? 40 : 28;
+      samples = t < K.impact + 0.05 ? 44 : 28;
       const dt = t - K.impact;
       if (dt > 0) {
         post.exposure = 1 + 2.2 * Math.exp(-dt * 11);
         post.ca = 0.006 + 0.035 * Math.exp(-dt * 7);
       }
       if (t > K.flash - 0.14) post.exposure = 1 + 10 * Math.pow(smooth(K.flash - 0.14, K.end, t), 2);
-      if (t > K.pivot - 0.1 && t < 23.4) samples = 36;
+      if (near(K.pivot + 0.25, 0.4)) samples = 36;
     } else {
       dark();
       post.vignette = 0.38;

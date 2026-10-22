@@ -2,158 +2,159 @@
  "voice": "fr-CA-ThierryNeural",
  "sentences": [
   {
-   "id": "placard",
-   "text": "Vos vieux ordis traînent dans un placard?",
-   "rate": "+6%",
+   "id": "parc",
+   "text": "Votre entreprise renouvelle son parc informatique?",
+   "rate": "+0%",
    "start": 0.3,
-   "end": 2.09,
+   "end": 2.865,
    "words": [
     {
-     "text": "Vos",
+     "text": "Votre",
      "start": 0.3,
-     "end": 0.536
+     "end": 0.6
     },
     {
-     "text": "vieux",
-     "start": 0.548,
-     "end": 0.725
+     "text": "entreprise",
+     "start": 0.612,
+     "end": 1.163
     },
     {
-     "text": "ordis",
-     "start": 0.736,
-     "end": 1.043
+     "text": "renouvelle",
+     "start": 1.175,
+     "end": 1.662
     },
     {
-     "text": "traînent",
-     "start": 1.055,
-     "end": 1.314
+     "text": "son",
+     "start": 1.675,
+     "end": 1.838
     },
     {
-     "text": "dans",
-     "start": 1.326,
-     "end": 1.444
+     "text": "parc",
+     "start": 1.85,
+     "end": 2.112
     },
     {
-     "text": "un",
-     "start": 1.456,
-     "end": 1.585
-    },
-    {
-     "text": "placard",
-     "start": 1.597,
-     "end": 2.234
+     "text": "informatique",
+     "start": 2.125,
+     "end": 3.0
     }
    ]
   },
   {
-   "id": "valent",
-   "text": "Ils valent encore de l'argent.",
-   "rate": "+4%",
-   "start": 2.24,
-   "end": 3.395,
+   "id": "lot",
+   "text": "On rachète votre équipement en lot, neuf ou usagé.",
+   "rate": "+0%",
+   "start": 3.4,
+   "end": 5.985,
    "words": [
     {
-     "text": "Ils",
-     "start": 2.24,
-     "end": 2.444
-    },
-    {
-     "text": "valent",
-     "start": 2.456,
-     "end": 2.661
-    },
-    {
-     "text": "encore",
-     "start": 2.673,
-     "end": 2.985
-    },
-    {
-     "text": "de",
-     "start": 2.997,
-     "end": 3.081
-    },
-    {
-     "text": "l'argent",
-     "start": 3.093,
-     "end": 3.55
-    }
-   ]
-  },
-  {
-   "id": "rachete",
-   "text": "Chez Techno Lot, on rachète vos lots informatiques :",
-   "rate": "+2%",
-   "start": 4.295,
-   "end": 7.025,
-   "words": [
-    {
-     "text": "Chez",
-     "start": 4.295,
-     "end": 4.565
-    },
-    {
-     "text": "Techno",
-     "start": 4.577,
-     "end": 4.932
-    },
-    {
-     "text": "Lot",
-     "start": 4.945,
-     "end": 5.324
-    },
-    {
-     "text": "on",
-     "start": 5.459,
-     "end": 5.545
+     "text": "On",
+     "start": 3.4,
+     "end": 3.563
     },
     {
      "text": "rachète",
-     "start": 5.557,
-     "end": 5.913
+     "start": 3.575,
+     "end": 3.938
     },
     {
-     "text": "vos",
-     "start": 5.925,
-     "end": 6.084
+     "text": "votre",
+     "start": 3.95,
+     "end": 4.175
     },
     {
-     "text": "lots",
-     "start": 6.096,
-     "end": 6.243
+     "text": "équipement",
+     "start": 4.188,
+     "end": 4.6
     },
     {
-     "text": "informatiques",
-     "start": 6.256,
-     "end": 7.163
+     "text": "en",
+     "start": 4.613,
+     "end": 4.738
+    },
+    {
+     "text": "lot",
+     "start": 4.75,
+     "end": 5.013
+    },
+    {
+     "text": "neuf",
+     "start": 5.188,
+     "end": 5.425
+    },
+    {
+     "text": "ou",
+     "start": 5.438,
+     "end": 5.525
+    },
+    {
+     "text": "usagé",
+     "start": 5.538,
+     "end": 6.113
     }
    ]
   },
   {
-   "id": "liste",
-   "text": "portables, tours, serveurs, écrans.",
+   "id": "tout",
+   "text": "Chez Technolot, on achète tout ce qui est informatique ou électronique.",
    "rate": "-2%",
-   "start": 7.175,
-   "end": 9.605,
+   "start": 6.8,
+   "end": 10.485,
    "words": [
     {
-     "text": "portables",
-     "start": 7.175,
-     "end": 7.851
+     "text": "Chez",
+     "start": 6.8,
+     "end": 7.081
     },
     {
-     "text": "tours",
-     "start": 7.979,
-     "end": 8.361
+     "text": "Technolot",
+     "start": 7.093,
+     "end": 7.667
     },
     {
-     "text": "serveurs",
-     "start": 8.502,
-     "end": 9.152
+     "text": "on",
+     "start": 7.859,
+     "end": 7.961
     },
     {
-     "text": "écrans",
-     "start": 9.292,
-     "end": 9.739
+     "text": "achète",
+     "start": 7.973,
+     "end": 8.369
+    },
+    {
+     "text": "tout",
+     "start": 8.382,
+     "end": 8.509
+    },
+    {
+     "text": "ce",
+     "start": 8.522,
+     "end": 8.611
+    },
+    {
+     "text": "qui",
+     "start": 8.624,
+     "end": 8.764
+    },
+    {
+     "text": "est",
+     "start": 8.777,
+     "end": 8.828
+    },
+    {
+     "text": "informatique",
+     "start": 8.841,
+     "end": 9.619
+    },
+    {
+     "text": "ou",
+     "start": 9.632,
+     "end": 9.746
+    },
+    {
+     "text": "électronique",
+     "start": 9.759,
+     "end": 10.626
     }
    ]
   },
@@ -161,18 +162,18 @@
    "id": "evaluation",
    "text": "Évaluation gratuite,",
    "rate": "+0%",
-   "start": 10.095,
-   "end": 11.42,
+   "start": 11.45,
+   "end": 12.775,
    "words": [
     {
      "text": "Évaluation",
-     "start": 10.095,
-     "end": 10.808
+     "start": 11.45,
+     "end": 12.162
     },
     {
      "text": "gratuite",
-     "start": 10.82,
-     "end": 11.532
+     "start": 12.175,
+     "end": 12.888
     }
    ]
   },
@@ -180,18 +181,18 @@
    "id": "offre",
    "text": "offre rapide,",
    "rate": "+0%",
-   "start": 12.04,
-   "end": 12.91,
+   "start": 13.45,
+   "end": 14.32,
    "words": [
     {
      "text": "offre",
-     "start": 12.04,
-     "end": 12.402
+     "start": 13.45,
+     "end": 13.812
     },
     {
      "text": "rapide",
-     "start": 12.415,
-     "end": 12.952
+     "start": 13.825,
+     "end": 14.362
     }
    ]
   },
@@ -199,52 +200,52 @@
    "id": "cueillette",
    "text": "cueillette partout au Québec.",
    "rate": "+0%",
-   "start": 13.69,
-   "end": 15.055,
+   "start": 15.05,
+   "end": 16.415,
    "words": [
     {
      "text": "cueillette",
-     "start": 13.69,
-     "end": 14.09
+     "start": 15.05,
+     "end": 15.45
     },
     {
      "text": "partout",
-     "start": 14.102,
-     "end": 14.452
+     "start": 15.462,
+     "end": 15.812
     },
     {
      "text": "au",
-     "start": 14.465,
-     "end": 14.552
+     "start": 15.825,
+     "end": 15.913
     },
     {
      "text": "Québec",
-     "start": 14.565,
-     "end": 15.19
+     "start": 15.925,
+     "end": 16.55
     }
    ]
   },
   {
    "id": "donnees",
    "text": "Et vos données?",
-   "rate": "-4%",
-   "start": 16.545,
-   "end": 17.18,
+   "rate": "+0%",
+   "start": 17.25,
+   "end": 17.86,
    "words": [
     {
      "text": "Et",
-     "start": 16.545,
-     "end": 16.727
+     "start": 17.25,
+     "end": 17.425
     },
     {
      "text": "vos",
-     "start": 16.74,
-     "end": 16.884
+     "start": 17.438,
+     "end": 17.575
     },
     {
      "text": "données",
-     "start": 16.897,
-     "end": 17.313
+     "start": 17.588,
+     "end": 17.987
     }
    ]
   },
@@ -252,43 +253,43 @@
    "id": "detruit",
    "text": "On les détruit gratuitement, de façon sécurisée.",
    "rate": "+0%",
-   "start": 19.5,
-   "end": 22.165,
+   "start": 18.31,
+   "end": 20.975,
    "words": [
     {
      "text": "On",
-     "start": 19.5,
-     "end": 19.675
+     "start": 18.31,
+     "end": 18.485
     },
     {
      "text": "les",
-     "start": 19.688,
-     "end": 19.8
+     "start": 18.498,
+     "end": 18.61
     },
     {
      "text": "détruit",
-     "start": 19.812,
-     "end": 20.175
+     "start": 18.622,
+     "end": 18.985
     },
     {
      "text": "gratuitement",
-     "start": 20.188,
-     "end": 20.925
+     "start": 18.998,
+     "end": 19.735
     },
     {
      "text": "de",
-     "start": 21.088,
-     "end": 21.2
+     "start": 19.897,
+     "end": 20.01
     },
     {
      "text": "façon",
-     "start": 21.212,
-     "end": 21.55
+     "start": 20.022,
+     "end": 20.36
     },
     {
      "text": "sécurisée",
-     "start": 21.562,
-     "end": 22.3
+     "start": 20.372,
+     "end": 21.11
     }
    ]
   },
@@ -296,82 +297,77 @@
    "id": "paiement",
    "text": "Paiement rapide et garanti.",
    "rate": "+0%",
-   "start": 23.255,
-   "end": 24.565,
+   "start": 22.15,
+   "end": 23.46,
    "words": [
     {
      "text": "Paiement",
-     "start": 23.255,
-     "end": 23.592
+     "start": 22.15,
+     "end": 22.487
     },
     {
      "text": "rapide",
-     "start": 23.605,
-     "end": 23.967
+     "start": 22.5,
+     "end": 22.862
     },
     {
      "text": "et",
-     "start": 23.98,
-     "end": 24.042
+     "start": 22.875,
+     "end": 22.937
     },
     {
      "text": "garanti",
-     "start": 24.055,
-     "end": 24.692
+     "start": 22.95,
+     "end": 23.587
     }
    ]
   },
   {
    "id": "slogan",
-   "text": "Techno Lot point C A, on s'occupe de tout.",
+   "text": "Technolot point C A, on s'occupe de tout.",
    "rate": "+0%",
-   "start": 25.865,
-   "end": 28.205,
+   "start": 25.3,
+   "end": 27.595,
    "words": [
     {
-     "text": "Techno",
-     "start": 25.865,
-     "end": 26.265
-    },
-    {
-     "text": "Lot",
-     "start": 26.277,
-     "end": 26.44
+     "text": "Technolot",
+     "start": 25.3,
+     "end": 25.8
     },
     {
      "text": "point",
-     "start": 26.452,
-     "end": 26.678
+     "start": 25.812,
+     "end": 26.037
     },
     {
      "text": "C",
-     "start": 26.69,
-     "end": 26.965
+     "start": 26.05,
+     "end": 26.325
     },
     {
      "text": "A",
-     "start": 26.977,
-     "end": 27.19
+     "start": 26.337,
+     "end": 26.55
     },
     {
      "text": "on",
-     "start": 27.39,
-     "end": 27.49
+     "start": 26.762,
+     "end": 26.862
     },
     {
      "text": "s'occupe",
-     "start": 27.502,
-     "end": 27.877
+     "start": 26.875,
+     "end": 27.25
     },
     {
      "text": "de",
-     "start": 27.89,
-     "end": 28.04
+     "start": 27.262,
+     "end": 27.412
     },
     {
      "text": "tout",
-     "start": 28.052,
-     "end": 28.34
+     "start": 27.425,
+     "end": 27.725
     }
    ]
   }

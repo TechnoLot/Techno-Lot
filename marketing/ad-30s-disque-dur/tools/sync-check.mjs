@@ -33,34 +33,53 @@ function onset(t) {
   }
   return NaN;
 }
+// Fin mesurée d'une réplique : dernier bloc au-dessus du seuil avant la réplique suivante
+function offset(t0, t1) {
+  let last = NaN;
+  for (let i = Math.floor(t0 / 0.005); i < Math.floor(t1 / 0.005); i++) if (env[i] >= floor + 25) last = (i + 1) * 0.005;
+  return last;
+}
 const CHECKS = [
-  ["« Vos vieux ordis »", K.ilsIn, "« ILS » se lève (puis DORMENT.)"],
-  ["« Chez Techno Lot »", K.techno - 0.06, "« TECHNO LOT » se lève (sur « Techno »)"],
-  ["« portables »", K.portables, "étiquette 01 PORTABLES (point + ligne verte)"],
-  ["« Évaluation »", K.evaluation - 0.12, "le laser balaie et révèle « ÉVALUATION »"],
-  ["« offre »", K.offre - 0.04, "« OFFRE » se lève"],
-  ["« cueillette »", K.cueillette - 0.05, "« CUEILLETTE » se lève"],
-  ["« Et vos données? »", K.donnees, "les fichiers sortent du plateau"],
-  ["« On les détruit »", K.onLes + 0.02, "« VOS DONNÉES. » claque"],
-  ["« Paiement »", K.paiement - 0.03, "« PAIEMENT » se lève"],
-  ["« Techno Lot point C A »", K.slogan + 0.02, "la pilule technolot.ca éclot"],
+  ["parc", "« Votre entreprise »", K.votre + 0.02, "« VOTRE PARC » roule en place"],
+  ["lot", "« On rachète »", K.onRachete + 0.02, "« ON RACHÈTE » roule en place"],
+  ["tout", "« Chez Technolot »", K.chez - 0.05, "« TECHNO LOT » se lève"],
+  ["evaluation", "« Évaluation »", K.evaluation - 0.14, "le laser balaie et révèle « ÉVALUATION »"],
+  ["offre", "« offre »", K.offre - 0.04, "« OFFRE » se lève"],
+  ["cueillette", "« cueillette »", K.cueillette - 0.05, "« CUEILLETTE » se lève"],
+  ["donnees", "« Et vos données? »", K.donnees, "les fichiers sortent du plateau"],
+  ["detruit", "« On les détruit »", K.onLes + 0.02, "« VOS DONNÉES. » claque"],
+  ["paiement", "« Paiement »", K.paiement - 0.03, "« PAIEMENT » se lève"],
+  ["slogan", "« Technolot point C A »", K.slogan + 0.02, "la pilule technolot.ca éclot"],
 ];
-const SENT = { "« Vos vieux ordis »": "placard", "« Chez Techno Lot »": "rachete", "« portables »": "liste", "« Évaluation »": "evaluation", "« offre »": "offre", "« cueillette »": "cueillette", "« Et vos données? »": "donnees", "« On les détruit »": "detruit", "« Paiement »": "paiement", "« Techno Lot point C A »": "slogan" };
 console.log("réplique                    voix mesurée   animation   écart (ms)   image   ce qui se passe");
-for (const [w, tAnim, what] of CHECKS) {
-  const s = timings.sentences.find((x) => x.id === SENT[w]);
+for (const [sid, w, tAnim, what] of CHECKS) {
+  const s = timings.sentences.find((v) => v.id === sid);
   const m = onset(s.start);
   console.log(`${w.padEnd(27)} ${m.toFixed(3).padStart(8)}     ${tAnim.toFixed(3).padStart(7)}    ${((tAnim - m) * 1000).toFixed(0).padStart(6)}     ${String(Math.round(tAnim * 30)).padStart(4)}   ${what}`);
 }
-console.log("\nMots à l'intérieur des répliques (alignement Azure, recalé sur l'attaque mesurée) :");
+console.log("\nMots à l'intérieur des répliques (alignement Azure) :");
 for (const [w, sid, word, tAnim, what] of [
-  ["« valent »", "valent", "valent", K.valent - 0.08, "« DORMENT. » roule vers « VALENT $ »"],
-  ["« tours »", "liste", "tours", K.tours, "étiquette 02 TOURS"],
-  ["« rapide »", "offre", "rapide", K.rapide + 0.02, "le 1er rouleau s'arrête net"],
+  ["« en lot »", "lot", "en", K.enLot + 0.02, "« EN LOT. » roule en place, la sélection verte balaie le registre"],
+  ["« neuf »", "lot", "neuf", K.neuf - 0.04, "pastille ✓ NEUF"],
+  ["« usagé »", "lot", "usagé", K.usage - 0.04, "pastille ✓ USAGÉ"],
+  ["« tout »", "tout", "tout", K.tout - 0.07, "« TOUT » vert se lève"],
+  ["« informatique »", "tout", "informatique", K.informatique, "INFORMATIQUE passe au vert dans le mur"],
+  ["« électronique »", "tout", "électronique", K.electronique, "ÉLECTRONIQUE passe au vert dans le mur"],
+  ["« gratuite »", "evaluation", "gratuite", K.gratuite - 0.03, "« GRATUITE » claque"],
+  ["« rapide »", "offre", "rapide", K.rapide - 0.04, "« RAPIDE » se lève"],
+  ["« partout »", "cueillette", "partout", K.partout - 0.05, "« PARTOUT » se lève"],
+  ["« au Québec »", "cueillette", "au", K.au - 0.08, "« AU QUÉBEC » se lève"],
   ["« détruit »", "detruit", "détruit", K.detruit, "« DÉTRUITES. » claque"],
   ["« gratuitement »", "detruit", "gratuitement", K.gratuitement, "« GRATUITEMENT. » claque (vert)"],
   ["« garanti »", "paiement", "garanti", K.check, "le crochet se dessine + ding"],
+  ["« on s'occupe »", "slogan", "on", K.occupe, "« ON S'OCCUPE DE TOUT. » se tape"],
 ]) {
-  const ww = timings.sentences.find((x) => x.id === sid).words.find((x) => x.text.normalize() === word.normalize());
-  console.log(`${w.padEnd(18)} mot ${ww.start.toFixed(3)} → animation ${tAnim.toFixed(3)} (écart ${((tAnim - ww.start) * 1000).toFixed(0)} ms, image ${Math.round(tAnim * 30)}) ${what}`);
+  const ww = timings.sentences.find((v) => v.id === sid).words.find((v) => v.text.normalize() === word.normalize());
+  console.log(`${w.padEnd(18)} mot ${ww.start.toFixed(3)} → animation ${tAnim.toFixed(3)} (écart ${((tAnim - ww.start) * 1000).toFixed(0).padStart(4)} ms, image ${Math.round(tAnim * 30)}) ${what}`);
 }
+// Silence entre « Et vos données? » et « On les détruit » (demande : pas de longue pause)
+const sD = timings.sentences.find((v) => v.id === "donnees");
+const sX = timings.sentences.find((v) => v.id === "detruit");
+const endD = offset(sD.start, sX.start - 0.02);
+const onX = onset(sX.start);
+console.log(`\nSilence mesuré après « Et vos données? » : ${((onX - endD) * 1000).toFixed(0)} ms (fin ${endD.toFixed(3)} s → reprise ${onX.toFixed(3)} s)`);

@@ -8,7 +8,7 @@ Sorties :
   voice/vo.wav          narration seule, 48 kHz mono, 30,0 s
   voice/timings.json    début/fin de chaque phrase et de chaque mot (s, absolus)
 
-Usage : venv/Scripts/python tools/voice.py
+Usage : venv/Scripts/python tools/voice.py [--solve]
 """
 import asyncio
 import hashlib
@@ -83,9 +83,38 @@ def speech_bounds(x):
     return on[0] * win / SR, (on[-1] + 1) * win / SR
 
 
+async def solve(voice, items):
+    """Recalcule les <break> de voix.ssml pour que chaque réplique commence à son
+    instant cible (voice/targets.json), d'après les durées réelles de parole."""
+    targets = json.loads((ROOT / "voice" / "targets.json").read_text(encoding="utf-8"))
+    breaks, t, pending = [], 0.0, None
+    for it in items:
+        if it[0] == "break":
+            pending = it[1]
+            continue
+        _, sid, text, rate = it
+        mp3, _ = await synth(text, voice, rate)
+        on, off = speech_bounds(decode(mp3))
+        want = targets.get(sid)
+        gap = pending if want is None else want - t
+        if gap < 0.1:
+            raise SystemExit(f"{sid} : début voulu {want} s impossible (fin précédente {t:.2f} s)")
+        breaks.append(round(gap * 1000))
+        t += gap + (off - on)
+        pending = None
+    import re
+    src = SSML.read_text(encoding="utf-8")
+    it = iter(breaks)
+    SSML.write_text(re.sub(r'<break time="\d+ms"/>', lambda m: f'<break time="{next(it)}ms"/>', src), encoding="utf-8")
+    print("pauses (ms) :", breaks)
+
+
 async def main():
     CACHE.mkdir(parents=True, exist_ok=True)
     voice, items = parse(SSML)
+    if "--solve" in sys.argv:
+        await solve(voice, items)
+        voice, items = parse(SSML)
     out = np.zeros(int(SR * DURATION), dtype=np.float32)
     t = 0.0
     sentences = []

@@ -26,6 +26,12 @@ void main() {
     c = mix(a, texture2D(tB, vUv).rgb, 1.0 - smoothstep(p.z - p.w, p.z + p.w, r));
   } else if (mode == 2) {
     c = mix(a, texture2D(tB, vUv).rgb, p.x);
+  } else if (mode == 4) {
+    // iris elliptique : p = (centre uv, demi-axes en px) ; B à l'intérieur
+    vec2 q = (vUv - p.xy) * res / max(p.zw, vec2(0.5));
+    float rr = length(q);
+    float edge = 1.5 / max(min(p.z, p.w), 1.0);
+    c = mix(a, texture2D(tB, vUv).rgb, 1.0 - smoothstep(1.0 - edge, 1.0 + edge, rr));
   } else if (mode == 3) {
     float x = vUv.x * res.x;
     c = mix(a, texture2D(tB, vUv).rgb, smoothstep(p.x - p.y, p.x + p.y, x));

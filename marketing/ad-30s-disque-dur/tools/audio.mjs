@@ -7,7 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { makeTimeline, BEAT } from "../src/timeline.js";
+import { makeTimeline, BEAT, invRowTimes } from "../src/timeline.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SR = 48000, DUR = 30, N = SR * DUR;
@@ -286,65 +286,79 @@ const CH = {
 };
 const freqs = (c) => CH[c].map(NOTE);
 
-// A · placard : drone, battements sourds
+// A · inventaire (noir) : pouls grave, tic de données, montée vers « en lot »
 {
-  const d = K.whiteout + 0.3;
+  const d = K.toutIn + 0.2;
   const drone = osc("sine", d, NOTE("D1"));
   mixInto(drone, osc("sine", d, NOTE("D2") * 1.002), 0.4);
-  env(drone, (t) => att(t, 0.8) * (0.6 + 0.4 * clamp((t - 2) / 2)));
-  put(music, filt(drone, "lp", 160, 0.7), 0, db(-10));
-  const [pl, pr] = padChord(freqs("Dm"), d, (t) => 220 + 500 * clamp(t / d), 1, 1.2, 0.3);
-  putST(music, pl, pr, 0.2, db(-17));
-  for (let n = -32; n < -28; n++) put(music, filt(kick(1, 90, 40, 0.25), "lp", 220, 0.7), B(n), db(-14 + (n + 32) * 1.5));
-}
-// B · espace blanc : nappe aérienne + arpège pincé en croches
-{
-  const bars = [[-28, "Bb"], [-24, "F"], [-20, "Gm"]];
-  for (const [n, c] of bars) {
-    const [pl, pr] = padChord(freqs(c).map((f) => f * 2), 4 * BEAT + 0.4, (t) => 1800 + 900 * Math.sin(t * 1.3), 1, 0.15, 0.5);
-    putST(music, pl, pr, B(n), db(-21));
-    const arp = freqs(c).map((f) => f * 2);
-    for (let k = 0; k < 8; k++) {
-      const f = arp[[0, 2, 1, 3, 2, 0, 3, 1][k]] * (k % 4 === 3 ? 2 : 1);
-      put(music, pluck(f, 1, 3800), B(n) + (k * BEAT) / 2, db(-21 - (k % 2) * 3), k % 2 ? 0.35 : -0.35);
-      put(rvb, pluck(f, 1, 3800), B(n) + (k * BEAT) / 2, db(-24));
-    }
-    for (let k = 0; k < 8; k++) put(music, hat(false, 0.7), B(n) + (k * BEAT) / 2 + BEAT / 4, db(-30), 0.4);
+  env(drone, (t) => att(t, 0.5) * (0.6 + 0.4 * clamp(t / d)));
+  put(music, filt(drone, "lp", 170, 0.7), 0, db(-11));
+  const [pl, pr] = padChord(freqs("Dm"), d, (t) => 260 + 900 * clamp(t / d), 1, 0.8, 0.25);
+  putST(music, pl, pr, 0.1, db(-18));
+  for (let n = -40; B(n) < K.toutIn - 0.1; n++) {
+    const t0 = B(n);
+    if (t0 < 0.15) continue;
+    // grosse caisse étouffée, de plus en plus présente
+    const k = clamp((t0 - 2.5) / 3);
+    put(music, filt(kick(1, 110, 42, 0.26), "lp", 300 + 2400 * k, 0.7), t0, db(-15 + 4 * k));
+    put(music, hat(false, 0.5), t0 + BEAT / 2, db(-33), 0.3);
+    if (t0 > K.onRachete - 0.3) put(music, bassNote(NOTE("D2"), BEAT * 0.4, 1), t0, db(-15));
   }
+  // arpège qui s'installe sur « On rachète … en lot »
+  const arp = freqs("Dm").map((f) => f * 2);
+  for (let k = 0; ; k++) {
+    const t0 = K.onRachete - 0.05 + (k * BEAT) / 2;
+    if (t0 > K.toutIn - 0.25) break;
+    put(music, pluck(arp[[0, 2, 1, 3][k % 4]], 1, 3200), t0, db(-23 - (k % 2) * 3), k % 2 ? 0.35 : -0.35);
+  }
+}
+// B · « tout » (blanc) : nappe aérienne, arpège pincé en croches, charleston
+{
+  const t0 = K.toutIn, t1 = K.scanIn;
+  for (const [a, b, c] of [[t0, K.tout - 0.05, "Bb"], [K.tout - 0.05, t1, "F"]]) {
+    const [pl, pr] = padChord(freqs(c).map((f) => f * 2), b - a + 0.4, (t) => 1900 + 900 * Math.sin(t * 1.3), 1, 0.12, 0.4);
+    putST(music, pl, pr, a, db(-21));
+    const arp = freqs(c).map((f) => f * 2);
+    for (let k = 0; a + (k * BEAT) / 2 < b; k++) {
+      const f = arp[[0, 2, 1, 3, 2, 0, 3, 1][k % 8]] * (k % 4 === 3 ? 2 : 1);
+      put(music, pluck(f, 1, 4200), a + (k * BEAT) / 2, db(-21 - (k % 2) * 3), k % 2 ? 0.35 : -0.35);
+      put(rvb, pluck(f, 1, 4200), a + (k * BEAT) / 2, db(-25));
+      put(music, hat(false, 0.7), a + (k * BEAT) / 2 + BEAT / 4, db(-30), 0.4);
+    }
+  }
+  put(music, kick(1.0), K.tout - 0.02, db(-10)); // « TOUT » tombe
+  put(music, bassNote(NOTE("F1"), 0.5, 1), K.tout - 0.02, db(-12));
 }
 // C/D/E · trois temps : la pulsation s'installe (grosse caisse, basse, charleston)
 {
-  const bars = [[-17, "Dm", 1], [-16, "Dm", 4], [-12, "Bb", 4], [-8, "F", 2]];
-  for (const [n, c, len] of bars) {
-    for (let k = 0; k < len; k++) {
-      const t0 = B(n + k);
-      put(music, kick(1.0), t0, db(-10));
+  const seg = [[K.scanIn, K.counterIn, "Dm"], [K.counterIn, K.irisMap, "Bb"], [K.irisMap, K.irisDisk - 0.1, "F"]];
+  for (const [a, b, c] of seg) {
+    for (let n = Math.ceil((a - K.impact) / BEAT); B(n) < b; n++) {
+      const t0 = B(n);
+      put(music, kick(1.0), t0, db(c === "F" ? -12 : -10));
       put(music, bassNote(freqs(c)[0] / 2, BEAT * 0.48, 1), t0 + BEAT / 2, db(-13));
       put(music, hat(false, 1), t0 + BEAT / 2, db(-25), 0.3);
       put(music, hat(false, 0.6), t0 + BEAT / 4, db(-31), -0.3);
       put(music, hat(false, 0.6), t0 + (3 * BEAT) / 4, db(-31), -0.3);
     }
-    const [pl, pr] = padChord(freqs(c), len * BEAT + 0.3, 1400, 1, 0.08, 0.4);
-    putST(music, pl, pr, B(n), db(-22));
+    const [pl, pr] = padChord(freqs(c), b - a + 0.3, 1400, 1, 0.08, 0.4);
+    putST(music, pl, pr, a, db(-22));
   }
-  // la pulsation se retire sur la plongée vers le disque (15,3 → 16,1)
 }
-// F · presque silence (16 → 19,4) : drone + montée vers le drop
+// F · données (court) : drone + montée vers le drop
 {
-  const t0 = 15.6, d = K.impact - t0;
+  const t0 = K.irisDisk - 0.2, d = K.impact - t0;
   const dr = osc("sine", d, NOTE("D1"));
   mixInto(dr, osc("sine", d, NOTE("A1")), 0.3);
-  env(dr, (t) => att(t, 0.6) * (0.25 + 0.75 * Math.pow(t / d, 3)));
-  put(music, filt(dr, "lp", 180, 0.7), t0, db(-16));
-  const [pl, pr] = padChord(["D2", "A2", "D3", "F3"].map(NOTE), d, (t) => 160 + 1400 * Math.pow(t / d, 3), 1, 1.5, 0.05);
-  env(pl, (t) => 0.15 + 0.85 * Math.pow(t / d, 3));
-  env(pr, (t) => 0.15 + 0.85 * Math.pow(t / d, 3));
+  env(dr, (t) => att(t, 0.2) * (0.35 + 0.65 * Math.pow(t / d, 2)));
+  put(music, filt(dr, "lp", 200, 0.7), t0, db(-14));
+  const [pl, pr] = padChord(["D2", "A2", "D3", "F3"].map(NOTE), d, (t) => 200 + 1600 * Math.pow(t / d, 2), 1, 0.4, 0.05);
   putST(music, pl, pr, t0, db(-19));
 }
-// G · le drop (19,4 → 24,8) : beat complet, basse, nappe ; ré mineur puis fa
+// G · le drop (impact → éclair) : beat complet, basse, nappe ; ré mineur puis fa
 {
-  const prog = [[0, "Dm"], [4, "Bb"], [8, "F"], [10, "C"]];
-  for (let n = 0; n < 10; n++) {
+  const nEnd = Math.floor((K.flash - K.impact) / BEAT);
+  for (let n = 0; n <= nEnd; n++) {
     const t0 = B(n);
     const c = n < 4 ? "Dm" : n < 8 ? "Bb" : "F";
     put(music, kick(1.1), t0, db(-8));
@@ -354,14 +368,13 @@ const freqs = (c) => CH[c].map(NOTE);
     put(music, bassNote(root, BEAT * 0.45, 1), t0, db(-11));
     put(music, bassNote(root * (n % 2 ? 1.5 : 2), BEAT * 0.3, 1), t0 + BEAT * 0.5, db(-15));
   }
-  for (const [n, c] of prog.slice(0, 3)) {
-    const len = n === 8 ? 2 : 4;
+  for (const [n, c, len] of [[0, "Dm", 4], [4, "Bb", 4], [8, "F", Math.max(1, nEnd - 7)]]) {
     const [pl, pr] = padChord(freqs(c), len * BEAT + 0.3, 1800, 1, 0.05, 0.3);
     putST(music, pl, pr, B(n), db(-20));
   }
-  // paiement (fond blanc) : on monte d'un cran, arpège lumineux
+  // paiement (fond blanc) : arpège lumineux
   const arp = freqs("F").map((f) => f * 2);
-  for (let k = 0; k < 6; k++) put(music, pluck(arp[k % 4] * (k > 3 ? 2 : 1), 1, 5200), B(8) + (k * BEAT) / 2, db(-22), k % 2 ? 0.4 : -0.4);
+  for (let k = 0; K.white2 + (k * BEAT) / 2 < K.flash - 0.1; k++) put(music, pluck(arp[k % 4] * (k > 3 ? 2 : 1), 1, 5200), K.white2 + (k * BEAT) / 2, db(-22), k % 2 ? 0.4 : -0.4);
 }
 // H · carton de fin : résolution en fa majeur, pulsation retenue, dernier temps à la coupe
 {
@@ -369,15 +382,14 @@ const freqs = (c) => CH[c].map(NOTE);
   const d = K.cut - t0 + 0.6;
   const [pl, pr] = padChord(freqs("Fmaj"), d, (t) => 900 + 1600 * clamp(t / 1.5), 1, 0.25, 0.25);
   putST(music, pl, pr, t0, db(-18));
-  const sub = env(osc("sine", d, NOTE("F1")), (t) => att(t, 0.05) * Math.exp(-t / 3));
-  put(music, sub, t0, db(-12));
-  for (let n = 10; n < 19; n++) {
-    if (B(n) < t0) continue;
+  put(music, env(osc("sine", d, NOTE("F1")), (t) => att(t, 0.05) * Math.exp(-t / 3)), t0, db(-12));
+  const n0 = Math.ceil((t0 - K.impact) / BEAT), nCut = Math.round((K.cut - K.impact) / BEAT);
+  for (let n = n0; n < nCut; n++) {
     put(music, kick(0.8, 120, 42, 0.25), B(n), db(n % 2 ? -18 : -13));
     put(music, hat(false, 0.6), B(n) + BEAT / 2, db(-30), 0.3);
   }
   const arp = ["F4", "A4", "C5", "G5", "A5", "C6"].map(NOTE);
-  arp.forEach((f, k) => put(music, pluck(f, 1, 5600), B(12) + k * BEAT * 0.5, db(-22), (k % 3) * 0.3 - 0.3));
+  arp.forEach((f, k) => put(music, pluck(f, 1, 5600), K.slogan + k * BEAT * 0.5, db(-23), (k % 3) * 0.3 - 0.3));
   // dernier temps : coup final, puis on coupe avec l'image
   put(music, kick(1.2, 160, 38, 0.4), K.cut, db(-7));
   put(music, impact(1, 80, 34, 0.9), K.cut, db(-12));
@@ -385,43 +397,35 @@ const freqs = (c) => CH[c].map(NOTE);
 }
 
 // ============================================================ BRUITAGES
-// Placard
-put(sfx, click(1, 2200, 0.006), K.door, db(-14), -0.6); // pêne
-put(sfx, click(0.7, 4800, 0.003), K.door + 0.018, db(-18), -0.6);
-put(sfx, creak(0.62, 1), K.door + 0.05, db(-22), -0.55);
-put(sfx, whoosh(1.4, 300, 1800, 0.25, 1, 0.8), K.door + 0.02, db(-28), (t) => -0.7 + t * 0.5); // l'air et la lumière entrent
-put(sfx, filt(noise(K.whiteout), "bp", 7000, 0.5).map((v, i) => v * (0.5 + 0.5 * Math.sin(i / SR * 3))), 0, db(-44)); // poussière
-// roulement des lettres DORMENT. → VALENT $
-for (let i = 0; i < 8; i++) {
-  put(sfx, click(1, 2600 + i * 120, 0.005), K.valent - 0.08 + i * 0.04, db(-19), -0.4 + i * 0.1);
-  put(sfx, click(0.8, 1400, 0.008), K.valent + 0.02 + i * 0.04, db(-22), -0.4 + i * 0.1);
-}
-put(sfx, bell(NOTE("A5"), 1.4, 1), K.valent + 0.36, db(-24), 0.3); // le « $ » s'allume
-put(sfx, bell(NOTE("D6"), 1.4, 1), K.valent + 0.38, db(-28), 0.35);
-put(rvb, bell(NOTE("A5"), 1.4, 1), K.valent + 0.36, db(-22));
-// réveil de l'écran (sifflement de rétroéclairage) puis plongée
-put(sfx, env(osc("sine", 0.9, (t) => 9000 + 4000 * t), (t) => att(t, 0.05) * Math.exp(-t / 0.5)), K.wake, db(-38), 0.2);
-put(sfx, glitch(0.16, 1, 7), K.wake, db(-30), 0.2);
-put(sfx, riser(K.whiteout - K.dive + 0.05, 180, 5200, 1), K.dive, db(-20));
-put(sfx, whoosh(0.55, 4000, 600, 0.12, 1, 0.9), K.whiteout - 0.05, db(-20)); // sortie dans le blanc
-put(sfx, crash(2.4, 1), K.whiteout, db(-30));
-// Espace blanc
-put(sfx, whoosh(0.5, 400, 2400, 0.7, 1), K.techno - 0.25, db(-28), -0.3);
-for (let i = 0; i < 10; i++) put(sfx, click(0.7, 2200 + i * 90, 0.004), K.on - 0.06 + i * 0.035, db(-26), -0.5 + i * 0.1);
-put(sfx, whoosh(0.45, 2000, 300, 0.3, 1), 6.92, db(-28), 0.3);
-const LBL = [[K.portables, -0.5], [K.tours, 0.4], [K.serveurs, -0.1], [K.ecrans, 0.2], [K.ecrans + 0.14, 0.5]];
-LBL.forEach(([t, p], i) => {
-  put(sfx, blip(1760 * Math.pow(2, [0, 3, 5, 7, 10][i] / 12), 1760 * Math.pow(2, [0, 3, 5, 7, 10][i] / 12), 0.12, 1, "sine"), t, db(-25), p);
-  put(sfx, whoosh(0.22, 3000, 9000, 0.5, 1, 2), t + 0.02, db(-34), p); // la ligne se trace
-  for (let k = 0; k < 6; k++) put(sfx, click(0.5, 5000, 0.002), t + 0.12 + k * 0.022, db(-36), p);
-});
-put(sfx, whoosh(0.7, 250, 3000, 0.55, 1, 0.9), 9.5, db(-17), (t) => -0.6 + t * 1.6); // rampe vers le serveur
-// Évaluation : laser
-put(sfx, env(filt(osc("saw", 0.82, (t) => 180 + 60 * Math.sin(t * 30)), "bp", (t) => expLerp(800, 3000, t / 0.82), 3), (t) => att(t, 0.04) * (1 - clamp((t - 0.7) / 0.12)) * 1.2), K.evaluation - 0.12, db(-26), (t) => -0.7 + t * 1.6);
-put(sfx, env(osc("sine", 0.82, 3520), (t) => att(t, 0.03) * (1 - clamp((t - 0.7) / 0.12)) * 0.25), K.evaluation - 0.12, db(-36));
+// Inventaire : un tic par ligne qui s'écrit (colonne de droite), puis « tout le lot » se sélectionne
+invRowTimes().forEach((t, k) => put(sfx, click(0.45, 4200 + (k % 5) * 300, 0.0018), t, db(-34), 0.15 + (k % 4) * 0.1));
+put(sfx, whoosh(0.5, 300, 2600, 0.7, 1), Math.max(0, K.votre - 0.3), db(-28)); // le titre se lève
+for (let i = 0; i < 10; i++) put(sfx, click(0.9, 2400 + i * 110, 0.005), K.onRachete - 0.06 + i * 0.04, db(-23), -0.4 + i * 0.08); // roulement
+for (let i = 0; i < 7; i++) put(sfx, click(0.9, 2000 + i * 140, 0.005), K.enLot - 0.06 + i * 0.05, db(-23), -0.3 + i * 0.1);
+put(sfx, whoosh(0.9, 400, 6000, 0.85, 1, 1.2), K.enLot - 0.05, db(-27), (t) => -0.6 + t * 1.3); // sélection de tout le lot
+put(sfx, bell(NOTE("A5"), 1.2, 1), K.lot + 0.02, db(-25), 0.2);
+put(rvb, bell(NOTE("A5"), 1.2, 1), K.lot + 0.02, db(-23));
+put(sfx, blip(NOTE("D6"), NOTE("D6"), 0.12, 1), K.neuf - 0.04, db(-25), -0.2); // ✓ NEUF
+put(sfx, blip(NOTE("F6"), NOTE("F6"), 0.12, 1), K.usage - 0.04, db(-25), 0.2); // ✓ USAGÉ
+put(sfx, riser(K.toutIn - 5.62, 200, 6000, 1), 5.62, db(-21)); // plongée dans le « O »
+put(sfx, whoosh(0.5, 5000, 700, 0.15, 1, 0.9), K.hookOut - 0.02, db(-20));
+put(sfx, crash(2.0, 1), K.toutIn, db(-31));
+// Tout
+put(sfx, whoosh(0.5, 400, 2400, 0.7, 1), K.technolot - 0.3, db(-28), -0.3);
+for (let i = 0; i < 10; i++) put(sfx, click(0.7, 2200 + i * 90, 0.004), K.achete - 0.06 + i * 0.03, db(-26), -0.5 + i * 0.1);
+put(sfx, impact(1, 100, 48, 0.4), K.tout - 0.02, db(-21)); // « TOUT » claque
+for (let k = 0; k < 24; k++) put(sfx, click(0.55, 3200 + (k % 6) * 260, 0.0025), K.tout + 0.12 + k * 0.045, db(-31), (k % 5) / 2.5 - 0.8); // le mur
+put(sfx, bell(NOTE("C6"), 0.9, 1), K.informatique + 0.02, db(-28), -0.3);
+put(sfx, bell(NOTE("E6"), 0.9, 1), K.electronique + 0.02, db(-28), 0.3);
+put(sfx, riser(K.scanIn - (K.toutOut - 0.42), 220, 5800, 1), K.toutOut - 0.42, db(-21)); // plongée dans le « O »
+put(sfx, whoosh(0.45, 5000, 600, 0.15, 1, 0.9), K.toutOut - 0.02, db(-21));
+// Évaluation : laser, « GRATUITE », relevé, convergence en « $ »
+put(sfx, env(filt(osc("saw", 0.82, (t) => 180 + 60 * Math.sin(t * 30)), "bp", (t) => expLerp(800, 3000, t / 0.82), 3), (t) => att(t, 0.04) * (1 - clamp((t - 0.7) / 0.12)) * 1.2), K.evaluation - 0.14, db(-26), (t) => -0.7 + t * 1.6);
+put(sfx, env(osc("sine", 0.82, 3520), (t) => att(t, 0.03) * (1 - clamp((t - 0.7) / 0.12)) * 0.25), K.evaluation - 0.14, db(-36));
 put(sfx, impact(1, 90, 45, 0.5), K.gratuite, db(-24));
-for (let k = 0; k < 18; k++) put(sfx, click(0.5, 4200, 0.002), K.evaluation + 0.25 + k * 0.03, db(-36), 0.4);
-put(sfx, whoosh(0.4, 600, 6000, 0.9, 1, 1.1), K.lcdZoom - 0.04, db(-20)); // plongée dans le LCD
+for (let k = 0; k < 18; k++) put(sfx, click(0.5, 4200, 0.002), K.evaluation + 0.2 + k * 0.03, db(-36), 0.4);
+for (let k = 0; k < 14; k++) put(sfx, blip(2400 + k * 90, 3800 + k * 60, 0.05, 1), K.evaluationEnd - 0.05 + k * 0.016, db(-36), (k % 4) / 2 - 0.75);
+put(sfx, whoosh(0.32, 600, 6000, 0.9, 1, 1.1), K.dollarZoom - 0.02, db(-20)); // plongée dans le « $ »
 put(sfx, glitch(0.12, 1, 3), K.counterIn - 0.04, db(-26));
 // Compteur : défilement puis arrêts nets
 {
@@ -439,31 +443,26 @@ put(sfx, glitch(0.12, 1, 3), K.counterIn - 0.04, db(-26));
 }
 put(sfx, blip(1200, 300, 0.25, 1, "sine"), K.irisMap - 0.24, db(-26)); // le « $ » se rétracte
 put(sfx, whoosh(0.32, 400, 5000, 0.85, 1), K.irisMap - 0.02, db(-20)); // iris
-// Carte : contour, tracés, pings
-put(sfx, filt(noise(0.85), "bp", 5000, 1.5).map((v, i) => v * Math.sin(Math.PI * i / S(0.85)) * 0.4), K.mapIn, db(-34), 0.2);
-for (let i = 0; i < 16; i++) {
-  const t = K.mapIn + 0.35 + i * 0.055;
-  put(sfx, blip(NOTE(["D6", "F6", "A6", "C7"][i % 4]), NOTE(["D6", "F6", "A6", "C7"][i % 4]), 0.09, 1), t + 0.1, db(-33), (i % 5) / 2.5 - 0.8);
+// Carte du Grand Montréal : rivières, villes, tracés
+put(sfx, filt(noise(0.7), "bp", 5000, 1.5).map((v, i) => v * Math.sin((Math.PI * i) / S(0.7)) * 0.4), K.mapIn, db(-34), 0.2);
+for (let i = 0; i < 15; i++) {
+  const t = K.mapIn + 0.16 + i * 0.035;
+  put(sfx, blip(NOTE(["D6", "F6", "A6", "C7"][i % 4]), NOTE(["D6", "F6", "A6", "C7"][i % 4]), 0.08, 1), t + 0.06, db(-34), (i % 5) / 2.5 - 0.8);
 }
-put(sfx, whoosh(1.0, 1200, 300, 0.4, 1), K.mapIn + 0.45, db(-32), (t) => 0.7 - t * 1.2); // le point voyage depuis Gaspé
-put(sfx, riser(0.8, 200, 3600, 1), 15.3, db(-22));
+put(sfx, whoosh(0.6, 1500, 5000, 0.5, 1, 1.4), K.partout - 0.15, db(-33), 0.5); // le Québec entier (médaillon)
+put(sfx, riser(K.diskIn - (K.irisDisk - 0.42), 200, 3600, 1), K.irisDisk - 0.42, db(-22));
 put(sfx, whoosh(0.3, 5000, 300, 0.2, 1), K.irisDisk, db(-22));
-// Disque : moteur, fichiers, dissolution
-put(sfx, hum(K.impact - 15.9, 118, 1).map((v, i) => v * clamp(i / S(0.4)) * (1 - clamp((i - S(K.impact - 16.2)) / S(0.3)))), 15.9, db(-35));
-put(sfx, env(filt(noise(K.impact - 15.9), "bp", 1500, 0.7), (t) => 0.25 * (0.6 + 0.4 * Math.sin(t * 2 * Math.PI * 1.05))), 15.9, db(-36));
+// Données : moteur, fichiers, dissolution, éclatement, aspiration
+put(sfx, hum(K.impact - K.irisDisk, 118, 1).map((v, i) => v * clamp(i / S(0.15)) * (1 - clamp((i - S(K.impact - K.irisDisk - 0.3)) / S(0.25)))), K.irisDisk, db(-33));
 ["E6", "A6", "C7"].forEach((n, i) => {
-  put(sfx, bell(NOTE(n), 1.6, 1), K.donnees + i * 0.12, db(-30), -0.4 + i * 0.4);
-  put(rvb, bell(NOTE(n), 1.6, 1), K.donnees + i * 0.12, db(-26));
+  put(sfx, bell(NOTE(n), 1.2, 1), K.donnees + i * 0.06, db(-30), -0.4 + i * 0.4);
+  put(rvb, bell(NOTE(n), 1.2, 1), K.donnees + i * 0.06, db(-26));
 });
-for (let i = 0; i < 3; i++) put(sfx, glitch(0.75, 1, 11 + i), K.donnees + 0.72 + i * 0.1, db(-29), -0.4 + i * 0.4);
-put(sfx, filt(noise(1.1), "hp", 6000, 0.7).map((v, i) => v * Math.exp(-i / S(0.5)) * 0.6), K.donnees + 0.9, db(-32)); // particules
-put(sfx, whoosh(0.6, 300, 2500, 0.6, 1), 17.88, db(-24)); // recul
-{
-  // vue éclatée au ralenti : souffle grave inversé qui monte
-  const d = 1.05;
-  put(sfx, env(filt(noise(d), "lp", (t) => 200 + 1600 * (t / d), 0.8), (t) => Math.pow(t / d, 2) * 1.2), K.explode, db(-24));
-}
-put(sfx, whoosh(0.24, 300, 7000, 0.98, 1, 0.9), K.impact - 0.24, db(-16)); // aspiration
+for (let i = 0; i < 3; i++) put(sfx, glitch(0.45, 1, 11 + i), K.donnees + 0.38 + i * 0.05, db(-29), -0.4 + i * 0.4);
+put(sfx, filt(noise(0.7), "hp", 6000, 0.7).map((v, i) => v * Math.exp(-i / S(0.3)) * 0.6), K.donnees + 0.45, db(-32)); // particules
+put(sfx, whoosh(0.35, 300, 2500, 0.6, 1), K.crush - 0.15, db(-24)); // recul éclair
+put(sfx, env(filt(noise(0.2), "lp", 1200, 0.8), (t) => Math.pow(t / 0.2, 2)), K.crush, db(-24)); // éclatement
+put(sfx, whoosh(0.2, 300, 7000, 0.98, 1, 0.9), K.impact - 0.2, db(-16)); // aspiration
 // IMPACT (le drop)
 put(sfx, impact(1, 72, 28, 2.2), K.impact, db(-6));
 put(sfx, crash(2.6, 1), K.impact, db(-20));

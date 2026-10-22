@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FF = path.join(ROOT, "venv/Lib/site-packages/imageio_ffmpeg/binaries/ffmpeg-win-x86_64-v7.1.exe");
-const [fmt = "16x9", cols = fmt === "9x16" ? "8" : "4", width = fmt === "9x16" ? "270" : "480", srcArg, outArg] = process.argv.slice(2);
-// Une image par temps fort + les transitions
-const TIMES = [0.4, 1.3, 2.62, 3.0, 3.7, 4.25, 5.2, 6.3, 8.9, 9.85, 10.45, 11.1, 11.7, 12.2, 12.75, 13.5, 14.9, 15.95, 16.6, 17.1, 17.65, 18.7, 19.42, 20.5, 21.6, 22.95, 23.3, 24.25, 24.7, 25.3, 26.5, 29.0];
+const [fmt = "16x9", cols = fmt === "9x16" ? "9" : "4", width = fmt === "9x16" ? "270" : "480", srcArg, outArg] = process.argv.slice(2);
+// Une image par temps fort + les transitions (0 = première image, celle de la miniature)
+const TIMES = [0, 1.2, 2.6, 3.6, 4.9, 5.6, 6.0, 6.3, 7.3, 8.5, 9.0, 10.0, 10.6, 11.2, 11.8, 12.4, 12.95, 13.6, 14.2, 14.9, 15.6, 16.3, 17.0, 17.5, 17.95, 18.4, 19.3, 20.6, 21.6, 22.6, 23.3, 24.2, 25.6, 27.0, 28.5, 29.8];
 const SRC = srcArg ? path.resolve(ROOT, srcArg) : path.join(ROOT, "out", `technolot-30s-${fmt}.mp4`);
 const dir = path.join(ROOT, "build", "contact");
 fs.mkdirSync(dir, { recursive: true });

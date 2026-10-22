@@ -21,9 +21,12 @@ function tex(c, color = true, rep = null) {
   return t;
 }
 export const MONO = "TLMono";
+export const MONO_M = "TLMonoM";
 export async function loadCanvasFonts() {
   const f = new FontFace(MONO, "url(assets/fonts/JetBrainsMono-Bold.ttf)");
   document.fonts.add(await f.load());
+  const m = new FontFace(MONO_M, "url(assets/fonts/JetBrainsMono-Medium.ttf)");
+  document.fonts.add(await m.load());
   const g = new FontFace("TLBlack", "url(assets/fonts/Archivo-XCondBlack.ttf)");
   document.fonts.add(await g.load());
 }
