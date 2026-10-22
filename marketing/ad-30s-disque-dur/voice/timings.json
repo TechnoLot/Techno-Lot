@@ -1,0 +1,379 @@
+{
+ "voice": "fr-CA-ThierryNeural",
+ "sentences": [
+  {
+   "id": "placard",
+   "text": "Vos vieux ordis traînent dans un placard?",
+   "rate": "+6%",
+   "start": 0.3,
+   "end": 2.09,
+   "words": [
+    {
+     "text": "Vos",
+     "start": 0.3,
+     "end": 0.536
+    },
+    {
+     "text": "vieux",
+     "start": 0.548,
+     "end": 0.725
+    },
+    {
+     "text": "ordis",
+     "start": 0.736,
+     "end": 1.043
+    },
+    {
+     "text": "traînent",
+     "start": 1.055,
+     "end": 1.314
+    },
+    {
+     "text": "dans",
+     "start": 1.326,
+     "end": 1.444
+    },
+    {
+     "text": "un",
+     "start": 1.456,
+     "end": 1.585
+    },
+    {
+     "text": "placard",
+     "start": 1.597,
+     "end": 2.234
+    }
+   ]
+  },
+  {
+   "id": "valent",
+   "text": "Ils valent encore de l'argent.",
+   "rate": "+4%",
+   "start": 2.24,
+   "end": 3.395,
+   "words": [
+    {
+     "text": "Ils",
+     "start": 2.24,
+     "end": 2.444
+    },
+    {
+     "text": "valent",
+     "start": 2.456,
+     "end": 2.661
+    },
+    {
+     "text": "encore",
+     "start": 2.673,
+     "end": 2.985
+    },
+    {
+     "text": "de",
+     "start": 2.997,
+     "end": 3.081
+    },
+    {
+     "text": "l'argent",
+     "start": 3.093,
+     "end": 3.55
+    }
+   ]
+  },
+  {
+   "id": "rachete",
+   "text": "Chez Techno Lot, on rachète vos lots informatiques :",
+   "rate": "+2%",
+   "start": 4.295,
+   "end": 7.025,
+   "words": [
+    {
+     "text": "Chez",
+     "start": 4.295,
+     "end": 4.565
+    },
+    {
+     "text": "Techno",
+     "start": 4.577,
+     "end": 4.932
+    },
+    {
+     "text": "Lot",
+     "start": 4.945,
+     "end": 5.324
+    },
+    {
+     "text": "on",
+     "start": 5.459,
+     "end": 5.545
+    },
+    {
+     "text": "rachète",
+     "start": 5.557,
+     "end": 5.913
+    },
+    {
+     "text": "vos",
+     "start": 5.925,
+     "end": 6.084
+    },
+    {
+     "text": "lots",
+     "start": 6.096,
+     "end": 6.243
+    },
+    {
+     "text": "informatiques",
+     "start": 6.256,
+     "end": 7.163
+    }
+   ]
+  },
+  {
+   "id": "liste",
+   "text": "portables, tours, serveurs, écrans.",
+   "rate": "-2%",
+   "start": 7.175,
+   "end": 9.605,
+   "words": [
+    {
+     "text": "portables",
+     "start": 7.175,
+     "end": 7.851
+    },
+    {
+     "text": "tours",
+     "start": 7.979,
+     "end": 8.361
+    },
+    {
+     "text": "serveurs",
+     "start": 8.502,
+     "end": 9.152
+    },
+    {
+     "text": "écrans",
+     "start": 9.292,
+     "end": 9.739
+    }
+   ]
+  },
+  {
+   "id": "evaluation",
+   "text": "Évaluation gratuite,",
+   "rate": "+0%",
+   "start": 10.095,
+   "end": 11.42,
+   "words": [
+    {
+     "text": "Évaluation",
+     "start": 10.095,
+     "end": 10.808
+    },
+    {
+     "text": "gratuite",
+     "start": 10.82,
+     "end": 11.532
+    }
+   ]
+  },
+  {
+   "id": "offre",
+   "text": "offre rapide,",
+   "rate": "+0%",
+   "start": 12.04,
+   "end": 12.91,
+   "words": [
+    {
+     "text": "offre",
+     "start": 12.04,
+     "end": 12.402
+    },
+    {
+     "text": "rapide",
+     "start": 12.415,
+     "end": 12.952
+    }
+   ]
+  },
+  {
+   "id": "cueillette",
+   "text": "cueillette partout au Québec.",
+   "rate": "+0%",
+   "start": 13.69,
+   "end": 15.055,
+   "words": [
+    {
+     "text": "cueillette",
+     "start": 13.69,
+     "end": 14.09
+    },
+    {
+     "text": "partout",
+     "start": 14.102,
+     "end": 14.452
+    },
+    {
+     "text": "au",
+     "start": 14.465,
+     "end": 14.552
+    },
+    {
+     "text": "Québec",
+     "start": 14.565,
+     "end": 15.19
+    }
+   ]
+  },
+  {
+   "id": "donnees",
+   "text": "Et vos données?",
+   "rate": "-4%",
+   "start": 16.545,
+   "end": 17.18,
+   "words": [
+    {
+     "text": "Et",
+     "start": 16.545,
+     "end": 16.727
+    },
+    {
+     "text": "vos",
+     "start": 16.74,
+     "end": 16.884
+    },
+    {
+     "text": "données",
+     "start": 16.897,
+     "end": 17.313
+    }
+   ]
+  },
+  {
+   "id": "detruit",
+   "text": "On les détruit gratuitement, de façon sécurisée.",
+   "rate": "+0%",
+   "start": 19.5,
+   "end": 22.165,
+   "words": [
+    {
+     "text": "On",
+     "start": 19.5,
+     "end": 19.675
+    },
+    {
+     "text": "les",
+     "start": 19.688,
+     "end": 19.8
+    },
+    {
+     "text": "détruit",
+     "start": 19.812,
+     "end": 20.175
+    },
+    {
+     "text": "gratuitement",
+     "start": 20.188,
+     "end": 20.925
+    },
+    {
+     "text": "de",
+     "start": 21.088,
+     "end": 21.2
+    },
+    {
+     "text": "façon",
+     "start": 21.212,
+     "end": 21.55
+    },
+    {
+     "text": "sécurisée",
+     "start": 21.562,
+     "end": 22.3
+    }
+   ]
+  },
+  {
+   "id": "paiement",
+   "text": "Paiement rapide et garanti.",
+   "rate": "+0%",
+   "start": 23.255,
+   "end": 24.565,
+   "words": [
+    {
+     "text": "Paiement",
+     "start": 23.255,
+     "end": 23.592
+    },
+    {
+     "text": "rapide",
+     "start": 23.605,
+     "end": 23.967
+    },
+    {
+     "text": "et",
+     "start": 23.98,
+     "end": 24.042
+    },
+    {
+     "text": "garanti",
+     "start": 24.055,
+     "end": 24.692
+    }
+   ]
+  },
+  {
+   "id": "slogan",
+   "text": "Techno Lot point C A, on s'occupe de tout.",
+   "rate": "+0%",
+   "start": 25.865,
+   "end": 28.205,
+   "words": [
+    {
+     "text": "Techno",
+     "start": 25.865,
+     "end": 26.265
+    },
+    {
+     "text": "Lot",
+     "start": 26.277,
+     "end": 26.44
+    },
+    {
+     "text": "point",
+     "start": 26.452,
+     "end": 26.678
+    },
+    {
+     "text": "C",
+     "start": 26.69,
+     "end": 26.965
+    },
+    {
+     "text": "A",
+     "start": 26.977,
+     "end": 27.19
+    },
+    {
+     "text": "on",
+     "start": 27.39,
+     "end": 27.49
+    },
+    {
+     "text": "s'occupe",
+     "start": 27.502,
+     "end": 27.877
+    },
+    {
+     "text": "de",
+     "start": 27.89,
+     "end": 28.04
+    },
+    {
+     "text": "tout",
+     "start": 28.052,
+     "end": 28.34
+    }
+   ]
+  }
+ ]
+}

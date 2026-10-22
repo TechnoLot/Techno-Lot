@@ -1,0 +1,20 @@
+{
+  "name": "technolot-ad-30s-disque-dur",
+  "private": true,
+  "description": "Pub 30 s Techno Lot « Le voyage d'un disque dur » — rendu Three.js image par image",
+  "type": "module",
+  "scripts": {
+    "voice": "venv/Scripts/python tools/voice.py",
+    "audio": "node tools/audio.mjs",
+    "render:16x9": "node tools/render.mjs video 16x9",
+    "render:9x16": "node tools/render.mjs video 9x16"
+  },
+  "dependencies": {
+    "opentype.js": "1.3.4",
+    "puppeteer-core": "23.11.1",
+    "three": "0.170.0"
+  },
+  "devDependencies": {
+    "ffprobe-static": "^3.1.0"
+  }
+}
