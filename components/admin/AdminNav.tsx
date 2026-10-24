@@ -13,6 +13,7 @@ import {
   Plus,
   Send,
   ShoppingBag,
+  TrendingUp,
   Target,
   Trophy,
 } from "lucide-react";
@@ -38,6 +39,7 @@ const items: NavItem[] = [
     icon: Calculator,
     action: "open-calculatrice",
   },
+  { href: "/admin/ventes-ebay", label: "Ventes eBay", icon: TrendingUp },
   { href: "/admin/ebay", label: "Description eBay", icon: ShoppingBag },
   {
     href: "/admin/crm",
