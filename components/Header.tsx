@@ -122,7 +122,7 @@ export default function Header({ locale }: { locale: Locale }) {
             );
           })}
           <Link
-            href={localePath(locale, "/soumission")}
+            href={localePath(locale, "/contact")}
             className="btn-primary ml-2 !px-5 !py-2.5 !text-xs"
           >
             {t.header.quoteButton}
@@ -205,7 +205,7 @@ export default function Header({ locale }: { locale: Locale }) {
                 className="mt-6 flex flex-col gap-4"
               >
                 <Link
-                  href={localePath(locale, "/soumission")}
+                  href={localePath(locale, "/contact")}
                   className="btn-primary w-full"
                 >
                   {t.header.quoteButton}
