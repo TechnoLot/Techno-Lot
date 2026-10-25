@@ -171,7 +171,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
               {t.home.missionText}
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href={localePath(locale, "/contact")} className="btn-primary">
+              <Link href={localePath(locale, "/soumission")} className="btn-primary">
                 {t.home.missionCta}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>

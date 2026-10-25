@@ -22,7 +22,7 @@ export default function NotFoundView({ locale }: { locale: Locale }) {
             <ArrowLeft className="h-4 w-4" aria-hidden />
             {t.notFound.backHome}
           </Link>
-          <Link href={localePath(locale, "/contact")} className="btn-secondary">
+          <Link href={localePath(locale, "/soumission")} className="btn-secondary">
             {t.notFound.cta}
           </Link>
         </div>
