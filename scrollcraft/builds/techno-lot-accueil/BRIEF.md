@@ -208,3 +208,93 @@ les lignes du bordereau s'ajoutent en dessous.
 > small scuffs, honest wear. Photographic realism. NOT 3D render, NOT CGI, NOT
 > illustration, NOT clay, no digital glow, no plastic sheen, no readable text,
 > no stickers, no logos, no brand names.
+
+---
+
+## Construction : ce qui a changé en route
+
+- **Données.** L'utilisateur a confirmé : « Nous faisons la destruction des
+  données, nous donnons un certificat de destruction des données ». La
+  troisième ligne du coût dit donc « Nous détruisons vos données et vous
+  remettons un certificat de destruction. »
+- **Surfaces cachées.** La photo ne montre pas le dessus du commutateur sous
+  les portables, ni le plateau de la palette sous les tours. Avec une coupe
+  simple, la palette restait avec deux « coins relevés » et un trou. Ces deux
+  surfaces sont reconstituées (`lot-fill.webp`) et les couches s'empilent de
+  haut en bas : une surface n'apparaît qu'une fois la couche du dessus partie.
+- **Reflet.** Le séparateur s'éclaire en vert à la hauteur exacte de chaque
+  couche qui le traverse (au plus fort au milieu de la traversée).
+- **Étiquettes du séparateur en bas.** En haut, le texte déjà lu passait
+  dessous ; en bas, le contenu n'est pas encore apparu quand il y passe.
+- **Hero.** Le lot est remonté (46 % de la hauteur, à 30 % du bas) pour que la
+  légende ne le touche jamais, même sur un écran court. La légende du lot
+  apparaît sous la phrase, au défilement (second temps du hero).
+- **Titre du bordereau.** Il n'apparaît que lorsque la scène du pic
+  s'installe : en arrivant par le bas, il croisait l'étiquette « Nous ».
+- **Bords de photo.** Le bas de la photo du hero et le haut de celle du pic se
+  fondent dans le fond avant, au lieu de couper net quand la scène entre ou
+  sort.
+- **Téléphone.** La phrase du hero passe en haut de la photo, devant le
+  faisceau : le voile sombre passe au coin haut-gauche.
+- **Clavier.** Un élément qui reçoit le focus dans un bloc pas encore apparu
+  (le formulaire) le fait apparaître tout de suite.
+
+## Vérification
+
+Outil du skill (`shoot.mjs`), Chromium 1243, sur le serveur de développement.
+
+| Passe | Défilement mort | Contraste (pire image) |
+|---|---|---|
+| Bureau 1440 x 900 | aucun | tous ≥ 4,5:1 |
+| Téléphone 390 x 844 | aucun | tous ≥ 4,5:1 (après le voile du coin haut-gauche ; 2,97:1 avant) |
+| Mouvement réduit | aucun | tous ≥ 4,5:1 |
+
+Limite de l'outil, documentée : l'en-tête global du site et son bouton
+« Soumission » ont `transition-all` (300 ms). L'outil masque les éléments
+fixes avant de photographier le fond, mais la transition laisse l'en-tête
+visible pendant la capture : tout texte qui passe sous l'en-tête est alors
+mesuré contre le logo et le bouton vert (six faux échecs à 1,0 à 1,8:1). Les
+passes ci-dessus ont été faites avec ces transitions coupées par une règle
+temporaire, retirée ensuite (rien de commité). L'en-tête lui-même n'est pas
+modifié (hors portée).
+
+Autres contrôles :
+
+- Clavier : chaque arrêt de tabulation est visible (logo, menu, bouton du
+  hero, puis les champs du formulaire, le contact et le pied de page).
+- Sans JavaScript : tout le contenu est visible et le bordereau est complet.
+- Navigation interne (accueil, FAQ, retour, version anglaise) : le moteur se
+  démonte et se remonte proprement, aucune erreur de console.
+- Build de production (`npm run build`, avec le script de CSS critique) puis
+  `npm start` : CSS en ligne, images servies en AVIF (lot 38 Ko à 640 px),
+  aucune erreur de console.
+- Version anglaise : mêmes passes visuelles, bureau et téléphone.
+
+Non vérifié : un vrai iPhone (Safari iOS) et le déploiement Hostinger. Aucune
+vidéo n'est utilisée, donc les pièges iOS des vidéos de défilement ne
+s'appliquent pas.
+
+## Test de ressenti (à froid, un mot par acte)
+
+| Acte | Prévu | Ressenti |
+|---|---|---|
+| 1 Hero | Reconnaissance | Calme |
+| 2 Le coût | Malaise | Gêne, puis réponse |
+| 3 Le processus | Assurance | Assurance (le plus silencieux) |
+| 4 La ligne | Émerveillement puis soulagement | Émerveillement, satisfaction |
+| 5 Le formulaire | Résolution | Résolution |
+
+Le pic a la plus grande durée (3,6 hauteurs d'écran) et l'acte qui le précède
+est le plus calme. La fin ne s'efface pas : « Votre espace est libre. », puis
+le formulaire, qui tient.
+
+## Visuels
+
+kie.ai (seedream 5 pro, puis détourage recraft) : le lot sur fond gris, la
+pièce vide, le faisceau, la poussière proche (deux essais : le premier avait
+ajouté un objet au centre), la trace de doigt dans la poussière. Photo réelle
+du site : le disque dur ouvert (`public/photos/datacenter.jpg`, recadré et
+étalonné). La première ligne du coût est une composition : le même lot, petit,
+au fond de la pièce vide. Crédits : 785 → 630 (155 débités, dont 70 pour une
+première série perdue : le réseau de la session bloquait alors le domaine où
+kie.ai dépose les images).

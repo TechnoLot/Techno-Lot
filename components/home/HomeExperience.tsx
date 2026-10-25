@@ -89,6 +89,8 @@ export default function HomeExperience({
     const peakLot = q(".tl-lot--peak", peakStage);
     const bands = qa("[data-tl-band]", peakStage);
     const lines = qa("[data-tl-line]", peakStage);
+    const glints = qa("[data-tl-glint]", peakStage);
+    const ledgerTitle = q("[data-tl-ledger-title]", peakStage);
     const more = q("[data-tl-more]", peakStage);
     const pay = q("[data-tl-pay]", peakStage);
     const done = q("[data-tl-done]", peakStage);
@@ -238,7 +240,14 @@ export default function HomeExperience({
           }
           crossed.push(c);
           css(lines[i], "--c", c.toFixed(3), `lc${i}`);
+          // Le reflet est au plus fort au milieu de la traversée.
+          const g = reduce || c <= 0 || c >= 1 ? 0 : Math.sin(Math.PI * c);
+          css(glints[i], "--g", g.toFixed(3), `lg${i}`);
         });
+        // Le titre du bordereau arrive quand la scène s'installe : en bas de
+        // l'écran, il croiserait les étiquettes du séparateur.
+        const tIn = smooth((y - (peakTop - vh * 0.4)) / (vh * 0.3));
+        css(ledgerTitle, "opacity", tIn.toFixed(3), "lt");
         const sum = smooth(range(peakP, PEAK.summary[0], PEAK.summary[1]));
         css(more, "--o", sum.toFixed(3), "mo");
         css(pay, "--o", sum.toFixed(3), "po");
@@ -264,8 +273,11 @@ export default function HomeExperience({
       if (Math.abs(tmx - mx) > 0.001 || Math.abs(tmy - my) > 0.001) kick();
     }
 
+    // Rien ne s'anime avant que le moteur soit monté (les scènes ne sont pas
+    // encore épinglées, la géométrie serait fausse), ni s'il n'a pas pu se
+    // charger : la version de secours en CSS reste alors intacte.
     function kick() {
-      if (!raf && !dead) raf = requestAnimationFrame(frameFn);
+      if (!raf && !dead && api) raf = requestAnimationFrame(frameFn);
     }
 
     const onScroll = () => kick();
@@ -279,6 +291,21 @@ export default function HomeExperience({
       removeEventListener("scroll", onScroll);
       removeEventListener("resize", onResize);
     });
+    // Un champ ou un lien qui reçoit le focus au clavier dans un bloc pas
+    // encore apparu (le formulaire, tout en bas) le fait apparaître tout de
+    // suite : sinon le focus se pose sur un élément invisible pendant que la
+    // page défile jusqu'à lui.
+    const onFocus = (e: FocusEvent) => {
+      const box = (e.target as Element | null)?.closest?.("[data-sc-in]");
+      if (!box || !root.contains(box) || box.classList.contains("sc-in")) return;
+      box.classList.add("sc-in");
+      if (box.hasAttribute("data-sc-stagger")) {
+        Array.from(box.children).forEach((kid) => kid.classList.add("sc-in"));
+      }
+    };
+    root.addEventListener("focusin", onFocus);
+    cleanups.push(() => root.removeEventListener("focusin", onFocus));
+
     const onSplit = () => {
       last.clear();
       kick();
@@ -288,7 +315,11 @@ export default function HomeExperience({
 
     import("@/lib/scrollcraft/scrollcraft.js")
       .then(() => {
-        if (dead || !window.ScrollCraft) return;
+        if (dead) return;
+        if (!window.ScrollCraft) {
+          root.classList.add("tl-fallback");
+          return;
+        }
         try {
           api = window.ScrollCraft.mount(root);
           root.classList.add("tl-live");

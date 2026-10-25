@@ -1,11 +1,14 @@
+// Navigation interne : accueil, FAQ, retour, version anglaise.
+// node nav.cjs [url de base], par défaut http://localhost:3000
 const { chromium } = require("playwright");
+const BASE = (process.argv[2] || "http://localhost:3000").replace(/\/$/, "");
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
   const errs = [];
   p.on("console", (m) => { if (m.type() === "error") errs.push(m.text().slice(0, 200)); });
   p.on("pageerror", (e) => errs.push("pageerror " + e));
-  await p.goto("http://localhost:3000/", { waitUntil: "networkidle" });
+  await p.goto(BASE + "/", { waitUntil: "networkidle" });
   await p.waitForSelector("html.sc-ready");
   await p.evaluate(() => scrollTo({ top: 3000, behavior: "instant" }));
   await p.waitForTimeout(500);

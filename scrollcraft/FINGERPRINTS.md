@@ -28,9 +28,7 @@ changes only grammar and world will fail it.
 
 | Build | Grammar | Nav treatment | Hero device | Act-sequence shape | Close pattern | Signature move | World | Port |
 |---|---|---|---|---|---|---|---|---|
-
-*(empty: your first build has nothing to clear, so build whatever the interview
-points at. From the second onwards, this table is the constraint.)*
+| `techno-lot-accueil` | **Split stage** inside an existing Next.js site. Avant (photographic, cold) left, après (typographic ledger) right; the divider leans toward après as the argument advances | The site's global header stays (out of scope). The page's own chrome is the divider: a sticky hairline with AVANT/APRÈS (VOUS/NOUS during the process) labels at its foot and a green progress tick. Stacked horizontal divider on phones | Pinned 1.5vh layered photograph in the avant half: room plate, light cone (screen), real alpha lot cutout with contact shadow, near bokeh (screen); scroll push-in plus pointer depth; after-side h1 at 7.6rem with sub and CTA | `pin(1.5) > flow x5 > pin(3.6) > flow`, 8 engine acts, 10.2vh desktop. Zero scrub, zero pan, zero video | **Collapse**: the divider sweeps to the left edge after the last layer crosses, the ledger takes the left half, "Votre espace est libre." plus CTA on the right, then the real submission form in flow | **La ligne de rachat**: the lot is sliced along its real occlusion lines; each layer slides into the divider and, at the exact height it crossed, a ledger line emerges (item, dotted leader, green status), with a green glint on the divider at the crossing. Hidden surfaces under each layer are reconstructed so the stack empties physically | Low-key industrial still life: graphite, cold steel, board-formed concrete, one overhead lamp. Brand green #5ECB33 as the only accent. Archivo (wdth 75) + Inter | 3000 (Next dev) |
 
 ---
 
@@ -41,7 +39,9 @@ reusing: a grammar, a nav treatment, a close pattern, a signature move, an
 act-count-and-length band. The shared columns are what the next build inherits
 as a constraint, so writing them down is the whole point.
 
-Nothing is taken yet.
+- **Split stage with a moving divider that collapses at the end** (`techno-lot-accueil`). A later split-stage build must find a different collapse.
+- **Objects sliced along their occlusion lines that cross a line and become ledger rows** (`techno-lot-accueil`). Nobody else may take "physical items converting into text rows at a seam".
+- **Act band**: `pin > flow x5 > pin > flow`, 8 acts, about 10vh (`techno-lot-accueil`).
 
 ---
 

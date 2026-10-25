@@ -75,7 +75,7 @@ const fr: HomeContent = {
       {
         avant: "Vos données sont toujours dessus.",
         apres:
-          "Vos informations sensibles sont effacées de façon définitive avant la revente ou le recyclage.",
+          "Nous détruisons vos données et vous remettons un certificat de destruction.",
         photoAlt: "Un disque dur ouvert : le plateau et la tête de lecture.",
       },
     ],
@@ -169,7 +169,7 @@ const en: HomeContent = {
       {
         avant: "Your data is still on it.",
         apres:
-          "Your sensitive information is permanently erased before resale or recycling.",
+          "We destroy your data and give you a certificate of destruction.",
         photoAlt: "An open hard drive: the platter and the read head.",
       },
     ],

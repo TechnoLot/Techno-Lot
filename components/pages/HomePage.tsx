@@ -1,218 +1,422 @@
-import Link from "next/link";
 import Image from "next/image";
-import {
-  ArrowRight,
-  Award,
-  BadgeDollarSign,
-  Clock,
-  FileText,
-  Recycle,
-  Truck,
-} from "lucide-react";
-import Reveal from "@/components/Reveal";
-import Counter from "@/components/Counter";
-import Marquee from "@/components/Marquee";
-import Hero from "@/components/Hero";
-import SpotlightCard from "@/components/SpotlightCard";
-import OrbitVisual from "@/components/OrbitVisual";
+import { Archivo } from "next/font/google";
+import HomeExperience from "@/components/home/HomeExperience";
 import SubmissionForm from "@/components/SubmissionForm";
-import MapEmbed from "@/components/MapEmbed";
+import { LOT_ASPECT, LOT_BANDS } from "@/components/home/lot-geometry";
+import { getHomeContent } from "@/lib/home-content";
 import { site } from "@/lib/site";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
+import "@/components/home/scrollcraft.css";
+import "@/components/home/accueil.css";
 
-const serviceExtras = [
-  { icon: Recycle, photo: "/photos/serveurs.jpg", href: "/soumission" },
-  { icon: FileText, photo: "/photos/bureau.jpg", href: "/soumission" },
-  { icon: Truck, photo: "/photos/entrepot.jpg", href: "/prise-en-charge-complete" },
+// Face d'affichage de l'accueil : un grotesque industriel à largeur variable,
+// proche du mot-symbole condensé du logo. Le texte courant reste en Inter.
+const archivo = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-tl",
+  display: "swap",
+});
+
+// Même valeur `sizes` partout où une image revient (le lot, la pièce) pour
+// que le navigateur ne la télécharge qu'une fois.
+const SCENE_SIZES = "(min-width: 1024px) 56vw, 100vw";
+const LOT_SIZES = "(min-width: 1024px) 30vw, 60vw";
+
+const costPhotos = [
+  "/accueil/entrepot.jpg",
+  "/accueil/poussiere-serveur.jpg",
+  "/accueil/disque.jpg",
 ];
 
-const trustIcons = [Clock, Truck, BadgeDollarSign, Award];
-
+/**
+ * Accueil en scène partagée : à gauche l'avant (le matériel qui dort), à
+ * droite l'après (le service). Le séparateur penche vers l'après au fil de
+ * l'argument. Au pic, chaque couche du lot traverse le séparateur et devient
+ * une ligne du bordereau ; puis le séparateur s'efface au bord gauche et le
+ * formulaire attend dans l'espace libéré. Le contenu est entièrement rendu
+ * côté serveur ; HomeExperience ne fait qu'animer ce qui existe déjà.
+ */
 export default function HomePage({ locale }: { locale: Locale }) {
-  const t = getDict(locale);
-
-  const trustStats = [
-    <Counter key="t0" to={24} suffix=" h" className="text-gradient" />,
-    <Counter key="t1" to={100} suffix=" %" className="text-gradient" />,
-    <span key="t2" className="text-gradient">
-      {t.home.trustPaid}
-    </span>,
-    <Counter key="t3" to={1} prefix="N° " className="text-gradient" />,
-  ];
+  const c = getHomeContent(locale);
+  const form = getDict(locale).form;
+  const lotStyle = { "--tl-lot-aspect": LOT_ASPECT } as React.CSSProperties;
 
   return (
-    <>
-      {/* ===== Hero ===== */}
-      <Hero locale={locale} />
-
-      {/* ===== Marquee des catégories ===== */}
-      <Marquee locale={locale} />
-
-      {/* ===== Bandeau de confiance ===== */}
-      <section className="container-site py-16">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {t.home.trust.map((label, i) => {
-            const Icon = trustIcons[i];
-            return (
-              <Reveal key={i} delay={i * 0.1}>
-                <div className="glass glass-hover flex h-full flex-col items-center gap-2 p-6 text-center">
-                  <Icon className="h-6 w-6 text-accent" aria-hidden />
-                  <div className="font-display text-3xl font-bold">
-                    {trustStats[i]}
-                  </div>
-                  <p className="text-sm text-slate-400">{label}</p>
-                </div>
-              </Reveal>
-            );
-          })}
+    <HomeExperience className={`tl ${archivo.variable}`}>
+      {/* Les deux fonds de la scène partagée et le séparateur. Collés en haut
+          de l'écran tant que l'accueil défile, puis ils partent avec lui. */}
+      <div className="tl-canvas" aria-hidden="true">
+        <div className="tl-canvas__apres" />
+        <div className="tl-canvas__avant" />
+        <div className="tl-grain" />
+      </div>
+      <div className="tl-seam" aria-hidden="true">
+        <div className="tl-seam__rail">
+          <span className="tl-seam__line" />
+          <span className="tl-seam__tick" />
+          <span className="tl-seam__label tl-seam__label--l" data-tl-mode="aa">
+            {c.seam.avant}
+          </span>
+          <span className="tl-seam__label tl-seam__label--r" data-tl-mode="aa">
+            {c.seam.apres}
+          </span>
+          <span className="tl-seam__label tl-seam__label--l" data-tl-mode="vn">
+            {c.seam.vous}
+          </span>
+          <span className="tl-seam__label tl-seam__label--r" data-tl-mode="vn">
+            {c.seam.nous}
+          </span>
         </div>
-      </section>
+      </div>
 
-      {/* ===== Notre service clé en main ===== */}
-      <section className="container-site scroll-mt-24 py-16" id="services">
-        <Reveal>
-          <span className="eyebrow">{t.home.servicesEyebrow}</span>
-          <h2 className="section-title">{t.home.servicesTitle}</h2>
-        </Reveal>
-        <div className="mt-12 grid gap-6 lg:grid-cols-3">
-          {t.home.services.map(({ photoAlt, title, text, cta }, i) => {
-            const { icon: Icon, photo, href } = serviceExtras[i];
-            const target = localePath(locale, href);
-            return (
-              <Reveal key={title} delay={i * 0.12} className="h-full">
-                <SpotlightCard className="h-full">
-                  <div className="glass glass-hover flex h-full flex-col overflow-hidden">
-                    <div className="relative h-44 overflow-hidden">
-                      <Image
-                        src={photo}
-                        alt={photoAlt}
-                        fill
-                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 90vw, 100vw"
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
-                      <div
-                        className="absolute inset-0 bg-gradient-to-t from-night-900 via-night-900/35 to-transparent"
-                        aria-hidden
-                      />
-                      <div className="absolute bottom-4 left-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-night-950/70 ring-1 ring-accent/40 backdrop-blur-md transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-                        <Icon className="h-6 w-6 text-accent" aria-hidden />
-                      </div>
-                    </div>
-                    <div className="flex flex-1 flex-col p-8 pt-6">
-                      <h3 className="font-display text-xl font-semibold text-white">
-                        {title}
-                      </h3>
-                      <p className="mt-3 flex-1 leading-relaxed text-slate-300">
-                        {text}
-                      </p>
-                      <Link
-                        href={target}
-                        className="group mt-6 inline-flex items-center gap-2 font-display text-sm font-semibold text-accent transition-colors hover:text-accent-bright"
-                      >
-                        {cta}
-                        <ArrowRight
-                          className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                          aria-hidden
-                        />
-                      </Link>
-                    </div>
-                  </div>
-                </SpotlightCard>
-              </Reveal>
-            );
-          })}
-        </div>
-      </section>
+      {/* ===== 1. Le lot qui dort ===== */}
+      <section
+        className="tl-hero"
+        data-sc-act="pin"
+        data-sc-span="1.5"
+        data-tl-span-reduced="1.2"
+        aria-labelledby="tl-title"
+      >
+        <div className="tl-stage" data-sc-stage data-tl-hero>
+          <div className="tl-frame tl-frame--hero">
+            <div className="tl-plate tl-box">
+              <div className="tl-plane tl-plane--far" data-tl-plane="far">
+                <Image
+                  src="/accueil/piece.jpg"
+                  alt=""
+                  fill
+                  priority
+                  sizes={SCENE_SIZES}
+                />
+              </div>
+              <div className="tl-plane tl-plane--cone" data-tl-plane="cone">
+                <Image src="/accueil/cone.jpg" alt="" fill priority sizes={SCENE_SIZES} />
+              </div>
+            </div>
+            <div className="tl-lot tl-lot--hero" style={lotStyle}>
+              <div className="tl-plane" data-tl-plane="lot">
+                <span className="tl-shadow" aria-hidden="true" />
+                <Image
+                  src="/accueil/lot.webp"
+                  alt={c.hero.lotAlt}
+                  fill
+                  priority
+                  sizes={LOT_SIZES}
+                />
+              </div>
+            </div>
+            <div className="tl-near tl-box" aria-hidden="true">
+              <div className="tl-plane tl-plane--near" data-tl-plane="near">
+                <Image src="/accueil/poussiere.jpg" alt="" fill priority sizes={SCENE_SIZES} />
+              </div>
+            </div>
+            <div className="tl-fade tl-fade--bottom" aria-hidden="true" />
+            <div className="sc-scrim sc-scrim--lead tl-hero__scrim" aria-hidden="true" />
+            <div className="tl-hero__caption">
+              {/* La phrase est lue dans le h1 (texte masqué) : ici elle est
+                  seulement visuelle, pour ne pas être lue deux fois. */}
+              <p
+                className="tl-hero__avant tl-greet"
+                data-sc-cue="0 1 0 0"
+                aria-hidden="true"
+              >
+                {c.hero.avant}
+              </p>
+              <p className="tl-label tl-hero__label" data-sc-cue="0.3 1 0.45 0">
+                {c.hero.label}
+              </p>
+            </div>
+          </div>
 
-      {/* ===== Qui sommes-nous ===== */}
-      <section className="relative overflow-hidden py-20">
-        <div className="container-site grid items-center gap-12 lg:grid-cols-2">
-          <Reveal>
-            <span className="eyebrow">{t.home.whoEyebrow}</span>
-            <h2 className="section-title">{t.home.whoTitle}</h2>
-            <p className="mt-6 leading-relaxed text-slate-300">{t.home.whoP1}</p>
-            <p className="mt-4 leading-relaxed text-slate-300">{t.home.whoP2}</p>
-            <Link
-              href={localePath(locale, "/a-propos")}
-              className="btn-secondary mt-8"
-            >
-              {t.home.whoCta}
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-          </Reveal>
-          <Reveal delay={0.15}>
-            <OrbitVisual locale={locale} />
-          </Reveal>
-        </div>
-      </section>
+          <div className="tl-hdiv tl-hdiv--hero" aria-hidden="true">
+            <span>{c.seam.avant}</span>
+            <span>{c.seam.apres}</span>
+          </div>
 
-      {/* ===== Notre mission ===== */}
-      <section className="relative overflow-hidden py-24 sm:py-28">
-        <Image
-          src="/photos/circuit.jpg"
-          alt=""
-          fill
-          quality={50}
-          sizes="100vw"
-          className="object-cover opacity-[0.18]"
-        />
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-night-900 via-night-900/70 to-night-900"
-          aria-hidden
-        />
-        <div className="container-site relative text-center">
-          <Reveal>
-            <span className="eyebrow">{t.home.missionEyebrow}</span>
-            <h2 className="mx-auto max-w-3xl font-display text-3xl font-bold text-white sm:text-4xl">
-              {t.home.missionTitleStart}{" "}
-              <span className="text-gradient">{t.home.missionTitleAccent}</span>
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-slate-300">
-              {t.home.missionText}
+          <div className="tl-hero__apres">
+            <h1 id="tl-title" className="tl-display tl-hero__title tl-greet" data-sc-cue="0 1 0 0">
+              <span className="sr-only">{c.hero.avant} </span>
+              {c.hero.title}
+            </h1>
+            <p className="tl-hero__sub tl-greet" data-sc-cue="0 1 0 0">
+              {c.hero.sub}
             </p>
-            <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href={localePath(locale, "/soumission")} className="btn-primary">
-                {t.home.missionCta}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              <a href={site.phoneHref} className="btn-secondary">
-                {site.phone}
+            <div className="tl-hero__cta">
+              <a
+                className="tl-btn tl-greet"
+                href={localePath(locale, "/soumission")}
+                data-sc-cue="0 1 0 0"
+                data-sc-rise="0"
+              >
+                {c.hero.cta}
               </a>
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
-      {/* ===== Formulaire + Localisation ===== */}
-      <section className="container-site py-20" id="soumission">
-        <div className="grid gap-10 lg:grid-cols-2">
-          <Reveal>
-            <span className="eyebrow">{t.home.formEyebrow}</span>
-            <h2 className="section-title">{t.home.formTitle}</h2>
-            <p className="mt-4 text-slate-300">{t.home.formText}</p>
-            <div className="mt-8">
+      {/* ===== 2. Ce que ça coûte de le garder ===== */}
+      <section className="tl-cost" aria-labelledby="tl-cost-title">
+        <div className="tl-cost__head" data-sc-act="flow">
+          <h2 id="tl-cost-title" className="tl-pair">
+            <span className="tl-display tl-pair__l" data-sc-cue="0.1 1 0.3 0">
+              {c.cost.titleAvant}
+            </span>{" "}
+            <span className="tl-display tl-pair__r" data-sc-cue="0.16 1 0.3 0">
+              {c.cost.titleApres}
+            </span>
+          </h2>
+        </div>
+        {c.cost.rows.map((row, i) => (
+          <div className="tl-row" data-sc-act="flow" key={row.avant}>
+            <div className="tl-row__l">
+              <figure
+                className="tl-row__photo"
+                data-sc-reveal="up"
+                data-sc-reveal-at="0.1 0.38"
+              >
+                <Image
+                  src={costPhotos[i]}
+                  alt={row.photoAlt}
+                  fill
+                  sizes="(min-width: 1024px) 34vw, 100vw"
+                />
+              </figure>
+              <p className="tl-row__avant" data-sc-cue="0.2 1 0.3 0">
+                {row.avant}
+              </p>
+            </div>
+            <div className="tl-hdiv tl-hdiv--row" aria-hidden="true">
+              <span>{c.seam.avant}</span>
+              <span>{c.seam.apres}</span>
+            </div>
+            <div className="tl-row__r">
+              <p className="tl-row__apres" data-sc-cue="0.26 1 0.3 0">
+                {row.apres}
+              </p>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ===== 3. Comment ça marche ===== */}
+      <section
+        className="tl-proc"
+        data-sc-act="flow"
+        aria-labelledby="tl-proc-title"
+      >
+        <h2 id="tl-proc-title" className="tl-pair tl-pair--proc">
+          <span
+            className="tl-display tl-pair__l"
+            data-sc-cue="0.06 1 0.4 0"
+            data-sc-kinetic="lines"
+          >
+            {c.process.titleVous}
+          </span>{" "}
+          <span
+            className="tl-display tl-pair__r"
+            data-sc-cue="0.1 1 0.4 0"
+            data-sc-kinetic="lines"
+          >
+            {c.process.titleNous}
+          </span>
+        </h2>
+        <ol className="tl-steps">
+          {c.process.steps.map((s) => (
+            <li className="tl-step" key={s.vous} data-sc-in data-sc-stagger="70">
+              <div className="tl-step__l">
+                <span className="tl-mini tl-label" aria-hidden="true">
+                  {c.seam.vous}
+                </span>
+                <p className="tl-step__head">{s.vous}</p>
+                <p className="tl-step__note">{s.vousNote}</p>
+              </div>
+              <div className="tl-step__r">
+                <span className="tl-mini tl-label" aria-hidden="true">
+                  {c.seam.nous}
+                </span>
+                <p className="tl-step__head">{s.nous}</p>
+                <p className="tl-step__note">{s.nousNote}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* ===== 4. La ligne de rachat (le pic) ===== */}
+      <section
+        className="tl-peak"
+        data-sc-act="pin"
+        data-sc-span="3.6"
+        data-tl-span-reduced="2.4"
+        aria-labelledby="tl-ledger-title"
+      >
+        <div className="tl-stage" data-sc-stage data-tl-peak data-sc-verify-state="">
+          <div className="tl-frame tl-frame--peak">
+            <div className="tl-plate tl-box">
+              <div className="tl-plane tl-plane--far">
+                <Image src="/accueil/piece.jpg" alt="" fill priority sizes={SCENE_SIZES} />
+              </div>
+              <div className="tl-plane tl-plane--cone">
+                <Image src="/accueil/cone.jpg" alt="" fill priority sizes={SCENE_SIZES} />
+              </div>
+            </div>
+            <div className="tl-lot tl-lot--peak" style={lotStyle}>
+              {/* Les couches s'empilent de haut en bas : celle du dessus passe
+                  devant et cache la surface reconstituée sous elle. */}
+              {LOT_BANDS.map((b, i) => (
+                <div
+                  className="tl-band"
+                  data-tl-band={i}
+                  key={i}
+                  style={{ clipPath: b.clip, zIndex: LOT_BANDS.length - i }}
+                >
+                  {i === LOT_BANDS.length - 1 && (
+                    <span className="tl-shadow" aria-hidden="true" />
+                  )}
+                  {b.src === "/accueil/lot.webp" ? (
+                    <Image src={b.src} alt="" fill priority sizes={LOT_SIZES} />
+                  ) : (
+                    <Image src={b.src} alt="" fill loading="eager" sizes={LOT_SIZES} />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="tl-fade tl-fade--top" aria-hidden="true" />
+          </div>
+
+          {/* Le séparateur s'éclaire à la hauteur de chaque couche qui le
+              traverse (bureau seulement). */}
+          <div className="tl-glints" aria-hidden="true">
+            {LOT_BANDS.map((b, i) => (
+              <span
+                className="tl-glint"
+                data-tl-glint={i}
+                key={i}
+                style={
+                  {
+                    "--t": Math.max(b.top, 0).toFixed(4),
+                    "--h": (Math.min(b.bottom, 1) - Math.max(b.top, 0)).toFixed(4),
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+
+          <div className="tl-hdiv tl-hdiv--peak" aria-hidden="true">
+            <span>{c.seam.avant}</span>
+            <span>{c.seam.apres}</span>
+          </div>
+
+          <div className="tl-ledger">
+            <h2 id="tl-ledger-title" className="tl-ledger__title" data-tl-ledger-title>
+              {c.ledger.title}
+            </h2>
+            <ol className="tl-ledger__lines">
+              {c.ledger.lines.map((l, i) => (
+                <li
+                  className="tl-line"
+                  data-tl-line={i}
+                  key={l.item}
+                  style={
+                    {
+                      "--m": ((LOT_BANDS[i].top + LOT_BANDS[i].bottom) / 2).toFixed(4),
+                    } as React.CSSProperties
+                  }
+                >
+                  <span className="tl-line__item">{l.item}</span>
+                  <span className="tl-line__leader" aria-hidden="true" />
+                  <span className="tl-line__status">{l.status}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="tl-ledger__foot">
+              <p className="tl-ledger__more" data-tl-more>
+                {c.ledger.more}
+              </p>
+              <dl className="tl-ledger__pay" data-tl-pay>
+                {c.ledger.payment.map((p) => (
+                  <div key={p.label}>
+                    <dt>{p.label}</dt>
+                    <dd>{p.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+
+          <div className="tl-done" data-tl-done>
+            <p className="tl-display tl-done__title">{c.ledger.titleDone}</p>
+            <a className="tl-btn" href="#soumission">
+              {c.ledger.cta}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== 5. Le formulaire, dans l'espace libéré ===== */}
+      <section
+        id="soumission"
+        className="tl-close"
+        data-sc-act="flow"
+        aria-labelledby="tl-close-title"
+      >
+        <div className="tl-close__inner">
+          <div className="tl-close__main" data-sc-in data-sc-stagger="70">
+            <h2 id="tl-close-title" className="tl-display tl-close__title">
+              {c.close.title}
+            </h2>
+            <p className="tl-close__text">{c.close.text}</p>
+            <div className="tl-close__form">
               <SubmissionForm locale={locale} />
             </div>
-          </Reveal>
-          <Reveal delay={0.15}>
-            <span className="eyebrow">{t.home.locationEyebrow}</span>
-            <h2 className="section-title">{t.home.locationTitle}</h2>
-            <p className="mt-4 text-slate-300">
-              {site.address.full} —{" "}
-              <a
-                href={site.phoneHref}
-                className="font-semibold text-accent hover:text-accent-bright"
-              >
-                {site.phone}
-              </a>
-            </p>
-            <MapEmbed
-              locale={locale}
-              className="mt-8 h-[420px] lg:h-[calc(100%-8.5rem)]"
-            />
-          </Reveal>
+          </div>
+          <aside className="tl-close__side" data-sc-in data-sc-stagger="70">
+            <dl className="tl-contact">
+              <div>
+                <dt>{c.close.contactLabels.phone}</dt>
+                <dd>
+                  <a href={site.phoneHref}>{site.phone}</a>
+                </dd>
+              </div>
+              <div>
+                <dt>{c.close.contactLabels.email}</dt>
+                <dd>
+                  <a href={`mailto:${site.email}`}>{site.email}</a>
+                </dd>
+              </div>
+              <div>
+                <dt>{c.close.contactLabels.address}</dt>
+                <dd>
+                  <a href={site.address.mapsUrl} target="_blank" rel="noopener noreferrer">
+                    {site.address.full}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt>{c.close.contactLabels.delay}</dt>
+                <dd>{c.close.delayValue}</dd>
+              </div>
+            </dl>
+            <div className="tl-clause">
+              <p className="tl-clause__title">{form.paymentClauseTitle}</p>
+              {form.paymentClauseText.map((line, i) => (
+                <p key={i}>
+                  {line.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
+                    part.startsWith("**") && part.endsWith("**") ? (
+                      <strong key={j}>{part.slice(2, -2)}</strong>
+                    ) : (
+                      <span key={j}>{part}</span>
+                    )
+                  )}
+                </p>
+              ))}
+            </div>
+            <p className="tl-close__unique">{c.close.unique}</p>
+          </aside>
         </div>
       </section>
-    </>
+    </HomeExperience>
   );
 }

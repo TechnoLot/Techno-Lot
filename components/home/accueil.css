@@ -82,10 +82,12 @@
   box-shadow: var(--sc-e2);
   transition:
     background-color var(--sc-d-fast) var(--sc-ease-out),
-    transform 120ms var(--sc-ease-out);
+    translate 120ms var(--sc-ease-out);
 }
+/* `translate` et non `transform` : le moteur écrit transform en ligne sur le
+   bouton du hero (il porte une apparition), qui l'emporterait. */
 .tl-btn:active {
-  transform: translateY(1px);
+  translate: 0 1px;
 }
 .tl .tl-btn:focus-visible {
   outline: 2px solid var(--sc-ink);
@@ -152,7 +154,7 @@
   position: absolute;
   left: 0;
   top: calc(var(--tl-header) + 0.5rem);
-  bottom: 1.25rem;
+  bottom: 3rem;
   width: 1px;
   background: linear-gradient(
     to bottom,
@@ -171,9 +173,12 @@
   background: var(--sc-accent);
   transform: translate3d(0, var(--tl-tick, 0px), 0);
 }
+/* Les étiquettes sont en bas : le contenu qui entre par le bas n'est pas
+   encore apparu (les apparitions démarrent plus haut), alors qu'en haut, le
+   texte déjà lu passerait dessous. */
 .tl-seam__label {
   position: absolute;
-  top: calc(var(--tl-header) + 0.85rem);
+  bottom: 1rem;
   padding: 0.42rem 0.6rem;
   font-family: var(--sc-font-display);
   font-size: 0.66rem;
@@ -187,11 +192,9 @@
 }
 .tl-seam__label--l {
   right: calc(100% + 0.45rem);
-  background: color-mix(in oklab, var(--tl-avant) 88%, transparent);
 }
 .tl-seam__label--r {
   left: 0.45rem;
-  background: color-mix(in oklab, var(--tl-apres) 88%, transparent);
 }
 .tl-seam [data-tl-mode="vn"],
 .tl-seam.is-vn [data-tl-mode="aa"] {
@@ -229,13 +232,18 @@
 }
 .tl-frame--hero {
   --tl-cx: 0.25;
-  --tl-lot-h: 52svh;
-  --tl-lot-b: 22svh;
+  --tl-lot-h: 46svh;
+  --tl-lot-b: 30svh;
+}
+/* Au pic, la hauteur du lot est partagée avec le bordereau (ses lignes sont
+   à la hauteur des couches) : elle est donc définie sur la scène. Sous le
+   lot, il faut la place du résumé ; au-dessus, celle du titre. */
+.tl-peak .tl-stage {
+  --tl-lot-b: max(24svh, 13.5rem);
+  --tl-lot-h: min(54svh, calc(100svh - var(--tl-lot-b) - 13svh - 4.5rem));
 }
 .tl-frame--peak {
   --tl-cx: 0.2;
-  --tl-lot-h: 54svh;
-  --tl-lot-b: 24svh;
 }
 
 /* Boîte de la plaque (la pièce) : couvre la partie visible du cadre. */
@@ -301,6 +309,20 @@
   inset: 0;
   will-change: transform;
 }
+/* Le bord d'une photo qui entre ou sort de l'écran se fond dans le fond
+   avant, au lieu de couper net. */
+.tl-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.tl-fade--bottom {
+  background: linear-gradient(to bottom, transparent 76%, var(--tl-avant));
+}
+.tl-fade--top {
+  background: linear-gradient(to top, transparent 80%, var(--tl-avant));
+}
 
 /* La lumière s'allume au chargement : la pièce sort du noir, le faisceau
    monte. Une seule fois, et pas en mouvement réduit. */
@@ -359,12 +381,15 @@
 .tl-hero__scrim {
   z-index: 2;
 }
-.tl-hero__avant {
+.tl-hero__caption {
   position: absolute;
   z-index: 3;
   left: var(--tl-g);
   bottom: clamp(2.5rem, 8svh, 5.5rem);
-  max-width: min(16em, calc(50% - var(--tl-g) * 2 - 1rem));
+  width: min(30rem, calc(50% - var(--tl-g) * 2 - 1rem));
+}
+.tl-hero__avant {
+  max-width: 16em;
   margin: 0;
   font-family: var(--sc-font-display);
   font-stretch: 88%;
@@ -376,11 +401,8 @@
   color: var(--sc-ink);
 }
 .tl-hero__label {
-  position: absolute;
-  z-index: 3;
-  left: var(--tl-g);
-  top: calc(var(--tl-header) + 2rem);
-  max-width: 19rem;
+  margin-top: 1rem;
+  max-width: 26rem;
 }
 .tl-hero__apres {
   position: absolute;
@@ -544,8 +566,7 @@
   padding: 0;
 }
 .tl-line,
-.tl-ledger__more,
-.tl-ledger__pay {
+.tl-ledger__foot {
   position: absolute;
   left: 2.6%;
   width: min(52%, 48rem);
@@ -561,10 +582,6 @@
   gap: 1rem;
   clip-path: inset(-40% calc((1 - var(--c, 0)) * 100%) -40% 0);
   transform: translate3d(calc((1 - var(--c, 0)) * -2.2rem), 0, 0);
-}
-.tl-peak .tl-stage {
-  --tl-lot-h: 54svh;
-  --tl-lot-b: 24svh;
 }
 .tl-line__item {
   font-family: var(--sc-font-display);
@@ -591,16 +608,17 @@
   color: var(--sc-accent);
   opacity: clamp(0, (var(--c, 0) - 0.8) * 5, 1);
 }
+.tl-ledger__foot {
+  top: calc(100svh - var(--tl-lot-b) + 0.7rem);
+}
 .tl-ledger__more {
-  top: calc(100svh - var(--tl-lot-b) + 2.2rem);
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.55;
   color: var(--sc-ink-soft);
 }
 .tl-ledger__pay {
-  bottom: 5svh;
-  margin: 0;
+  margin: 1.1rem 0 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
@@ -625,6 +643,29 @@
   font-size: 0.98rem;
   line-height: 1.5;
   color: var(--sc-ink);
+}
+/* Le reflet vert sur le séparateur, à la hauteur de la couche qui le
+   traverse (--g, de 0 à 1, au plus fort au milieu de la traversée). */
+.tl-glints {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.tl-glint {
+  position: absolute;
+  left: calc(var(--tl-x) * 100% - 1px);
+  width: 2px;
+  top: calc(100svh - var(--tl-lot-b) - var(--tl-lot-h) + var(--t) * var(--tl-lot-h));
+  height: calc(var(--h) * var(--tl-lot-h));
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--sc-accent) 18%,
+    var(--sc-accent) 82%,
+    transparent
+  );
+  opacity: var(--g, 0);
 }
 .tl-done {
   position: absolute;
@@ -765,10 +806,14 @@ html:not(.sc-ready) .tl .tl-greet {
     transform: none;
   }
   .tl .tl-line,
+  .tl .tl-ledger__foot,
   .tl .tl-ledger__more,
   .tl .tl-ledger__pay {
     --c: 1;
     --o: 1;
+  }
+  .tl .tl-line,
+  .tl .tl-ledger__foot {
     width: calc(47.4% - var(--tl-g));
   }
   .tl .tl-done {
@@ -786,6 +831,9 @@ html:not(.sc-ready) .tl .tl-greet {
 .tl.tl-fallback .tl-ledger__pay {
   --c: 1;
   --o: 1;
+}
+.tl.tl-fallback .tl-line,
+.tl.tl-fallback .tl-ledger__foot {
   width: calc(47.4% - var(--tl-g));
 }
 .tl.tl-fallback .tl-done {
@@ -802,8 +850,7 @@ html:not(.sc-ready) .tl .tl-greet {
   opacity: var(--c, 0);
 }
 .tl-reduce .tl-line,
-.tl-reduce .tl-ledger__more,
-.tl-reduce .tl-ledger__pay {
+.tl-reduce .tl-ledger__foot {
   width: calc(47.4% - var(--tl-g));
 }
 .tl-reduce .tl-ledger__more,
@@ -884,9 +931,24 @@ html:not(.sc-ready) .tl .tl-greet {
     opacity: calc(1 - var(--tl-k, 0));
   }
 
-  .tl-hero__avant {
+  .tl-hero__caption {
     top: calc(var(--tl-header) + 0.6rem);
     bottom: auto;
+    width: auto;
+    right: var(--tl-g);
+  }
+  /* La phrase passe en haut de la photo, devant le faisceau : le voile
+     sombre passe du coin bas-gauche au coin haut-gauche, là où est le texte. */
+  .tl .tl-hero__scrim {
+    background: linear-gradient(
+      to bottom right,
+      color-mix(in oklab, var(--tl-avant) 94%, transparent) 0%,
+      color-mix(in oklab, var(--tl-avant) 76%, transparent) 30%,
+      color-mix(in oklab, var(--tl-avant) 30%, transparent) 50%,
+      transparent 66%
+    );
+  }
+  .tl-hero__avant {
     max-width: 17rem;
     font-size: clamp(1rem, 4.4vw, 1.25rem);
   }
@@ -992,13 +1054,14 @@ html:not(.sc-ready) .tl .tl-greet {
     position: static;
     font-size: 1.15rem;
   }
+  .tl-glints {
+    display: none;
+  }
   .tl-line,
-  .tl-ledger__more,
-  .tl-ledger__pay {
+  .tl-ledger__foot {
     position: relative;
     left: auto;
     top: auto;
-    bottom: auto;
     width: auto;
   }
   .tl-ledger__lines {
@@ -1039,11 +1102,9 @@ html:not(.sc-ready) .tl .tl-greet {
     right: var(--tl-g);
   }
   .tl-reduce .tl-line,
-  .tl-reduce .tl-ledger__more,
-  .tl-reduce .tl-ledger__pay,
+  .tl-reduce .tl-ledger__foot,
   .tl.tl-fallback .tl-line,
-  .tl.tl-fallback .tl-ledger__more,
-  .tl.tl-fallback .tl-ledger__pay {
+  .tl.tl-fallback .tl-ledger__foot {
     width: auto;
   }
 }
@@ -1057,8 +1118,7 @@ html:not(.sc-ready) .tl .tl-greet {
 }
 @media (max-width: 1023.98px) and (scripting: none) {
   .tl .tl-line,
-  .tl .tl-ledger__more,
-  .tl .tl-ledger__pay {
+  .tl .tl-ledger__foot {
     width: auto;
   }
 }
