@@ -1,0 +1,1077 @@
+/* ============================================================================
+   Accueil : scène partagée avant / après
+   ----------------------------------------------------------------------------
+   À gauche l'avant (photographique, froid), à droite l'après (un bordereau
+   sobre). La position du séparateur est --tl-x (fraction de la largeur),
+   écrite par HomeExperience. Les dispositifs du moteur ([data-sc-*], .sc-*)
+   ne sont jamais restylés ici : seulement les classes propres à la page.
+   ========================================================================== */
+
+.tl {
+  /* Jetons scrollcraft : six rôles de couleur, deux faces. */
+  --sc-canvas: #07090c;
+  --sc-surface: #10151a;
+  --sc-ink: #eef1ec;
+  --sc-ink-soft: #9ca7a2;
+  --sc-accent: #5ecb33;
+  --sc-accent-ink: #08130a;
+  --sc-font-display: var(--font-tl), "Archivo", system-ui, sans-serif;
+  --sc-font-text: var(--font-sans), system-ui, sans-serif;
+  --sc-shadow-color: 210 40% 2%;
+
+  /* Les deux fonds de la scène partagée. */
+  --tl-avant: #06080a;
+  --tl-apres: #0d1115;
+  --tl-hair: color-mix(in oklab, var(--sc-ink) 13%, transparent);
+  --tl-hair-strong: color-mix(in oklab, var(--sc-ink) 30%, transparent);
+  --tl-g: clamp(1.25rem, 3.6vw, 4rem);
+  --tl-header: 5rem;
+  --tl-x: 0.5;
+
+  position: relative;
+  isolation: isolate;
+  /* Le hero passe sous l'en-tête fixe du site (main a pt-20). */
+  margin-top: calc(var(--tl-header) * -1);
+  background: var(--tl-apres);
+}
+
+.tl > section {
+  position: relative;
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------ typographie */
+.tl-display {
+  font-family: var(--sc-font-display);
+  font-stretch: 75%;
+  font-weight: 640;
+  line-height: 0.94;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+.tl-label {
+  font-family: var(--sc-font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1.65;
+  text-transform: uppercase;
+  color: var(--sc-ink-soft);
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- bouton */
+.tl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.45rem;
+  border-radius: 6px;
+  background: var(--sc-accent);
+  color: var(--sc-accent-ink);
+  font-family: var(--sc-font-display);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: var(--sc-e2);
+  transition:
+    background-color var(--sc-d-fast) var(--sc-ease-out),
+    transform 120ms var(--sc-ease-out);
+}
+.tl-btn:active {
+  transform: translateY(1px);
+}
+.tl .tl-btn:focus-visible {
+  outline: 2px solid var(--sc-ink);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tl-btn:hover {
+    background: #74d94b;
+  }
+}
+
+/* ===================================================== scène partagée ===
+   Deux calques collés en haut de l'écran pendant tout l'accueil : les fonds
+   (sous le contenu) et le séparateur (au-dessus). Bureau seulement.       */
+.tl-canvas,
+.tl-seam {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  margin-bottom: -100vh;
+  margin-bottom: -100svh;
+  pointer-events: none;
+}
+.tl-canvas {
+  z-index: 0;
+}
+.tl-canvas__apres,
+.tl-canvas__avant,
+.tl-grain {
+  position: absolute;
+  inset: 0;
+}
+.tl-canvas__apres {
+  background: var(--tl-apres);
+}
+.tl-canvas__avant {
+  background: var(--tl-avant);
+  clip-path: inset(0 calc((1 - var(--tl-x)) * 100%) 0 0);
+  opacity: var(--tl-avant-o, 1);
+}
+.tl-grain {
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+}
+
+.tl-seam {
+  z-index: 30;
+  overflow: clip;
+  transition: opacity var(--sc-d-base) var(--sc-ease-out);
+}
+.tl-seam.is-off {
+  opacity: 0;
+}
+/* Un rail pleine largeur, déplacé de --tl-x : les pourcentages restent ceux
+   de la largeur du contenu, comme les fonds et les cadres photo. */
+.tl-seam__rail {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--tl-x) * 100%), 0, 0);
+}
+.tl-seam__line {
+  position: absolute;
+  left: 0;
+  top: calc(var(--tl-header) + 0.5rem);
+  bottom: 1.25rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--tl-hair-strong) 3rem,
+    var(--tl-hair-strong) calc(100% - 3rem),
+    transparent
+  );
+}
+.tl-seam__tick {
+  position: absolute;
+  left: -1px;
+  top: calc(var(--tl-header) + 0.5rem);
+  width: 3px;
+  height: 1.25rem;
+  background: var(--sc-accent);
+  transform: translate3d(0, var(--tl-tick, 0px), 0);
+}
+.tl-seam__label {
+  position: absolute;
+  top: calc(var(--tl-header) + 0.85rem);
+  padding: 0.42rem 0.6rem;
+  font-family: var(--sc-font-display);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sc-ink-soft);
+  transition: opacity var(--sc-d-base) var(--sc-ease-out);
+}
+.tl-seam__label--l {
+  right: calc(100% + 0.45rem);
+  background: color-mix(in oklab, var(--tl-avant) 88%, transparent);
+}
+.tl-seam__label--r {
+  left: 0.45rem;
+  background: color-mix(in oklab, var(--tl-apres) 88%, transparent);
+}
+.tl-seam [data-tl-mode="vn"],
+.tl-seam.is-vn [data-tl-mode="aa"] {
+  opacity: 0;
+}
+.tl-seam.is-vn [data-tl-mode="vn"] {
+  opacity: 1;
+}
+
+/* Séparateur horizontal des mises en page empilées (mobile). */
+.tl-hdiv {
+  display: none;
+}
+
+/* ================================================================ scènes */
+.tl-stage {
+  height: 100vh;
+  height: 100svh;
+  overflow: clip;
+}
+/* Sans le moteur, la scène n'est pas collante : simple bloc d'un écran. */
+.tl-stage:not(.sc-stage) {
+  position: relative;
+}
+
+/* Le cadre photo occupe toute la scène et n'en montre que la partie à
+   gauche du séparateur. */
+.tl-frame {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  background: var(--tl-avant);
+  clip-path: inset(0 calc((1 - var(--tl-x)) * 100%) 0 0);
+  --tl-fw: 0.5; /* position la plus à droite que le séparateur atteint */
+}
+.tl-frame--hero {
+  --tl-cx: 0.25;
+  --tl-lot-h: 52svh;
+  --tl-lot-b: 22svh;
+}
+.tl-frame--peak {
+  --tl-cx: 0.2;
+  --tl-lot-h: 54svh;
+  --tl-lot-b: 24svh;
+}
+
+/* Boîte de la plaque (la pièce) : couvre la partie visible du cadre. */
+.tl-box {
+  position: absolute;
+  left: calc(var(--tl-cx) * 100%);
+  top: 50%;
+  width: max(
+    calc((var(--tl-fw) - var(--tl-cx)) * 200% + 4%),
+    calc(var(--tl-cx) * 200% + 4%),
+    75svh
+  );
+  aspect-ratio: 3 / 4;
+  translate: -50% -50%;
+}
+.tl-plane {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 55%;
+  will-change: transform;
+}
+.tl-plane img {
+  object-fit: cover;
+}
+.tl-plane--cone {
+  mix-blend-mode: screen;
+  opacity: 0.8;
+}
+.tl-near {
+  mix-blend-mode: screen;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Le lot : posé sur le sol de la plaque, centré dans sa moitié. */
+.tl-lot {
+  position: absolute;
+  left: calc(var(--tl-cx) * 100%);
+  bottom: var(--tl-lot-b);
+  height: var(--tl-lot-h);
+  aspect-ratio: var(--tl-lot-aspect, 0.75);
+  translate: -50% 0;
+}
+.tl-lot img {
+  object-fit: contain;
+}
+.tl-shadow {
+  position: absolute;
+  left: -16%;
+  right: -16%;
+  bottom: -5%;
+  height: 11%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(2 3 4 / 0.82),
+    rgb(2 3 4 / 0.5) 45%,
+    transparent
+  );
+}
+.tl-band {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+/* La lumière s'allume au chargement : la pièce sort du noir, le faisceau
+   monte. Une seule fois, et pas en mouvement réduit. */
+.tl-frame--hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #020304;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tl-frame--hero::after {
+    animation: tl-dark 1.9s var(--sc-ease-out) 0.15s both;
+  }
+  .tl-frame--hero .tl-plane--cone {
+    animation: tl-power 2.2s var(--sc-ease-out) 0.35s both;
+  }
+  .tl-plane--cone img,
+  .tl-near img {
+    animation: tl-drift 16s ease-in-out infinite alternate;
+  }
+  .tl-near img {
+    animation-duration: 21s;
+    animation-direction: alternate-reverse;
+  }
+  .tl.is-still .tl-plane--cone img,
+  .tl.is-still .tl-near img {
+    animation-play-state: paused;
+  }
+}
+@keyframes tl-dark {
+  from {
+    opacity: 0.62;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes tl-power {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes tl-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -1.6%, 0);
+  }
+}
+
+/* ================================================================== hero */
+.tl-hero__scrim {
+  z-index: 2;
+}
+.tl-hero__avant {
+  position: absolute;
+  z-index: 3;
+  left: var(--tl-g);
+  bottom: clamp(2.5rem, 8svh, 5.5rem);
+  max-width: min(16em, calc(50% - var(--tl-g) * 2 - 1rem));
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 420;
+  font-size: clamp(1.35rem, 2.05vw, 2.25rem);
+  line-height: 1.12;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  color: var(--sc-ink);
+}
+.tl-hero__label {
+  position: absolute;
+  z-index: 3;
+  left: var(--tl-g);
+  top: calc(var(--tl-header) + 2rem);
+  max-width: 19rem;
+}
+.tl-hero__apres {
+  position: absolute;
+  z-index: 3;
+  left: 54%;
+  right: var(--tl-g);
+  bottom: clamp(2.5rem, 8svh, 5.5rem);
+}
+.tl-hero__title {
+  font-size: clamp(3.2rem, 6.4vw, 7.6rem);
+}
+.tl-hero__sub {
+  margin: 1.4rem 0 0;
+  max-width: 31rem;
+  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.15rem);
+  line-height: 1.6;
+  color: var(--sc-ink-soft);
+  text-wrap: pretty;
+}
+.tl-hero__cta {
+  margin-top: 2rem;
+}
+
+/* ===================================================== le coût de garder */
+.tl-cost {
+  padding-block: 20vh 6vh;
+}
+/* Deux colonnes calées sur la scène : l'avant finit avant 36 %, l'après
+   commence à 54 %, et le séparateur circule entre les deux. */
+.tl-pair,
+.tl-row,
+.tl-step {
+  display: grid;
+  grid-template-columns:
+    var(--tl-g) calc(36% - var(--tl-g)) 18%
+    minmax(0, 1fr) var(--tl-g);
+}
+.tl-pair {
+  margin: 0;
+  align-items: end;
+}
+.tl-pair__l,
+.tl-row__l,
+.tl-step__l {
+  grid-column: 2;
+}
+.tl-pair__r,
+.tl-row__r,
+.tl-step__r {
+  grid-column: 4;
+}
+.tl-pair .tl-display {
+  display: block;
+  font-size: clamp(2.2rem, 3.6vw, 4rem);
+}
+.tl-pair__l {
+  color: #adb0ad; /* encre à 72 % sur le fond avant */
+}
+
+.tl-row {
+  align-items: center;
+  padding-block: 11vh;
+}
+.tl-row__photo {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  overflow: clip;
+  background: #0b0e12;
+}
+.tl-row__photo img {
+  object-fit: cover;
+}
+.tl-row__avant {
+  margin: 1.4rem 0 0;
+  max-width: 22em;
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 420;
+  font-size: clamp(1.2rem, 1.55vw, 1.6rem);
+  line-height: 1.22;
+  color: #c0c2bf; /* encre à 80 % sur le fond avant */
+  text-wrap: balance;
+}
+.tl-row__apres {
+  margin: 0;
+  max-width: 21em;
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 450;
+  font-size: clamp(1.45rem, 2.05vw, 2.15rem);
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  color: var(--sc-ink);
+  text-wrap: balance;
+}
+
+/* ===================================================== comment ça marche */
+.tl-proc {
+  padding-block: 16vh 22vh;
+}
+.tl-pair--proc .tl-display {
+  font-size: clamp(2rem, 3.2vw, 3.6rem);
+}
+.tl-steps {
+  list-style: none;
+  margin: 9vh 0 0;
+  padding: 0;
+}
+.tl-step {
+  padding-block: 2.1rem;
+}
+.tl-step__l,
+.tl-step__r {
+  border-top: 1px solid var(--tl-hair);
+  padding-top: 1.35rem;
+}
+.tl-step__head {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 520;
+  font-size: clamp(1.25rem, 1.6vw, 1.65rem);
+  line-height: 1.2;
+  color: var(--sc-ink);
+}
+.tl-step__note {
+  margin: 0.5rem 0 0;
+  max-width: 30em;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--sc-ink-soft);
+}
+.tl-mini {
+  display: none;
+}
+
+/* ====================================================== la ligne (le pic) */
+.tl-ledger {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform: translate3d(calc(var(--tl-x) * 100%), 0, 0);
+  pointer-events: none;
+}
+.tl-ledger__title {
+  position: absolute;
+  left: 2.6%;
+  top: 13svh;
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 520;
+  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
+  line-height: 1.15;
+  color: var(--sc-ink);
+}
+.tl-ledger__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tl-line,
+.tl-ledger__more,
+.tl-ledger__pay {
+  position: absolute;
+  left: 2.6%;
+  width: min(52%, 48rem);
+}
+/* Chaque ligne est à la hauteur de la couche du lot qu'elle décrit (--m,
+   milieu de la bande, fraction de la hauteur du lot). Elle sort du
+   séparateur au moment où la couche le traverse (--c, de 0 à 1). */
+.tl-line {
+  top: calc(100svh - var(--tl-lot-b) - var(--tl-lot-h) + var(--m) * var(--tl-lot-h));
+  translate: 0 -50%;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  clip-path: inset(-40% calc((1 - var(--c, 0)) * 100%) -40% 0);
+  transform: translate3d(calc((1 - var(--c, 0)) * -2.2rem), 0, 0);
+}
+.tl-peak .tl-stage {
+  --tl-lot-h: 54svh;
+  --tl-lot-b: 24svh;
+}
+.tl-line__item {
+  font-family: var(--sc-font-display);
+  font-stretch: 88%;
+  font-weight: 500;
+  font-size: clamp(1.2rem, 1.65vw, 1.8rem);
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--sc-ink);
+}
+.tl-line__leader {
+  flex: 1;
+  min-width: 2rem;
+  border-bottom: 1px dotted var(--tl-hair-strong);
+  transform: translateY(-0.3em);
+}
+.tl-line__status {
+  font-family: var(--sc-font-display);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--sc-accent);
+  opacity: clamp(0, (var(--c, 0) - 0.8) * 5, 1);
+}
+.tl-ledger__more {
+  top: calc(100svh - var(--tl-lot-b) + 2.2rem);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--sc-ink-soft);
+}
+.tl-ledger__pay {
+  bottom: 5svh;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--tl-hair);
+}
+.tl-ledger__more,
+.tl-ledger__pay {
+  opacity: var(--o, 0);
+  transform: translate3d(0, calc((1 - var(--o, 0)) * 0.8rem), 0);
+}
+.tl-ledger__pay dt {
+  font-family: var(--sc-font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sc-ink-soft);
+}
+.tl-ledger__pay dd {
+  margin: 0.45rem 0 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--sc-ink);
+}
+.tl-done {
+  position: absolute;
+  z-index: 4;
+  left: 58%;
+  right: var(--tl-g);
+  top: 50%;
+  translate: 0 -50%;
+  opacity: var(--o, 0);
+  transform: translate3d(0, calc((1 - var(--o, 0)) * 1.2rem), 0);
+}
+.tl-done {
+  visibility: hidden;
+}
+.tl-done__title {
+  font-size: clamp(2.6rem, 5vw, 5.6rem);
+  margin-bottom: 2.2rem;
+}
+
+/* ============================================================ formulaire */
+.tl-close {
+  padding: 16vh var(--tl-g) 14vh;
+  background: var(--tl-apres);
+  scroll-margin-top: var(--tl-header);
+}
+.tl-close__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: clamp(2.5rem, 6vw, 7rem);
+  max-width: 84rem;
+  margin-inline: auto;
+}
+.tl-close__title {
+  font-size: clamp(2.4rem, 4.2vw, 4.6rem);
+}
+.tl-close__text {
+  margin: 1.4rem 0 0;
+  max-width: 34rem;
+  color: var(--sc-ink-soft);
+  line-height: 1.6;
+}
+.tl-close__form {
+  margin-top: 2.6rem;
+}
+.tl-close__side {
+  align-self: end;
+}
+.tl-contact {
+  margin: 0;
+  border-top: 1px solid var(--tl-hair);
+}
+.tl-contact > div {
+  padding-block: 1.05rem;
+  border-bottom: 1px solid var(--tl-hair);
+}
+.tl-contact dt,
+.tl-clause__title {
+  font-family: var(--sc-font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sc-ink-soft);
+  margin: 0;
+}
+.tl-contact dd {
+  margin: 0.4rem 0 0;
+  font-size: 1.02rem;
+  color: var(--sc-ink);
+}
+.tl-contact a {
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tl-contact a:hover {
+    color: var(--sc-accent);
+  }
+}
+.tl-clause {
+  margin-top: 2.2rem;
+}
+.tl-clause p:not(.tl-clause__title) {
+  margin: 0.6rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--sc-ink-soft);
+}
+.tl-clause strong {
+  font-weight: 600;
+  color: var(--sc-ink);
+}
+.tl-close__unique {
+  margin: 2.2rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--sc-ink-soft);
+}
+/* Le formulaire partagé du site, accordé au rayon et à l'accent de
+   l'accueil (sans halo lumineux). Le composant lui-même n'est pas modifié. */
+.tl-close .glass {
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--sc-ink) 3%, transparent);
+  border-color: var(--tl-hair);
+  box-shadow: var(--sc-e2);
+  backdrop-filter: none;
+}
+.tl-close .field {
+  border-radius: 6px;
+}
+.tl-close .btn-primary,
+.tl-close .btn-primary:hover {
+  border-radius: 6px;
+  background: var(--sc-accent);
+  color: var(--sc-accent-ink);
+  box-shadow: none;
+  filter: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .tl-close .btn-primary:hover {
+    background: #74d94b;
+  }
+}
+
+/* ======================================================== avant le moteur
+   Les textes d'accueil du hero sont visibles dès la première peinture ; le
+   moteur reprend la main à son montage (même opacité, aucun saut). */
+html:not(.sc-ready) .tl .tl-greet {
+  opacity: 1;
+}
+
+/* Sans JavaScript, ou si le moteur n'a pas pu se charger (.tl-fallback) :
+   tout est visible et immobile, le bordereau est complet. */
+@media (scripting: none) {
+  .tl [data-sc-cue],
+  .tl [data-sc-in],
+  .tl [data-sc-stagger] > * {
+    opacity: 1;
+    transform: none;
+  }
+  .tl .tl-line,
+  .tl .tl-ledger__more,
+  .tl .tl-ledger__pay {
+    --c: 1;
+    --o: 1;
+    width: calc(47.4% - var(--tl-g));
+  }
+  .tl .tl-done {
+    display: none;
+  }
+}
+.tl.tl-fallback [data-sc-cue],
+.tl.tl-fallback [data-sc-in],
+.tl.tl-fallback [data-sc-stagger] > * {
+  opacity: 1;
+  transform: none;
+}
+.tl.tl-fallback .tl-line,
+.tl.tl-fallback .tl-ledger__more,
+.tl.tl-fallback .tl-ledger__pay {
+  --c: 1;
+  --o: 1;
+  width: calc(47.4% - var(--tl-g));
+}
+.tl.tl-fallback .tl-done {
+  display: none;
+}
+
+/* ======================================================= mouvement réduit
+   Le séparateur ne se déplace pas (il reste au milieu, puis s'efface) : le
+   bordereau prend donc la largeur de l'après, et les lignes apparaissent en
+   fondu sans glisser. */
+.tl-reduce .tl-line {
+  clip-path: none;
+  transform: none;
+  opacity: var(--c, 0);
+}
+.tl-reduce .tl-line,
+.tl-reduce .tl-ledger__more,
+.tl-reduce .tl-ledger__pay {
+  width: calc(47.4% - var(--tl-g));
+}
+.tl-reduce .tl-ledger__more,
+.tl-reduce .tl-ledger__pay,
+.tl-reduce .tl-done {
+  transform: none;
+}
+.tl-reduce .tl-done {
+  left: var(--tl-g);
+  right: 54%;
+}
+
+/* ================================================================ mobile
+   La scène partagée devient verticale : la photo en haut, l'après en bas,
+   séparées par un filet horizontal. Au pic, les couches sortent par la
+   droite de l'écran et le bordereau se remplit en dessous.               */
+@media (max-width: 1023.98px) {
+  .tl-canvas,
+  .tl-seam {
+    display: none;
+  }
+
+  .tl-frame {
+    inset: 0 0 auto 0;
+    clip-path: none;
+    --tl-fw: 1;
+    --tl-cx: 0.5;
+  }
+  .tl-frame--hero {
+    height: 58svh;
+    --tl-lot-h: 31svh;
+    --tl-lot-b: 3svh;
+  }
+  .tl-frame--peak {
+    height: 46svh;
+    --tl-lot-h: 30svh;
+    --tl-lot-b: 3svh;
+    clip-path: inset(0 0 calc(var(--tl-k, 0) * 100%) 0);
+  }
+  .tl-box {
+    width: max(104%, calc(var(--tl-frame-h, 58svh) * 0.75));
+  }
+  .tl-frame--peak .tl-box {
+    --tl-frame-h: 46svh;
+  }
+
+  .tl-hdiv {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 4;
+    padding-inline: var(--tl-g);
+    border-top: 1px solid var(--tl-hair-strong);
+    font-family: var(--sc-font-display);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--sc-ink-soft);
+    pointer-events: none;
+  }
+  .tl-hdiv span:first-child {
+    position: absolute;
+    bottom: calc(100% + 0.55rem);
+  }
+  .tl-hdiv span:last-child {
+    padding-top: 0.55rem;
+  }
+  .tl-hdiv--hero {
+    top: 58svh;
+  }
+  .tl-hdiv--peak {
+    top: 46svh;
+    transform: translate3d(0, calc(var(--tl-k, 0) * -36svh), 0);
+    opacity: calc(1 - var(--tl-k, 0));
+  }
+
+  .tl-hero__avant {
+    top: calc(var(--tl-header) + 0.6rem);
+    bottom: auto;
+    max-width: 17rem;
+    font-size: clamp(1rem, 4.4vw, 1.25rem);
+  }
+  .tl-hero__label {
+    display: none;
+  }
+  .tl-hero__apres {
+    left: var(--tl-g);
+    right: var(--tl-g);
+    top: calc(58svh + 2.2rem);
+    bottom: auto;
+  }
+  .tl-hero__title {
+    font-size: clamp(2.6rem, 12vw, 4rem);
+  }
+  .tl-hero__sub {
+    margin-top: 0.9rem;
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+  .tl-hero__cta {
+    margin-top: 1.3rem;
+  }
+
+  .tl-cost {
+    padding-block: 0;
+  }
+  .tl-pair,
+  .tl-row,
+  .tl-step {
+    display: block;
+  }
+  .tl-pair {
+    padding: 4.5rem var(--tl-g) 2.5rem;
+  }
+  .tl-pair .tl-display + .tl-display {
+    margin-top: 0.35rem;
+  }
+  .tl-pair .tl-display {
+    font-size: clamp(2rem, 8.6vw, 2.8rem);
+  }
+  .tl-row {
+    padding: 0;
+  }
+  .tl-row__l {
+    padding: 2.4rem var(--tl-g) 1.6rem;
+    background: var(--tl-avant);
+  }
+  .tl-row__photo {
+    aspect-ratio: 16 / 10;
+  }
+  .tl-row__r {
+    padding: 2.4rem var(--tl-g) 3rem;
+  }
+  .tl-hdiv--row {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-block: 0.7rem;
+    border-top: 1px solid var(--tl-hair-strong);
+  }
+  .tl-hdiv--row span:first-child {
+    position: static;
+  }
+  .tl-hdiv--row span:last-child {
+    padding-top: 0;
+  }
+
+  .tl-proc {
+    padding-block: 2rem 4rem;
+  }
+  .tl-steps {
+    margin-top: 1.5rem;
+    padding-inline: var(--tl-g);
+  }
+  .tl-step {
+    padding-block: 1.6rem 0.4rem;
+    border-top: 1px solid var(--tl-hair);
+  }
+  .tl-step__l,
+  .tl-step__r {
+    border-top: 0;
+    padding-top: 0;
+  }
+  .tl-step__r {
+    margin-top: 1.1rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--sc-accent);
+  }
+  .tl-mini {
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+
+  .tl-ledger {
+    inset: auto 0 auto 0;
+    top: calc(46svh + 2.2rem);
+    padding-inline: var(--tl-g);
+    transform: translate3d(0, calc(var(--tl-k, 0) * -36svh), 0);
+  }
+  .tl-ledger__title {
+    position: static;
+    font-size: 1.15rem;
+  }
+  .tl-line,
+  .tl-ledger__more,
+  .tl-ledger__pay {
+    position: relative;
+    left: auto;
+    top: auto;
+    bottom: auto;
+    width: auto;
+  }
+  .tl-ledger__lines {
+    margin-top: 0.9rem;
+  }
+  .tl-line {
+    translate: none;
+    padding-block: 0.42rem;
+  }
+  .tl-line__item {
+    font-size: 1.05rem;
+  }
+  .tl-ledger__more {
+    margin-top: 0.7rem;
+    font-size: 0.85rem;
+  }
+  .tl-ledger__pay {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    margin-top: 1.1rem;
+  }
+  .tl-ledger__pay dd {
+    font-size: 0.92rem;
+  }
+  .tl-done {
+    left: var(--tl-g);
+    right: var(--tl-g);
+    top: auto;
+    bottom: 8svh;
+    translate: none;
+  }
+  .tl-done__title {
+    font-size: clamp(2.2rem, 10vw, 3.2rem);
+    margin-bottom: 1.4rem;
+  }
+  .tl-reduce .tl-done {
+    left: var(--tl-g);
+    right: var(--tl-g);
+  }
+  .tl-reduce .tl-line,
+  .tl-reduce .tl-ledger__more,
+  .tl-reduce .tl-ledger__pay,
+  .tl.tl-fallback .tl-line,
+  .tl.tl-fallback .tl-ledger__more,
+  .tl.tl-fallback .tl-ledger__pay {
+    width: auto;
+  }
+}
+@media (max-width: 1023.98px) {
+  .tl-close {
+    padding: 4.5rem var(--tl-g) 5rem;
+  }
+  .tl-close__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 1023.98px) and (scripting: none) {
+  .tl .tl-line,
+  .tl .tl-ledger__more,
+  .tl .tl-ledger__pay {
+    width: auto;
+  }
+}
+
+/* Petits téléphones : le bordereau doit tenir sous la photo. */
+@media (max-width: 1023.98px) and (max-height: 700px) {
+  .tl-ledger__more {
+    display: none;
+  }
+  .tl-line {
+    padding-block: 0.3rem;
+  }
+  .tl-hero__sub {
+    font-size: 0.92rem;
+  }
+}

@@ -14,3 +14,11 @@ next-env.d.ts
 .agents
 skills-lock.json
 ~$*
+
+# scroll-craft : sorties brutes de génération et outils de vérification locaux
+scrollcraft/builds/*/out/
+scrollcraft/builds/*/lab/node_modules/
+scrollcraft/builds/*/lab/shots/
+scrollcraft/builds/*/lab/placeholders/
+scrollcraft/builds/*/lab/tasks.jsonl
+scrollcraft/builds/*/lab/*.log
