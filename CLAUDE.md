@@ -34,5 +34,6 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - Thème admin : fond `night-950`, cartes `.glass`, accent vert `#5ECB33` (`.btn-primary`, `.field` dans `app/globals.css`, couleurs dans `tailwind.config.ts`).
 - Wording : jamais « paiement avant notre départ » ; dire « paiement rapide et garanti ».
 - Git : messages de commit en français.
+- Sessions Claude Code dans le nuage (claude.ai/code, branche imposée `claude/...`) : l'utilisateur veut que TOUS les changements aillent sur `dev`. Travailler sur `dev` (`git fetch origin dev && git checkout -B dev origin/dev`) et pousser sur `dev`, pas sur la branche `claude/...`. Vercel déploie une prévisualisation de `dev` automatiquement.
 - Workflow multi-ordi : on travaille TOUJOURS sur la branche `dev` (en début de session : `git fetch origin && git checkout dev && git pull`). Commit + push sur `dev` librement après chaque modif terminée (sert à synchroniser les ordinateurs, ne déploie rien). Ne JAMAIS pousser sur `main` sauf si l'utilisateur dit « mets en ligne » : alors `git checkout main && git pull && git merge --ff-only dev && git push origin main`, puis revenir sur `dev`.
 - Déploiement : Hostinger depuis GitHub. `RESEND_API_KEY` doit exister côté serveur (pas dans `.env.production`, qui est versionné).
