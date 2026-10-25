@@ -31,6 +31,8 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 
 ## Conventions
 
+- Toujours répondre à l'utilisateur en français (Québec), même s'il écrit en anglais.
+
 - Thème admin : fond `night-950`, cartes `.glass`, accent vert `#5ECB33` (`.btn-primary`, `.field` dans `app/globals.css`, couleurs dans `tailwind.config.ts`).
 - Wording : jamais « paiement avant notre départ » ; dire « paiement rapide et garanti ».
 - Git : messages de commit en français.
