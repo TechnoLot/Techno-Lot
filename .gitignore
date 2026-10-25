@@ -8,7 +8,9 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .claude/settings.local.json
-.claude/skills
+.claude/skills/*
+!.claude/skills/scroll-craft/
+.claude/skills/scroll-craft/.env
 .agents
 skills-lock.json
 ~$*
