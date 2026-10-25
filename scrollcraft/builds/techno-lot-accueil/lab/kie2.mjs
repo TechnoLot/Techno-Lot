@@ -8,7 +8,7 @@
  * étape est journalisée dans lab/tasks.jsonl avant d'aller plus loin, et
  * `fetch` retélécharge plus tard à partir du journal.
  *
- *   node kie2.mjs still <nom> <ar> <scène...> [--ref fichier]...
+ *   node kie2.mjs still <nom> <ar> <scène...> [--ref fichier]... [--no-pre]
  *   node kie2.mjs rmbg  <nom> <image-source>        (détourage recraft)
  *   node kie2.mjs fetch                             (retélécharge ce qui manque)
  *   node kie2.mjs status                            (état du journal)
@@ -112,10 +112,12 @@ const flags = (n) => rest.flatMap((a, i) => (a === n && rest[i + 1] ? [rest[i + 
 
 try {
   if (cmd === "still") {
-    const [name, ar, ...words] = rest.filter((a, i) => a !== "--ref" && rest[i - 1] !== "--ref");
+    const noPre = rest.includes("--no-pre");
+    const [name, ar, ...words] = rest.filter((a, i) => a !== "--ref" && rest[i - 1] !== "--ref" && a !== "--no-pre");
     const scene = words.join(" ");
     const refs = flags("--ref");
-    const input = { prompt: `${PRE}\n\n${scene}`, aspect_ratio: ar, quality: "high", output_format: "png", nsfw_checker: false };
+    // --no-pre : sans le préambule de style de l'accueil (maquettes d'autres directions)
+    const input = { prompt: noPre ? scene : `${PRE}\n\n${scene}`, aspect_ratio: ar, quality: "high", output_format: "png", nsfw_checker: false };
     let model = "seedream/5-pro-text-to-image";
     if (refs.length) { model = "seedream/5-pro-image-to-image"; input.image_urls = await Promise.all(refs.map(upload)); }
     await run(name, model, input);

@@ -1,154 +1,121 @@
-import Image from "next/image";
-import { Archivo } from "next/font/google";
+import Image, { getImageProps } from "next/image";
 import HomeExperience from "@/components/home/HomeExperience";
 import SubmissionForm from "@/components/SubmissionForm";
-import { LOT_ASPECT, LOT_BANDS } from "@/components/home/lot-geometry";
+import { LOGO_BOX, MARQUE } from "@/components/home/marque";
 import { getHomeContent } from "@/lib/home-content";
 import { site } from "@/lib/site";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import "@/components/home/scrollcraft.css";
 import "@/components/home/accueil.css";
 
-// Face d'affichage de l'accueil : un grotesque industriel à largeur variable,
-// proche du mot-symbole condensé du logo. Le texte courant reste en Inter.
-const archivo = Archivo({
-  subsets: ["latin"],
-  axes: ["wdth"],
-  variable: "--font-tl",
-  display: "swap",
-});
+// Poids visuel des objets du rail : un commutateur plat et un petit
+// ordinateur carré ne remplissent pas leur cadre de la même façon.
+const OBJ_SCALE: Record<string, number> = {
+  serveurs: 1.08,
+  portables: 1,
+  reseau: 1.1,
+  stockage: 0.94,
+  ecrans: 1,
+  postes: 0.8,
+};
 
-// Même valeur `sizes` partout où une image revient (le lot, la pièce) pour
-// que le navigateur ne la télécharge qu'une fois.
-const SCENE_SIZES = "(min-width: 1024px) 56vw, 100vw";
-const LOT_SIZES = "(min-width: 1024px) 30vw, 60vw";
-
-const costPhotos = [
-  "/accueil/entrepot.jpg",
-  "/accueil/poussiere-serveur.jpg",
-  "/accueil/disque.jpg",
-];
+// Art direction de l'affiche du hero : la vidéo portrait (recadrage central)
+// sert les écrans plus hauts que larges. Même seuil que HomeExperience.
+const PORTRAIT_MQ = "(max-aspect-ratio: 4/5)";
 
 /**
- * Accueil en scène partagée : à gauche l'avant (le matériel qui dort), à
- * droite l'après (le service). Le séparateur penche vers l'après au fil de
- * l'argument. Au pic, chaque couche du lot traverse le séparateur et devient
- * une ligne du bordereau ; puis le séparateur s'efface au bord gauche et le
- * formulaire attend dans l'espace libéré. Le contenu est entièrement rendu
- * côté serveur ; HomeExperience ne fait qu'animer ce qui existe déjà.
+ * Accueil « le centre de données ».
+ *
+ * 1. Une allée de serveurs vivante : la vidéo avance sous la main, le logo
+ *    attend au point de fuite, dans la brume.
+ * 2. Ce que nous rachetons : un rail latéral d'objets.
+ * 3. Comment ça marche : quatre étapes, le calme avant le pic.
+ * 4. La mise hors tension (le pic) : l'allée s'éteint baie par baie, la
+ *    lumière revient sur une salle vide et la boucle du logo se dessine.
+ * 5. Le formulaire.
+ *
+ * Tout le contenu est rendu côté serveur ; HomeExperience ne fait qu'animer
+ * ce qui existe déjà. Sans JavaScript, la page reste complète.
  */
 export default function HomePage({ locale }: { locale: Locale }) {
   const c = getHomeContent(locale);
   const form = getDict(locale).form;
-  const lotStyle = { "--tl-lot-aspect": LOT_ASPECT } as React.CSSProperties;
+
+  const posterCommon = { alt: "", fill: true, priority: true, sizes: "100vw" } as const;
+  const {
+    props: { srcSet: posterPortrait },
+  } = getImageProps({ ...posterCommon, src: "/accueil/allee-m.webp", quality: 80 });
+  const { props: posterProps } = getImageProps({
+    ...posterCommon,
+    src: "/accueil/allee.webp",
+    quality: 80,
+  });
+
+  const markStyle = {
+    "--tl-mark-l": LOGO_BOX.mark.left,
+    "--tl-mark-w": LOGO_BOX.mark.width,
+    "--tl-word-t": LOGO_BOX.word.top,
+    "--tl-logo-aspect": LOGO_BOX.aspect,
+  } as React.CSSProperties;
 
   return (
-    <HomeExperience className={`tl ${archivo.variable}`}>
-      {/* Les deux fonds de la scène partagée et le séparateur. Collés en haut
-          de l'écran tant que l'accueil défile, puis ils partent avec lui. */}
-      <div className="tl-canvas" aria-hidden="true">
-        <div className="tl-canvas__apres" />
-        <div className="tl-canvas__avant" />
-        <div className="tl-grain" />
-      </div>
-      <div className="tl-seam" aria-hidden="true">
-        <div className="tl-seam__rail">
-          <span className="tl-seam__line" />
-          <span className="tl-seam__tick" />
-          <span className="tl-seam__label tl-seam__label--l" data-tl-mode="aa">
-            {c.seam.avant}
-          </span>
-          <span className="tl-seam__label tl-seam__label--r" data-tl-mode="aa">
-            {c.seam.apres}
-          </span>
-          <span className="tl-seam__label tl-seam__label--l" data-tl-mode="vn">
-            {c.seam.vous}
-          </span>
-          <span className="tl-seam__label tl-seam__label--r" data-tl-mode="vn">
-            {c.seam.nous}
-          </span>
-        </div>
-      </div>
-
-      {/* ===== 1. Le lot qui dort ===== */}
+    <HomeExperience className="tl">
+      {/* ===== 1. L'allée vivante ===== */}
       <section
         className="tl-hero"
-        data-sc-act="pin"
-        data-sc-span="1.5"
+        data-sc-act="scrub"
+        data-sc-span="2.6"
         data-tl-span-reduced="1.2"
         aria-labelledby="tl-title"
       >
-        <div className="tl-stage" data-sc-stage data-tl-hero>
-          <div className="tl-frame tl-frame--hero">
-            <div className="tl-plate tl-box">
-              <div className="tl-plane tl-plane--far" data-tl-plane="far">
-                <Image
-                  src="/accueil/piece.jpg"
-                  alt=""
-                  fill
-                  priority
-                  sizes={SCENE_SIZES}
-                />
-              </div>
-              <div className="tl-plane tl-plane--cone" data-tl-plane="cone">
-                <Image src="/accueil/cone.jpg" alt="" fill priority sizes={SCENE_SIZES} />
-              </div>
-            </div>
-            <div className="tl-lot tl-lot--hero" style={lotStyle}>
-              <div className="tl-plane" data-tl-plane="lot">
-                <span className="tl-shadow" aria-hidden="true" />
-                <Image
-                  src="/accueil/lot.webp"
-                  alt={c.hero.lotAlt}
-                  fill
-                  priority
-                  sizes={LOT_SIZES}
-                />
-              </div>
-            </div>
-            <div className="tl-near tl-box" aria-hidden="true">
-              <div className="tl-plane tl-plane--near" data-tl-plane="near">
-                <Image src="/accueil/poussiere.jpg" alt="" fill priority sizes={SCENE_SIZES} />
-              </div>
-            </div>
-            <div className="tl-fade tl-fade--bottom" aria-hidden="true" />
-            <div className="sc-scrim sc-scrim--lead tl-hero__scrim" aria-hidden="true" />
-            <div className="tl-hero__caption">
-              {/* La phrase est lue dans le h1 (texte masqué) : ici elle est
-                  seulement visuelle, pour ne pas être lue deux fois. */}
-              <p
-                className="tl-hero__avant tl-greet"
-                data-sc-cue="0 1 0 0"
-                aria-hidden="true"
-              >
-                {c.hero.avant}
-              </p>
-              <p className="tl-label tl-hero__label" data-sc-cue="0.3 1 0.45 0">
-                {c.hero.label}
-              </p>
-            </div>
-          </div>
+        <div className="tl-stage" data-sc-stage>
+          <picture>
+            <source media={PORTRAIT_MQ} srcSet={posterPortrait} sizes="100vw" />
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
+            <img {...posterProps} className="sc-stage__poster" />
+          </picture>
+          <video
+            data-sc-scrub
+            data-sc-src="/accueil/allee.mp4"
+            data-tl-src-portrait="/accueil/allee-m.mp4"
+            muted
+            playsInline
+            preload="none"
+            aria-hidden="true"
+          />
+          <canvas className="tl-leds tl-leds--hero" data-tl-leds="hero" aria-hidden="true" />
+          <div className="tl-hero__haze" aria-hidden="true" />
 
-          <div className="tl-hdiv tl-hdiv--hero" aria-hidden="true">
-            <span>{c.seam.avant}</span>
-            <span>{c.seam.apres}</span>
-          </div>
+          <div className="tl-scrim tl-scrim--hero" aria-hidden="true" data-tl-scrim-hero />
+          <div className="tl-hero__layout">
+            <div className="tl-hero__logo-zone">
+              {/* Le logo et sa ligne avancent ensemble vers la caméra. */}
+              <div className="tl-hero__logo" data-tl-hero-logo>
+                <div className="tl-hero__mark" data-tl-hero-mark>
+                  <Image
+                    src="/logo.png"
+                    alt="Techno Lot"
+                    width={1919}
+                    height={1158}
+                    priority
+                    sizes="(min-width: 1024px) 260px, 200px"
+                  />
+                  <span className="tl-hero__veil" aria-hidden="true" />
+                </div>
+                <span className="tl-hero__linescrim" aria-hidden="true" />
+                <p className="tl-hero__line" data-sc-cue="0.36 1 0.3 0.25">
+                  <span>{c.hero.logoLine[0]}</span> <span>{c.hero.logoLine[1]}</span>
+                </p>
+              </div>
+            </div>
 
-          <div className="tl-hero__apres">
-            <h1 id="tl-title" className="tl-display tl-hero__title tl-greet" data-sc-cue="0 1 0 0">
-              <span className="sr-only">{c.hero.avant} </span>
-              {c.hero.title}
-            </h1>
-            <p className="tl-hero__sub tl-greet" data-sc-cue="0 1 0 0">
-              {c.hero.sub}
-            </p>
-            <div className="tl-hero__cta">
-              <a
-                className="tl-btn tl-greet"
-                href={localePath(locale, "/soumission")}
-                data-sc-cue="0 1 0 0"
-                data-sc-rise="0"
-              >
+            <div className="tl-hero__copy tl-greet" data-sc-cue="0 0.44 0 0.55">
+              <h1 id="tl-title" className="tl-hero__title">
+                <span className="tl-hero__l1">{c.hero.titleStart}</span>{" "}
+                <span className="tl-hero__accent">{c.hero.titleAccent}</span>
+              </h1>
+              <p className="tl-hero__sub">{c.hero.sub}</p>
+              <a className="tl-btn" href={localePath(locale, "/soumission")}>
                 {c.hero.cta}
               </a>
             </div>
@@ -156,215 +123,210 @@ export default function HomePage({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      {/* ===== 2. Ce que ça coûte de le garder ===== */}
-      <section className="tl-cost" aria-labelledby="tl-cost-title">
-        <div className="tl-cost__head" data-sc-act="flow">
-          <h2 id="tl-cost-title" className="tl-pair">
-            <span className="tl-display tl-pair__l" data-sc-cue="0.1 1 0.3 0">
-              {c.cost.titleAvant}
-            </span>{" "}
-            <span className="tl-display tl-pair__r" data-sc-cue="0.16 1 0.3 0">
-              {c.cost.titleApres}
-            </span>
-          </h2>
-        </div>
-        {c.cost.rows.map((row, i) => (
-          <div className="tl-row" data-sc-act="flow" key={row.avant}>
-            <div className="tl-row__l">
+      {/* ===== 2. Ce que nous rachetons ===== */}
+      <section
+        className="tl-range"
+        data-sc-act="pan"
+        data-sc-span="3.4"
+        aria-labelledby="tl-range-title"
+      >
+        <div className="tl-stage tl-range__stage" data-sc-stage>
+          <div className="tl-range__floor" aria-hidden="true" />
+          <div className="tl-rail" data-sc-pan="0.02" data-tl-rail>
+            <div className="tl-rail__intro">
+              <h2 id="tl-range-title" className="tl-h2">
+                {c.range.title}
+              </h2>
+              <p className="tl-rail__lede">{c.range.intro}</p>
+            </div>
+            {c.range.items.map((it) => (
               <figure
-                className="tl-row__photo"
-                data-sc-reveal="up"
-                data-sc-reveal-at="0.1 0.38"
+                className="tl-obj"
+                key={it.key}
+                data-tl-obj
+                style={{ "--tl-k": OBJ_SCALE[it.key] ?? 1 } as React.CSSProperties}
               >
-                <Image
-                  src={costPhotos[i]}
-                  alt={row.photoAlt}
-                  fill
-                  sizes="(min-width: 1024px) 34vw, 100vw"
-                />
+                <div className="tl-obj__stage">
+                  <span className="tl-obj__shadow" data-tl-shadow aria-hidden="true" />
+                  <div className="tl-obj__tilt" data-sc-tilt="7">
+                    <div className="tl-obj__turn" data-tl-turn>
+                      {/* chargées d'emblée : dans un rail qui glisse, le chargement
+                          paresseux les ferait apparaître en retard */}
+                      <Image
+                        src={`/accueil/rachat-${it.key}.webp`}
+                        alt={it.alt}
+                        width={1100}
+                        height={1100}
+                        loading="eager"
+                        sizes="(min-width: 1024px) 28vw, 70vw"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <figcaption className="tl-obj__label">
+                  <span className="tl-obj__name">{it.name}</span>
+                  <span className="tl-obj__desc">{it.desc}</span>
+                </figcaption>
               </figure>
-              <p className="tl-row__avant" data-sc-cue="0.2 1 0.3 0">
-                {row.avant}
-              </p>
-            </div>
-            <div className="tl-hdiv tl-hdiv--row" aria-hidden="true">
-              <span>{c.seam.avant}</span>
-              <span>{c.seam.apres}</span>
-            </div>
-            <div className="tl-row__r">
-              <p className="tl-row__apres" data-sc-cue="0.26 1 0.3 0">
-                {row.apres}
-              </p>
+            ))}
+            <div className="tl-rail__outro">
+              <p>{c.range.more}</p>
+              <a className="tl-link" href="#formulaire" data-tl-rail-link>
+                {c.range.cta}
+              </a>
             </div>
           </div>
-        ))}
+        </div>
       </section>
 
       {/* ===== 3. Comment ça marche ===== */}
       <section
-        className="tl-proc"
+        className="tl-steps"
         data-sc-act="flow"
-        aria-labelledby="tl-proc-title"
+        id="comment-ca-marche"
+        aria-labelledby="tl-steps-title"
       >
-        <h2 id="tl-proc-title" className="tl-pair tl-pair--proc">
-          <span
-            className="tl-display tl-pair__l"
-            data-sc-cue="0.06 1 0.4 0"
-            data-sc-kinetic="lines"
-          >
-            {c.process.titleVous}
-          </span>{" "}
-          <span
-            className="tl-display tl-pair__r"
-            data-sc-cue="0.1 1 0.4 0"
-            data-sc-kinetic="lines"
-          >
-            {c.process.titleNous}
-          </span>
-        </h2>
-        <ol className="tl-steps">
-          {c.process.steps.map((s) => (
-            <li className="tl-step" key={s.vous} data-sc-in data-sc-stagger="70">
-              <div className="tl-step__l">
-                <span className="tl-mini tl-label" aria-hidden="true">
-                  {c.seam.vous}
+        <div className="tl-steps__inner">
+          <header className="tl-steps__head" data-sc-in>
+            <h2 id="tl-steps-title" className="tl-h2">
+              {c.steps.title}
+            </h2>
+            <p className="tl-steps__intro">{c.steps.intro}</p>
+          </header>
+          <ol className="tl-steps__list" data-sc-in data-sc-stagger="70">
+            {c.steps.list.map((s, i) => (
+              <li className="tl-step" key={s.title}>
+                <span className="tl-step__n" aria-hidden="true">
+                  {i + 1}
                 </span>
-                <p className="tl-step__head">{s.vous}</p>
-                <p className="tl-step__note">{s.vousNote}</p>
-              </div>
-              <div className="tl-step__r">
-                <span className="tl-mini tl-label" aria-hidden="true">
-                  {c.seam.nous}
-                </span>
-                <p className="tl-step__head">{s.nous}</p>
-                <p className="tl-step__note">{s.nousNote}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+                <h3 className="tl-step__t">{s.title}</h3>
+                <p className="tl-step__d">{s.text}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="tl-steps__data" data-sc-in>
+            {c.steps.data}
+          </p>
+        </div>
       </section>
 
-      {/* ===== 4. La ligne de rachat (le pic) ===== */}
+      {/* ===== 4. La mise hors tension (le pic) ===== */}
       <section
         className="tl-peak"
         data-sc-act="pin"
-        data-sc-span="3.6"
-        data-tl-span-reduced="2.4"
-        aria-labelledby="tl-ledger-title"
+        data-sc-span="4.2"
+        data-tl-span-reduced="2"
+        aria-labelledby="tl-peak-title"
       >
-        <div className="tl-stage" data-sc-stage data-tl-peak data-sc-verify-state="">
-          <div className="tl-frame tl-frame--peak">
-            <div className="tl-plate tl-box">
-              <div className="tl-plane tl-plane--far">
-                <Image src="/accueil/piece.jpg" alt="" fill priority sizes={SCENE_SIZES} />
-              </div>
-              <div className="tl-plane tl-plane--cone">
-                <Image src="/accueil/cone.jpg" alt="" fill priority sizes={SCENE_SIZES} />
-              </div>
-            </div>
-            <div className="tl-lot tl-lot--peak" style={lotStyle}>
-              {/* Les couches s'empilent de haut en bas : celle du dessus passe
-                  devant et cache la surface reconstituée sous elle. */}
-              {LOT_BANDS.map((b, i) => (
-                <div
-                  className="tl-band"
-                  data-tl-band={i}
-                  key={i}
-                  style={{ clipPath: b.clip, zIndex: LOT_BANDS.length - i }}
+        <div className="tl-stage tl-peak__stage" data-sc-stage data-sc-verify-state="">
+          <div className="tl-peak__scene" data-tl-scene>
+            <Image className="tl-peak__plate" src="/accueil/allee-sombre.webp" alt="" fill sizes="100vw" />
+          </div>
+          <canvas className="tl-peak__shade" data-tl-shade aria-hidden="true" />
+          <canvas className="tl-leds tl-leds--peak" data-tl-leds="peak" aria-hidden="true" />
+          <div className="tl-peak__scene tl-peak__scene--lit" data-tl-scene data-tl-lit>
+            <Image className="tl-peak__plate" src="/accueil/salle-vide.webp" alt="" fill sizes="100vw" />
+            <div className="tl-peak__mark" data-tl-mark style={markStyle} aria-hidden="true">
+              <span className="tl-peak__glow" data-tl-glow />
+              <div className="tl-peak__logo">
+                <svg
+                  className="tl-peak__svg"
+                  viewBox={`0 0 ${MARQUE.w} ${MARQUE.h}`}
+                  focusable="false"
                 >
-                  {i === LOT_BANDS.length - 1 && (
-                    <span className="tl-shadow" aria-hidden="true" />
-                  )}
-                  {b.src === "/accueil/lot.webp" ? (
-                    <Image src={b.src} alt="" fill priority sizes={LOT_SIZES} />
-                  ) : (
-                    <Image src={b.src} alt="" fill loading="eager" sizes={LOT_SIZES} />
-                  )}
-                </div>
-              ))}
+                  <defs>
+                    <mask
+                      id={`tl-mark-mask-${locale}`}
+                      maskUnits="userSpaceOnUse"
+                      x="0"
+                      y="0"
+                      width={MARQUE.w}
+                      height={MARQUE.h}
+                    >
+                      <path
+                        d={MARQUE.main}
+                        data-tl-mark-main
+                        pathLength={1}
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth={MARQUE.mask}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeDasharray="1 1"
+                        strokeDashoffset="0"
+                      />
+                      <path
+                        d={MARQUE.barbs}
+                        data-tl-mark-barbs
+                        pathLength={1}
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth={MARQUE.mask}
+                        strokeLinecap="round"
+                        strokeDasharray="1 1"
+                        strokeDashoffset="0"
+                      />
+                      <rect
+                        data-tl-mark-dollar
+                        x={MARQUE.dollar.x}
+                        y={MARQUE.dollar.y}
+                        width={MARQUE.dollar.w}
+                        height={MARQUE.dollar.h}
+                        fill="#fff"
+                      />
+                    </mask>
+                  </defs>
+                  <image
+                    href="/accueil/logo-marque.png"
+                    width={MARQUE.w}
+                    height={MARQUE.h}
+                    mask={`url(#tl-mark-mask-${locale})`}
+                  />
+                </svg>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className="tl-peak__word"
+                  data-tl-word
+                  src="/accueil/logo-mot.png"
+                  alt=""
+                  width={1816}
+                  height={277}
+                  loading="lazy"
+                />
+              </div>
             </div>
-            <div className="tl-fade tl-fade--top" aria-hidden="true" />
+          </div>
+          <div className="tl-peak__fade" aria-hidden="true" />
+
+          <div className="tl-scrim tl-scrim--lead" aria-hidden="true" data-tl-scrim-a />
+          <div className="tl-peak__a" data-sc-cue="0.1 0.56 0.2 0.25">
+            <p className="tl-peak__lead">{c.peak.lead}</p>
+            <p className="tl-peak__leadtext">{c.peak.leadText}</p>
           </div>
 
-          {/* Le séparateur s'éclaire à la hauteur de chaque couche qui le
-              traverse (bureau seulement). */}
-          <div className="tl-glints" aria-hidden="true">
-            {LOT_BANDS.map((b, i) => (
-              <span
-                className="tl-glint"
-                data-tl-glint={i}
-                key={i}
-                style={
-                  {
-                    "--t": Math.max(b.top, 0).toFixed(4),
-                    "--h": (Math.min(b.bottom, 1) - Math.max(b.top, 0)).toFixed(4),
-                  } as React.CSSProperties
-                }
-              />
-            ))}
-          </div>
-
-          <div className="tl-hdiv tl-hdiv--peak" aria-hidden="true">
-            <span>{c.seam.avant}</span>
-            <span>{c.seam.apres}</span>
-          </div>
-
-          <div className="tl-ledger">
-            <h2 id="tl-ledger-title" className="tl-ledger__title" data-tl-ledger-title>
-              {c.ledger.title}
+          <div className="tl-scrim tl-scrim--band" aria-hidden="true" data-tl-scrim-b />
+          <div className="tl-peak__b" data-sc-cue="0.8 1 0.3 0">
+            <h2 id="tl-peak-title" className="tl-peak__title">
+              {c.peak.titleStart} <span className="tl-g">{c.peak.titleAccent}</span>
             </h2>
-            <ol className="tl-ledger__lines">
-              {c.ledger.lines.map((l, i) => (
-                <li
-                  className="tl-line"
-                  data-tl-line={i}
-                  key={l.item}
-                  style={
-                    {
-                      "--m": ((LOT_BANDS[i].top + LOT_BANDS[i].bottom) / 2).toFixed(4),
-                    } as React.CSSProperties
-                  }
-                >
-                  <span className="tl-line__item">{l.item}</span>
-                  <span className="tl-line__leader" aria-hidden="true" />
-                  <span className="tl-line__status">{l.status}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="tl-ledger__foot">
-              <p className="tl-ledger__more" data-tl-more>
-                {c.ledger.more}
-              </p>
-              <dl className="tl-ledger__pay" data-tl-pay>
-                {c.ledger.payment.map((p) => (
-                  <div key={p.label}>
-                    <dt>{p.label}</dt>
-                    <dd>{p.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-
-          <div className="tl-done" data-tl-done>
-            <p className="tl-display tl-done__title">{c.ledger.titleDone}</p>
-            <a className="tl-btn" href="#soumission">
-              {c.ledger.cta}
+            <p className="tl-peak__sub">{c.peak.sub}</p>
+            <a className="tl-btn" href="#formulaire" data-sc-rise="0">
+              {c.peak.cta}
             </a>
           </div>
         </div>
       </section>
 
-      {/* ===== 5. Le formulaire, dans l'espace libéré ===== */}
+      {/* ===== 5. Le formulaire ===== */}
       <section
-        id="soumission"
+        id="formulaire"
         className="tl-close"
         data-sc-act="flow"
         aria-labelledby="tl-close-title"
       >
         <div className="tl-close__inner">
           <div className="tl-close__main" data-sc-in data-sc-stagger="70">
-            <h2 id="tl-close-title" className="tl-display tl-close__title">
+            <h2 id="tl-close-title" className="tl-h2">
               {c.close.title}
             </h2>
             <p className="tl-close__text">{c.close.text}</p>

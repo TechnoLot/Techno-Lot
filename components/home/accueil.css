@@ -1,714 +1,699 @@
 /* ============================================================================
-   Accueil : scène partagée avant / après
+   Accueil « le centre de données » (.tl)
    ----------------------------------------------------------------------------
-   À gauche l'avant (photographique, froid), à droite l'après (un bordereau
-   sobre). La position du séparateur est --tl-x (fraction de la largeur),
-   écrite par HomeExperience. Les dispositifs du moteur ([data-sc-*], .sc-*)
-   ne sont jamais restylés ici : seulement les classes propres à la page.
+   Nuit verte : fond vert-noir, une seule couleur d'accent (#5ECB33, le vert du
+   logo), Chakra Petch pour la voix (la police du site), Inter pour le texte.
+   Le moteur (scrollcraft.css) fournit les dispositifs ; ici, la mise en scène.
    ========================================================================== */
 
 .tl {
-  /* Jetons scrollcraft : six rôles de couleur, deux faces. */
-  --sc-canvas: #07090c;
-  --sc-surface: #10151a;
-  --sc-ink: #eef1ec;
-  --sc-ink-soft: #9ca7a2;
+  --sc-canvas: #050806;
+  --sc-surface: #0b110d;
+  --sc-ink: #eef3ee;
+  --sc-ink-soft: #a9b6ad;
   --sc-accent: #5ecb33;
-  --sc-accent-ink: #08130a;
-  --sc-font-display: var(--font-tl), "Archivo", system-ui, sans-serif;
-  --sc-font-text: var(--font-sans), system-ui, sans-serif;
-  --sc-shadow-color: 210 40% 2%;
+  --sc-accent-ink: #06100a;
+  --sc-font-display: var(--font-display), "Chakra Petch", system-ui, sans-serif;
+  --sc-font-text: var(--font-sans), "Inter", system-ui, sans-serif;
+  --sc-shadow-color: 140 40% 2%;
 
-  /* Les deux fonds de la scène partagée. */
-  --tl-avant: #06080a;
-  --tl-apres: #0d1115;
-  --tl-hair: color-mix(in oklab, var(--sc-ink) 13%, transparent);
-  --tl-hair-strong: color-mix(in oklab, var(--sc-ink) 30%, transparent);
-  --tl-g: clamp(1.25rem, 3.6vw, 4rem);
-  --tl-header: 5rem;
-  --tl-x: 0.5;
+  --tl-green: #5ecb33;
+  --tl-green-2: #34d399;
+  --tl-hair: rgba(238, 243, 238, 0.12);
+  --tl-gutter: clamp(1.25rem, 5vw, 5.5rem);
+  --tl-header: 80px;
 
-  position: relative;
-  isolation: isolate;
-  /* Le hero passe sous l'en-tête fixe du site (main a pt-20). */
-  margin-top: calc(var(--tl-header) * -1);
-  background: var(--tl-apres);
+  background: var(--sc-canvas);
+  color: var(--sc-ink);
+  /* Le site décale tout le contenu sous l'en-tête fixe (main pt-20). Ici la
+     vidéo passe sous l'en-tête transparent : on remonte d'autant. */
+  margin-top: -5rem;
 }
 
-.tl > section {
+/* Chaque scène a la taille de l'écran même sans le moteur (sans JavaScript).
+   :where() garde une spécificité nulle : la règle collante du moteur
+   (.sc-stage) l'emporte dès qu'il est monté, sinon les actes ne s'épinglent
+   plus. */
+:where(.tl-stage) {
   position: relative;
-  z-index: 1;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
 }
 
-/* ------------------------------------------------------------ typographie */
-.tl-display {
+/* ------------------------------------------------------------- typographie */
+.tl-h2 {
+  margin: 0;
   font-family: var(--sc-font-display);
-  font-stretch: 75%;
-  font-weight: 640;
-  line-height: 0.94;
-  letter-spacing: -0.022em;
+  font-weight: 700;
+  font-size: clamp(2rem, 3.5vw, 3.35rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
   text-wrap: balance;
-  margin: 0;
+}
+.tl-g {
+  color: var(--tl-green);
 }
 
-.tl-label {
-  font-family: var(--sc-font-display);
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1.65;
-  text-transform: uppercase;
-  color: var(--sc-ink-soft);
-  margin: 0;
-}
-
-/* ---------------------------------------------------------------- bouton */
+/* Le bouton d'action : la pilule dégradée du site, sans halo lumineux. */
 .tl-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 1.45rem;
-  border-radius: 6px;
-  background: var(--sc-accent);
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0.95rem 1.9rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--tl-green), var(--tl-green-2));
   color: var(--sc-accent-ink);
   font-family: var(--sc-font-display);
-  font-size: 0.8rem;
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  line-height: 1;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: var(--sc-e2);
-  transition:
-    background-color var(--sc-d-fast) var(--sc-ease-out),
-    translate 120ms var(--sc-ease-out);
-}
-/* `translate` et non `transform` : le moteur écrit transform en ligne sur le
-   bouton du hero (il porte une apparition), qui l'emporterait. */
-.tl-btn:active {
-  translate: 0 1px;
-}
-.tl .tl-btn:focus-visible {
-  outline: 2px solid var(--sc-ink);
-  outline-offset: 3px;
-  border-radius: 6px;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 140ms var(--sc-ease-out), filter 160ms var(--sc-ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   .tl-btn:hover {
-    background: #74d94b;
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+}
+.tl-btn:active {
+  transform: scale(0.97);
+}
+.tl .tl-btn:focus-visible {
+  outline: 2px solid var(--tl-green);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+.tl-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--sc-font-display);
+  font-weight: 600;
+  font-size: 0.86rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tl-green);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.4em;
+  transition: color 160ms var(--sc-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tl-link:hover {
+    color: #8be95f;
   }
 }
 
-/* ===================================================== scène partagée ===
-   Deux calques collés en haut de l'écran pendant tout l'accueil : les fonds
-   (sous le contenu) et le séparateur (au-dessus). Bureau seulement.       */
-.tl-canvas,
-.tl-seam {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  margin-bottom: -100vh;
-  margin-bottom: -100svh;
+/* ===================================================== 1. l'allée vivante */
+.tl-hero .tl-stage {
+  background: #030504;
+}
+.tl-leds {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
   pointer-events: none;
+  mix-blend-mode: screen;
 }
-.tl-canvas {
-  z-index: 0;
+@supports (mix-blend-mode: plus-lighter) {
+  .tl-leds {
+    mix-blend-mode: plus-lighter;
+  }
 }
-.tl-canvas__apres,
-.tl-canvas__avant,
-.tl-grain {
+/* Brume proche : elle passe devant la vidéo et grossit plus vite qu'elle. */
+.tl-hero__haze {
   position: absolute;
-  inset: 0;
+  inset: -12% -12% -20%;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 30% at 50% 52%, rgba(94, 203, 51, 0.1), rgba(94, 203, 51, 0) 72%),
+    radial-gradient(80% 26% at 50% 100%, rgba(16, 52, 26, 0.5), rgba(16, 52, 26, 0) 75%);
+  mix-blend-mode: screen;
+  will-change: transform;
 }
-.tl-canvas__apres {
-  background: var(--tl-apres);
-}
-.tl-canvas__avant {
-  background: var(--tl-avant);
-  clip-path: inset(0 calc((1 - var(--tl-x)) * 100%) 0 0);
-  opacity: var(--tl-avant-o, 1);
-}
-.tl-grain {
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
-}
-
-.tl-seam {
-  z-index: 30;
-  overflow: clip;
-  transition: opacity var(--sc-d-base) var(--sc-ease-out);
-}
-.tl-seam.is-off {
-  opacity: 0;
-}
-/* Un rail pleine largeur, déplacé de --tl-x : les pourcentages restent ceux
-   de la largeur du contenu, comme les fonds et les cadres photo. */
-.tl-seam__rail {
+.tl-scrim--hero {
   position: absolute;
-  inset: 0;
-  transform: translate3d(calc(var(--tl-x) * 100%), 0, 0);
-}
-.tl-seam__line {
-  position: absolute;
-  left: 0;
-  top: calc(var(--tl-header) + 0.5rem);
-  bottom: 3rem;
-  width: 1px;
+  inset: auto 0 0 0;
+  height: 64%;
+  z-index: 4;
+  pointer-events: none;
   background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--tl-hair-strong) 3rem,
-    var(--tl-hair-strong) calc(100% - 3rem),
-    transparent
+    to top,
+    rgba(4, 7, 5, 0.94) 0%,
+    rgba(4, 7, 5, 0.78) 34%,
+    rgba(4, 7, 5, 0.32) 66%,
+    rgba(4, 7, 5, 0) 100%
   );
 }
-.tl-seam__tick {
+.tl-hero__layout {
   position: absolute;
-  left: -1px;
-  top: calc(var(--tl-header) + 0.5rem);
-  width: 3px;
-  height: 1.25rem;
-  background: var(--sc-accent);
-  transform: translate3d(0, var(--tl-tick, 0px), 0);
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(var(--tl-header) + clamp(0.5rem, 3vh, 2.5rem)) var(--tl-gutter)
+    clamp(1.75rem, 7vh, 4.5rem);
+  pointer-events: none;
 }
-/* Les étiquettes sont en bas : le contenu qui entre par le bas n'est pas
-   encore apparu (les apparitions démarrent plus haut), alors qu'en haut, le
-   texte déjà lu passerait dessous. */
-.tl-seam__label {
+.tl-hero__logo-zone {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.tl-hero__logo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* l'agrandissement se fait autour de l'image du logo, pas de sa ligne */
+  transform-origin: 50% 36%;
+  will-change: transform;
+}
+.tl-hero__mark {
+  position: relative;
+  width: clamp(130px, min(17vw, 25vh), 250px);
+}
+.tl-hero__mark img {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55));
+}
+/* Le logo est loin, dans la brume : un voile vert qui se lève quand la
+   caméra s'en approche. */
+.tl-hero__veil {
   position: absolute;
-  bottom: 1rem;
-  padding: 0.42rem 0.6rem;
+  inset: -18% -12%;
+  background: radial-gradient(closest-side, rgba(52, 110, 60, 0.6), rgba(52, 110, 60, 0));
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  pointer-events: none;
+}
+.tl-hero__line {
+  margin: clamp(0.8rem, 2vh, 1.4rem) 0 0;
+  max-width: 34rem;
+  text-align: center;
   font-family: var(--sc-font-display);
-  font-size: 0.66rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.24em;
-  line-height: 1;
+  letter-spacing: 0.16em;
+  line-height: 1.5;
   text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--sc-ink-soft);
-  transition: opacity var(--sc-d-base) var(--sc-ease-out);
+  color: #d7e6da;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.8);
 }
-.tl-seam__label--l {
-  right: calc(100% + 0.45rem);
+.tl-hero__line span {
+  display: block;
 }
-.tl-seam__label--r {
-  left: 0.45rem;
-}
-.tl-seam [data-tl-mode="vn"],
-.tl-seam.is-vn [data-tl-mode="aa"] {
+/* Une ombre douce sous la ligne (pas dedans : un voile ne doit pas être
+   l'enfant du texte qu'il protège). Elle suit la ligne par JavaScript. */
+.tl-hero__linescrim {
+  position: absolute;
+  left: 50%;
+  bottom: -0.8rem;
+  width: min(44rem, 120%);
+  height: 5.5rem;
+  translate: -50% 0;
+  background: radial-gradient(closest-side, rgba(3, 6, 4, 0.88), rgba(3, 6, 4, 0));
+  pointer-events: none;
   opacity: 0;
 }
-.tl-seam.is-vn [data-tl-mode="vn"] {
-  opacity: 1;
-}
-
-/* Séparateur horizontal des mises en page empilées (mobile). */
-.tl-hdiv {
-  display: none;
-}
-
-/* ================================================================ scènes */
-.tl-stage {
-  height: 100vh;
-  height: 100svh;
-  overflow: clip;
-}
-/* Sans le moteur, la scène n'est pas collante : simple bloc d'un écran. */
-.tl-stage:not(.sc-stage) {
+.tl-hero__line {
   position: relative;
 }
-
-/* Le cadre photo occupe toute la scène et n'en montre que la partie à
-   gauche du séparateur. */
-.tl-frame {
-  position: absolute;
-  inset: 0;
-  overflow: clip;
-  background: var(--tl-avant);
-  clip-path: inset(0 calc((1 - var(--tl-x)) * 100%) 0 0);
-  --tl-fw: 0.5; /* position la plus à droite que le séparateur atteint */
+.tl-hero__line span + span {
+  color: var(--tl-green);
 }
-.tl-frame--hero {
-  --tl-cx: 0.25;
-  --tl-lot-h: 46svh;
-  --tl-lot-b: 30svh;
-}
-/* Au pic, la hauteur du lot est partagée avec le bordereau (ses lignes sont
-   à la hauteur des couches) : elle est donc définie sur la scène. Sous le
-   lot, il faut la place du résumé ; au-dessus, celle du titre. */
-.tl-peak .tl-stage {
-  --tl-lot-b: max(24svh, 13.5rem);
-  --tl-lot-h: min(54svh, calc(100svh - var(--tl-lot-b) - 13svh - 4.5rem));
-}
-.tl-frame--peak {
-  --tl-cx: 0.2;
-}
-
-/* Boîte de la plaque (la pièce) : couvre la partie visible du cadre. */
-.tl-box {
-  position: absolute;
-  left: calc(var(--tl-cx) * 100%);
-  top: 50%;
-  width: max(
-    calc((var(--tl-fw) - var(--tl-cx)) * 200% + 4%),
-    calc(var(--tl-cx) * 200% + 4%),
-    75svh
-  );
-  aspect-ratio: 3 / 4;
-  translate: -50% -50%;
-}
-.tl-plane {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% 55%;
-  will-change: transform;
-}
-.tl-plane img {
-  object-fit: cover;
-}
-.tl-plane--cone {
-  mix-blend-mode: screen;
-  opacity: 0.8;
-}
-.tl-near {
-  mix-blend-mode: screen;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-/* Le lot : posé sur le sol de la plaque, centré dans sa moitié. */
-.tl-lot {
-  position: absolute;
-  left: calc(var(--tl-cx) * 100%);
-  bottom: var(--tl-lot-b);
-  height: var(--tl-lot-h);
-  aspect-ratio: var(--tl-lot-aspect, 0.75);
-  translate: -50% 0;
-}
-.tl-lot img {
-  object-fit: contain;
-}
-.tl-shadow {
-  position: absolute;
-  left: -16%;
-  right: -16%;
-  bottom: -5%;
-  height: 11%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    rgb(2 3 4 / 0.82),
-    rgb(2 3 4 / 0.5) 45%,
-    transparent
-  );
-}
-.tl-band {
-  position: absolute;
-  inset: 0;
-  will-change: transform;
-}
-/* Le bord d'une photo qui entre ou sort de l'écran se fond dans le fond
-   avant, au lieu de couper net. */
-.tl-fade {
-  position: absolute;
-  inset: 0;
+.tl-hero__copy {
+  position: relative;
   z-index: 1;
-  pointer-events: none;
-}
-.tl-fade--bottom {
-  background: linear-gradient(to bottom, transparent 76%, var(--tl-avant));
-}
-.tl-fade--top {
-  background: linear-gradient(to top, transparent 80%, var(--tl-avant));
-}
-
-/* La lumière s'allume au chargement : la pièce sort du noir, le faisceau
-   monte. Une seule fois, et pas en mouvement réduit. */
-.tl-frame--hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: #020304;
-  opacity: 0;
-  pointer-events: none;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .tl-frame--hero::after {
-    animation: tl-dark 1.9s var(--sc-ease-out) 0.15s both;
-  }
-  .tl-frame--hero .tl-plane--cone {
-    animation: tl-power 2.2s var(--sc-ease-out) 0.35s both;
-  }
-  .tl-plane--cone img,
-  .tl-near img {
-    animation: tl-drift 16s ease-in-out infinite alternate;
-  }
-  .tl-near img {
-    animation-duration: 21s;
-    animation-direction: alternate-reverse;
-  }
-  .tl.is-still .tl-plane--cone img,
-  .tl.is-still .tl-near img {
-    animation-play-state: paused;
-  }
-}
-@keyframes tl-dark {
-  from {
-    opacity: 0.62;
-  }
-  to {
-    opacity: 0;
-  }
-}
-@keyframes tl-power {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes tl-drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(0, -1.6%, 0);
-  }
-}
-
-/* ================================================================== hero */
-.tl-hero__scrim {
-  z-index: 2;
-}
-.tl-hero__caption {
-  position: absolute;
-  z-index: 3;
-  left: var(--tl-g);
-  bottom: clamp(2.5rem, 8svh, 5.5rem);
-  width: min(30rem, calc(50% - var(--tl-g) * 2 - 1rem));
-}
-.tl-hero__avant {
-  max-width: 16em;
-  margin: 0;
-  font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 420;
-  font-size: clamp(1.35rem, 2.05vw, 2.25rem);
-  line-height: 1.12;
-  letter-spacing: -0.012em;
-  text-wrap: balance;
-  color: var(--sc-ink);
-}
-.tl-hero__label {
-  margin-top: 1rem;
-  max-width: 26rem;
-}
-.tl-hero__apres {
-  position: absolute;
-  z-index: 3;
-  left: 54%;
-  right: var(--tl-g);
-  bottom: clamp(2.5rem, 8svh, 5.5rem);
+  max-width: 62rem;
+  text-align: center;
+  pointer-events: auto;
 }
 .tl-hero__title {
-  font-size: clamp(3.2rem, 6.4vw, 7.6rem);
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, min(4.7vw, 8.2vh), 4.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.005em;
+  color: #f1f5f1;
+  text-wrap: balance;
+}
+.tl-hero__l1 {
+  display: block;
+}
+/* « de la valeur » : vert, avec le soulignement du site qui se dessine. */
+.tl-hero__accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.1em;
+  color: var(--tl-green);
+}
+.tl-hero__accent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.02em;
+  height: max(2px, 0.045em);
+  border-radius: 2px;
+  background: linear-gradient(120deg, var(--tl-green), var(--tl-green-2));
+  transform-origin: left center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tl-hero__accent::after {
+    animation: tl-draw 0.7s var(--sc-ease-out) 0.35s both;
+  }
+}
+@keyframes tl-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 .tl-hero__sub {
-  margin: 1.4rem 0 0;
-  max-width: 31rem;
-  font-size: clamp(1rem, 0.95rem + 0.25vw, 1.15rem);
+  margin: clamp(0.9rem, 2.4vh, 1.5rem) auto 0;
+  max-width: 34em;
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.18rem);
+  line-height: 1.6;
+  color: #ccd8cf;
+  text-wrap: balance;
+}
+.tl-hero__copy .tl-btn {
+  margin-top: clamp(1.1rem, 3.2vh, 2rem);
+}
+
+/* ================================================ 2. ce que nous rachetons */
+.tl-range__stage {
+  display: flex;
+  align-items: center;
+  background: var(--sc-canvas);
+}
+/* La lueur du plancher passe AU-DESSUS des objets (fusion « screen ») : elle
+   éclaire le fond et les photos de la même façon, donc aucun bord n'apparaît. */
+.tl-range__floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  height: 52%;
+  pointer-events: none;
+  background: radial-gradient(70% 100% at 50% 100%, rgba(94, 203, 51, 0.075), rgba(94, 203, 51, 0) 70%);
+  mix-blend-mode: screen;
+}
+.tl-rail {
+  position: relative;
+  align-items: center;
+  gap: clamp(2rem, 4.5vw, 5.5rem);
+  height: 100%;
+  padding-inline: var(--tl-gutter);
+  padding-top: calc(var(--tl-header) * 0.6);
+}
+.tl-rail__intro {
+  flex: 0 0 min(32rem, 82vw);
+}
+.tl-rail__lede {
+  margin: 1.3rem 0 0;
+  max-width: 30rem;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
   line-height: 1.6;
   color: var(--sc-ink-soft);
-  text-wrap: pretty;
 }
-.tl-hero__cta {
-  margin-top: 2rem;
-}
-
-/* ===================================================== le coût de garder */
-.tl-cost {
-  padding-block: 20vh 6vh;
-}
-/* Deux colonnes calées sur la scène : l'avant finit avant 36 %, l'après
-   commence à 54 %, et le séparateur circule entre les deux. */
-.tl-pair,
-.tl-row,
-.tl-step {
-  display: grid;
-  grid-template-columns:
-    var(--tl-g) calc(36% - var(--tl-g)) 18%
-    minmax(0, 1fr) var(--tl-g);
-}
-.tl-pair {
+.tl-obj {
+  flex: 0 0 clamp(16rem, min(29vw, 52vh), 28rem);
   margin: 0;
-  align-items: end;
-}
-.tl-pair__l,
-.tl-row__l,
-.tl-step__l {
-  grid-column: 2;
-}
-.tl-pair__r,
-.tl-row__r,
-.tl-step__r {
-  grid-column: 4;
-}
-.tl-pair .tl-display {
-  display: block;
-  font-size: clamp(2.2rem, 3.6vw, 4rem);
-}
-.tl-pair__l {
-  color: #adb0ad; /* encre à 72 % sur le fond avant */
-}
-
-.tl-row {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  padding-block: 11vh;
 }
-.tl-row__photo {
+.tl-obj__stage {
   position: relative;
-  margin: 0;
-  aspect-ratio: 4 / 3;
-  overflow: clip;
-  background: #0b0e12;
+  width: 100%;
+  aspect-ratio: 1;
+  perspective: 1100px;
 }
-.tl-row__photo img {
-  object-fit: cover;
+.tl-obj__tilt,
+.tl-obj__turn {
+  position: absolute;
+  inset: 0;
 }
-.tl-row__avant {
-  margin: 1.4rem 0 0;
-  max-width: 22em;
+.tl-obj__turn {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.tl-obj__turn img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(var(--tl-k, 1));
+  /* le studio noir de la photo se fond dans le fond de la page */
+  -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 82%, transparent 100%);
+}
+.tl-obj__shadow {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 12%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+  filter: blur(6px);
+  pointer-events: none;
+  will-change: transform;
+}
+.tl-obj__label {
+  margin-top: 0.2rem;
+  text-align: center;
+}
+.tl-obj__name {
+  display: block;
   font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 420;
-  font-size: clamp(1.2rem, 1.55vw, 1.6rem);
-  line-height: 1.22;
-  color: #c0c2bf; /* encre à 80 % sur le fond avant */
-  text-wrap: balance;
-}
-.tl-row__apres {
-  margin: 0;
-  max-width: 21em;
-  font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 450;
-  font-size: clamp(1.45rem, 2.05vw, 2.15rem);
-  line-height: 1.18;
-  letter-spacing: -0.01em;
-  color: var(--sc-ink);
-  text-wrap: balance;
-}
-
-/* ===================================================== comment ça marche */
-.tl-proc {
-  padding-block: 16vh 22vh;
-}
-.tl-pair--proc .tl-display {
-  font-size: clamp(2rem, 3.2vw, 3.6rem);
-}
-.tl-steps {
-  list-style: none;
-  margin: 9vh 0 0;
-  padding: 0;
-}
-.tl-step {
-  padding-block: 2.1rem;
-}
-.tl-step__l,
-.tl-step__r {
-  border-top: 1px solid var(--tl-hair);
-  padding-top: 1.35rem;
-}
-.tl-step__head {
-  margin: 0;
-  font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 520;
-  font-size: clamp(1.25rem, 1.6vw, 1.65rem);
+  font-weight: 600;
+  font-size: clamp(1.2rem, 1.05rem + 0.5vw, 1.45rem);
   line-height: 1.2;
   color: var(--sc-ink);
 }
-.tl-step__note {
-  margin: 0.5rem 0 0;
-  max-width: 30em;
-  font-size: 0.98rem;
+.tl-obj__desc {
+  display: block;
+  max-width: 24ch;
+  margin: 0.4rem auto 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--sc-ink-soft);
+}
+.tl-rail__outro {
+  flex: 0 0 min(24rem, 76vw);
+  margin-right: var(--tl-gutter);
+}
+.tl-rail__outro p {
+  margin: 0 0 1.4rem;
+  font-family: var(--sc-font-display);
+  font-weight: 600;
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.6rem);
+  line-height: 1.3;
+  color: var(--sc-ink);
+}
+
+/* ===================================================== 3. comment ça marche */
+.tl-steps {
+  position: relative;
+  padding: clamp(5rem, 13vh, 9rem) var(--tl-gutter) clamp(4.5rem, 11vh, 8rem);
+  background: var(--sc-canvas);
+}
+.tl-steps__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  column-gap: clamp(2rem, 6vw, 7rem);
+  max-width: 78rem;
+  margin-inline: auto;
+}
+.tl-steps__intro {
+  margin: 1.2rem 0 0;
+  max-width: 26rem;
+  color: var(--sc-ink-soft);
+  line-height: 1.6;
+}
+.tl-steps__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--tl-hair);
+}
+.tl-step {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+  column-gap: 1rem;
+  padding-block: clamp(1.25rem, 3vh, 1.8rem);
+  border-bottom: 1px solid var(--tl-hair);
+}
+.tl-step__n {
+  grid-row: span 2;
+  font-family: var(--sc-font-display);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--tl-green);
+  font-variant-numeric: tabular-nums;
+}
+.tl-step__t {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 600;
+  font-size: clamp(1.2rem, 1.05rem + 0.6vw, 1.6rem);
+  line-height: 1.25;
+  color: var(--sc-ink);
+}
+.tl-step__d {
+  margin: 0.45rem 0 0;
+  max-width: 52ch;
   line-height: 1.6;
   color: var(--sc-ink-soft);
 }
-.tl-mini {
-  display: none;
-}
-
-/* ====================================================== la ligne (le pic) */
-.tl-ledger {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  transform: translate3d(calc(var(--tl-x) * 100%), 0, 0);
-  pointer-events: none;
-}
-.tl-ledger__title {
-  position: absolute;
-  left: 2.6%;
-  top: 13svh;
-  margin: 0;
-  font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 520;
-  font-size: clamp(1.35rem, 1.8vw, 1.95rem);
-  line-height: 1.15;
-  color: var(--sc-ink);
-}
-.tl-ledger__lines {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.tl-line,
-.tl-ledger__foot {
-  position: absolute;
-  left: 2.6%;
-  width: min(52%, 48rem);
-}
-/* Chaque ligne est à la hauteur de la couche du lot qu'elle décrit (--m,
-   milieu de la bande, fraction de la hauteur du lot). Elle sort du
-   séparateur au moment où la couche le traverse (--c, de 0 à 1). */
-.tl-line {
-  top: calc(100svh - var(--tl-lot-b) - var(--tl-lot-h) + var(--m) * var(--tl-lot-h));
-  translate: 0 -50%;
+/* La ligne sur les données porte un petit voyant vert : le motif de la page. */
+.tl-steps__data {
+  grid-column: 2;
   display: flex;
   align-items: baseline;
-  gap: 1rem;
-  clip-path: inset(-40% calc((1 - var(--c, 0)) * 100%) -40% 0);
-  transform: translate3d(calc((1 - var(--c, 0)) * -2.2rem), 0, 0);
+  gap: 0.8rem;
+  margin: 1.6rem 0 0;
+  line-height: 1.6;
+  color: #d3e1d6;
 }
-.tl-line__item {
-  font-family: var(--sc-font-display);
-  font-stretch: 88%;
-  font-weight: 500;
-  font-size: clamp(1.2rem, 1.65vw, 1.8rem);
-  line-height: 1.1;
-  white-space: nowrap;
-  color: var(--sc-ink);
-}
-.tl-line__leader {
-  flex: 1;
-  min-width: 2rem;
-  border-bottom: 1px dotted var(--tl-hair-strong);
-  transform: translateY(-0.3em);
-}
-.tl-line__status {
-  font-family: var(--sc-font-display);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--sc-accent);
-  opacity: clamp(0, (var(--c, 0) - 0.8) * 5, 1);
-}
-.tl-ledger__foot {
-  top: calc(100svh - var(--tl-lot-b) + 0.7rem);
-}
-.tl-ledger__more {
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: var(--sc-ink-soft);
-}
-.tl-ledger__pay {
-  margin: 1.1rem 0 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--tl-hair);
-}
-.tl-ledger__more,
-.tl-ledger__pay {
-  opacity: var(--o, 0);
-  transform: translate3d(0, calc((1 - var(--o, 0)) * 0.8rem), 0);
-}
-.tl-ledger__pay dt {
-  font-family: var(--sc-font-display);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--sc-ink-soft);
-}
-.tl-ledger__pay dd {
-  margin: 0.45rem 0 0;
-  font-size: 0.98rem;
-  line-height: 1.5;
-  color: var(--sc-ink);
-}
-/* Le reflet vert sur le séparateur, à la hauteur de la couche qui le
-   traverse (--g, de 0 à 1, au plus fort au milieu de la traversée). */
-.tl-glints {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-.tl-glint {
-  position: absolute;
-  left: calc(var(--tl-x) * 100% - 1px);
-  width: 2px;
-  top: calc(100svh - var(--tl-lot-b) - var(--tl-lot-h) + var(--t) * var(--tl-lot-h));
-  height: calc(var(--h) * var(--tl-lot-h));
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    var(--sc-accent) 18%,
-    var(--sc-accent) 82%,
-    transparent
-  );
-  opacity: var(--g, 0);
-}
-.tl-done {
-  position: absolute;
-  z-index: 4;
-  left: 58%;
-  right: var(--tl-g);
-  top: 50%;
-  translate: 0 -50%;
-  opacity: var(--o, 0);
-  transform: translate3d(0, calc((1 - var(--o, 0)) * 1.2rem), 0);
-}
-.tl-done {
-  visibility: hidden;
-}
-.tl-done__title {
-  font-size: clamp(2.6rem, 5vw, 5.6rem);
-  margin-bottom: 2.2rem;
+.tl-steps__data::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--tl-green);
+  box-shadow: 0 0 0 3px rgba(94, 203, 51, 0.16);
+  transform: translateY(-0.08em);
 }
 
-/* ============================================================ formulaire */
+/* ============================================== 4. la mise hors tension (pic) */
+.tl-peak__stage {
+  --tl-push: 1;
+  --tl-px: 0px;
+  --tl-py: 0px;
+  background: #020403;
+}
+/* Une boîte au format de la photo qui couvre la scène : tout ce qui est
+   dedans se place en pourcentages de l'image. */
+.tl-peak__scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100%, calc(100vh * 2720 / 1530));
+  aspect-ratio: 2720 / 1530;
+  transform: translate(-50%, -50%) translate(var(--tl-px), var(--tl-py)) scale(var(--tl-push));
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+@supports (height: 100svh) {
+  .tl-peak__scene {
+    width: max(100%, calc(100svh * 2720 / 1530));
+  }
+}
+.tl-peak__plate {
+  object-fit: cover;
+}
+.tl-peak__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.tl-leds--peak {
+  z-index: 2;
+}
+.tl-peak__scene--lit {
+  z-index: 3;
+}
+.tl-armed .tl-peak__scene--lit {
+  opacity: 0;
+}
+/* Le logo, au fond de la salle vide, dans la lumière de la brume. */
+.tl-peak__mark {
+  position: absolute;
+  left: calc(1362 / 2720 * 100%);
+  top: calc(735 / 1530 * 100%);
+  width: calc(430 / 2720 * 100%);
+  transform: translate(-50%, -50%);
+}
+.tl-peak__logo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--tl-logo-aspect);
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.45));
+}
+.tl-peak__svg {
+  position: absolute;
+  left: calc(var(--tl-mark-l) * 100%);
+  top: 0;
+  width: calc(var(--tl-mark-w) * 100%);
+  height: auto;
+  overflow: visible;
+}
+.tl-peak__word {
+  position: absolute;
+  left: 0;
+  top: calc(var(--tl-word-t) * 100%);
+  width: 100%;
+  height: auto;
+}
+.tl-armed:not(.tl-reduce) .tl-peak__word {
+  opacity: 0;
+}
+/* La lumière du logo dans la brume, et son reflet sur le plancher. */
+.tl-peak__glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260%;
+  height: 300%;
+  transform: translate(-50%, -42%);
+  pointer-events: none;
+  background:
+    radial-gradient(28% 22% at 50% 38%, rgba(120, 230, 90, 0.2), rgba(120, 230, 90, 0) 70%),
+    radial-gradient(9% 26% at 50% 74%, rgba(110, 220, 80, 0.16), rgba(110, 220, 80, 0) 72%);
+  mix-blend-mode: screen;
+}
+.tl-armed:not(.tl-reduce) .tl-peak__glow {
+  opacity: 0.25;
+}
+/* Le bas de la scène se fond dans le fond de la page avant le formulaire. */
+.tl-peak__fade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 16%;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(to top, var(--sc-canvas), rgba(5, 8, 6, 0));
+}
+.tl-scrim--lead,
+.tl-scrim--band {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+}
+.tl-scrim--lead {
+  background: linear-gradient(
+    to top right,
+    rgba(3, 5, 4, 0.94) 0%,
+    rgba(3, 5, 4, 0.74) 28%,
+    rgba(3, 5, 4, 0.26) 50%,
+    rgba(3, 5, 4, 0) 68%
+  );
+}
+.tl-scrim--band {
+  background: linear-gradient(
+    to top,
+    rgba(3, 5, 4, 0.92) 0%,
+    rgba(3, 5, 4, 0.7) 24%,
+    rgba(3, 5, 4, 0.2) 44%,
+    rgba(3, 5, 4, 0) 58%
+  );
+}
+.tl-peak__a,
+.tl-peak__b {
+  position: absolute;
+  z-index: 6;
+}
+.tl-peak__a {
+  left: var(--tl-gutter);
+  bottom: clamp(2.5rem, 12vh, 8rem);
+  max-width: min(36rem, 84vw);
+}
+.tl-peak__lead {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 3.6vw, 3.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  color: var(--sc-ink);
+}
+.tl-peak__leadtext {
+  margin: 1rem 0 0;
+  max-width: 30rem;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+  line-height: 1.6;
+  color: #ccd8cf;
+}
+.tl-peak__b {
+  left: 50%;
+  bottom: clamp(1.75rem, 8vh, 5rem);
+  width: min(56rem, calc(100% - 2 * var(--tl-gutter)));
+  translate: -50% 0;
+  text-align: center;
+}
+.tl-peak__title {
+  margin: 0;
+  font-family: var(--sc-font-display);
+  font-weight: 700;
+  font-size: clamp(2.2rem, min(5vw, 8.5vh), 5rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: #f1f5f1;
+  text-wrap: balance;
+}
+.tl-peak__sub {
+  margin: clamp(0.8rem, 2vh, 1.2rem) auto 0;
+  max-width: 34em;
+  font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+  line-height: 1.6;
+  color: #d0dcd3;
+  text-wrap: balance;
+}
+.tl-peak__b .tl-btn {
+  margin-top: clamp(1rem, 3vh, 1.8rem);
+}
+
+/* ============================================================ 5. formulaire */
 .tl-close {
-  padding: 16vh var(--tl-g) 14vh;
-  background: var(--tl-apres);
+  padding: clamp(5rem, 12vh, 9rem) var(--tl-gutter) clamp(5rem, 13vh, 9rem);
+  background: var(--sc-canvas);
   scroll-margin-top: var(--tl-header);
 }
 .tl-close__inner {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: clamp(2.5rem, 6vw, 7rem);
-  max-width: 84rem;
+  max-width: 82rem;
   margin-inline: auto;
 }
-.tl-close__title {
-  font-size: clamp(2.4rem, 4.2vw, 4.6rem);
-}
 .tl-close__text {
-  margin: 1.4rem 0 0;
-  max-width: 34rem;
-  color: var(--sc-ink-soft);
+  margin: 1.3rem 0 0;
+  max-width: 36rem;
   line-height: 1.6;
+  color: var(--sc-ink-soft);
 }
 .tl-close__form {
-  margin-top: 2.6rem;
+  margin-top: 2.4rem;
 }
 .tl-close__side {
   align-self: end;
@@ -723,13 +708,13 @@
 }
 .tl-contact dt,
 .tl-clause__title {
+  margin: 0;
   font-family: var(--sc-font-display);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--sc-ink-soft);
-  margin: 0;
 }
 .tl-contact dd {
   margin: 0.4rem 0 0;
@@ -741,7 +726,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .tl-contact a:hover {
-    color: var(--sc-accent);
+    color: var(--tl-green);
   }
 }
 .tl-clause {
@@ -763,41 +748,94 @@
   line-height: 1.6;
   color: var(--sc-ink-soft);
 }
-/* Le formulaire partagé du site, accordé au rayon et à l'accent de
-   l'accueil (sans halo lumineux). Le composant lui-même n'est pas modifié. */
+/* Le formulaire partagé du site, accordé au fond vert-noir : cadre sobre,
+   sans halo. Le composant lui-même n'est pas modifié. */
 .tl-close .glass {
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--sc-ink) 3%, transparent);
   border-color: var(--tl-hair);
+  background: rgba(238, 243, 238, 0.03);
   box-shadow: var(--sc-e2);
   backdrop-filter: none;
 }
-.tl-close .field {
-  border-radius: 6px;
-}
-.tl-close .btn-primary,
-.tl-close .btn-primary:hover {
-  border-radius: 6px;
-  background: var(--sc-accent);
-  color: var(--sc-accent-ink);
-  box-shadow: none;
-  filter: none;
-}
-@media (hover: hover) and (pointer: fine) {
-  .tl-close .btn-primary:hover {
-    background: #74d94b;
-  }
+.tl-close .btn-primary {
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 /* ======================================================== avant le moteur
-   Les textes d'accueil du hero sont visibles dès la première peinture ; le
-   moteur reprend la main à son montage (même opacité, aucun saut). */
+   Le texte du hero est visible dès la première peinture ; le moteur reprend
+   la main à son montage (même opacité, aucun saut). */
 html:not(.sc-ready) .tl .tl-greet {
   opacity: 1;
 }
 
+/* Le rail en grille : mouvement réduit, sans JavaScript, ou moteur absent.
+   Tous les objets se voient en défilant, sans déplacement latéral. */
+.tl-reduce .tl-range__stage,
+.tl-fallback .tl-range__stage {
+  display: block;
+  height: auto;
+  padding-block: clamp(5rem, 12vh, 8rem);
+}
+.tl-reduce .tl-rail,
+.tl-fallback .tl-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.5rem clamp(1.5rem, 3vw, 3rem);
+  height: auto;
+  max-width: 78rem;
+  margin-inline: auto;
+  padding-top: 0;
+  transform: none;
+}
+.tl-reduce .tl-rail__intro,
+.tl-reduce .tl-rail__outro,
+.tl-fallback .tl-rail__intro,
+.tl-fallback .tl-rail__outro {
+  grid-column: 1 / -1;
+  margin-right: 0;
+}
+.tl-reduce .tl-obj,
+.tl-fallback .tl-obj {
+  flex: none;
+}
+@media (scripting: none) {
+  .tl .tl-range__stage {
+    display: block;
+    height: auto;
+    padding-block: clamp(5rem, 12vh, 8rem);
+  }
+  .tl .tl-rail {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.5rem clamp(1.5rem, 3vw, 3rem);
+    height: auto;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-top: 0;
+  }
+  .tl .tl-rail__intro,
+  .tl .tl-rail__outro {
+    grid-column: 1 / -1;
+    margin-right: 0;
+  }
+  .tl .tl-obj {
+    flex: none;
+  }
+}
+@media (max-width: 860px) {
+  .tl-reduce .tl-rail,
+  .tl-fallback .tl-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (scripting: none) and (max-width: 860px) {
+  .tl .tl-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Sans JavaScript, ou si le moteur n'a pas pu se charger (.tl-fallback) :
-   tout est visible et immobile, le bordereau est complet. */
+   tout est visible et immobile. Le rail devient une bande qu'on fait défiler
+   de côté ; le pic montre son état final (la salle vide et le logo). */
 @media (scripting: none) {
   .tl [data-sc-cue],
   .tl [data-sc-in],
@@ -805,19 +843,12 @@ html:not(.sc-ready) .tl .tl-greet {
     opacity: 1;
     transform: none;
   }
-  .tl .tl-line,
-  .tl .tl-ledger__foot,
-  .tl .tl-ledger__more,
-  .tl .tl-ledger__pay {
-    --c: 1;
-    --o: 1;
+  .tl .tl-peak__a {
+    top: calc(var(--tl-header) + 2rem);
+    bottom: auto;
   }
-  .tl .tl-line,
-  .tl .tl-ledger__foot {
-    width: calc(47.4% - var(--tl-g));
-  }
-  .tl .tl-done {
-    display: none;
+  .tl .tl-scrim--band {
+    opacity: 1;
   }
 }
 .tl.tl-fallback [data-sc-cue],
@@ -826,312 +857,90 @@ html:not(.sc-ready) .tl .tl-greet {
   opacity: 1;
   transform: none;
 }
-.tl.tl-fallback .tl-line,
-.tl.tl-fallback .tl-ledger__more,
-.tl.tl-fallback .tl-ledger__pay {
-  --c: 1;
-  --o: 1;
+.tl.tl-fallback .tl-peak__a {
+  top: calc(var(--tl-header) + 2rem);
+  bottom: auto;
 }
-.tl.tl-fallback .tl-line,
-.tl.tl-fallback .tl-ledger__foot {
-  width: calc(47.4% - var(--tl-g));
+.tl.tl-fallback .tl-scrim--band {
+  opacity: 1;
 }
-.tl.tl-fallback .tl-done {
+
+/* ========================================================= mouvement réduit */
+.tl-reduce .tl-leds--hero,
+.tl-reduce .tl-peak__shade {
   display: none;
 }
 
-/* ======================================================= mouvement réduit
-   Le séparateur ne se déplace pas (il reste au milieu, puis s'efface) : le
-   bordereau prend donc la largeur de l'après, et les lignes apparaissent en
-   fondu sans glisser. */
-.tl-reduce .tl-line {
-  clip-path: none;
-  transform: none;
-  opacity: var(--c, 0);
-}
-.tl-reduce .tl-line,
-.tl-reduce .tl-ledger__foot {
-  width: calc(47.4% - var(--tl-g));
-}
-.tl-reduce .tl-ledger__more,
-.tl-reduce .tl-ledger__pay,
-.tl-reduce .tl-done {
-  transform: none;
-}
-.tl-reduce .tl-done {
-  left: var(--tl-g);
-  right: 54%;
-}
-
-/* ================================================================ mobile
-   La scène partagée devient verticale : la photo en haut, l'après en bas,
-   séparées par un filet horizontal. Au pic, les couches sortent par la
-   droite de l'écran et le bordereau se remplit en dessous.               */
-@media (max-width: 1023.98px) {
-  .tl-canvas,
-  .tl-seam {
-    display: none;
+/* =============================================================== téléphone */
+@media (max-width: 860px) {
+  .tl {
+    --tl-header: 64px;
   }
-
-  .tl-frame {
-    inset: 0 0 auto 0;
-    clip-path: none;
-    --tl-fw: 1;
-    --tl-cx: 0.5;
+  .tl-hero__mark {
+    width: clamp(120px, 34vw, 170px);
   }
-  .tl-frame--hero {
-    height: 58svh;
-    --tl-lot-h: 31svh;
-    --tl-lot-b: 3svh;
-  }
-  .tl-frame--peak {
-    height: 46svh;
-    --tl-lot-h: 30svh;
-    --tl-lot-b: 3svh;
-    clip-path: inset(0 0 calc(var(--tl-k, 0) * 100%) 0);
-  }
-  .tl-box {
-    width: max(104%, calc(var(--tl-frame-h, 58svh) * 0.75));
-  }
-  .tl-frame--peak .tl-box {
-    --tl-frame-h: 46svh;
-  }
-
-  .tl-hdiv {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 4;
-    padding-inline: var(--tl-g);
-    border-top: 1px solid var(--tl-hair-strong);
-    font-family: var(--sc-font-display);
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--sc-ink-soft);
-    pointer-events: none;
-  }
-  .tl-hdiv span:first-child {
-    position: absolute;
-    bottom: calc(100% + 0.55rem);
-  }
-  .tl-hdiv span:last-child {
-    padding-top: 0.55rem;
-  }
-  .tl-hdiv--hero {
-    top: 58svh;
-  }
-  .tl-hdiv--peak {
-    top: 46svh;
-    transform: translate3d(0, calc(var(--tl-k, 0) * -36svh), 0);
-    opacity: calc(1 - var(--tl-k, 0));
-  }
-
-  .tl-hero__caption {
-    top: calc(var(--tl-header) + 0.6rem);
-    bottom: auto;
-    width: auto;
-    right: var(--tl-g);
-  }
-  /* La phrase passe en haut de la photo, devant le faisceau : le voile
-     sombre passe du coin bas-gauche au coin haut-gauche, là où est le texte. */
-  .tl .tl-hero__scrim {
-    background: linear-gradient(
-      to bottom right,
-      color-mix(in oklab, var(--tl-avant) 94%, transparent) 0%,
-      color-mix(in oklab, var(--tl-avant) 76%, transparent) 30%,
-      color-mix(in oklab, var(--tl-avant) 30%, transparent) 50%,
-      transparent 66%
-    );
-  }
-  .tl-hero__avant {
-    max-width: 17rem;
-    font-size: clamp(1rem, 4.4vw, 1.25rem);
-  }
-  .tl-hero__label {
-    display: none;
-  }
-  .tl-hero__apres {
-    left: var(--tl-g);
-    right: var(--tl-g);
-    top: calc(58svh + 2.2rem);
-    bottom: auto;
+  .tl-hero__line {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
   }
   .tl-hero__title {
-    font-size: clamp(2.6rem, 12vw, 4rem);
+    font-size: clamp(1.9rem, 8.4vw, 2.6rem);
   }
-  .tl-hero__sub {
-    margin-top: 0.9rem;
-    font-size: 0.98rem;
-    line-height: 1.55;
+  /* le bouton d'appel flottant du site occupe le coin bas-droit */
+  .tl-hero__layout {
+    padding-bottom: 6.25rem;
   }
-  .tl-hero__cta {
-    margin-top: 1.3rem;
+  .tl-scrim--hero {
+    height: 72%;
   }
-
-  .tl-cost {
-    padding-block: 0;
+  .tl-obj {
+    flex-basis: min(70vw, 20rem);
   }
-  .tl-pair,
-  .tl-row,
-  .tl-step {
-    display: block;
+  .tl-rail {
+    gap: 2.25rem;
   }
-  .tl-pair {
-    padding: 4.5rem var(--tl-g) 2.5rem;
+  .tl-steps__inner {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 2.2rem;
   }
-  .tl-pair .tl-display + .tl-display {
-    margin-top: 0.35rem;
+  .tl-steps__data {
+    grid-column: 1;
   }
-  .tl-pair .tl-display {
-    font-size: clamp(2rem, 8.6vw, 2.8rem);
+  .tl-peak__a {
+    right: var(--tl-gutter);
+    bottom: clamp(2rem, 9vh, 4rem);
   }
-  .tl-row {
-    padding: 0;
+  .tl-scrim--lead {
+    background: linear-gradient(
+      to top,
+      rgba(3, 5, 4, 0.94) 0%,
+      rgba(3, 5, 4, 0.72) 30%,
+      rgba(3, 5, 4, 0.2) 52%,
+      rgba(3, 5, 4, 0) 66%
+    );
   }
-  .tl-row__l {
-    padding: 2.4rem var(--tl-g) 1.6rem;
-    background: var(--tl-avant);
+  .tl-peak__title {
+    font-size: clamp(2rem, 9vw, 2.8rem);
   }
-  .tl-row__photo {
-    aspect-ratio: 16 / 10;
+  .tl-peak__b {
+    bottom: 6.25rem;
   }
-  .tl-row__r {
-    padding: 2.4rem var(--tl-g) 3rem;
-  }
-  .tl-hdiv--row {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    padding-block: 0.7rem;
-    border-top: 1px solid var(--tl-hair-strong);
-  }
-  .tl-hdiv--row span:first-child {
-    position: static;
-  }
-  .tl-hdiv--row span:last-child {
-    padding-top: 0;
-  }
-
-  .tl-proc {
-    padding-block: 2rem 4rem;
-  }
-  .tl-steps {
-    margin-top: 1.5rem;
-    padding-inline: var(--tl-g);
-  }
-  .tl-step {
-    padding-block: 1.6rem 0.4rem;
-    border-top: 1px solid var(--tl-hair);
-  }
-  .tl-step__l,
-  .tl-step__r {
-    border-top: 0;
-    padding-top: 0;
-  }
-  .tl-step__r {
-    margin-top: 1.1rem;
-    padding-left: 1rem;
-    border-left: 1px solid var(--sc-accent);
-  }
-  .tl-mini {
-    display: block;
-    margin-bottom: 0.4rem;
-  }
-
-  .tl-ledger {
-    inset: auto 0 auto 0;
-    top: calc(46svh + 2.2rem);
-    padding-inline: var(--tl-g);
-    transform: translate3d(0, calc(var(--tl-k, 0) * -36svh), 0);
-  }
-  .tl-ledger__title {
-    position: static;
-    font-size: 1.15rem;
-  }
-  .tl-glints {
-    display: none;
-  }
-  .tl-line,
-  .tl-ledger__foot {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: auto;
-  }
-  .tl-ledger__lines {
-    margin-top: 0.9rem;
-  }
-  .tl-line {
-    translate: none;
-    padding-block: 0.42rem;
-  }
-  .tl-line__item {
-    font-size: 1.05rem;
-  }
-  .tl-ledger__more {
-    margin-top: 0.7rem;
-    font-size: 0.85rem;
-  }
-  .tl-ledger__pay {
-    grid-template-columns: 1fr;
-    gap: 0.8rem;
-    margin-top: 1.1rem;
-  }
-  .tl-ledger__pay dd {
-    font-size: 0.92rem;
-  }
-  .tl-done {
-    left: var(--tl-g);
-    right: var(--tl-g);
-    top: auto;
-    bottom: 8svh;
-    translate: none;
-  }
-  .tl-done__title {
-    font-size: clamp(2.2rem, 10vw, 3.2rem);
-    margin-bottom: 1.4rem;
-  }
-  .tl-reduce .tl-done {
-    left: var(--tl-g);
-    right: var(--tl-g);
-  }
-  .tl-reduce .tl-line,
-  .tl-reduce .tl-ledger__foot,
-  .tl.tl-fallback .tl-line,
-  .tl.tl-fallback .tl-ledger__foot {
-    width: auto;
-  }
-}
-@media (max-width: 1023.98px) {
-  .tl-close {
-    padding: 4.5rem var(--tl-g) 5rem;
+  .tl-peak__b .tl-btn {
+    white-space: normal;
   }
   .tl-close__inner {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-@media (max-width: 1023.98px) and (scripting: none) {
-  .tl .tl-line,
-  .tl .tl-ledger__foot {
-    width: auto;
+  .tl-close__side {
+    align-self: start;
   }
 }
-
-/* Petits téléphones : le bordereau doit tenir sous la photo. */
-@media (max-width: 1023.98px) and (max-height: 700px) {
-  .tl-ledger__more {
-    display: none;
+/* Écran court (portable 1280 x 720) : le logo et le titre se serrent. */
+@media (min-width: 861px) and (max-height: 760px) {
+  .tl-hero__mark {
+    width: clamp(110px, 21vh, 170px);
   }
-  .tl-line {
-    padding-block: 0.3rem;
-  }
-  .tl-hero__sub {
-    font-size: 0.92rem;
+  .tl-hero__line {
+    margin-top: 0.6rem;
   }
 }

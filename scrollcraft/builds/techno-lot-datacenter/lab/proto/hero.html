@@ -1,0 +1,29 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500&display=block" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#050806;color:#eef3ef;font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+.bg{position:absolute;inset:0;background:url(f0.jpg) center/cover}
+@media (max-aspect-ratio: 3/4){.bg{background-image:url(f0m.jpg)}}
+.bar{position:absolute;inset:0 0 auto;height:80px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;z-index:5;font:600 14px 'Chakra Petch'}
+.bar img{height:44px}.nav{display:flex;gap:28px;color:#cbd5e1}.nav .on{color:#8BE95F}
+.pill{background:linear-gradient(120deg,#5ECB33,#34D399);color:#060A14;padding:10px 18px;border-radius:999px;text-transform:uppercase;letter-spacing:.08em;font-size:12px}
+.haze{position:absolute;left:50%;top:50%;width:46vmax;height:30vmax;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(94,203,51,.16),rgba(94,203,51,0));mix-blend-mode:screen}
+.logo{position:absolute;left:50%;top:50%;width:clamp(150px,15vw,240px);transform:translate(-50%,-56%);opacity:.92;filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
+.refl{position:absolute;left:50%;top:50%;width:clamp(150px,15vw,240px);transform:translate(-50%,44%) scaleY(-1);opacity:.12;filter:blur(6px);-webkit-mask:linear-gradient(to top,#000,transparent 60%);mask:linear-gradient(to top,#000,transparent 60%)}
+.scrim{position:absolute;inset:auto 0 0 0;height:56%;background:linear-gradient(to top,rgba(5,8,6,.92),rgba(5,8,6,.7) 45%,rgba(5,8,6,0))}
+.copy{position:absolute;left:0;right:0;bottom:clamp(36px,7vh,80px);text-align:center;padding:0 20px}
+h1{font:700 clamp(2.1rem,4.6vw,4.4rem)/1.08 'Chakra Petch';letter-spacing:-.01em;text-wrap:balance}
+h1 .g{color:#5ECB33;position:relative;display:inline-block;padding-bottom:.08em}
+h1 .g::after{content:"";position:absolute;left:0;right:0;bottom:-.02em;height:3px;border-radius:3px;background:linear-gradient(120deg,#5ECB33,#34D399)}
+.sub{margin:22px auto 0;max-width:34em;font-size:clamp(1rem,1.25vw,1.15rem);line-height:1.6;color:#c9d4cc}
+.cta{display:inline-block;margin-top:28px;background:linear-gradient(120deg,#5ECB33,#34D399);color:#06100a;font:600 14px 'Chakra Petch';text-transform:uppercase;letter-spacing:.1em;padding:16px 30px;border-radius:999px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6)}
+</style></head><body>
+<div class="bg"></div><div class="haze"></div>
+<img class="refl" src="logo.png" alt=""><img class="logo" src="logo.png" alt="Techno Lot">
+<div class="scrim"></div>
+<div class="bar"><img src="logo.png" alt=""><div class="nav"><span class="on">Accueil</span><span>À propos</span><span>Contact</span><span>Blog</span><span>FAQ</span><span class="pill">Soumission</span></div><div class="nav"><span>514-944-3939</span><span>FR · EN</span></div></div>
+<div class="copy"><h1>Vos lots informatiques ont <br><span class="g">de la valeur</span></h1>
+<p class="sub">On donne une seconde vie à votre matériel, et on vous paie pour ça.</p>
+<a class="cta">Faire une soumission</a></div>
+</body></html>

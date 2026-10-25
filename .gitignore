@@ -23,3 +23,10 @@ scrollcraft/builds/*/lab/placeholders/
 scrollcraft/builds/*/lab/tasks.jsonl
 scrollcraft/builds/*/lab/*.log
 scrollcraft/builds/*/lab/view/
+scrollcraft/builds/*/assets/
+scrollcraft/builds/*/lab/look/
+scrollcraft/builds/*/lab/mobile/
+scrollcraft/builds/*/lab/reduced/
+scrollcraft/builds/*/lab/maq/
+scrollcraft/builds/*/lab/proto/*.png
+scrollcraft/builds/*/lab/proto/*.jpg
