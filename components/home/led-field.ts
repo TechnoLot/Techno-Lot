@@ -1,20 +1,14 @@
 /**
- * Les voyants de l'allée, redessinés un par un sur un canevas.
+ * Les voyants de l'allée (hero), redessinés un par un sur un canevas.
  *
  * Les données viennent de la photo elle-même (scrollcraft/builds/
  * techno-lot-datacenter/lab/leds.py) : pour chaque voyant, son centre, son
  * rayon et la boîte de sa lumière propre dans allee-voyants.webp (la photo
- * moins la plaque « voyants effacés »). Redessiner cette lumière par-dessus la
- * plaque, en fusion additive, redonne exactement la photo ; en changer
- * l'intensité fait vivre chaque voyant.
- *
- * Deux usages :
- *  - « flash » (hero) : la vidéo est dessous, on ne peut qu'ajouter de la
- *    lumière. Les voyants d'activité s'emballent par rafales, les voyants de
- *    veille battent lentement.
- *  - « full » (le pic) : la plaque sombre est dessous, chaque voyant a son
- *    intensité complète, et la progression de l'acte les éteint baie par baie
- *    (dernier clignotement, puis noir). En remontant, ils se rallument.
+ * moins la plaque « voyants effacés »). La vidéo est dessous : on ne peut
+ * qu'ajouter de la lumière. Redessiner la lumière d'un voyant en fusion
+ * additive le fait briller plus fort ; les voyants d'activité s'emballent par
+ * rafales, les voyants de veille battent lentement, et ceux qui sont sous le
+ * pointeur s'emballent comme un disque qu'on lit.
  */
 
 export type LedRaw = [number, number, number, number, number, number, number];
@@ -22,8 +16,6 @@ export type LedJson = { w: number; h: number; l: LedRaw[] };
 
 /** Image -> écran : x écran = ox + X * k (pixels CSS du canevas). */
 export type Mapping = { ox: number; oy: number; k: number };
-
-export type Band = { x0: number; x1: number; start: number };
 
 type Led = {
   x: number;
@@ -37,11 +29,6 @@ type Led = {
   f: number;
   b0: number;
   b1: number;
-  off: number; // seuil de mise hors tension (progression de l'acte)
-  u: number; // aléa propre au voyant, pour son rang dans sa baie
-  bi: number; // sa baie
-  dead: boolean;
-  tc: number; // dernier changement d'état (ms)
 };
 
 // Générateur déterministe : le même aléa à chaque chargement, donc les mêmes
@@ -57,14 +44,8 @@ function mulberry32(seed: number) {
   };
 }
 
-// Dernier clignotement d'un voyant qu'on éteint : 8 pas de 35 ms.
-const DEATH = [1, 0.05, 0.9, 0, 0.55, 0, 0.22, 0];
-const DEATH_MS = DEATH.length * 35;
-const REVIVE_MS = 140;
-
 export class LedField {
   readonly canvas: HTMLCanvasElement;
-  readonly mode: "flash" | "full";
   reduced = false;
   private ctx: CanvasRenderingContext2D | null;
   private sprite: CanvasImageSource | null = null;
@@ -76,12 +57,9 @@ export class LedField {
   private px = -1e6;
   private py = -1e6;
   private pointerOn = false;
-  /** Nombre de voyants encore allumés (pour la vérification). */
-  alive = 0;
 
-  constructor(canvas: HTMLCanvasElement, mode: "flash" | "full") {
+  constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.mode = mode;
     this.ctx = canvas.getContext("2d", { alpha: true });
   }
 
@@ -89,34 +67,14 @@ export class LedField {
     return !!this.sprite && this.leds.length > 0;
   }
 
-  private spread = 0.035;
-
-  setData(json: LedJson, sprite: CanvasImageSource, bands: Band[] | null, spread = 0.035) {
-    const rnd = mulberry32(this.mode === "full" ? 7 : 3);
+  setData(json: LedJson, sprite: CanvasImageSource) {
+    const rnd = mulberry32(3);
     this.sprite = sprite;
-    this.spread = spread;
     this.leds = json.l.map(([x, y, , bx, by, bw, bh]) => {
       const k = rnd();
-      // Au repos (hero), plus de voyants d'activité : c'est le premier écran,
-      // il doit vivre avant tout défilement.
-      const steady = this.mode === "flash" ? 0.52 : 0.62;
-      const kind: 0 | 1 | 2 = k < steady ? 0 : k < 0.9 ? 1 : 2;
-      let bi = -1;
-      if (bands) {
-        bi = bands.findIndex((b) => x >= b.x0 && x < b.x1);
-        if (bi < 0) {
-          // hors de toute baie : rattaché à la plus proche
-          let bestD = Infinity;
-          bands.forEach((b, i) => {
-            const d = Math.min(Math.abs(x - b.x0), Math.abs(x - b.x1));
-            if (d < bestD) {
-              bestD = d;
-              bi = i;
-            }
-          });
-        }
-      }
-      const u = rnd();
+      // Beaucoup de voyants d'activité : c'est le premier écran, il doit vivre
+      // avant tout défilement.
+      const kind: 0 | 1 | 2 = k < 0.52 ? 0 : k < 0.9 ? 1 : 2;
       return {
         x,
         y,
@@ -129,20 +87,9 @@ export class LedField {
         f: kind === 1 ? 4 + rnd() * 5 : 1.1 + rnd() * 1.6,
         b0: rnd() * 6,
         b1: 0,
-        off: bands && bi >= 0 ? bands[bi].start + u * spread : 2,
-        u,
-        bi,
-        dead: false,
-        tc: -1e9,
       };
     });
     this.leds.forEach((l) => (l.b1 = l.b0 + 0.12 + rnd() * 0.6));
-  }
-
-  /** Nouveaux départs des baies (même découpage) : sur un écran étroit, la
-   *  vague est recalée sur les baies réellement visibles. */
-  setBands(bands: Band[]) {
-    for (const l of this.leds) if (l.bi >= 0 && bands[l.bi]) l.off = bands[l.bi].start + l.u * this.spread;
   }
 
   /** Taille du canevas = sa boîte CSS, densité plafonnée (les voyants sont doux). */
@@ -173,20 +120,6 @@ export class LedField {
     this.py = y;
   }
 
-  /** Met à jour l'état allumé / éteint d'après la progression de l'acte. */
-  power(p: number, now: number) {
-    let alive = 0;
-    for (const l of this.leds) {
-      const dead = p >= l.off;
-      if (dead !== l.dead) {
-        l.dead = dead;
-        l.tc = now;
-      }
-      if (!dead) alive++;
-    }
-    this.alive = alive;
-  }
-
   /** Intensité « vivante » d'un voyant (1 = comme sur la photo). */
   private level(l: Led, t: number): number {
     if (this.reduced) return 1;
@@ -199,13 +132,11 @@ export class LedField {
         l.b1 = l.b0 + 0.15 + ((l.ph * 5.3 + t * 0.11) % 1) * 0.7;
       }
       if (t >= l.b0 && t <= l.b1) {
-        const on = Math.sin((t * l.f + l.ph) * Math.PI * 2) > 0;
-        // en « flash » on ne peut qu'ajouter de la lumière : l'éclat est plus fort
-        v = this.mode === "flash" ? (on ? 1.95 : 1) : on ? 1.35 : 0.25;
+        // on ne peut qu'ajouter de la lumière : l'éclat est fort
+        v = Math.sin((t * l.f + l.ph) * Math.PI * 2) > 0 ? 1.95 : 1;
       }
     } else if (l.kind === 2) {
-      const s = Math.sin((t / l.f + l.ph) * Math.PI * 2);
-      v = this.mode === "full" ? (s > 0 ? 1 : 0.15) : s > 0.86 ? 2 : 1;
+      v = Math.sin((t / l.f + l.ph) * Math.PI * 2) > 0.86 ? 2 : 1;
     }
     if (this.pointerOn) {
       const sx = this.map.ox + l.x * this.map.k;
@@ -216,23 +147,10 @@ export class LedField {
         // sous le pointeur, les voyants s'emballent comme un disque qu'on lit
         const w = 1 - d / R;
         const on = Math.sin((t * (6 + l.ph * 6) + l.ph) * Math.PI * 2) > -0.2;
-        const hi = this.mode === "flash" ? 2.3 : 1.7;
-        const lo = this.mode === "flash" ? 1 : 0.3;
-        v = v * (1 - w) + (on ? hi : lo) * w;
+        v = v * (1 - w) + (on ? 2.3 : 1) * w;
       }
     }
     return v;
-  }
-
-  /** Coefficient d'alimentation (mode full) : 1 allumé, 0 éteint, avec le dernier clignotement. */
-  private powerAlpha(l: Led, now: number): number {
-    const dt = now - l.tc;
-    if (l.dead) {
-      if (this.reduced || dt >= DEATH_MS) return 0;
-      return DEATH[Math.min(DEATH.length - 1, Math.floor(dt / 35))];
-    }
-    if (!this.reduced && dt < REVIVE_MS) return dt / REVIVE_MS;
-    return 1;
   }
 
   render(now: number, opacity = 1) {
@@ -253,15 +171,8 @@ export class LedField {
       const sw = l.bw * k;
       const sh = l.bh * k;
       if (sx > W || sy > H || sx + sw < 0 || sy + sh < 0) continue;
-      let a: number;
-      if (this.mode === "full") {
-        const pa = this.powerAlpha(l, now);
-        if (pa <= 0.002) continue;
-        a = this.level(l, t) * pa;
-      } else {
-        a = (this.level(l, t) - 1) * 0.9;
-      }
-      a *= opacity;
+      // la vidéo montre déjà le voyant à 1 : on ne dessine que le surplus
+      let a = (this.level(l, t) - 1) * 0.9 * opacity;
       if (a <= 0.01) continue;
       // au-delà de 1, on redessine la même lumière : un voyant plus fort
       while (a > 0.002) {

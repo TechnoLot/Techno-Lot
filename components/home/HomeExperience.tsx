@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { LedField, loadLeds, type Band, type Mapping } from "@/components/home/led-field";
+import { LedField, loadLeds, type Mapping } from "@/components/home/led-field";
 
 type ScAct = { el: HTMLElement; p: number; vp: number; live: boolean };
-type ScApi = { destroy: () => void; acts: ScAct[] };
+type ScApi = { destroy: () => void; layout: () => void; acts: ScAct[] };
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const smooth = (x: number) => {
@@ -13,7 +13,7 @@ const smooth = (x: number) => {
 };
 const range = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
 
-// La photo de l'allée (et la salle vide) : 2720 x 1530.
+// La photo de l'allée : 2720 x 1530.
 const IMG_W = 2720;
 const IMG_H = 1530;
 // La vidéo portrait est le tiers central de la vidéo 16:9 (608 px sur 1920).
@@ -24,71 +24,24 @@ const isPortrait = () => innerWidth / Math.max(innerHeight, 1) <= 0.8;
 
 /*
  * Chronologie du pic (progression de l'acte épinglé, 0 à 1).
- * 0.00-0.12  l'allée vivante, posée (le texte A arrive)
- * 0.12-0.52  mise hors tension, baie par baie, de la plus proche à la plus
- *            lointaine, en alternant gauche et droite
- * 0.50-0.58  le reste de l'allée s'assombrit ; seule la brume du fond reste
- * 0.58-0.62  le noir (silence voulu)
- * 0.62       la lumière revient (interrupteur, avec son clignotement)
- * 0.66-0.83  la boucle du logo se dessine, puis la flèche, le $, le mot
- * 0.80-1.00  « Votre espace est libre. »
+ * 0.00-0.10  la salle vide dans le noir, seule la brume du fond éclaire
+ * 0.10       les néons se rallument (interrupteur, avec leur clignotement)
+ * 0.16-0.46  la boucle du logo se dessine, puis la flèche, le $, le mot
+ * 0.46-1.00  « Votre espace est libre. » (repère dans le HTML)
  */
 const PEAK = {
-  wave: [0.12, 0.5] as const,
-  bandDur: 0.07,
-  spread: 0.035,
-  dim: [0.5, 0.58] as const,
-  lightOn: 0.62,
-  lightOff: 0.6,
-  main: [0.66, 0.76] as const,
-  barbs: [0.755, 0.785] as const,
-  dollar: [0.775, 0.8] as const,
-  word: [0.785, 0.83] as const,
-  reducedLit: [0.36, 0.56] as const,
+  lightOn: 0.1,
+  lightOff: 0.08,
+  main: [0.16, 0.34] as const,
+  barbs: [0.33, 0.38] as const,
+  dollar: [0.37, 0.41] as const,
+  word: [0.39, 0.46] as const,
+  reducedLit: [0.04, 0.24] as const,
 };
 
-// Les baies, en bandes verticales de la photo (pixels de l'image), de la plus
-// proche à la plus lointaine. Gauche : du bord vers le point de fuite ;
-// droite : idem en miroir. Le milieu (1300-1440) est la brume du fond.
-const LEFT = [0, 470, 700, 830, 940, 1010, 1100, 1190, 1300];
-const RIGHT = [2720, 2300, 1985, 1810, 1700, 1640, 1580, 1520, 1440];
-const BANDS: Band[] = (() => {
-  const out: Band[] = [];
-  const n = (LEFT.length - 1) * 2;
-  const step = (PEAK.wave[1] - PEAK.wave[0]) / (n - 1);
-  for (let i = 0; i < LEFT.length - 1; i++) {
-    out.push({ x0: LEFT[i], x1: LEFT[i + 1], start: PEAK.wave[0] + 2 * i * step });
-    out.push({ x0: RIGHT[i + 1], x1: RIGHT[i], start: PEAK.wave[0] + (2 * i + 1) * step });
-  }
-  // Le milieu de l'allée (plancher et plafond au fond) s'éteint en dernier ;
-  // seule la brume, protégée plus bas, garde sa lumière.
-  out.push({ x0: LEFT[LEFT.length - 1], x1: RIGHT[RIGHT.length - 1], start: PEAK.wave[1] + 0.02 });
-  return out;
-})();
-/**
- * Recale la vague sur les baies visibles. Sur un écran en portrait, la photo
- * est recadrée au centre : les baies proches sont hors champ, et la vague
- * passerait la moitié de l'acte sur du vide. Les baies hors champ s'éteignent
- * tout de suite ; les visibles se partagent toute la vague.
- */
-function timeBands(xL: number, xR: number): Band[] {
-  const n = BANDS.length - 1; // le milieu garde sa place, après la vague
-  const seen = BANDS.slice(0, n).map((b) => {
-    const o = Math.min(b.x1, xR) - Math.max(b.x0, xL);
-    return o > (b.x1 - b.x0) * 0.3;
-  });
-  const count = seen.filter(Boolean).length;
-  if (count === n || count < 2) return BANDS;
-  const step = (PEAK.wave[1] - PEAK.wave[0]) / (count - 1);
-  let k = 0;
-  return BANDS.map((b, i) => {
-    if (i === n) return b;
-    if (!seen[i]) return { ...b, start: PEAK.wave[0] - 0.08 };
-    return { ...b, start: PEAK.wave[0] + step * k++ };
-  });
-}
-// Centre de la brume au fond de l'allée (pixels de l'image).
-const HAZE = { x: 1372, y: 742, r: 300 };
+// Le logo du hero commence à s'effacer à 76 % de l'acte (sa ligne aussi :
+// 0.3 + 0.7 x (1 - 0.343) = 0.76).
+const HERO_FADE = 0.76;
 
 // Allumage des néons : six paliers de 70 ms.
 const FLICKER = [0, 0.55, 0.1, 0.85, 0.35, 1];
@@ -97,10 +50,10 @@ const FLICKER_MS = FLICKER.length * 70;
 /**
  * Anime l'accueil : monte le moteur scrollcraft (copié tel quel dans
  * lib/scrollcraft) sur la racine, puis pilote ce qu'il ne fait pas : les
- * voyants vivants, le logo au point de fuite, la rotation des objets du rail,
- * la mise hors tension de l'allée, le retour de la lumière et le dessin du
- * logo. Tout le contenu existe déjà dans le HTML serveur ; sans JavaScript,
- * la page reste complète et lisible.
+ * voyants vivants du hero, le logo au point de fuite, la rotation des objets
+ * du rail, la ligne des étapes, le retour de la lumière et le dessin du logo.
+ * Tout le contenu existe déjà dans le HTML serveur ; sans JavaScript, la page
+ * reste complète et lisible.
  */
 export default function HomeExperience({
   className,
@@ -158,6 +111,7 @@ export default function HomeExperience({
     // --- éléments -----------------------------------------------------------
     const heroStage = q("[data-sc-stage]", hero)!;
     const heroCanvas = q<HTMLCanvasElement>("[data-tl-leds='hero']", hero);
+    const heroZone = q(".tl-hero__logo-zone", hero);
     const heroLogo = q("[data-tl-hero-logo]", hero);
     const heroMark = q("[data-tl-hero-mark]", hero);
     const heroVeil = q(".tl-hero__veil", hero);
@@ -174,18 +128,19 @@ export default function HomeExperience({
       shadow: q("[data-tl-shadow]", fig),
     }));
 
+    const stepsList = q("[data-tl-steps]");
+    const steps = stepsList
+      ? qa("[data-tl-step]", stepsList).map((li) => ({ li, node: q(".tl-step__node", li)! }))
+      : [];
+
     const peakStage = q("[data-sc-stage]", peak)!;
-    const lit = q("[data-tl-lit]", peak);
-    const shade = q<HTMLCanvasElement>("[data-tl-shade]", peak);
-    const peakCanvas = q<HTMLCanvasElement>("[data-tl-leds='peak']", peak);
+    const dark = q("[data-tl-dark]", peak);
     const markMain = q<SVGPathElement>("[data-tl-mark-main]", peak);
     const markBarbs = q<SVGPathElement>("[data-tl-mark-barbs]", peak);
     const markDollar = q<SVGRectElement>("[data-tl-mark-dollar]", peak);
     const word = q("[data-tl-word]", peak);
     const glow = q("[data-tl-glow]", peak);
-    const textA = q(".tl-peak__a", peak);
     const textB = q(".tl-peak__b", peak);
-    const scrimA = q("[data-tl-scrim-a]", peak);
     const scrimB = q("[data-tl-scrim-b]", peak);
 
     // --- écritures uniquement quand la valeur change ------------------------
@@ -199,6 +154,8 @@ export default function HomeExperience({
       set(key, el, (e, val) => (e as HTMLElement).style.setProperty(prop, val), v);
     const attr = (key: string, el: Element | null, name: string, v: string) =>
       set(key, el, (e, val) => e.setAttribute(name, val), v);
+    const cls = (key: string, el: Element | null, name: string, on: boolean) =>
+      set(key, el, (e, val) => e.classList.toggle(name, val === "1"), on ? "1" : "0");
 
     // --- pointeur (souris seulement), lissé ---------------------------------
     let tmx = 0, tmy = 0, mx = 0, my = 0;
@@ -225,28 +182,23 @@ export default function HomeExperience({
       });
     }
 
-    // --- voyants ---------------------------------------------------------------
-    const heroField = heroCanvas ? new LedField(heroCanvas, "flash") : null;
-    const peakField = peakCanvas ? new LedField(peakCanvas, "full") : null;
+    // --- voyants du hero ---------------------------------------------------------
+    const heroField = heroCanvas ? new LedField(heroCanvas) : null;
     if (heroField) heroField.reduced = reduce;
-    if (peakField) peakField.reduced = reduce;
-    let fieldsLoading = false;
-    const loadFields = () => {
-      if (fieldsLoading) return;
-      fieldsLoading = true;
+    let fieldLoading = false;
+    const loadField = () => {
+      if (fieldLoading || !heroField) return;
+      fieldLoading = true;
       loadLeds()
         .then(({ json, sprite }) => {
           if (dead) return;
-          heroField?.setData(json, sprite, null);
-          peakField?.setData(json, sprite, BANDS, PEAK.spread);
-          peakField?.setBands(bands);
-          heroField?.resize();
-          peakField?.resize();
+          heroField.setData(json, sprite);
+          heroField.resize();
           root.classList.add("tl-leds-ready");
           kick();
         })
         .catch(() => {
-          fieldsLoading = false;
+          fieldLoading = false;
         });
     };
 
@@ -254,78 +206,6 @@ export default function HomeExperience({
     const coverMap = (sw: number, sh: number, x0: number, w: number, h: number): Mapping => {
       const k = Math.max(sw / w, sh / h);
       return { k, ox: (sw - w * k) / 2 - x0 * k, oy: (sh - h * k) / 2 };
-    };
-
-    // --- l'ombre des baies (pic) ----------------------------------------------
-    let bands: Band[] = BANDS;
-    let bandsKey = "";
-    const shadeCtx = shade?.getContext("2d") || null;
-    let shadeDpr = 1;
-    const sizeShade = () => {
-      if (!shade) return;
-      const r = shade.getBoundingClientRect();
-      shadeDpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const w = Math.round(r.width * shadeDpr);
-      const h = Math.round(r.height * shadeDpr);
-      if (shade.width !== w || shade.height !== h) {
-        shade.width = w;
-        shade.height = h;
-      }
-    };
-    let shadeKey = "";
-    const drawShade = (p: number, m: Mapping) => {
-      if (!shadeCtx || !shade) return;
-      const key = `${p.toFixed(4)}|${m.ox.toFixed(1)}|${m.oy.toFixed(1)}|${m.k.toFixed(4)}`;
-      if (key === shadeKey) return;
-      shadeKey = key;
-      const d = shadeDpr;
-      const W = shade.width;
-      const H = shade.height;
-      shadeCtx.setTransform(1, 0, 0, 1, 0, 0);
-      shadeCtx.clearRect(0, 0, W, H);
-      if (reduce) return;
-      const X = (x: number) => (m.ox + x * m.k) * d;
-      // Un seul profil horizontal d'obscurité (le maximum des baies, avec un
-      // fondu de 18 px de l'image au bord de chacune), posé d'un seul geste :
-      // aucune couture entre deux baies voisines.
-      const N = 160;
-      const F = 18;
-      const prof = new Float32Array(N + 1);
-      let any = false;
-      for (const b of bands) {
-        const a = 0.84 * smooth((p - b.start - 0.012) / PEAK.bandDur);
-        if (a <= 0.003) continue;
-        any = true;
-        for (let i = 0; i <= N; i++) {
-          const x = (i / N) * IMG_W;
-          const out = x < b.x0 ? b.x0 - x : x > b.x1 ? x - b.x1 : 0;
-          const v = out >= F ? 0 : a * (1 - out / F);
-          if (v > prof[i]) prof[i] = v;
-        }
-      }
-      if (any) {
-        const g = shadeCtx.createLinearGradient(X(0), 0, X(IMG_W), 0);
-        for (let i = 0; i <= N; i++) g.addColorStop(i / N, `rgba(2,4,3,${prof[i].toFixed(3)})`);
-        shadeCtx.fillStyle = g;
-        shadeCtx.fillRect(0, 0, W, H);
-      }
-      // Puis tout le reste, sauf la brume du fond, qui reste la seule lumière.
-      const dim = 0.6 * smooth(range(p, PEAK.dim[0], PEAK.dim[1]));
-      if (dim > 0.003) {
-        shadeCtx.fillStyle = `rgba(2,4,3,${dim.toFixed(3)})`;
-        shadeCtx.fillRect(0, 0, W, H);
-      }
-      const hx = X(HAZE.x);
-      const hy = (m.oy + HAZE.y * m.k) * d;
-      const hr = HAZE.r * m.k * d;
-      const rg = shadeCtx.createRadialGradient(hx, hy, 0, hx, hy, hr);
-      rg.addColorStop(0, "rgba(0,0,0,0.9)");
-      rg.addColorStop(0.45, "rgba(0,0,0,0.5)");
-      rg.addColorStop(1, "rgba(0,0,0,0)");
-      shadeCtx.globalCompositeOperation = "destination-out";
-      shadeCtx.fillStyle = rg;
-      shadeCtx.fillRect(hx - hr, hy - hr, hr * 2, hr * 2);
-      shadeCtx.globalCompositeOperation = "source-over";
     };
 
     // --- la lumière (interrupteur, avec son clignotement) -------------------------
@@ -350,10 +230,10 @@ export default function HomeExperience({
       return lightLevel;
     };
 
-    // État initial du pic quand le mouvement est permis : allée allumée, lumière
-    // éteinte, logo pas encore dessiné. (Sans JavaScript, le HTML montre l'état
-    // final : la salle vide et le logo.)
-    const armPeak = () => {
+    // État de départ quand JavaScript tourne : la salle dans le noir, le logo
+    // pas encore dessiné, les étapes éteintes jusqu'à ce que la ligne les
+    // atteigne. (Sans JavaScript, le HTML montre l'état final.)
+    const arm = () => {
       root.classList.add("tl-armed");
       if (reduce) return;
       markMain?.setAttribute("stroke-dashoffset", "1");
@@ -418,30 +298,42 @@ export default function HomeExperience({
       const heroRect = hero!.getBoundingClientRect();
       const heroOn = heroRect.bottom > 0 && heroRect.top < vh;
       const heroStageRect = heroOn ? heroStage.getBoundingClientRect() : null;
-      const zoneRect = heroOn && heroLogo ? heroLogo.parentElement!.getBoundingClientRect() : null;
+      const zoneRect = heroOn && heroZone ? heroZone.getBoundingClientRect() : null;
       const objRects = rangeA && rangeA.live && !reduce ? objs.map((o) => o.fig.getBoundingClientRect()) : null;
+      const stepsRect = stepsList && !reduce ? stepsList.getBoundingClientRect() : null;
+      const nodeRects =
+        stepsRect && stepsRect.bottom > -80 && stepsRect.top < vh + 80
+          ? steps.map((s) => s.node.getBoundingClientRect())
+          : null;
       const peakRect = peak!.getBoundingClientRect();
       const peakOn = peakRect.bottom > 0 && peakRect.top < vh;
-      const sr = peakOn ? peakStage.getBoundingClientRect() : null;
 
       // ---- 1. le hero ------------------------------------------------------------
       if (heroA && heroOn && heroStageRect) {
         const e = reduce ? 0 : smooth(heroA.p);
         // Le logo attend au fond de l'allée : la caméra s'en approche.
         if (heroLogo && zoneRect) {
-          // centre de l'image du logo hors transformation (offsetTop ignore
-          // les transforms) : c'est elle qui va vers le point de fuite
+          // centre de l'image du logo hors transformations (offsetTop les
+          // ignore) : c'est elle qui va vers le point de fuite
           const markCy =
-            zoneRect.top + heroLogo.offsetTop + (heroMark ? heroMark.offsetTop + heroMark.offsetHeight / 2 : heroLogo.offsetHeight / 2);
-          const logoCy = markCy;
-          const toVP = vh / 2 - logoCy;
+            zoneRect.top +
+            heroLogo.offsetTop +
+            (heroMark ? heroMark.offsetTop + heroMark.offsetHeight / 2 : heroLogo.offsetHeight / 2);
+          const toVP = vh / 2 - markCy;
           const ty = e * toVP * 0.55 + (pointerOK ? my * -4 : 0);
           const tx = pointerOK ? mx * -6 : 0;
           // moins d'agrandissement sur un écran étroit : la ligne doit tenir
-          const grow = vw < 861 ? 0.2 : 0.4;
+          const grow = vw < 861 ? 0.3 : 0.55;
           style("hl", heroLogo, "transform", `translate3d(${tx.toFixed(2)}px,${ty.toFixed(2)}px,0) scale(${(1 + grow * e).toFixed(4)})`);
         }
-        style("hv", heroVeil, "opacity", (0.42 * (1 - e)).toFixed(3));
+        // Puis le logo s'efface à la fin de l'acte, avec la courbe des repères
+        // du moteur (fondu et 2,4vh de descente sur le dernier quart) : le même
+        // geste que sa ligne (repère « 0.3 1 0.25 0.343 ») et que les textes
+        // des scènes suivantes.
+        const fade = heroA.p <= HERO_FADE ? 1 : smooth(1 - (heroA.p - HERO_FADE) / (1 - HERO_FADE));
+        style("hfo", heroMark, "opacity", fade.toFixed(3));
+        style("hft", heroMark, "transform", reduce ? "none" : `translate3d(0,${((1 - fade) * 2.4).toFixed(2)}vh,0)`);
+        style("hv", heroVeil, "opacity", (0.26 * (1 - e)).toFixed(3));
         style("hz", heroHaze, "transform", `translate3d(${(pointerOK ? mx * -14 : 0).toFixed(2)}px,${(e * -36).toFixed(2)}px,0) scale(${(1 + e * 0.18).toFixed(4)})`);
         // le voile de contraste suit le texte qu'il protège
         const co = heroCopy ? parseFloat(heroCopy.style.opacity || "1") : 1;
@@ -491,8 +383,35 @@ export default function HomeExperience({
         }
       }
 
-      // ---- 4. le pic -----------------------------------------------------------------
-      if (peakA && peakOn && sr) {
+      // ---- 3. les étapes ------------------------------------------------------------
+      // Une position le long de la ligne, en « numéros d'étape » : 1.5 = à
+      // mi-chemin entre la 2e et la 3e. En rangée (bureau), elle avance pendant
+      // que la rangée monte de 80 % à 38 % de l'écran ; en colonne (téléphone),
+      // elle suit un curseur fixe à 62 % de la hauteur.
+      if (nodeRects && nodeRects.length > 1) {
+        const n = nodeRects.length;
+        const ys = nodeRects.map((r) => r.top + r.height / 2);
+        let P: number;
+        if (Math.abs(ys[n - 1] - ys[0]) < 8) {
+          P = ((vh * 0.8 - ys[0]) / (vh * 0.42)) * (n - 1);
+        } else {
+          const cur = vh * 0.62;
+          if (cur <= ys[0]) P = (cur - ys[0]) / Math.max(ys[1] - ys[0], 1);
+          else if (cur >= ys[n - 1]) P = n - 1;
+          else {
+            let i = 0;
+            while (i < n - 2 && cur > ys[i + 1]) i++;
+            P = i + (cur - ys[i]) / Math.max(ys[i + 1] - ys[i], 1);
+          }
+        }
+        for (let i = 0; i < n; i++) {
+          cls(`so${i}`, steps[i].li, "is-on", P >= i - 0.02);
+          style(`sf${i}`, steps[i].li, "--tl-seg", clamp01(P - i).toFixed(3));
+        }
+      }
+
+      // ---- 5. le pic -----------------------------------------------------------------
+      if (peakA && peakOn) {
         const p = peakA.p;
         // poussée lente de la caméra + léger parallaxe du pointeur
         const push = reduce ? 1 : 1 + 0.045 * p;
@@ -501,44 +420,11 @@ export default function HomeExperience({
         style("pp", peakStage, "--tl-push", push.toFixed(4));
         style("ppx", peakStage, "--tl-px", `${px.toFixed(2)}px`);
         style("ppy", peakStage, "--tl-py", `${py.toFixed(2)}px`);
-        const base = coverMap(sr.width, sr.height, 0, IMG_W, IMG_H);
-        // baies réellement visibles à cette taille d'écran
-        const xL = -base.ox / base.k;
-        const xR = (sr.width - base.ox) / base.k;
-        const bk = `${Math.round(xL)}|${Math.round(xR)}`;
-        if (bk !== bandsKey) {
-          bandsKey = bk;
-          bands = timeBands(xL, xR);
-          peakField?.setBands(bands);
-          shadeKey = "";
-        }
-        const k = base.k * push;
-        const m: Mapping = {
-          k,
-          ox: sr.width / 2 - (IMG_W / 2) * k + px,
-          oy: sr.height / 2 - (IMG_H / 2) * k + py,
-        };
-        drawShade(p, m);
 
         const L = litLevel(p, now);
-        style("lit", lit, "opacity", L.toFixed(3));
+        style("dk", dark, "opacity", (1 - L).toFixed(3));
         if (!reduce && lightOn && now - lightT < FLICKER_MS + 40) busy = true;
         if (!reduce && !lightOn && L > 0) busy = true;
-
-        if (peakField?.ready) {
-          peakField.setMapping(m);
-          if (pointerOK && cx >= 0 && cy >= sr.top && cy <= sr.bottom) peakField.setPointer(cx - sr.left, cy - sr.top);
-          else peakField.setPointer(null);
-          peakField.power(reduce ? 0 : p, now);
-          // les voyants ne se voient plus une fois la lumière revenue
-          if (L < 0.999) {
-            if (ledTick || reduce) peakField.render(now, 1);
-            if (!reduce) busy = true;
-          } else if (last.get("pfc") !== "0") {
-            peakField.clear();
-          }
-          last.set("pfc", L < 0.999 ? "1" : "0");
-        }
 
         // le logo se dessine dans la salle éclairée
         if (!reduce) {
@@ -552,22 +438,13 @@ export default function HomeExperience({
           style("mw", word, "opacity", ww.toFixed(3));
           style("mg", glow, "opacity", (0.25 + 0.75 * Math.max(mm * 0.6, ww)).toFixed(3));
         }
-        // les voiles de contraste suivent leur texte
-        style("sa", scrimA, "opacity", (textA ? parseFloat(textA.style.opacity || "0") : 0).toFixed(3));
+        // le voile de contraste suit son texte
         style("sb", scrimB, "opacity", (textB ? parseFloat(textB.style.opacity || "0") : 0).toFixed(3));
-        attr(
-          "pvs",
-          peakStage,
-          "data-sc-verify-state",
-          `${p.toFixed(3)}|${peakField?.alive ?? -1}|${L.toFixed(2)}|${lightOn ? 1 : 0}`
-        );
-      } else if (peakField?.ready && last.get("pfc") === "1") {
-        peakField.clear();
-        last.set("pfc", "0");
+        attr("pvs", peakStage, "data-sc-verify-state", `${p.toFixed(3)}|${L.toFixed(2)}|${lightOn ? 1 : 0}`);
       }
 
-      // Les voyants et les clignotements vivent dans le temps : la boucle
-      // continue tant qu'une scène qui en a est à l'écran.
+      // Les voyants et le clignotement des néons vivent dans le temps : la
+      // boucle continue tant qu'une scène qui en a est à l'écran.
       if (busy) kick();
     }
 
@@ -580,19 +457,57 @@ export default function HomeExperience({
     const onScroll = () => kick();
     const onResize = () => {
       last.clear();
-      shadeKey = "";
       heroField?.resize();
-      peakField?.resize();
-      sizeShade();
       kick();
+    };
+    // Le bouton du pic n'apparaît qu'à la fin de l'acte épinglé. Au clavier, le
+    // moteur centre l'élément qui reçoit le focus, mais dans une scène collante
+    // ce défilement ne change rien et le bouton reste invisible : on amène
+    // l'acte à 80 %, où il est pleinement là. Écouté sur window APRÈS le
+    // montage du moteur, pour passer après son propre défilement.
+    const onPeakFocus = (e: FocusEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el || !textB || !textB.contains(el)) return;
+      const top = peak.getBoundingClientRect().top + scrollY;
+      const travel = Math.max(peak.offsetHeight - innerHeight, 1);
+      scrollTo({ top: top + 0.8 * travel, behavior: "instant" as ScrollBehavior });
     };
     const listen = () => {
       addEventListener("scroll", onScroll, { passive: true });
       addEventListener("resize", onResize, { passive: true });
+      addEventListener("focusin", onPeakFocus);
       cleanups.push(() => {
         removeEventListener("scroll", onScroll);
         removeEventListener("resize", onResize);
+        removeEventListener("focusin", onPeakFocus);
       });
+      // Le moteur mesure la position des actes une fois (et au redimensionnement).
+      // Si le contenu change de hauteur sans redimensionnement (un onglet plus
+      // court, une image tardive), les actes plus bas seraient décalés : on le
+      // laisse remesurer.
+      if (typeof ResizeObserver === "function") {
+        let lastH = -1;
+        let roRaf = 0;
+        const ro = new ResizeObserver((entries) => {
+          const h = Math.round(entries[0]?.contentRect.height ?? 0);
+          if (h === lastH) return;
+          const first = lastH < 0;
+          lastH = h;
+          if (first || roRaf) return;
+          roRaf = requestAnimationFrame(() => {
+            roRaf = 0;
+            if (dead || !api) return;
+            api.layout();
+            last.clear();
+            kick();
+          });
+        });
+        ro.observe(root);
+        cleanups.push(() => {
+          ro.disconnect();
+          if (roRaf) cancelAnimationFrame(roRaf);
+        });
+      }
     };
 
     import("@/lib/scrollcraft/scrollcraft.js")
@@ -606,14 +521,13 @@ export default function HomeExperience({
           api = window.ScrollCraft.mount(root) as unknown as ScApi;
           listen();
           root.classList.add("tl-live");
-          armPeak();
-          sizeShade();
+          arm();
           // Les voyants passent après le premier affichage : ils ne doivent
           // rien retarder de ce que le visiteur voit en arrivant.
           if (typeof window.requestIdleCallback === "function") {
-            window.requestIdleCallback(loadFields, { timeout: 1500 });
+            window.requestIdleCallback(loadField, { timeout: 1500 });
           } else {
-            setTimeout(loadFields, 600);
+            setTimeout(loadField, 600);
           }
           document.fonts?.ready.then(() => {
             last.clear();

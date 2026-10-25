@@ -9,6 +9,8 @@ import type { Locale } from "@/lib/i18n";
  * Règles : aucun chiffre inventé, aucun tiret cadratin, « paiement rapide et
  * garanti » plutôt que « avant notre départ », un seul libellé d'action.
  */
+export type StepIcon = "form" | "reply" | "pickup" | "pay";
+
 export type HomeContent = {
   hero: {
     titleStart: string;
@@ -19,7 +21,8 @@ export type HomeContent = {
     videoLabel: string;
   };
   range: {
-    title: string;
+    titleStart: string;
+    titleAccent: string;
     intro: string;
     items: { key: string; name: string; desc: string; alt: string }[];
     more: string;
@@ -28,12 +31,38 @@ export type HomeContent = {
   steps: {
     title: string;
     intro: string;
-    list: { title: string; text: string }[];
+    list: { title: string; text: string; fact: string; icon: StepIcon }[];
     data: string;
   };
+  care: {
+    titleStart: string;
+    titleAccent: string;
+    sub: string;
+    videoAlt: string;
+    replay: string;
+    play: string;
+    tabsLabel: string;
+    simple: {
+      tab: string;
+      title: string;
+      text: string;
+      you: string;
+      youItems: string[];
+      us: string;
+      usItems: string[];
+    };
+    efficace: { tab: string; title: string; text: string; flow: [string, string, string] };
+    paiement: {
+      tab: string;
+      title: string;
+      text: string;
+      first: string;
+      firstNote: string;
+      second: string;
+      secondNote: string;
+    };
+  };
   peak: {
-    lead: string;
-    leadText: string;
     titleStart: string;
     titleAccent: string;
     sub: string;
@@ -58,9 +87,10 @@ const fr: HomeContent = {
     videoLabel: "Une allée de serveurs, voyants verts allumés, dans un centre de données",
   },
   range: {
-    title: "Ce que nous rachetons",
+    titleStart: "Ce que nous",
+    titleAccent: "rachetons",
     intro:
-      "Du poste de travail au centre de données : Techno Lot valorise tout votre matériel informatique et électronique.",
+      "Du poste de travail au centre de données\u00a0: Techno Lot valorise tout votre matériel informatique et électronique.",
     items: [
       {
         key: "serveurs",
@@ -99,36 +129,80 @@ const fr: HomeContent = {
         alt: "Un petit ordinateur de bureau, boîtier noir",
       },
     ],
-    more: "Et aussi : télécommunication, bureautique, tablettes, composants, audio et vidéo.",
+    more: "Et aussi\u00a0: télécommunication, bureautique, tablettes, composants, audio et vidéo.",
     cta: "Faire une soumission",
   },
   steps: {
-    title: "Comment ça marche",
-    intro: "De la soumission au paiement, en quatre étapes.",
+    title: "Notre fonctionnement",
+    intro: "De la soumission au paiement\u00a0: une étape pour vous, trois pour nous.",
     list: [
       {
         title: "Vous faites une soumission",
         text: "Décrivez votre matériel et joignez des photos.",
+        fact: "En ligne",
+        icon: "form",
       },
       {
         title: "On vous répond en 24 heures",
         text: "Réponse garantie dans un délai de 24 heures.",
+        fact: "24 h",
+        icon: "reply",
       },
       {
         title: "On vient tout chercher",
-        text: "Ramassage gratuit : notre équipe se rend sur place pour emballer, charger et transporter le matériel.",
+        text: "Ramassage gratuit\u00a0: notre équipe se rend sur place pour emballer, charger et transporter le matériel.",
+        fact: "Gratuit",
+        icon: "pickup",
       },
       {
         title: "Vous êtes payé",
         text: "La moitié au ramassage, le solde sans délai après l'inspection (15 jours ouvrables au maximum).",
+        fact: "Garanti",
+        icon: "pay",
       },
     ],
     data: "Vos données sont détruites et un certificat de destruction vous est remis.",
   },
+  care: {
+    titleStart: "On s'occupe",
+    titleAccent: "de tout.",
+    sub: "Notre équipe se rend sur place pour emballer, charger et transporter le matériel.",
+    videoAlt: "Le fourgon lettré Techno Lot arrêté dans une cour de chargement, de nuit.",
+    replay: "Revoir l'arrivée",
+    play: "Voir l'arrivée",
+    tabsLabel: "Nos engagements",
+    simple: {
+      tab: "Simple",
+      title: "Une seule étape pour vous",
+      text: "Vous décrivez votre matériel en ligne, photos à l'appui. Nous nous chargeons du reste.",
+      you: "Vous",
+      youItems: ["La soumission en ligne"],
+      us: "Techno Lot",
+      usItems: [
+        "La réponse en 24 heures",
+        "L'emballage",
+        "Le chargement",
+        "Le transport",
+        "La destruction des données, avec certificat",
+      ],
+    },
+    efficace: {
+      tab: "Efficace",
+      title: "Ramassage gratuit, sur place",
+      text: "Notre équipe se rend sur place pour emballer, charger et transporter le matériel, sans frais.",
+      flow: ["Emballer", "Charger", "Transporter"],
+    },
+    paiement: {
+      tab: "Paiement garanti",
+      title: "Paiement rapide et garanti",
+      text: "La moitié au ramassage, le solde sans délai après l'inspection.",
+      first: "50 %",
+      firstNote: "au ramassage",
+      second: "50 %",
+      secondNote: "après l'inspection, 15 jours ouvrables au maximum",
+    },
+  },
   peak: {
-    lead: "On s'occupe de tout.",
-    leadText:
-      "Notre équipe se rend sur place pour emballer, charger et transporter le matériel.",
     titleStart: "Votre espace est",
     titleAccent: "libre.",
     sub: "Ramassage gratuit, paiement rapide et garanti, données détruites avec certificat.",
@@ -158,7 +232,8 @@ const en: HomeContent = {
     videoLabel: "An aisle of servers with green status lights in a data centre",
   },
   range: {
-    title: "What we buy",
+    titleStart: "What we",
+    titleAccent: "buy",
     intro:
       "From workstations to data centres: Techno Lot values all your IT and electronic equipment.",
     items: [
@@ -203,31 +278,76 @@ const en: HomeContent = {
     cta: "Get a quote",
   },
   steps: {
-    title: "How it works",
-    intro: "From quote to payment, in four steps.",
+    title: "How we work",
+    intro: "From quote to payment: one step for you, three for us.",
     list: [
       {
         title: "You request a quote",
         text: "Describe your equipment and attach photos.",
+        fact: "Online",
+        icon: "form",
       },
       {
         title: "We reply within 24 hours",
         text: "Guaranteed response within 24 hours.",
+        fact: "24 h",
+        icon: "reply",
       },
       {
         title: "We pick everything up",
         text: "Free pickup: our team comes on site to pack, load and transport the equipment.",
+        fact: "Free",
+        icon: "pickup",
       },
       {
         title: "You get paid",
         text: "Half at pickup, the balance immediately after inspection (up to 15 business days).",
+        fact: "Guaranteed",
+        icon: "pay",
       },
     ],
     data: "Your data is destroyed and you receive a certificate of destruction.",
   },
+  care: {
+    titleStart: "We take care",
+    titleAccent: "of everything.",
+    sub: "Our team comes on site to pack, load and transport the equipment.",
+    videoAlt: "The lettered Techno Lot van stopped in a loading yard at night.",
+    replay: "Replay the arrival",
+    play: "Play the arrival",
+    tabsLabel: "Our commitments",
+    simple: {
+      tab: "Simple",
+      title: "Only one step is yours",
+      text: "You describe your equipment online, with photos. We handle the rest.",
+      you: "You",
+      youItems: ["The online quote request"],
+      us: "Techno Lot",
+      usItems: [
+        "The reply within 24 hours",
+        "Packing",
+        "Loading",
+        "Transport",
+        "Data destruction, with a certificate",
+      ],
+    },
+    efficace: {
+      tab: "Efficient",
+      title: "Free pickup, on site",
+      text: "Our team comes on site to pack, load and transport the equipment, free of charge.",
+      flow: ["Pack", "Load", "Transport"],
+    },
+    paiement: {
+      tab: "Guaranteed payment",
+      title: "Fast and guaranteed payment",
+      text: "Half at pickup, the balance immediately after inspection.",
+      first: "50%",
+      firstNote: "at pickup",
+      second: "50%",
+      secondNote: "after inspection, within 15 business days at most",
+    },
+  },
   peak: {
-    lead: "We take care of everything.",
-    leadText: "Our team comes on site to pack, load and transport the equipment.",
     titleStart: "Your space is",
     titleAccent: "free.",
     sub: "Free pickup, fast and guaranteed payment, data destroyed with a certificate.",

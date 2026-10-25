@@ -1,12 +1,57 @@
 # BRIEF : technolot.ca, page d'accueil v2 « Le centre de données »
 
-**Statut :** interview réelle, deuxième tour. La v1 (« la ligne de rachat »,
+**Statut :** interview réelle, deuxième tour, puis un troisième tour de
+retouches sur la v2 (voir « Troisième tour » plus bas : il remplace la mise
+hors tension par l'arrivée du fourgon). La v1 (« la ligne de rachat »,
 `builds/techno-lot-accueil`) a été rejetée en entier par l'utilisateur ; ce
 brief repart de ses réponses à ce rejet. Les citations sont verbatim.
 
 Portée inchangée : la page d'accueil du site Next.js (FR à la racine, EN sous
-`/en`). L'en-tête et le pied de page globaux restent (hors portée). Rien n'est
-poussé sans demander : « ne push pas », puis « Oui, sauf ce travail-ci ».
+`/en`). L'en-tête et le pied de page globaux restent (hors portée). Poussée :
+« Pousse sur dev » pour la v2, puis « Apres push sur dev » pour ce tour-ci.
+
+---
+
+## Troisième tour : ce que l'utilisateur a dit de la v2
+
+> « le logo dans la hero doit etre plus gros et imposant. Quand on scroll la
+> phrase : Rachat de lots informatiques et électroniques Unique au Québec elle
+> doit etre plus espacé et le logo doit etre plus gros et avoir la meme
+> animation de fading pour l'onglet plus bas (On s'occupe de tout.) quand on
+> scroll par en bas. Ce que nous rachetons ( met le mot Rachetons en vert).
+> Plus bas a : Comment ça marche Change la phrase pour : Notre Fonctionnement.
+> Rend les 4 étape plus friendly user et intéractif. La plus bas : On s'occupe
+> de tout, enleve le scrolling animation et remplace le pour montrer que nous
+> prenont le client en charge que c'est simple et efficace paiment garantie
+> tout en était intéractif et visuel attrayant si y faut génere des photos ou
+> vidéo d'un sprinter van lettré avec notre logo qui arrive dans le frame et
+> qui a de la fumé aux pneu d'en arriere. »
+
+Ce qui a été fait, point par point :
+
+1. **Logo du hero** : de 250 à 420 px de large au plus (26vw / 36vh), une
+   nappe sombre derrière lui pour qu'il se détache de la brume, voile vert
+   plus léger. Il grandit davantage en approchant (x 1,55 au lieu de x 1,4).
+2. **La ligne** : lettres espacées (0,30em au lieu de 0,16em), deux lignes
+   plus aérées, plus loin du logo, bande d'ombre douce dessous. Le logo et sa
+   ligne s'effacent sur le dernier quart du hero avec la courbe des repères
+   du moteur (fondu et 2,4vh de descente), le geste qu'avait « On s'occupe de
+   tout. » dans la v2.
+3. **« rachetons »** en vert (EN « buy »).
+4. **« Notre fonctionnement »** (casse de phrase française ; EN « How we
+   work »). Les quatre étapes deviennent une frise : pastille et icône par
+   étape, un fait clé en étiquette (En ligne, 24 h, Gratuit, Garanti), une
+   ligne verte qui avance au défilement et allume chaque étape au passage
+   (en colonne sur téléphone), survol qui soulève l'étape.
+5. **« On s'occupe de tout. »** : la mise hors tension (défilement) est
+   retirée. À la place, une scène plein écran où le Sprinter lettré Techno
+   Lot entre par la gauche, freine en fumant des pneus arrière et s'arrête
+   (vidéo jouée une fois quand la scène est à l'écran, jamais liée au
+   défilement, bouton « Revoir l'arrivée »), puis trois engagements en
+   onglets : Simple (une case pour vous, cinq pour nous), Efficace (emballer,
+   charger, transporter), Paiement garanti (la barre en deux moitiés).
+6. **« Votre espace est libre. »** gardé comme fin, plus court : la salle vide
+   dans le noir, les néons se rallument, la boucle du logo se dessine.
 
 ---
 
@@ -72,10 +117,15 @@ maximum puis le solde sans délai, destruction des données avec certificat
 ```
 1  Reconnaissance  l'allée vivante : votre matériel a de la valeur
 2  Étendue         ce que nous rachetons, objet par objet
-3  Assurance       comment ça marche, quatre étapes, des faits
-4  Bascule (pic)   l'allée s'éteint, la lumière revient sur une salle vide
-5  Engagement      le formulaire
+3  Assurance       notre fonctionnement : une étape pour vous, trois pour nous
+4  Prise en charge le fourgon arrive ; simple, efficace, paiement garanti
+5  Bascule         la salle vide s'allume, le logo se dessine : votre espace
+                   est libre
+6  Engagement      le formulaire
 ```
+
+(v2 : l'acte 4 était la mise hors tension de l'allée, et il n'y avait pas de
+scène du fourgon.)
 
 ---
 
@@ -102,7 +152,16 @@ Contraintes tenues : aucune numérotation visible, aucune coupe franche entre
 deux fonds (les fonds glissent), une seule entrée. Écart assumé : la barre de
 navigation globale du site reste (hors portée).
 
-## Signature : « La mise hors tension »
+## Signature (troisième tour) : « L'espace libéré »
+
+Le Sprinter lettré entre dans la cour, fume des pneus arrière et se gare ;
+plus bas, la salle vide est dans le noir, les néons se rallument avec leur
+clignotement et la boucle du logo se dessine le long de son propre trait (le
+masque SVG de la v2, gardé). Les voyants vivants du hero restent (au repos,
+sous le pointeur) ; leur extinction au défilement est retirée à la demande de
+l'utilisateur, avec la plaque « voyants effacés » qui la servait.
+
+## Signature (v2, remplacée) : « La mise hors tension »
 
 Chaque voyant de l'allée est un point vivant, extrait de la photo (2 439
 voyants, position, rayon et lumière propre) et redessiné sur un canevas
@@ -122,54 +181,60 @@ la progression de l'acte), moteur intact.
 | Grammaire | Scène partagée | Filmique en un plan | oui |
 | Navigation | Le séparateur AVANT/APRÈS comme chrome | L'en-tête global seul, transparent sur la vidéo ; aucun chrome propre à la page | oui |
 | Hero | Photo en plans épinglée dans une moitié | Vidéo plein cadre sous la main + voyants vivants + logo au point de fuite | oui |
-| Séquence | `pin > flow x5 > pin > flow`, 8 actes, 10,2 vh | `scrub > pan > flow > pin > flow`, 5 actes, ~12,3 vh | oui |
+| Séquence | `pin > flow x5 > pin > flow`, 8 actes, 10,2 vh | `scrub > pan > flow > flow > pin > flow`, 6 actes, ~12,6 vh (v2 : `scrub > pan > flow > pin > flow`, 5 actes, ~12,3 vh) | oui |
 | Fermeture | Le séparateur s'effondre, formulaire | La salle vide éclairée, logo allumé, puis le formulaire | oui |
-| Signature | La ligne de rachat | La mise hors tension | oui |
+| Signature | La ligne de rachat | L'espace libéré (v2 : la mise hors tension) | oui |
 
-6 sur 6. Passe.
+6 sur 6. Passe (vérifié de nouveau après le troisième tour).
 
 ---
 
-## La courbe des émotions
+## La courbe des émotions (troisième tour)
 
 ```
 1  Émerveillement  une allée de serveurs vivante, la caméra avance sous la main,
-                   le logo sort de la brume au fond
+                   le logo, imposant, sort de la brume puis s'efface
 2  Appétit         « ah, ça aussi » : chaque objet arrive de côté et tourne un
                    peu sous le pointeur, avec son étiquette
-3  Assurance       quatre étapes, des faits, aucune image ; l'acte le plus
-                   calme (le silence avant le pic)
-4  Tension, puis   les voyants meurent baie par baie, le noir avance vers le
-   soulagement     fond ; puis la lumière revient sur une salle vide et le logo
-                   se dessine
-5  Résolution      le formulaire, dans l'espace libéré
+3  Assurance       une ligne verte qui avance et allume quatre étapes ; une
+                   seule est pour le visiteur
+4  Pic : prise     le fourgon lettré entre en fumant des pneus et se gare ; on
+   en charge       touche les trois engagements
+5  Soulagement     noir, les néons se rallument sur la salle vide, le logo se
+                   dessine : « Votre espace est libre. »
+6  Résolution      le formulaire
 ```
 
-**Le pic (acte 4).** Ce qu'un visiteur dirait à un ami : « En faisant défiler,
-j'éteignais un centre de données baie par baie, tout devenait noir, puis la
-lumière revenait sur une salle vide avec le logo au fond. »
+**Le pic (acte 4).** Ce qu'un visiteur dirait à un ami : « Un fourgon Techno
+Lot arrive en faisant fumer ses pneus, et tout est expliqué en trois onglets ;
+après, la lumière revient sur une salle vide avec le logo. »
 
-**La phrase.** « C'est le site où tu éteins un centre de données en faisant
-défiler. »
+**Écart assumé.** Le pic n'a plus la plus grande durée de défilement : sur
+demande (« enleve le scrolling animation »), il est joué dans le temps (la
+vidéo démarre quand la scène est à l'écran), pas épinglé. Le pin qui suit
+(2,4 vh) n'est que la résolution.
 
-**Silence assumé.** Acte 4, progression ~0,56 à 0,62 : tout est noir sauf la
-brume au fond de l'allée. Ce n'est pas du défilement mort : c'est le noir
-avant la lumière.
+**Silence assumé.** Acte 5, progression 0 à 0,10 : la salle dans le noir,
+seule la brume du fond éclaire. C'est le noir avant la lumière.
+
+(v2 : le pic était la mise hors tension, 4,2 vh, avec son silence de 0,56 à
+0,62.)
 
 ## Partition
 
 | Acte | Battement | Dispositif | Durée | Pourquoi |
 |---|---|---|---|---|
-| 1 Hero | Émerveillement | `scrub` (travelling kling) + titre en accueil + voyants vivants au repos + logo au point de fuite | 2,6 vh | La vidéo plein écran demandée, sous la main du visiteur |
+| 1 Hero | Émerveillement | `scrub` (travelling kling) + titre en accueil + voyants vivants au repos + logo au point de fuite, effacé sur le dernier quart | 2,6 vh | La vidéo plein écran demandée, sous la main du visiteur |
 | 2 Rachats | Appétit | `pan` (rail latéral) + `tilt` 3D et rotation au défilement | 3,4 vh | Le latéral se lit comme un éventail de choix |
-| 3 Étapes | Assurance | `flow` + `in` | naturel, ~1,2 vh | Le calme avant le pic ; l'information se compresse |
-| 4 Hors tension | Pic | `pin` + signature (canevas des voyants, plaques, SVG du logo) | 4,2 vh, le plus long | Le moment à raconter |
-| 5 Formulaire | Résolution | `flow` + `in` | naturel | La page cesse de bouger |
+| 3 Fonctionnement | Assurance | `flow` + `in` + frise allumée au défilement | naturel, ~1,1 vh | Calme ; l'information se compresse |
+| 4 Fourgon | Pic | `flow` + vidéo jouée à l'écran (une fois) + onglets | naturel, ~1,7 vh | Demandé sans animation de défilement |
+| 5 Espace libre | Soulagement | `pin` + néons (interrupteur) + SVG du logo | 2,4 vh | La lumière revient, la fin du film |
+| 6 Formulaire | Résolution | `flow` + `in` | naturel | La page cesse de bouger |
 
-Familles : scrub, pan, tilt, flow/in, pin, kinetic, signature. Jamais deux
-fois de suite la même. Un seul `scrub`. Le pic a la plus grande durée et
-l'acte d'avant est le plus calme. Total ~12,3 vh sur 5 actes, pied de page
-exclu (hors de la bande 13,6-13,8 vh).
+Familles : scrub, pan, tilt, flow/in, vidéo dans le temps, pin, signature.
+Jamais deux fois de suite le même dispositif (les deux `flow` du milieu
+portent l'un une frise au défilement, l'autre une vidéo dans le temps). Un
+seul `scrub`. Total ~12,6 vh sur 6 actes au bureau, pied de page exclu.
 
 ## Contrat de couches du hero
 
@@ -177,7 +242,7 @@ exclu (hors de la bande 13,6-13,8 vh).
 |---|---|---|---|
 | Fond | La vidéo (travelling avant dans l'allée) | Avance sous la main | Exposition constante (2e génération, tête et queue imposées) |
 | Voyants | Canevas : la lumière propre des voyants de la 1re image | Clignotent au repos ; s'effacent dès que la vidéo avance | Seulement au repos : posés exactement sur l'image 0 |
-| Sujet | Le logo au point de fuite, dans la brume | Grossit à mesure que la caméra approche | Brume devant, reflet doux au sol dessous |
+| Sujet | Le logo au point de fuite, dans la brume (jusqu'à 420 px) | Grossit à mesure que la caméra approche (x 1,55), puis s'efface sur le dernier quart avec sa ligne | Nappe sombre derrière, voile vert léger, la ligne au-dessus d'une bande d'ombre |
 | Atmosphère | Brume avant (dégradé, fusion « screen ») | Dérive lente, grossit plus vite que le fond | Jamais sur le texte |
 | Texte | h1 (Chakra Petch), sous-titre, bouton | Stable, puis monte et s'efface | Lisible à l'ouverture, voile seulement sous le texte |
 
@@ -206,6 +271,23 @@ exclu (hors de la bande 13,6-13,8 vh).
 - `vide-a` (seedream, image-à-image depuis c1) : la salle vide, même lumière.
 - `obj-*` : six objets (serveur, portable, commutateur, disques, écran, poste).
 - Voyants : extraits par `lab/leds.py` (OpenCV), pas générés.
+- Troisième tour, le fourgon :
+  - `van-vide` (seedream) : la cour de chargement de nuit, vide (bande de
+    néons verts, asphalte mouillé, quai à droite).
+  - `van-arret-a` (seedream, image-à-image) : le Sprinter noir à toit haut
+    garé au centre, phares allumés, fumée aux pneus arrière ; décor aligné
+    sur `van-vide` à 0,56 px près.
+  - Lettrage : le logo n'est jamais généré. `lab/van-lettrage.py` assemble la
+    vraie marque et le vrai mot-symbole en version horizontale, les plaque en
+    perspective sur la bande basse du flanc et les éclaire comme la
+    carrosserie (teinte verte, dégradé, grain).
+  - `van-a` (kling, 5 s, tête = cour vide, queue = fourgon lettré, recadrés
+    en 16:9) : retenu du premier coup. Le fourgon entre par la gauche,
+    décélère, s'arrête vers 3,1 s ; la fumée continue jusqu'à 5 s ; le
+    lettrage reste lisible pendant tout le freinage.
+  - `lab/publish-van.mjs` : `van.mp4` (1920 x 1080, 1,6 Mo), `van-m.mp4`
+    (carré 864 px centré sur le fourgon garé, 0,5 Mo) et leurs affiches
+    (première et dernière image des fichiers encodés).
 
 ---
 
@@ -241,7 +323,82 @@ exclu (hors de la bande 13,6-13,8 vh).
   devient une grille. Les scènes ont une taille d'écran par défaut avec une
   spécificité nulle (`:where`), pour que la règle collante du moteur gagne.
 
-## Vérification
+Troisième tour :
+
+- **Fondu du logo.** Un premier essai posait un repère du moteur sur tout le
+  bloc du logo : l'outil de vérification mesurait alors le texte de la ligne
+  sur toute la surface du bloc (image comprise) et signalait un faux échec de
+  contraste. Le logo est maintenant estompé par HomeExperience, avec la même
+  courbe que le moteur, et la ligne par son propre repère (« 0.3 1 0.25
+  0.343 » : fondu à partir de 0,76, comme le logo).
+- **Voile de la ligne.** Plus large qu'en v2, la ligne agrandie passait sur
+  des voyants vifs aux deux bouts (3,5:1). Le voile radial est remplacé par
+  une bande d'ombre pleine sur toute la ligne, fondue sur les bords ; le logo
+  passe au-dessus de la bande (sinon elle grisait le mot-symbole). La largeur
+  de la ligne est bornée pour tenir dans l'écran une fois agrandie (la ligne
+  anglaise débordait sur téléphone).
+- **Frise des étapes.** Chaque étape porte le tronçon de ligne qui mène à la
+  suivante (piste + remplissage), horizontal au bureau, vertical sur
+  téléphone ; la position le long de la ligne est calculée en « numéros
+  d'étape » (rangée : de 80 % à 38 % de l'écran ; colonne : curseur à 62 %).
+  Les étapes en veille gardent leur contraste (seule la pastille s'éteint).
+- **Le fourgon.** Joué une fois à 60 % de visibilité, chargé un écran plus
+  tôt ; la cour vide s'affiche dessous en attendant (même image que la
+  première de la vidéo : aucun saut) ; si la lecture est refusée ou le
+  fichier illisible, on montre le fourgon garé avec « Voir l'arrivée ».
+  Mouvement réduit et sans JavaScript : le fourgon garé, sans lecture
+  automatique. Mise en page empilée (titre, vidéo carrée, onglets) sur
+  téléphone et sur les écrans plus hauts que larges.
+- **Titre sur la vidéo.** Sur un portable 1280 x 720, la bande de néons du mur
+  passe sous le sous-titre : une ombre douce derrière le bloc titre le
+  protège quel que soit le cadrage (11,6:1 au pire).
+- **Onglets.** Sur ordinateur, les trois panneaux occupent la même case (la
+  hauteur ne saute pas) et chaque schéma se centre dans la place qui reste ;
+  sur téléphone, la hauteur suit le panneau ouvert. Le moteur ne mesure la
+  position des actes qu'au montage et au redimensionnement : un
+  ResizeObserver sur la page lui fait remesurer quand le contenu change de
+  hauteur, sinon le pic serait décalé.
+- **Clavier.** Le bouton du pic recevait le focus invisible (le moteur centre
+  l'élément, sans effet dans une scène collante) : au focus, l'acte est amené
+  à 80 %, où le bouton est pleinement là.
+- **Nettoyage.** Le canevas d'extinction, les bandes de baies, l'ombre du pic
+  et la plaque `allee-sombre.webp` sont retirés ; `led-field.ts` ne garde que
+  les voyants du hero.
+
+## Vérification (troisième tour)
+
+Même outil, mêmes conditions (build de production, 6 positions par acte, règle
+temporaire sur la transition de l'en-tête pendant les passes, retirée ensuite).
+
+| Passe | Défilement mort | Vidéo | Contraste (pire image) |
+|---|---|---|---|
+| Bureau 1440 x 900 (FR) | aucun | avance tant qu'elle est à l'écran | tous ≥ 4,5:1 (min 8,56 ; ligne du logo 12,92) |
+| Téléphone 390 x 844 | aucun | avance tant qu'elle est à l'écran | tous ≥ 4,5:1 (min 6,9) |
+| Mouvement réduit | aucun | affiche seulement (pas de vidéo) | tous ≥ 4,5:1 (min 9,03) |
+| Bureau 1440 x 900 (EN) | aucun | avance tant qu'elle est à l'écran | tous ≥ 4,5:1 (min 8,56) |
+
+Autres contrôles :
+
+- Titre du fourgon sur la vidéo (l'outil ne mesure que les repères du
+  moteur) : `lab/care-contrast.cjs`, à l'arrivée et une fois garé, en
+  1280 x 720, 1366 x 768, 1440 x 900, 1920 x 950, 1024 x 1366 et 390 x 844 :
+  titre ≥ 16,9:1, sous-titre ≥ 11,6:1.
+- Onglets (`lab/tabs.cjs`) : clic, flèches (avec retour au début), Fin, Tab
+  vers le panneau ; hauteur stable au bureau (432 px), variable sur
+  téléphone ; aucune erreur console.
+- Clavier (`lab/kbd.cjs`, FR et EN) : en-tête, bouton du hero, lien du rail,
+  onglet puis panneau des engagements, bouton du pic (visible), formulaire ;
+  aucun arrêt invisible.
+- Captures par acte (`lab/look.cjs`) au bureau, sur téléphone, en mouvement
+  réduit et en anglais ; sans JavaScript, page complète (les trois panneaux à
+  la suite, le fourgon garé, l'état final du pic).
+- `npx tsc --noEmit` propre ; aucune erreur console.
+
+Non vérifié : un vrai iPhone (lecture automatique en mode économie
+d'énergie : le repli sur le fourgon garé est prévu, pas observé) et le
+déploiement Hostinger.
+
+## Vérification (v2)
 
 Outil du skill (`shoot.mjs`, Chromium 1243, H.264 vérifié : « probably »,
 image peinte), 6 positions par acte, sur le **build de production**
@@ -274,7 +431,18 @@ Autres contrôles sur le paquet final :
 Non vérifié : un vrai iPhone (décodage vidéo de Safari iOS, mode économie
 d'énergie) et le déploiement Hostinger.
 
-## Test de ressenti (à froid, un mot par acte)
+## Test de ressenti (troisième tour, à froid, un mot par acte)
+
+| Acte | Prévu | Ressenti |
+|---|---|---|
+| 1 L'allée vivante | Émerveillement | Présence (le logo, imposant, vient vers soi puis laisse la place) |
+| 2 Rachats | Appétit | Curiosité, objet par objet |
+| 3 Fonctionnement | Assurance | Facilité (la ligne s'allume, une seule étape est pour moi) |
+| 4 Fourgon | Pic | Surprise, puis confiance (« ils viennent, ils s'occupent de tout ») |
+| 5 Espace libre | Soulagement | Soulagement à la lumière |
+| 6 Formulaire | Résolution | Résolution |
+
+## Test de ressenti (v2, à froid, un mot par acte)
 
 | Acte | Prévu | Ressenti |
 |---|---|---|
@@ -291,5 +459,7 @@ puis le formulaire. Le dernier écran du pic répond au premier écran du site
 
 ## Crédits kie.ai
 
-546 → 348 (198 débités) : deux vidéos kling (dont une rejetée), la salle vide,
-six objets.
+- v2 : 546 → 348 (198 débités) : deux vidéos kling (dont une rejetée), la
+  salle vide, six objets.
+- Troisième tour : 348 → 270 (78 débités) : la cour vide, le fourgon garé,
+  la vidéo kling de l'arrivée (retenue du premier coup).

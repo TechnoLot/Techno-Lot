@@ -3,7 +3,8 @@
 //
 // - la vidéo du hero (bureau 16:9, téléphone 9:16) et leurs affiches, tirées
 //   de la PREMIÈRE IMAGE DES FICHIERS ENCODÉS (pas d'une autre génération) ;
-// - l'allée « voyants effacés », la lumière des voyants et leur liste ;
+// - la lumière des voyants du hero et leur liste (la plaque « voyants
+//   effacés » servait au pic de la v2, retiré : elle n'est plus publiée) ;
 // - la salle vide ;
 // - les six objets du rail, recadrés au carré autour de l'objet ;
 // - la marque et le mot-symbole du logo, séparés.
@@ -30,8 +31,7 @@ frame0(`${B}/assets/allee-m.mp4`, tmp);
 await sharp(tmp).webp({ quality: 86, effort: 6 }).toFile(`${P}/allee-m.webp`);
 fs.rmSync(tmp);
 
-// --- l'allée du pic ----------------------------------------------------------
-await sharp(`${B}/out/leds/c1g-dark.png`).webp({ quality: 90, effort: 6 }).toFile(`${P}/allee-sombre.webp`);
+// --- les voyants du hero et la salle vide du pic ------------------------------
 await sharp(`${B}/out/leds/c1g-leds.png`).webp({ quality: 90, effort: 6 }).toFile(`${P}/allee-voyants.webp`);
 const leds = JSON.parse(fs.readFileSync(`${B}/out/leds/c1g-leds.json`, "utf8"));
 // Format compact : [x, y, r, bx, by, bw, bh] en pixels de l'image 2720 x 1530.
