@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { CornerDownLeft, LogOut, Menu, Search, X } from "lucide-react";
+import { CornerDownLeft, KeyRound, LogOut, Menu, Search, X } from "lucide-react";
 import AdminNav, { ADMIN_ROUTES } from "@/components/admin/AdminNav";
 import CalculatriceOverlay, {
   OPEN_CALCULATRICE_EVENT,
@@ -239,6 +239,15 @@ function SidebarContent({
               {email}
             </p>
           </div>
+          <Link
+            href="/admin/compte"
+            onClick={onNavigate}
+            aria-label="Mon compte"
+            title="Mon compte"
+            className="admin-focus inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            <KeyRound className="h-4 w-4" aria-hidden />
+          </Link>
           <form action="/admin/auth/signout" method="POST">
             <button
               type="submit"

@@ -44,8 +44,7 @@ export default function LoginPage({
                 Connexion admin
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                Le lien de connexion sera envoyé au courriel officiel. Ouvre-le
-                dans le mail pour te connecter.
+                Entre ton nom d&apos;utilisateur et ton mot de passe.
               </p>
             </div>
             <LoginForm
