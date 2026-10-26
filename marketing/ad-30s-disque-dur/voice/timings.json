@@ -1,0 +1,375 @@
+{
+ "voice": "fr-CA-ThierryNeural",
+ "sentences": [
+  {
+   "id": "parc",
+   "text": "Votre entreprise renouvelle son parc informatique?",
+   "rate": "+0%",
+   "start": 0.3,
+   "end": 2.865,
+   "words": [
+    {
+     "text": "Votre",
+     "start": 0.3,
+     "end": 0.6
+    },
+    {
+     "text": "entreprise",
+     "start": 0.612,
+     "end": 1.163
+    },
+    {
+     "text": "renouvelle",
+     "start": 1.175,
+     "end": 1.662
+    },
+    {
+     "text": "son",
+     "start": 1.675,
+     "end": 1.838
+    },
+    {
+     "text": "parc",
+     "start": 1.85,
+     "end": 2.112
+    },
+    {
+     "text": "informatique",
+     "start": 2.125,
+     "end": 3.0
+    }
+   ]
+  },
+  {
+   "id": "lot",
+   "text": "On rachète votre équipement en lot, neuf ou usagé.",
+   "rate": "+0%",
+   "start": 3.4,
+   "end": 5.985,
+   "words": [
+    {
+     "text": "On",
+     "start": 3.4,
+     "end": 3.563
+    },
+    {
+     "text": "rachète",
+     "start": 3.575,
+     "end": 3.938
+    },
+    {
+     "text": "votre",
+     "start": 3.95,
+     "end": 4.175
+    },
+    {
+     "text": "équipement",
+     "start": 4.188,
+     "end": 4.6
+    },
+    {
+     "text": "en",
+     "start": 4.613,
+     "end": 4.738
+    },
+    {
+     "text": "lot",
+     "start": 4.75,
+     "end": 5.013
+    },
+    {
+     "text": "neuf",
+     "start": 5.188,
+     "end": 5.425
+    },
+    {
+     "text": "ou",
+     "start": 5.438,
+     "end": 5.525
+    },
+    {
+     "text": "usagé",
+     "start": 5.538,
+     "end": 6.113
+    }
+   ]
+  },
+  {
+   "id": "tout",
+   "text": "Chez Technolot, on achète tout ce qui est informatique ou électronique.",
+   "rate": "-2%",
+   "start": 6.8,
+   "end": 10.485,
+   "words": [
+    {
+     "text": "Chez",
+     "start": 6.8,
+     "end": 7.081
+    },
+    {
+     "text": "Technolot",
+     "start": 7.093,
+     "end": 7.667
+    },
+    {
+     "text": "on",
+     "start": 7.859,
+     "end": 7.961
+    },
+    {
+     "text": "achète",
+     "start": 7.973,
+     "end": 8.369
+    },
+    {
+     "text": "tout",
+     "start": 8.382,
+     "end": 8.509
+    },
+    {
+     "text": "ce",
+     "start": 8.522,
+     "end": 8.611
+    },
+    {
+     "text": "qui",
+     "start": 8.624,
+     "end": 8.764
+    },
+    {
+     "text": "est",
+     "start": 8.777,
+     "end": 8.828
+    },
+    {
+     "text": "informatique",
+     "start": 8.841,
+     "end": 9.619
+    },
+    {
+     "text": "ou",
+     "start": 9.632,
+     "end": 9.746
+    },
+    {
+     "text": "électronique",
+     "start": 9.759,
+     "end": 10.626
+    }
+   ]
+  },
+  {
+   "id": "evaluation",
+   "text": "Évaluation gratuite,",
+   "rate": "+0%",
+   "start": 11.45,
+   "end": 12.775,
+   "words": [
+    {
+     "text": "Évaluation",
+     "start": 11.45,
+     "end": 12.162
+    },
+    {
+     "text": "gratuite",
+     "start": 12.175,
+     "end": 12.888
+    }
+   ]
+  },
+  {
+   "id": "offre",
+   "text": "offre rapide,",
+   "rate": "+0%",
+   "start": 13.45,
+   "end": 14.32,
+   "words": [
+    {
+     "text": "offre",
+     "start": 13.45,
+     "end": 13.812
+    },
+    {
+     "text": "rapide",
+     "start": 13.825,
+     "end": 14.362
+    }
+   ]
+  },
+  {
+   "id": "cueillette",
+   "text": "cueillette partout au Québec.",
+   "rate": "+0%",
+   "start": 15.05,
+   "end": 16.415,
+   "words": [
+    {
+     "text": "cueillette",
+     "start": 15.05,
+     "end": 15.45
+    },
+    {
+     "text": "partout",
+     "start": 15.462,
+     "end": 15.812
+    },
+    {
+     "text": "au",
+     "start": 15.825,
+     "end": 15.913
+    },
+    {
+     "text": "Québec",
+     "start": 15.925,
+     "end": 16.55
+    }
+   ]
+  },
+  {
+   "id": "donnees",
+   "text": "Et vos données?",
+   "rate": "+0%",
+   "start": 17.25,
+   "end": 17.86,
+   "words": [
+    {
+     "text": "Et",
+     "start": 17.25,
+     "end": 17.425
+    },
+    {
+     "text": "vos",
+     "start": 17.438,
+     "end": 17.575
+    },
+    {
+     "text": "données",
+     "start": 17.588,
+     "end": 17.987
+    }
+   ]
+  },
+  {
+   "id": "detruit",
+   "text": "On les détruit gratuitement, de façon sécurisée.",
+   "rate": "+0%",
+   "start": 18.31,
+   "end": 20.975,
+   "words": [
+    {
+     "text": "On",
+     "start": 18.31,
+     "end": 18.485
+    },
+    {
+     "text": "les",
+     "start": 18.498,
+     "end": 18.61
+    },
+    {
+     "text": "détruit",
+     "start": 18.622,
+     "end": 18.985
+    },
+    {
+     "text": "gratuitement",
+     "start": 18.998,
+     "end": 19.735
+    },
+    {
+     "text": "de",
+     "start": 19.897,
+     "end": 20.01
+    },
+    {
+     "text": "façon",
+     "start": 20.022,
+     "end": 20.36
+    },
+    {
+     "text": "sécurisée",
+     "start": 20.372,
+     "end": 21.11
+    }
+   ]
+  },
+  {
+   "id": "paiement",
+   "text": "Paiement rapide et garanti.",
+   "rate": "+0%",
+   "start": 22.15,
+   "end": 23.46,
+   "words": [
+    {
+     "text": "Paiement",
+     "start": 22.15,
+     "end": 22.487
+    },
+    {
+     "text": "rapide",
+     "start": 22.5,
+     "end": 22.862
+    },
+    {
+     "text": "et",
+     "start": 22.875,
+     "end": 22.937
+    },
+    {
+     "text": "garanti",
+     "start": 22.95,
+     "end": 23.587
+    }
+   ]
+  },
+  {
+   "id": "slogan",
+   "text": "Technolot point C A, on s'occupe de tout.",
+   "rate": "+0%",
+   "start": 25.3,
+   "end": 27.595,
+   "words": [
+    {
+     "text": "Technolot",
+     "start": 25.3,
+     "end": 25.8
+    },
+    {
+     "text": "point",
+     "start": 25.812,
+     "end": 26.037
+    },
+    {
+     "text": "C",
+     "start": 26.05,
+     "end": 26.325
+    },
+    {
+     "text": "A",
+     "start": 26.337,
+     "end": 26.55
+    },
+    {
+     "text": "on",
+     "start": 26.762,
+     "end": 26.862
+    },
+    {
+     "text": "s'occupe",
+     "start": 26.875,
+     "end": 27.25
+    },
+    {
+     "text": "de",
+     "start": 27.262,
+     "end": 27.412
+    },
+    {
+     "text": "tout",
+     "start": 27.425,
+     "end": 27.725
+    }
+   ]
+  }
+ ]
+}

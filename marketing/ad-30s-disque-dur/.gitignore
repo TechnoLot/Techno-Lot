@@ -1,0 +1,9 @@
+# Fichiers régénérables ou volumineux (ne pas commiter)
+venv/
+node_modules/
+build/
+downloads/
+voice/cache/
+audio/
+out/*.mp4
+out/*.wav

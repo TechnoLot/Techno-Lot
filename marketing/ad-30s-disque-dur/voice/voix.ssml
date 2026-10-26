@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Narration de la pub 30 s (version entreprises).
+  Document SSML Azure standard : avec une clé Azure Speech, il peut être envoyé tel quel.
+  Sans clé, tools/voice.py le lit et l'exécute phrase par phrase (le point d'accès
+  gratuit refuse les <break>) : chaque <s> est synthétisée seule, chaque <break>
+  devient un silence exact. Les pauses sont calculées par tools/voice.py (option solve)
+  pour que chaque réplique tombe sur son plan.
+  « Technolot » en un seul mot : la voix le dit d'un trait, comme il se prononce
+  (en deux mots, elle appuyait sur « Lot »).
+-->
+<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="fr-CA">
+  <voice name="fr-CA-ThierryNeural">
+    <break time="300ms"/>
+    <prosody rate="+0%">
+      <s id="parc">Votre entreprise renouvelle son parc informatique?</s>
+    </prosody>
+    <break time="535ms"/>
+    <prosody rate="+0%">
+      <s id="lot">On rachète votre équipement en lot, neuf ou usagé.</s>
+    </prosody>
+    <break time="815ms"/>
+    <prosody rate="-2%">
+      <s id="tout">Chez Technolot, on achète tout ce qui est informatique ou électronique.</s>
+    </prosody>
+    <break time="965ms"/>
+    <prosody rate="+0%">
+      <s id="evaluation">Évaluation gratuite,</s>
+    </prosody>
+    <break time="675ms"/>
+    <prosody rate="+0%">
+      <s id="offre">offre rapide,</s>
+    </prosody>
+    <break time="730ms"/>
+    <prosody rate="+0%">
+      <s id="cueillette">cueillette partout au Québec.</s>
+    </prosody>
+    <break time="835ms"/>
+    <prosody rate="+0%">
+      <s id="donnees">Et vos données?</s>
+    </prosody>
+    <break time="450ms"/>
+    <prosody rate="+0%">
+      <s id="detruit">On les détruit gratuitement, de façon sécurisée.</s>
+    </prosody>
+    <break time="1175ms"/>
+    <prosody rate="+0%">
+      <s id="paiement">Paiement rapide et garanti.</s>
+    </prosody>
+    <!-- Pause avant le slogan final -->
+    <break time="1840ms"/>
+    <prosody rate="+0%">
+      <s id="slogan">Technolot point C A, on s'occupe de tout.</s>
+    </prosody>
+  </voice>
+</speak>

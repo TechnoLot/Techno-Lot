@@ -1,0 +1,13 @@
+{
+  "_doc": "Début voulu de chaque réplique (s) ; null = garder la pause écrite dans voix.ssml. tools/voice.py --solve recalcule les <break>.",
+  "parc": 0.30,
+  "lot": 3.40,
+  "tout": 6.80,
+  "evaluation": 11.45,
+  "offre": 13.45,
+  "cueillette": 15.05,
+  "donnees": 17.25,
+  "detruit": null,
+  "paiement": 22.15,
+  "slogan": 25.30
+}
