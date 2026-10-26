@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, m } from "framer-motion";
 import {
   CheckCircle2,
@@ -11,6 +11,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { getDict, type Locale } from "@/lib/i18n";
+import { getAttribution, trackEvent } from "@/lib/tracking/attribution";
+import { trackLeadConversion } from "@/components/tracking/AdPixels";
 
 type Errors = Partial<Record<"nom" | "courriel" | "telephone" | "fichiers", string>>;
 type Status = "idle" | "loading" | "success" | "error";
@@ -25,6 +27,32 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   const [serverError, setServerError] = useState("");
   const [inventaireName, setInventaireName] = useState("");
   const [photoCount, setPhotoCount] = useState(0);
+
+  const startedRef = useRef(false);
+
+  // form_view : une seule fois, quand le formulaire entre dans le viewport.
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((en) => en.isIntersecting)) {
+          trackEvent("form_view");
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  // form_start : premier focus/saisie dans le formulaire, une seule fois.
+  function markStarted() {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackEvent("form_start");
+  }
 
   function validate(data: FormData): Errors {
     const errs: Errors = {};
@@ -65,6 +93,14 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
+    // Attribution publicitaire (incluant l'id de session) pour ad_leads.
+    try {
+      const attr = getAttribution();
+      if (attr) data.set("tl_attr", JSON.stringify(attr));
+    } catch {
+      /* ignore */
+    }
+
     setStatus("loading");
     setServerError("");
     try {
@@ -77,6 +113,8 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
         throw new Error(json?.error ?? t.genericError);
       }
       setStatus("success");
+      trackEvent("form_submit");
+      trackLeadConversion();
       form.reset();
       setInventaireName("");
       setPhotoCount(0);
@@ -121,6 +159,8 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     <form
       ref={formRef}
       onSubmit={onSubmit}
+      onFocusCapture={markStarted}
+      onInputCapture={markStarted}
       noValidate
       className="glass space-y-5 p-6 sm:p-8"
     >

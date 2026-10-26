@@ -111,6 +111,55 @@ export async function POST(request: Request) {
     console.error("[soumission] Erreur Supabase (exception) :", err);
   }
 
+  // Attribution publicitaire — ne bloque jamais l'envoi du courriel.
+  try {
+    let attr: Record<string, unknown> = {};
+    try {
+      const parsed: unknown = JSON.parse(String(data.get("tl_attr") ?? "{}"));
+      if (parsed && typeof parsed === "object") {
+        attr = parsed as Record<string, unknown>;
+      }
+    } catch {
+      /* tl_attr invalide : on traite comme direct */
+    }
+    const s = (v: unknown, max: number): string | null =>
+      typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+    const platforms = ["meta", "google", "organic", "referral", "direct", "email", "other"];
+    const sid = typeof attr.id === "string" ? attr.id : "";
+    const supabase = createSupabaseClient();
+    const lead = {
+      session_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)
+        ? sid
+        : null,
+      nom,
+      courriel,
+      telephone,
+      platform: platforms.includes(String(attr.platform)) ? attr.platform : "direct",
+      utm_source: s(attr.utm_source, 300),
+      utm_medium: s(attr.utm_medium, 300),
+      utm_campaign: s(attr.utm_campaign, 300),
+      utm_content: s(attr.utm_content, 300),
+      utm_term: s(attr.utm_term, 300),
+      campaign_id: s(attr.campaign_id, 100),
+      adset_id: s(attr.adset_id, 100),
+      ad_id: s(attr.ad_id, 100),
+      placement: s(attr.placement, 100),
+      fbclid: s(attr.fbclid, 500),
+      gclid: s(attr.gclid, 500),
+      landing_path: s(attr.landing_path, 500),
+    };
+    let { error: leadError } = await supabase.from("ad_leads").insert(lead);
+    // Session jamais enregistrée (tracking bloqué) : on garde le lead sans lien.
+    if (leadError?.code === "23503") {
+      ({ error: leadError } = await supabase
+        .from("ad_leads")
+        .insert({ ...lead, session_id: null }));
+    }
+    if (leadError) console.error("[soumission] Erreur ad_leads :", leadError);
+  } catch (err) {
+    console.error("[soumission] Erreur ad_leads (exception) :", err);
+  }
+
   const html = `
     <h2>Nouvelle soumission — technolot.ca</h2>
     <p><strong>Nom :</strong> ${escapeHtml(nom)}</p>

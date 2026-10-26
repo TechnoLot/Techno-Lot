@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/admin/RecentActivity";
 import { formatMoney } from "@/lib/admin/format";
 import type { Lot } from "@/lib/admin/types";
 
@@ -22,49 +23,63 @@ export default function TopClients({
   lots: Lot[];
   limit?: number;
 }) {
-  const clients = aggregate(lots).slice(0, limit);
-  const max = clients[0]?.spent ?? 1;
+  const all = aggregate(lots);
+  const clients = all.slice(0, limit);
+  const max = clients[0]?.spent || 1;
+  const total = all.reduce((s, c) => s + c.spent, 0) || 1;
 
   return (
-    <div className="glass p-6">
-      <h2 className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-        Top clients
-      </h2>
+    <section className="admin-card flex flex-col p-5 sm:p-6" aria-labelledby="top-clients-title">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="top-clients-title" className="admin-card-title">
+          Meilleurs clients
+        </h2>
+        <span className="text-xs text-slate-500">par montant acheté</span>
+      </div>
 
       {clients.length === 0 ? (
-        <p className="mt-6 text-sm text-slate-500">
-          Aucun lot enregistré pour cette période.
-        </p>
+        <EmptyState
+          title="Aucun client sur la période"
+          text="Les clients avec qui tu achètes des lots apparaîtront ici."
+        />
       ) : (
-        <ul className="mt-6 space-y-5">
-          {clients.map(({ name, spent, count }) => {
+        <ol className="mt-5 space-y-4">
+          {clients.map(({ name, spent, count }, i) => {
             const pct = (spent / max) * 100;
+            const share = Math.round((spent / total) * 100);
             return (
-              <li key={name} className="space-y-2">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-sm font-medium text-white">
+              <li key={name} className="group">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`w-4 shrink-0 font-display text-xs font-semibold tabular-nums ${
+                      i === 0 ? "text-accent" : "text-slate-600"
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-100">
                     {name}
                   </span>
                   <span className="shrink-0 font-display text-sm font-semibold tabular-nums text-white">
                     {formatMoney(spent)}
                   </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/5">
+                <div className="mt-2 flex items-center gap-3 pl-7">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
                     <div
-                      className="h-full rounded-full bg-accent-gradient"
-                      style={{ width: `${pct}%` }}
+                      className="h-full origin-left animate-grow-x rounded-full bg-accent-gradient opacity-80 transition-opacity group-hover:opacity-100"
+                      style={{ width: `${pct}%`, animationDelay: `${i * 60}ms` }}
                     />
                   </div>
-                  <span className="w-14 shrink-0 text-right text-xs text-slate-500 tabular-nums">
-                    {count} lot{count > 1 ? "s" : ""}
+                  <span className="w-[86px] shrink-0 text-right text-[11px] tabular-nums text-slate-500">
+                    {count} lot{count > 1 ? "s" : ""} · {share} %
                   </span>
                 </div>
               </li>
             );
           })}
-        </ul>
+        </ol>
       )}
-    </div>
+    </section>
   );
 }

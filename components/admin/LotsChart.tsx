@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -9,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { LineChart as LineChartIcon } from "lucide-react";
 import { formatMoney } from "@/lib/admin/format";
 import type { Lot, PeriodKey } from "@/lib/admin/types";
 
@@ -65,6 +67,32 @@ function buildBuckets(lots: Lot[], period: PeriodKey): Bucket[] {
   return Array.from(days.values());
 }
 
+/** Regroupe par semaine (lundi) quand la fenêtre est longue, pour lisser. */
+function groupWeekly(buckets: Bucket[]): Bucket[] {
+  const out: Bucket[] = [];
+  let cur: Bucket | null = null;
+  for (const b of buckets) {
+    const d = new Date(b.day + "T00:00:00Z");
+    if (!cur || d.getUTCDay() === 1) {
+      cur = { day: b.day, spent: 0, earned: 0 };
+      out.push(cur);
+    }
+    cur.spent += b.spent;
+    cur.earned += b.earned;
+  }
+  return out;
+}
+
+function cumulate(buckets: Bucket[]): Bucket[] {
+  let s = 0;
+  let e = 0;
+  return buckets.map((b) => {
+    s += b.spent;
+    e += b.earned;
+    return { day: b.day, spent: s, earned: e };
+  });
+}
+
 function shortDate(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
   return `${d.getUTCDate()} ${d
@@ -82,6 +110,13 @@ function longDate(iso: string): string {
   });
 }
 
+const SERIES = {
+  spent: { label: "Acheté", stroke: "rgba(203,213,225,0.75)", dot: "bg-slate-300" },
+  earned: { label: "Vendu", stroke: "rgb(94,203,51)", dot: "bg-accent" },
+} as const;
+
+type Mode = "daily" | "cumulative";
+
 export default function LotsChart({
   lots,
   period,
@@ -89,106 +124,189 @@ export default function LotsChart({
   lots: Lot[];
   period: PeriodKey;
 }) {
-  const data = buildBuckets(lots, period);
+  const [mode, setMode] = useState<Mode>("cumulative");
+  const [hidden, setHidden] = useState<{ spent: boolean; earned: boolean }>({
+    spent: false,
+    earned: false,
+  });
+
+  const { data, weekly, totals } = useMemo(() => {
+    const raw = buildBuckets(lots, period);
+    const weekly = raw.length > 100;
+    const grouped = weekly ? groupWeekly(raw) : raw;
+    const totals = raw.reduce(
+      (acc, b) => ({ spent: acc.spent + b.spent, earned: acc.earned + b.earned }),
+      { spent: 0, earned: 0 },
+    );
+    return {
+      data: mode === "cumulative" ? cumulate(grouped) : grouped,
+      weekly,
+      totals,
+    };
+  }, [lots, period, mode]);
+
+  const isEmpty = data.length === 0 || (totals.spent === 0 && totals.earned === 0);
 
   return (
-    <div className="glass p-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-4">
-        <h2 className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-          Évolution
-        </h2>
-        <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-2 text-slate-400">
-            <span className="inline-block h-2 w-2 rounded-full bg-white/70" />
-            Acheté
-          </span>
-          <span className="flex items-center gap-2 text-slate-400">
-            <span className="inline-block h-2 w-2 rounded-full bg-accent" />
-            Vente
-          </span>
+    <section className="admin-card p-5 sm:p-6" aria-labelledby="lots-chart-title">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 id="lots-chart-title" className="admin-card-title">
+            Achats et ventes
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {mode === "cumulative" ? "Montants cumulés" : weekly ? "Montants par semaine" : "Montants par jour"}{" "}
+            sur la période
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {(Object.keys(SERIES) as (keyof typeof SERIES)[]).map((key) => {
+            const s = SERIES[key];
+            const off = hidden[key];
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={!off}
+                onClick={() => setHidden((h) => ({ ...h, [key]: !h[key] }))}
+                className={`admin-focus inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-colors ${
+                  off
+                    ? "border-white/[0.05] text-slate-600"
+                    : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:border-white/15"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${off ? "bg-slate-700" : s.dot}`}
+                  aria-hidden
+                />
+                <span className="text-xs">{s.label}</span>
+                <span
+                  className={`font-display text-xs font-semibold tabular-nums ${
+                    off ? "text-slate-600" : "text-white"
+                  }`}
+                >
+                  {formatMoney(key === "spent" ? totals.spent : totals.earned)}
+                </span>
+              </button>
+            );
+          })}
+
+          <div className="admin-segment" role="group" aria-label="Mode d'affichage">
+            {(
+              [
+                ["cumulative", "Cumulé"],
+                ["daily", weekly ? "Semaine" : "Jour"],
+              ] as const
+            ).map(([m, label]) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={mode === m}
+                onClick={() => setMode(m)}
+                className={`admin-focus rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                  mode === m
+                    ? "bg-white/[0.08] text-white"
+                    : "text-slate-500 hover:text-slate-200"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 h-56 sm:h-72">
-        {data.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            Pas encore de données à afficher.
+      <div className="mt-6 h-60 sm:h-72">
+        {isEmpty ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/[0.07] text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.04] text-slate-500">
+              <LineChartIcon className="h-5 w-5" aria-hidden />
+            </span>
+            <p className="text-sm text-slate-400">Aucun achat ni vente sur cette période.</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{ top: 8, right: 4, left: -12, bottom: 0 }}
-            >
+            <AreaChart data={data} margin={{ top: 8, right: 4, left: -8, bottom: 0 }}>
               <defs>
                 <linearGradient id="spentGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.35)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  <stop offset="0%" stopColor="rgba(203,213,225,0.22)" />
+                  <stop offset="100%" stopColor="rgba(203,213,225,0)" />
                 </linearGradient>
                 <linearGradient id="earnedGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(94,203,51,0.55)" />
+                  <stop offset="0%" stopColor="rgba(94,203,51,0.4)" />
                   <stop offset="100%" stopColor="rgba(94,203,51,0)" />
                 </linearGradient>
               </defs>
               <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="rgba(255,255,255,0.05)"
+                strokeDasharray="2 6"
+                stroke="rgba(255,255,255,0.06)"
                 vertical={false}
               />
               <XAxis
                 dataKey="day"
-                tick={{ fill: "rgba(148,163,184,0.7)", fontSize: 11 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tick={{ fill: "rgba(148,163,184,0.65)", fontSize: 11 }}
+                axisLine={false}
                 tickLine={false}
                 tickFormatter={shortDate}
-                minTickGap={24}
+                minTickGap={28}
+                dy={6}
               />
               <YAxis
-                tick={{ fill: "rgba(148,163,184,0.7)", fontSize: 11 }}
-                axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                tick={{ fill: "rgba(148,163,184,0.65)", fontSize: 11 }}
+                axisLine={false}
                 tickLine={false}
-                width={48}
-                tickFormatter={(v) =>
-                  v >= 1000 ? `${Math.round(v / 1000)}k$` : `${v}$`
+                width={52}
+                tickFormatter={(v: number) =>
+                  v >= 1000 ? `${Math.round(v / 1000)} k$` : `${v} $`
                 }
               />
               <Tooltip
+                cursor={{ stroke: "rgba(255,255,255,0.12)", strokeWidth: 1 }}
                 contentStyle={{
-                  background: "rgba(6,10,20,0.95)",
-                  border: "1px solid rgba(94,203,51,0.3)",
+                  background: "rgba(10,15,28,0.96)",
+                  border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: "12px",
                   fontSize: "12px",
-                  padding: "8px 12px",
+                  padding: "10px 12px",
+                  boxShadow: "0 16px 40px -12px rgba(2,6,16,0.9)",
                 }}
-                labelStyle={{
-                  color: "rgba(148,163,184,0.9)",
-                  marginBottom: "4px",
-                }}
+                labelStyle={{ color: "rgba(148,163,184,0.9)", marginBottom: "6px" }}
                 itemStyle={{ color: "white", padding: "2px 0" }}
                 formatter={(value: number, name: string) => [
                   formatMoney(value),
-                  name === "spent" ? "Acheté" : "Vente",
+                  name === "spent" ? SERIES.spent.label : SERIES.earned.label,
                 ]}
-                labelFormatter={longDate}
+                labelFormatter={(l: string) =>
+                  weekly ? `Semaine du ${longDate(l)}` : longDate(l)
+                }
               />
-              <Area
-                type="monotone"
-                dataKey="spent"
-                stroke="rgba(255,255,255,0.65)"
-                strokeWidth={1.5}
-                fill="url(#spentGrad)"
-              />
-              <Area
-                type="monotone"
-                dataKey="earned"
-                stroke="rgb(94,203,51)"
-                strokeWidth={2}
-                fill="url(#earnedGrad)"
-              />
+              {!hidden.spent && (
+                <Area
+                  type="monotone"
+                  dataKey="spent"
+                  stroke={SERIES.spent.stroke}
+                  strokeWidth={1.5}
+                  fill="url(#spentGrad)"
+                  activeDot={{ r: 4, strokeWidth: 0, fill: "#e2e8f0" }}
+                  animationDuration={700}
+                />
+              )}
+              {!hidden.earned && (
+                <Area
+                  type="monotone"
+                  dataKey="earned"
+                  stroke={SERIES.earned.stroke}
+                  strokeWidth={2}
+                  fill="url(#earnedGrad)"
+                  activeDot={{ r: 4, strokeWidth: 0, fill: "#8BE95F" }}
+                  animationDuration={700}
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
-    </div>
+    </section>
   );
 }

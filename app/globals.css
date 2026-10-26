@@ -81,6 +81,58 @@ body {
   .eyebrow {
     @apply mb-3 inline-block font-display text-xs font-semibold uppercase tracking-[0.25em] text-accent;
   }
+
+  /* ---------- Admin (dashboard) — n'affecte pas le site public ---------- */
+
+  /* Surface de carte admin : fond légèrement dégradé, filet lumineux en
+     haut, ombre teintée nuit. Plus sobre que .glass (pas de blur). */
+  .admin-card {
+    @apply rounded-2xl border border-white/[0.07] shadow-admin-card;
+    background-image: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.015)
+    );
+    background-color: rgba(10, 15, 28, 0.6);
+  }
+
+  .admin-card-interactive {
+    @apply transition-[border-color,background-color,transform] duration-200 hover:border-white/[0.12];
+  }
+
+  /* Petit libellé de section (sentence case, pas de tracking extrême) */
+  .admin-eyebrow {
+    @apply font-display text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500;
+  }
+
+  .admin-card-title {
+    @apply font-display text-[15px] font-semibold tracking-tight text-white;
+  }
+
+  .admin-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+  }
+
+  .admin-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-slate-200 transition-[background-color,border-color,color,transform] duration-200 hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+  }
+
+  .admin-btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-xs font-semibold text-night-950 shadow-[0_6px_20px_-8px_rgba(94,203,51,0.7)] transition-[background-color,transform,box-shadow] duration-200 hover:bg-accent-bright active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+  }
+
+  /* Contrôle segmenté (périodes, filtres de statut) */
+  .admin-segment {
+    @apply inline-flex max-w-full gap-0.5 overflow-x-auto rounded-xl border border-white/[0.07] bg-night-900/70 p-1;
+    scrollbar-width: none;
+  }
+  .admin-segment::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-kbd {
+    @apply inline-flex h-5 min-w-[20px] items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-1.5 font-sans text-[10px] font-medium text-slate-400;
+  }
 }
 
 /* Orbites du visuel « économie circulaire » : l'anneau tourne, chaque

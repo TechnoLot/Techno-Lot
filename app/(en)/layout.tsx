@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import LocaleShell from "@/components/LocaleShell";
+import AdTracker from "@/components/tracking/AdTracker";
+import AdPixels from "@/components/tracking/AdPixels";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -34,5 +36,11 @@ export const metadata: Metadata = {
 export default function EnLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <LocaleShell locale="en">{children}</LocaleShell>;
+  return (
+    <>
+      <LocaleShell locale="en">{children}</LocaleShell>
+      <AdTracker />
+      <AdPixels />
+    </>
+  );
 }

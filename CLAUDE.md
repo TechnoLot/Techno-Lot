@@ -29,6 +29,14 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - Rappels de suivi : date détectée dans la note (`parse-followup-date.ts`, fuseau America/Toronto) ou délai de statut (intéressé 3 j, contacté 7 j → `FOLLOWUP_DELAY_DAYS`).
 - Conversion client : lot `source=manual, status=negotiating, purchase_price=0`, lie `contacts.lot_id`, compagnie → `research_status=converted`.
 
+## Publicités (Meta / Google Ads)
+
+- Tracking public : `lib/tracking/attribution.ts` (UTM, fbclid, gclid, ad_id… en localStorage `tl_attr`, 30 j) + `components/tracking/AdTracker.tsx` → `/api/track` → RPC SQL `track_ad_event` (SECURITY DEFINER : anon ne peut pas lire, donc pas d'upsert direct). Pixels Meta/Google chargés seulement si `NEXT_PUBLIC_*` présents.
+- Leads attribués : `/api/soumission` insère aussi dans `ad_leads` (champ caché `tl_attr` du formulaire).
+- Stats des plateformes : `lib/ads/meta.ts`, `google.ts`, `sync.ts` → `ad_metrics_daily` via POST `/api/admin/ads-sync` (admin connecté ou `Bearer CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`).
+- Dashboard : `/admin/pubs` et `/admin/pubs/[platform]/[adId]`, agrégations pures dans `lib/ads/queries.ts`. Guide des clés : `docs/PUBLICITES-SETUP.md`.
+- Constantes partagées serveur/client : jamais dans un fichier `"use client"` (ex. `lib/ads/platforms.ts`).
+
 ## Conventions
 
 - Toujours répondre à l'utilisateur en français (Québec), même s'il écrit en anglais.

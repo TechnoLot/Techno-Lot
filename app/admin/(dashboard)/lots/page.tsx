@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import LotsFilters from "@/components/admin/LotsFilters";
 import LotsTable from "@/components/admin/LotsTable";
+import PageHeader from "@/components/admin/PageHeader";
+import { formatMoney } from "@/lib/admin/format";
 import type { Lot, LotStatus } from "@/lib/admin/types";
 
 export const dynamic = "force-dynamic";
@@ -38,31 +40,30 @@ export default async function LotsListPage({
   const { data, error } = await query;
   const lots = (data ?? []) as Lot[];
 
-  return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
-      <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-            Inventaire
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
-            Lots
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            {lots.length} lot{lots.length !== 1 ? "s" : ""} affiché
-            {lots.length !== 1 ? "s" : ""}.
-          </p>
-        </div>
-        <Link
-          href="/admin/lots/nouveau"
-          className="btn-primary w-fit !px-4 !py-2.5 !text-xs"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Nouveau lot
-        </Link>
-      </header>
+  const totalSpent = lots.reduce((sum, l) => sum + Number(l.purchase_price), 0);
 
-      <div className="mb-6">
+  return (
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
+      <PageHeader
+        eyebrow="Inventaire"
+        title="Lots"
+        description={
+          <>
+            {lots.length} lot{lots.length !== 1 ? "s" : ""} affiché
+            {lots.length !== 1 ? "s" : ""}
+            {lots.length > 0 && <> · {formatMoney(totalSpent)} achetés</>}
+            {lots.length === 200 && " (200 plus récents)"}
+          </>
+        }
+        actions={
+          <Link href="/admin/lots/nouveau" className="admin-btn-accent !py-2.5">
+            <Plus className="h-4 w-4" aria-hidden />
+            Nouveau lot
+          </Link>
+        }
+      />
+
+      <div className="mb-5">
         <LotsFilters />
       </div>
 

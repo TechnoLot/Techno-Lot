@@ -31,6 +31,10 @@ const config: Config = {
         glow: "0 0 24px rgba(94, 203, 51, 0.35)",
         "glow-lg": "0 0 48px rgba(94, 203, 51, 0.45)",
         card: "0 8px 32px rgba(2, 6, 16, 0.45)",
+        "admin-card":
+          "inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 32px -16px rgba(2,6,16,0.8)",
+        "admin-pop":
+          "inset 0 1px 0 rgba(255,255,255,0.06), 0 24px 64px -20px rgba(2,6,16,0.9)",
       },
       backgroundImage: {
         "accent-gradient": "linear-gradient(120deg, #5ECB33, #34D399)",
@@ -38,8 +42,18 @@ const config: Config = {
       animation: {
         marquee: "marquee 32s linear infinite",
         aurora: "aurora 14s ease-in-out infinite alternate",
+        "fade-up": "fade-up 0.5s cubic-bezier(0.21, 0.47, 0.32, 0.98) both",
+        "grow-x": "grow-x 0.8s cubic-bezier(0.21, 0.47, 0.32, 0.98) both",
       },
       keyframes: {
+        "grow-x": {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "none" },
+        },
         marquee: {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
