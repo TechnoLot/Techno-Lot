@@ -1,0 +1,175 @@
+/* Chapitres de l'accueil : Stats, SecondeVie, Rachetons, AppelFinal.
+   transform/opacity seulement ; tout reste visible sans JS ; mouvement réduit respecté. */
+
+/* Lueur verte de l'identité Techno Lot dans une tuile bleu nuit */
+.tl-ch-glow {
+  background-image:
+    radial-gradient(110% 85% at 100% 0%, rgba(107, 214, 59, 0.24), transparent 58%),
+    radial-gradient(90% 70% at 0% 100%, rgba(52, 211, 153, 0.12), transparent 62%);
+}
+
+/* Ombre de contact sous un objet détouré (la seule ombre permise) */
+.tl-ch-ombre {
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(4, 20, 10, 0.42), transparent);
+}
+
+/* ---- Stats : l'encoche du titre fixe le décalage de la tuile bleu nuit ---- */
+@media (min-width: 1024px) {
+  .tl-ch-stats {
+    grid-template-rows: minmax(max(14vh, 7rem), auto) 1fr;
+  }
+}
+
+/* ---- Seconde vie : la phrase tient en deux lignes à toutes les largeurs ---- */
+.tl-sv-titre {
+  font-size: calc((100vw - 2.5rem) / 11.6);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.tl-sv-titre > span {
+  white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .tl-sv-titre {
+    font-size: calc((100vw - 4rem) / 11.6);
+  }
+}
+@media (min-width: 1152px) {
+  .tl-sv-titre {
+    font-size: calc((72rem - 4rem) / 11.6);
+  }
+}
+
+/* ---- Rachetons : bandes à pas de ton, sans filet ---- */
+.tl-ch-rangee {
+  background-color: rgb(31 99 12 / calc(var(--pas, 0) * 0.035));
+  transition: background-color 0.35s ease;
+}
+.tl-ch-rangee:hover,
+.tl-ch-rangee:focus-within {
+  background-color: rgb(var(--tl-vivid));
+}
+
+/* Image qui suit le curseur : seulement avec une souris, sinon vignette dans la rangée */
+.tl-ch-flotteur {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  will-change: transform;
+}
+.tl-ch-flotteur[data-on] {
+  opacity: 1;
+}
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .tl-ch-flotteur {
+    display: block;
+  }
+  .tl-ch-vignette {
+    display: none;
+  }
+}
+
+/* Flèche qui sort par la droite pendant qu'une autre entre par la gauche */
+.tl-ch-fleche {
+  position: relative;
+  overflow: hidden;
+}
+.tl-ch-fleche > svg {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-ch-fleche > svg + svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  transform: translateX(-180%);
+}
+.group:hover .tl-ch-fleche > svg:first-child,
+.group:focus-visible .tl-ch-fleche > svg:first-child {
+  transform: translateX(180%);
+}
+.group:hover .tl-ch-fleche > svg + svg,
+.group:focus-visible .tl-ch-fleche > svg + svg {
+  transform: translateX(0);
+}
+
+/* ---- Appel final : tuiles latérales coupées par les bords de l'écran ---- */
+.tl-af {
+  /* Distance entre le bord extérieur d'une cellule latérale et le bord de l'écran */
+  --tl-af-marge: 1.25rem;
+}
+@media (min-width: 640px) {
+  .tl-af {
+    --tl-af-marge: 2rem;
+  }
+}
+@media (min-width: 1152px) {
+  .tl-af {
+    --tl-af-marge: calc((100vw - 72rem) / 2 + 2rem);
+  }
+}
+.tl-af-cote {
+  position: relative;
+}
+.tl-af-tuile,
+.tl-af-visible {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.tl-af-tuile {
+  width: calc(100% + 50vw);
+  border-radius: 20px;
+}
+.tl-af-cote--gauche .tl-af-tuile {
+  right: 0;
+}
+.tl-af-cote--droite .tl-af-tuile {
+  left: 0;
+}
+/* Partie visible de la tuile (jusqu'au bord de l'écran) : la palette s'y centre */
+.tl-af-visible {
+  left: 0;
+  width: calc(100% + var(--tl-af-marge));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* La palette flotte doucement ; son ombre se resserre quand elle monte */
+@keyframes tl-ch-flotte {
+  from {
+    transform: translateY(-6px);
+  }
+  to {
+    transform: translateY(6px);
+  }
+}
+@keyframes tl-ch-flotte-ombre {
+  from {
+    transform: scaleX(0.84);
+    opacity: 0.65;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+.tl-ch-flotte {
+  animation: tl-ch-flotte 3.4s ease-in-out infinite alternate;
+}
+.tl-ch-flotte-ombre {
+  animation: tl-ch-flotte-ombre 3.4s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tl-ch-flotte,
+  .tl-ch-flotte-ombre {
+    animation: none;
+  }
+  .tl-ch-rangee,
+  .tl-ch-flotteur,
+  .tl-ch-fleche > svg {
+    transition: none;
+  }
+}

@@ -1,4 +1,4 @@
-import type { Locale } from "@/lib/i18n";
+import { localePath, type Locale } from "@/lib/i18n";
 
 export type PostSection = {
   heading?: string;
@@ -229,4 +229,280 @@ export function getPosts(locale: Locale): Post[] {
 
 export function getPost(locale: Locale, slug: string): Post | undefined {
   return postsByLocale[locale].find((p) => p.slug === slug);
+}
+
+/* ------------------------------------------------------------------ */
+/* Articles Soro (app.trysoro.com)                                      */
+/* ------------------------------------------------------------------ */
+/*
+ * Les articles rédigés sur app.trysoro.com sont publiés par le script
+ * d'intégration officiel : il contient la liste complète des articles
+ * (`var SORO_ARTICLES = [...]`, sans le contenu) et le contenu HTML de
+ * chaque article est servi en JSON public par
+ * /api/embed/<jeton>/article/<id> (CORS ouvert, cache 1 h).
+ * On lit ces deux sources côté serveur avec revalidation d'une heure ;
+ * si Soro est indisponible ou change de format, `soroOk` vaut false et
+ * la page affiche le widget officiel en repli.
+ */
+
+const SORO_TOKEN = "bd88392c-6733-413d-81de-c32ad9627262";
+const SORO_BASE = "https://app.trysoro.com";
+const SORO_REVALIDATE = 3600;
+
+type SoroRaw = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  isoDate: string;
+  image: string | null;
+};
+
+/** Article tel qu'affiché dans les listes du blog (local ou Soro). */
+export type PostSummary = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  isoDate: string;
+  dateLabel: string;
+  image: string | null;
+  imageAlt: string;
+  /** Temps de lecture (connu seulement pour les articles locaux dans les listes) */
+  readingTime?: string;
+  source: "local" | "soro";
+  /** Langue du contenu (les articles Soro sont rédigés en français) */
+  lang: Locale;
+  soroId?: string;
+};
+
+export function formatPostDate(locale: Locale, iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  // UTC : même date que celle affichée par Soro
+  return new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(d);
+}
+
+export function readingTimeLabel(locale: Locale, minutes: number): string {
+  const m = Math.max(1, Math.round(minutes));
+  return locale === "fr" ? `${m} min de lecture` : `${m} min read`;
+}
+
+async function fetchSoroList(): Promise<SoroRaw[] | null> {
+  try {
+    const res = await fetch(`${SORO_BASE}/api/embed/${SORO_TOKEN}?theme=dark`, {
+      next: { revalidate: SORO_REVALIDATE },
+    });
+    if (!res.ok) return null;
+    const js = await res.text();
+    const match = js.match(/var\s+SORO_ARTICLES\s*=\s*(\[[\s\S]*?\]);\s*\n/);
+    if (!match) return null;
+    const data: unknown = JSON.parse(match[1]);
+    if (!Array.isArray(data)) return null;
+    return data.filter(
+      (a): a is SoroRaw =>
+        !!a &&
+        typeof a.id === "string" &&
+        typeof a.slug === "string" &&
+        /^[a-z0-9-]+$/.test(a.slug) &&
+        typeof a.title === "string" &&
+        typeof a.isoDate === "string",
+    );
+  } catch {
+    return null;
+  }
+}
+
+function localSummary(post: Post, locale: Locale): PostSummary {
+  return {
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    isoDate: post.date,
+    dateLabel: post.dateLabel,
+    image: post.cover,
+    imageAlt: post.coverAlt,
+    readingTime: post.readingTime,
+    source: "local",
+    lang: locale,
+  };
+}
+
+/**
+ * Tous les articles du blog, du plus récent au plus ancien :
+ * articles locaux (ci-dessus) + articles publiés sur Soro.
+ */
+export async function getBlogFeed(
+  locale: Locale,
+): Promise<{ posts: PostSummary[]; soroOk: boolean }> {
+  const local = postsByLocale[locale].map((p) => localSummary(p, locale));
+  const soro = await fetchSoroList();
+  const localSlugs = new Set(local.map((p) => p.slug));
+  const fromSoro: PostSummary[] = (soro ?? [])
+    .filter((a) => !localSlugs.has(a.slug))
+    .map((a) => ({
+      slug: a.slug,
+      title: a.title,
+      excerpt: typeof a.excerpt === "string" ? a.excerpt : "",
+      isoDate: a.isoDate,
+      dateLabel: formatPostDate(locale, a.isoDate),
+      image: typeof a.image === "string" && a.image.startsWith("https://") ? a.image : null,
+      imageAlt: "",
+      source: "soro" as const,
+      lang: "fr" as const,
+      soroId: a.id,
+    }));
+  const posts = [...local, ...fromSoro].sort(
+    (a, b) => new Date(b.isoDate).getTime() - new Date(a.isoDate).getTime(),
+  );
+  return { posts, soroOk: soro !== null };
+}
+
+export type ArticleHeading = { id: string; text: string };
+
+export type SoroArticle = {
+  summary: PostSummary;
+  html: string;
+  headings: ArticleHeading[];
+  minutes: number;
+};
+
+/** Article Soro complet (HTML assaini), ou null s'il n'existe pas ou si Soro est indisponible. */
+export async function getSoroArticle(
+  locale: Locale,
+  slug: string,
+): Promise<SoroArticle | null> {
+  const { posts } = await getBlogFeed(locale);
+  const summary = posts.find((p) => p.source === "soro" && p.slug === slug);
+  if (!summary?.soroId) return null;
+  try {
+    const res = await fetch(
+      `${SORO_BASE}/api/embed/${SORO_TOKEN}/article/${encodeURIComponent(summary.soroId)}`,
+      { next: { revalidate: SORO_REVALIDATE } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: unknown };
+    if (typeof data.content !== "string" || !data.content.trim()) return null;
+    const { html, headings, words } = sanitizeArticleHtml(data.content, locale);
+    return { summary, html, headings, minutes: words / 220 };
+  } catch {
+    return null;
+  }
+}
+
+export function slugifyHeading(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+const ALLOWED_TAGS = new Set([
+  "p", "h2", "h3", "h4", "ul", "ol", "li", "a", "strong", "em", "b", "i",
+  "blockquote", "br", "hr", "table", "thead", "tbody", "tr", "th", "td",
+  "img", "figure", "figcaption", "code", "pre", "sup", "sub",
+]);
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+
+function getAttr(attrs: string, name: string): string | null {
+  const m = attrs.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
+  if (!m) return null;
+  return decodeEntities(m[2] ?? m[3] ?? m[4] ?? "");
+}
+
+/**
+ * Assainit le HTML venu de Soro (liste blanche de balises, attributs
+ * reconstruits), rend relatifs les liens vers technolot.ca, ouvre les liens
+ * externes dans un nouvel onglet et donne un id aux intertitres h2 (sommaire).
+ */
+export function sanitizeArticleHtml(
+  input: string,
+  locale: Locale,
+): { html: string; headings: ArticleHeading[]; words: number } {
+  let s = input.replace(/<!--[\s\S]*?-->/g, "");
+  s = s.replace(
+    /<(script|style|iframe|object|embed|form|noscript|template|svg|math|textarea|select)\b[\s\S]*?<\/\1\s*>/gi,
+    "",
+  );
+  // Le h1 de la page est le titre : un éventuel h1 du corps devient h2
+  s = s.replace(/<(\/?)h1\b/gi, "<$1h2");
+
+  const headings: ArticleHeading[] = [];
+  const used = new Set<string>();
+  s = s.replace(/<h2\b[^>]*>([\s\S]*?)<\/h2\s*>/gi, (_m, inner: string) => {
+    const text = decodeEntities(inner.replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
+    const base = slugifyHeading(text) || "section";
+    let id = base;
+    let n = 2;
+    while (used.has(id)) id = `${base}-${n++}`;
+    used.add(id);
+    headings.push({ id, text });
+    return `<h2 data-anchor="${id}">${inner}</h2>`;
+  });
+
+  s = s.replace(
+    /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
+    (_m, close: string, rawTag: string, attrs: string) => {
+      const tag = rawTag.toLowerCase();
+      if (!ALLOWED_TAGS.has(tag)) return "";
+      if (close) return tag === "br" || tag === "hr" || tag === "img" ? "" : `</${tag}>`;
+      if (tag === "h2") {
+        const id = getAttr(attrs, "data-anchor");
+        return id ? `<h2 id="${escapeAttr(id)}">` : "<h2>";
+      }
+      if (tag === "a") {
+        let href = (getAttr(attrs, "href") ?? "").trim();
+        const own = href.match(/^https?:\/\/(?:www\.)?technolot\.ca(\/[^\s"'<>]*)?$/i);
+        if (own) {
+          const path = own[1] && own[1] !== "/" ? own[1] : "/";
+          href = /^\/en(\/|$)/.test(path) ? path : localePath(locale, path);
+          return `<a href="${escapeAttr(href)}">`;
+        }
+        if (/^https?:\/\//i.test(href)) {
+          return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">`;
+        }
+        if (/^(\/(?!\/)|#|mailto:|tel:)/i.test(href)) return `<a href="${escapeAttr(href)}">`;
+        return "<a>";
+      }
+      if (tag === "img") {
+        const src = (getAttr(attrs, "src") ?? "").trim();
+        if (!/^https:\/\//i.test(src)) return "";
+        const alt = getAttr(attrs, "alt") ?? "";
+        return `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" loading="lazy" decoding="async">`;
+      }
+      if (tag === "th" || tag === "td") {
+        const span = getAttr(attrs, "colspan");
+        return span && /^\d{1,2}$/.test(span) ? `<${tag} colspan="${span}">` : `<${tag}>`;
+      }
+      return `<${tag}>`;
+    },
+  );
+  // Balise non fermée en fin de texte : supprimée ; tout autre « < » isolé est neutralisé
+  s = s.replace(/<[^>]*$/, "");
+  s = s.replace(/<(?!\/?(?:p|h2|h3|h4|ul|ol|li|a|strong|em|b|i|blockquote|br|hr|table|thead|tbody|tr|th|td|img|figure|figcaption|code|pre|sup|sub)\b)/g, "&lt;");
+
+  const words = decodeEntities(s.replace(/<[^>]+>/g, " "))
+    .split(/\s+/)
+    .filter(Boolean).length;
+  return { html: s, headings, words };
 }

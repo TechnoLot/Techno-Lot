@@ -1,9 +1,12 @@
 import type { MetadataRoute } from "next";
-import { getPosts } from "@/lib/posts";
+import { getBlogFeed, getPosts } from "@/lib/posts";
 import { site } from "@/lib/site";
 import { localePath, locales } from "@/lib/i18n";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Les articles Soro changent : le plan du site est régénéré au plus toutes les heures.
+export const revalidate = 3600;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const paths = [
     "/",
     "/a-propos",
@@ -37,5 +40,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })),
   );
 
-  return [...pages, ...blogPosts];
+  // Articles publiés sur Soro : rédigés en français, leur version /en a pour
+  // URL canonique la version française, seule listée ici.
+  const { posts } = await getBlogFeed("fr");
+  const soroPosts = posts
+    .filter((post) => post.source === "soro")
+    .map((post) => ({
+      url: `${site.url}${localePath("fr", `/blog/${post.slug}`)}`,
+      lastModified: new Date(post.isoDate),
+      changeFrequency: "yearly" as const,
+      priority: 0.6,
+    }));
+
+  return [...pages, ...blogPosts, ...soroPosts];
 }

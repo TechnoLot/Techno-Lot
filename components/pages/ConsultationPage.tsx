@@ -1,135 +1,124 @@
-import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarCheck,
-  ClipboardList,
-  HandCoins,
-  Mail,
-} from "lucide-react";
-import PageHero from "@/components/PageHero";
-import Reveal from "@/components/Reveal";
-import Timeline from "@/components/Timeline";
-import CtaBanner from "@/components/CtaBanner";
-import { getDict, localePath, type Locale } from "@/lib/i18n";
-
-const iconClass = "h-5 w-5 text-accent";
-
-const stepIcons = [
-  <ClipboardList key="i0" className={iconClass} aria-hidden />,
-  <Mail key="i1" className={iconClass} aria-hidden />,
-  <CalendarCheck key="i2" className={iconClass} aria-hidden />,
-  <HandCoins key="i3" className={iconClass} aria-hidden />,
-];
+import Image from "next/image";
+import { PageHero } from "@/components/site/PageHero";
+import { CtaBanner } from "@/components/site/CtaBanner";
+import { Reveal } from "@/components/site/Reveal";
+import { Counter } from "@/components/site/Counter";
+import { InkButtonLink, PrimaryButtonLink } from "@/components/site/Button";
+import { localePath, type Locale } from "@/lib/i18n";
+import { B, Chapter, ChapterTitle } from "./services/Chapter";
+import { Parallax } from "./services/Parallax";
+import { PinnedSteps } from "./services/PinnedSteps";
+import { ObjectFrame, OfferFrame, PaymentFrame } from "./services/scenes";
+import "./pages-services.css";
 
 const content = {
   fr: {
-    eyebrow: "Comment ça marche",
     title: "Estimation de votre lot",
-    subtitle: "Un processus simple, rapide et sans engagement.",
-    steps: [
-      {
-        title: "Décrivez votre lot",
-        text: "Contactez-nous en remplissant la soumission, décrivez le lot de matériel électronique concerné et joignez des photos et un inventaire complet (ex. document Excel).",
-      },
-      {
-        title: "Recevez notre offre",
-        text: "Vous recevez notre offre par courriel dans les 24 heures.",
-      },
-      {
-        title: "Récupération sans frais",
-        text: "Si vous êtes d'accord, nous prenons rendez-vous pour la récupération du lot sans aucuns frais.",
-      },
-      {
-        title: "Paiement de la moitié sur place",
-        text: (
-          <div className="space-y-2">
-            <p>
-              La <strong className="font-semibold text-white">moitié</strong> du
-              paiement sera émis lors du ramassage.
-            </p>
-            <p>
-              Nous disposons ensuite d&apos;un{" "}
-              <strong className="font-semibold text-white">
-                maximum de 15 jours ouvrables
-              </strong>{" "}
-              pour inspecter le matériel afin de nous assurer de sa{" "}
-              <strong className="font-semibold text-white">fonctionnalité</strong>{" "}
-              et de sa{" "}
-              <strong className="font-semibold text-white">
-                condition esthétique
-              </strong>
-              .
-            </p>
-            <p>
-              Le solde vous est versé après inspection,{" "}
-              <strong className="font-semibold text-white">sans délai</strong> ;
-              sinon, nous ajustons l&apos;offre en{" "}
-              <strong className="font-semibold text-white">conséquence</strong>.
-            </p>
-          </div>
-        ),
-      },
+    intro: "Un processus simple, rapide et sans engagement.",
+    heroCta: "Faire une soumission",
+    figures: [
+      { value: 24, suffix: " h", label: "pour recevoir notre offre par courriel" },
+      { word: "0 $", label: "de frais pour la récupération du lot" },
+      { value: 50, suffix: " %", label: "du paiement émis dès le ramassage" },
     ],
-    boxTitle: "Pas le temps de procéder à un inventaire ?",
-    boxText:
-      "Pour les volumes importants, nous pouvons envoyer un expert sur place pour estimer le lot. Il est aussi possible de convenir des modalités pratiques directement sur place.",
-    boxLink: "Découvrez ce que nous rachetons",
-    ctaTitle: "Prêt à faire estimer votre lot ?",
-    ctaText:
-      "Remplissez notre formulaire de soumission et recevez notre offre dans un délai de 24 heures.",
+    steps: {
+      title: "Les étapes de l'estimation",
+      intro: "De votre description à votre premier paiement, en quatre temps.",
+      tags: ["Photos", "Inventaire Excel"],
+      offerLabel: "Votre offre",
+      offerBig: "24 h",
+      offerCaption: "Notre offre arrive dans votre boîte courriel.",
+      payCaption: "au ramassage",
+      payNote: "Inspection : 15 jours ouvrables max.",
+      items: [
+        {
+          title: "Décrivez votre lot",
+          text: "Remplissez la soumission en décrivant le lot de matériel électronique concerné, et joignez des photos ainsi qu'un inventaire complet (ex. document Excel).",
+        },
+        { title: "Recevez notre offre", text: "Vous recevez notre offre par courriel dans les 24 heures." },
+        {
+          title: "Récupération sans frais",
+          text: "Si l'offre vous convient, nous prenons rendez-vous pour la récupération du lot, sans aucuns frais.",
+        },
+        {
+          title: "Paiement de la moitié sur place",
+          text: (
+            <div className="space-y-2">
+              <p>
+                La <B>moitié</B> du paiement est émise lors du ramassage.
+              </p>
+              <p>
+                Nous disposons ensuite d&apos;un <B>maximum de 15 jours ouvrables</B> pour inspecter le matériel et nous assurer de
+                sa <B>fonctionnalité</B> et de sa <B>condition esthétique</B>.
+              </p>
+              <p>
+                Le solde vous est versé après l&apos;inspection, <B>sans délai</B> ; sinon, nous ajustons l&apos;offre en{" "}
+                <B>conséquence</B>.
+              </p>
+            </div>
+          ),
+        },
+      ],
+    },
+    box: {
+      title: "Pas le temps de procéder à un inventaire ?",
+      text: "Pour les volumes importants, nous pouvons envoyer un expert sur place pour estimer le lot. Il est aussi possible de convenir des modalités pratiques directement sur place.",
+      link: "Découvrez ce que nous rachetons",
+      alt: "Équipements réseau d'entreprise",
+    },
+    ctaTitle: "Prêt à faire estimer votre lot ?",
+    ctaText: "Remplissez notre formulaire de soumission et recevez notre offre dans un délai de 24 heures.",
   },
   en: {
-    eyebrow: "How it works",
     title: "Get your lot appraised",
-    subtitle: "A simple, fast, no-obligation process.",
-    steps: [
-      {
-        title: "Describe your lot",
-        text: "Contact us by filling out the quote form, describe the lot of electronic equipment and attach photos and a complete inventory (e.g. an Excel document).",
-      },
-      {
-        title: "Receive our offer",
-        text: "You receive our offer by email within 24 hours.",
-      },
-      {
-        title: "Free pickup",
-        text: "If you agree, we schedule an appointment to pick up the lot at no charge.",
-      },
-      {
-        title: "Half paid on site",
-        text: (
-          <div className="space-y-2">
-            <p>
-              <strong className="font-semibold text-white">Half</strong> of the
-              payment is issued at pickup.
-            </p>
-            <p>
-              We then have{" "}
-              <strong className="font-semibold text-white">
-                up to 15 business days
-              </strong>{" "}
-              to inspect the equipment to confirm its{" "}
-              <strong className="font-semibold text-white">functionality</strong>{" "}
-              and{" "}
-              <strong className="font-semibold text-white">
-                cosmetic condition
-              </strong>
-              .
-            </p>
-            <p>
-              The balance is paid{" "}
-              <strong className="font-semibold text-white">immediately</strong>{" "}
-              after inspection; otherwise, we adjust the offer{" "}
-              <strong className="font-semibold text-white">accordingly</strong>.
-            </p>
-          </div>
-        ),
-      },
+    intro: "A simple, fast, no-obligation process.",
+    heroCta: "Get a quote",
+    figures: [
+      { value: 24, suffix: " h", label: "to receive our offer by email" },
+      { word: "$0", label: "in fees to pick up the lot" },
+      { value: 50, suffix: "%", label: "of the payment issued at pickup" },
     ],
-    boxTitle: "No time to build an inventory?",
-    boxText:
-      "For large volumes, we can send an expert on site to appraise the lot. Practical arrangements can also be agreed upon directly on site.",
-    boxLink: "See what we buy",
+    steps: {
+      title: "How the appraisal works",
+      intro: "From your description to your first payment, in four steps.",
+      tags: ["Photos", "Excel inventory"],
+      offerLabel: "Your offer",
+      offerBig: "24 h",
+      offerCaption: "Our offer lands in your inbox.",
+      payCaption: "at pickup",
+      payNote: "Inspection: 15 business days max.",
+      items: [
+        {
+          title: "Describe your lot",
+          text: "Fill out the quote form describing the lot of electronic equipment, and attach photos and a complete inventory (e.g. an Excel document).",
+        },
+        { title: "Receive our offer", text: "You receive our offer by email within 24 hours." },
+        { title: "Free pickup", text: "If the offer suits you, we schedule an appointment to pick up the lot at no charge." },
+        {
+          title: "Half paid on site",
+          text: (
+            <div className="space-y-2">
+              <p>
+                <B>Half</B> of the payment is issued at pickup.
+              </p>
+              <p>
+                We then have <B>up to 15 business days</B> to inspect the equipment and confirm its <B>functionality</B> and{" "}
+                <B>cosmetic condition</B>.
+              </p>
+              <p>
+                The balance is paid <B>immediately</B> after inspection; otherwise, we adjust the offer <B>accordingly</B>.
+              </p>
+            </div>
+          ),
+        },
+      ],
+    },
+    box: {
+      title: "No time to build an inventory?",
+      text: "For large volumes, we can send an expert on site to appraise the lot. Practical arrangements can also be agreed upon directly on site.",
+      link: "See what we buy",
+      alt: "Business network equipment",
+    },
     ctaTitle: "Ready to have your lot appraised?",
     ctaText: "Fill out our quote form and receive our offer within 24 hours.",
   },
@@ -137,44 +126,87 @@ const content = {
 
 export default function ConsultationPage({ locale }: { locale: Locale }) {
   const t = content[locale];
-  const dict = getDict(locale);
-  const steps = t.steps.map((step, i) => ({ ...step, icon: stepIcons[i] }));
+  const s = t.steps;
 
   return (
     <>
       <PageHero
-        eyebrow={t.eyebrow}
         title={t.title}
-        subtitle={t.subtitle}
-        image="/photos/clavier.jpg"
-      />
+        intro={t.intro}
+        image={{ kind: "object", src: "/images/services/soumission.webp", width: 88 }}
+      >
+        <div className="mt-8">
+          <PrimaryButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</PrimaryButtonLink>
+        </div>
+      </PageHero>
 
-      <section className="container-site pb-16">
-        <div className="mx-auto max-w-2xl">
-          <Timeline steps={steps} stepLabel={dict.timeline.step} />
+      {/* 1. Lime : trois chiffres clés, compteurs */}
+      <section data-theme="lime" aria-label={t.title} className="relative overflow-clip py-14 sm:py-20">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+          <ul className="grid gap-10 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-ink/20">
+            {t.figures.map((f, i) => (
+              <li key={f.label} className="sm:px-8 sm:first:pl-0 sm:last:pr-0">
+                <Reveal delay={i * 0.09}>
+                  {"value" in f && typeof f.value === "number" ? (
+                    <Counter
+                      value={f.value}
+                      suffix={f.suffix}
+                      plain
+                      locale={locale}
+                      className="block font-display text-[clamp(3.5rem,7.5vw,6rem)] font-bold leading-none tracking-[-0.04em] text-ink"
+                    />
+                  ) : (
+                    <span className="block font-display text-[clamp(3.5rem,7.5vw,6rem)] font-bold leading-none tracking-[-0.04em] text-ink">
+                      {"word" in f ? f.word : null}
+                    </span>
+                  )}
+                  <span className="mt-3 block max-w-[16rem] text-base leading-snug text-moss">{f.label}</span>
+                </Reveal>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      <section className="container-site pb-8">
-        <Reveal className="mx-auto max-w-3xl">
-          <div className="glass p-8 text-center">
-            <h2 className="font-display text-xl font-semibold text-white">
-              {t.boxTitle}
-            </h2>
-            <p className="mt-4 leading-relaxed text-slate-300">{t.boxText}</p>
-            <Link
-              href={localePath(locale, "/achat-de-lot-description")}
-              className="group mt-6 inline-flex items-center gap-2 font-display text-sm font-semibold text-accent transition-colors hover:text-accent-bright"
-            >
-              {t.boxLink}
-              <ArrowRight
-                className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                aria-hidden
-              />
-            </Link>
+      {/* 2. Bleu nuit, épinglé : les quatre étapes de l'estimation */}
+      <PinnedSteps
+        theme="night"
+        glow="both"
+        heading={s.title}
+        intro={s.intro}
+        steps={s.items}
+        frames={[
+          <ObjectFrame key="a" src="/images/services/soumission.webp" w={827} h={408} width="66%" tags={s.tags} />,
+          <OfferFrame key="b" label={s.offerLabel} big={s.offerBig} caption={s.offerCaption} />,
+          <ObjectFrame key="c" src="/images/camion/camion-techno-lot.webp" w={1200} h={497} width="86%" />,
+          <PaymentFrame key="d" value={locale === "fr" ? "50 %" : "50%"} caption={s.payCaption} note={s.payNote} />,
+        ]}
+      />
+
+      {/* 3. Menthe : pas le temps de faire l'inventaire */}
+      <Chapter theme="mint" glow="right" aria-labelledby="estimation-inventaire">
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-center lg:gap-16">
+          <div className="lg:col-span-7">
+            <ChapterTitle id="estimation-inventaire">{t.box.title}</ChapterTitle>
+            <Reveal delay={0.1}>
+              <p className="mt-6 max-w-xl text-base leading-relaxed text-moss sm:text-lg">{t.box.text}</p>
+            </Reveal>
+            <Reveal delay={0.18} className="mt-8">
+              <InkButtonLink href={localePath(locale, "/achat-de-lot-description")}>{t.box.link}</InkButtonLink>
+            </Reveal>
           </div>
-        </Reveal>
-      </section>
+          <Parallax amount={60} className="mx-auto w-full max-w-[360px] lg:col-span-5 lg:max-w-none">
+            <Image
+              src="/images/services/reseau.webp"
+              alt={t.box.alt}
+              width={1000}
+              height={538}
+              sizes="(max-width: 1024px) 360px, 440px"
+              className="h-auto w-full drop-shadow-[0_30px_30px_rgba(14,58,32,0.25)]"
+            />
+          </Parallax>
+        </div>
+      </Chapter>
 
       <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} />
     </>

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import BlogIndexPage from "@/components/pages/BlogIndexPage";
 
+// Liste des articles Soro relue au plus toutes les heures
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: "Blog",
   description:

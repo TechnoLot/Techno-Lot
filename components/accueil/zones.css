@@ -1,0 +1,395 @@
+/* ------------------------------------------------------------------ */
+/* Chapitre « Partout au Québec » : carte interactive (zones-scene.tsx) */
+/* Couleurs : jetons de app/site.css (--tl-deep, --tl-vivid, --tl-ink…) */
+/* ------------------------------------------------------------------ */
+
+/* Épinglage (bureau) : 100 vh de scène + ≈ 150 vh de défilement */
+@media (min-width: 1024px) {
+  .zones-track {
+    height: 250vh;
+  }
+  .zones-pin {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    min-height: 640px;
+    overflow: hidden;
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .zones-track {
+    height: auto;
+  }
+  .zones-pin {
+    position: static;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+}
+
+/* Cadre de la carte : proportions du viewBox (840 × 1080) */
+.zc-frame {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+  aspect-ratio: 840 / 1080;
+  overflow: hidden;
+  border-radius: 28px;
+  background-color: rgb(var(--tl-surface-2));
+}
+@media (min-width: 1024px) {
+  .zc-frame {
+    max-width: none;
+    width: min(100%, calc((100svh - var(--site-header-h, 113px) - 4rem) * 0.7778), 600px);
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .zc-frame {
+    width: min(100%, 560px);
+  }
+}
+
+.zc-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --zc-sw = 1 px écran exprimé en unités de carte (mis à jour au zoom) */
+.zc-land {
+  fill: #ffffff;
+}
+.zc-outline {
+  fill: none;
+  stroke: rgb(var(--tl-deep) / 0.38);
+  stroke-width: calc(var(--zc-sw, 1.5) * 1px);
+  stroke-linejoin: round;
+}
+.zc-fill {
+  fill: rgb(var(--tl-vivid));
+}
+.zc-front {
+  fill: none;
+  stroke: rgb(var(--tl-deep) / 0.45);
+  stroke-width: calc(var(--zc-sw, 1.5) * 1.5px);
+  transition: opacity 0.4s ease;
+}
+.zc-route {
+  fill: none;
+  stroke: rgb(var(--tl-deep));
+  stroke-width: calc(var(--zc-sw, 1.5) * 2px);
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+  transition: opacity 0.25s ease, stroke-width 0.25s ease;
+}
+.zc[data-actif] .zc-route {
+  opacity: 0.3;
+}
+.zc[data-actif] .zc-route[data-on] {
+  opacity: 1;
+  stroke-width: calc(var(--zc-sw, 1.5) * 3.5px);
+}
+
+/* Couche HTML : villes, têtes de trajet, repère du siège social */
+.zc-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.zc-cities {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.zc-city {
+  position: absolute;
+  z-index: 1;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+.zc-city[data-on] {
+  z-index: 4;
+}
+.zc-hit {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.zc-hit:focus-visible {
+  outline: 2px solid rgb(var(--tl-deep));
+  outline-offset: 1px;
+}
+
+.zc-dot {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background-color: rgb(var(--tl-deep) / 0.3);
+  transform: scale(0.62);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease;
+}
+.zc-city[data-lit="1"] .zc-dot {
+  background-color: rgb(var(--tl-deep));
+  transform: scale(1);
+}
+.zc-city[data-lit="1"] .zc-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid rgb(var(--tl-deep));
+  border-radius: 999px;
+  animation: zc-ping 0.9s ease-out 1 both;
+}
+.zc-city[data-on] .zc-dot {
+  background-color: rgb(var(--tl-deep));
+  transform: scale(1.35);
+}
+
+.zc-lbl {
+  position: absolute;
+  top: 50%;
+  padding: 4px 8px;
+  border: 1px solid rgb(var(--tl-deep) / 0.14);
+  border-radius: 999px;
+  background-color: #ffffff;
+  color: #0a0a0a;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(var(--zc-lx, -4px), -50%);
+  transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease, color 0.2s ease;
+}
+/* positions relatives au bouton (28 px) : l'étiquette commence à 16 px du centre du point */
+.zc-city[data-side="r"] .zc-lbl {
+  left: calc(100% + 2px);
+  --zc-lx: -4px;
+}
+.zc-city[data-side="l"] .zc-lbl {
+  right: calc(100% + 2px);
+  --zc-lx: 4px;
+}
+.zc-city[data-side="t"] .zc-lbl {
+  top: auto;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+}
+.zc-city[data-lbl="1"] .zc-lbl,
+.zc-city[data-on] .zc-lbl {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.zc-city[data-side="t"][data-lbl="1"] .zc-lbl,
+.zc-city[data-side="t"][data-on] .zc-lbl {
+  transform: translate(-50%, 0);
+}
+.zc-city[data-on] .zc-lbl {
+  border-color: transparent;
+  background-color: rgb(var(--tl-deep));
+  color: #ffffff;
+}
+
+.zc-head {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border: 2px solid rgb(var(--tl-deep));
+  border-radius: 999px;
+  background-color: rgb(var(--tl-vivid));
+  opacity: 0;
+  will-change: transform;
+}
+
+/* Repère « Techno Lot · Mascouche » : pastille camion + étiquette reliée par un filet */
+.zc-hq {
+  position: absolute;
+  z-index: 3;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.zc-hq-pin {
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background-color: rgb(var(--tl-deep));
+  color: rgb(var(--tl-vivid));
+}
+.zc-hq-pin::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid rgb(var(--tl-deep) / 0.5);
+  border-radius: 999px;
+  animation: zc-ping 2.6s ease-out infinite;
+}
+.zc-hq-lead {
+  position: absolute;
+  left: 0;
+  top: -0.75px;
+  width: 42px;
+  height: 1.5px;
+  background-color: rgb(var(--tl-deep));
+  transform-origin: 0 50%;
+  transition: opacity 0.35s ease;
+}
+.zc-hq-lead-nw {
+  transform: rotate(-135deg);
+}
+.zc-hq-lead-se {
+  width: 46px;
+  transform: rotate(45deg);
+}
+.zc-hq-tag {
+  position: absolute;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background-color: rgb(var(--tl-deep));
+  color: rgb(255 255 255 / 0.85);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  transition: opacity 0.35s ease;
+}
+.zc-hq-tag strong {
+  color: #ffffff;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+.zc-hq-tag-nw {
+  right: 29px;
+  bottom: 29px;
+}
+.zc-hq-tag-se {
+  left: 32px;
+  top: 32px;
+}
+.zc-hq[data-tag="nw"] .zc-hq-tag-se,
+.zc-hq[data-tag="nw"] .zc-hq-lead-se,
+.zc-hq[data-tag="se"] .zc-hq-tag-nw,
+.zc-hq[data-tag="se"] .zc-hq-lead-nw {
+  opacity: 0;
+}
+
+@keyframes zc-ping {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+
+/* Mobile / tablette : carte sans zoom, moins d'étiquettes, repères plus petits */
+@media (max-width: 1023px) {
+  .zc-city[data-m="0"]:not([data-on]) .zc-lbl {
+    opacity: 0;
+  }
+  .zc-city[data-mside="t"] .zc-lbl {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translate(-50%, 4px);
+  }
+  .zc-city[data-mside="t"][data-lbl="1"] .zc-lbl,
+  .zc-city[data-mside="t"][data-on] .zc-lbl {
+    transform: translate(-50%, 0);
+  }
+  .zc-hit {
+    left: -12px;
+    top: -12px;
+    width: 24px;
+    height: 24px;
+  }
+  .zc-dot {
+    width: 10px;
+    height: 10px;
+    border-width: 1.5px;
+  }
+  .zc-lbl {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+  .zc-hq-pin {
+    left: -11px;
+    top: -11px;
+    width: 22px;
+    height: 22px;
+    border-width: 1.5px;
+  }
+  .zc-hq-lead {
+    width: 28px;
+  }
+  .zc-hq-tag {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .zc-hq-tag strong {
+    font-size: 12px;
+  }
+  .zc-hq-tag-nw {
+    right: 19px;
+    bottom: 19px;
+  }
+  .zc-hq-tag-se {
+    left: 19px;
+    top: 19px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zc-route,
+  .zc-front,
+  .zc-dot,
+  .zc-lbl,
+  .zc-hq-lead,
+  .zc-hq-tag {
+    transition: none;
+  }
+  .zc-city[data-lit="1"] .zc-dot::after,
+  .zc-hq-pin::after {
+    animation: none;
+    opacity: 0;
+  }
+}

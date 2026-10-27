@@ -53,7 +53,12 @@ export async function POST(request: Request) {
     String(data.get("locale") ?? "fr") === "en" ? messages.en : messages.fr;
 
   // Honeypot : un robot qui remplit ce champ est ignoré silencieusement.
-  if (String(data.get("entreprise_site") ?? "").trim() !== "") {
+  // « tl_verif » est le nom actuel ; « entreprise_site » reste refusé pour les
+  // robots qui ont mémorisé l'ancien formulaire.
+  const piege = ["tl_verif", "entreprise_site"].some(
+    (champ) => String(data.get(champ) ?? "").trim() !== ""
+  );
+  if (piege) {
     return NextResponse.json({ ok: true });
   }
 

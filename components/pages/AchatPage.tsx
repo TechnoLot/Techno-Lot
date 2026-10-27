@@ -1,41 +1,35 @@
-import {
-  HardDrive,
-  Laptop,
-  Monitor,
-  Network,
-  PackageOpen,
-  PhoneCall,
-  PiggyBank,
-  Printer,
-  RefreshCcw,
-  Server,
-  ShieldCheck,
-  TrendingUp,
-} from "lucide-react";
-import PageHero from "@/components/PageHero";
-import Reveal from "@/components/Reveal";
-import TiltCard from "@/components/TiltCard";
-import CtaBanner from "@/components/CtaBanner";
-import type { Locale } from "@/lib/i18n";
+import Image from "next/image";
+import { PageHero } from "@/components/site/PageHero";
+import { CtaBanner } from "@/components/site/CtaBanner";
+import { Reveal } from "@/components/site/Reveal";
+import { Marquee } from "@/components/site/Marquee";
+import { InkButtonLink, PrimaryButtonLink } from "@/components/site/Button";
+import { localePath, type Locale } from "@/lib/i18n";
+import { Chapter } from "./services/Chapter";
+import { CategoryRail, type RailItem } from "./services/CategoryRail";
+import { Parallax } from "./services/Parallax";
+import "./pages-services.css";
 
-const categoryIcons = [
-  Laptop,
-  Server,
-  Network,
-  HardDrive,
-  PhoneCall,
-  Printer,
-  Monitor,
+const images = [
+  "/accueil/rachat-portables.webp",
+  "/accueil/rachat-serveurs.webp",
+  "/accueil/rachat-reseau.webp",
+  "/accueil/rachat-stockage.webp",
+  "/images/pages/rachat-telecom.webp",
+  "/images/pages/rachat-bureautique.webp",
+  "/accueil/rachat-ecrans.webp",
 ];
-
-const argumentIcons = [PiggyBank, RefreshCcw, ShieldCheck, TrendingUp];
 
 const content = {
   fr: {
-    eyebrow: "Nos catégories",
     title: "Ce que nous rachetons",
-    subtitle:
-      "Du poste de travail au centre de données : Techno Lot valorise tout votre matériel informatique et électronique.",
+    intro:
+      "Du poste de travail au centre de données : Techno Lot valorise tout votre matériel informatique et électronique, quelle que soit la taille du lot.",
+    heroCta: "Faire une soumission",
+    ribbon: "Matériel que nous rachetons",
+    railTitle: "Nos catégories de matériel",
+    railIntro: "Faites défiler pour parcourir chaque famille d'équipements.",
+    railLabel: "Catégories de matériel racheté",
     categories: [
       {
         title: "Ordinateurs et portables",
@@ -47,11 +41,11 @@ const content = {
       },
       {
         title: "Périphériques de réseau",
-        text: "Routeurs, switchs, pare-feu et autres équipements réseau sont également pris en compte dans les processus de rachat. Ces équipements, bien qu'essentiels au fonctionnement d'une entreprise, peuvent rapidement devenir dépassés face aux nouvelles technologies.",
+        text: "Routeurs, commutateurs (switchs), pare-feu et autres équipements réseau font aussi partie du rachat. Essentiels au fonctionnement d'une entreprise, ils peuvent vite être dépassés par les nouvelles technologies.",
       },
       {
         title: "Stockage",
-        text: "Les dispositifs de stockage, tels que les disques durs, les baies de stockage ou les SSD, peuvent également faire l'objet d'un rachat, surtout s'ils contiennent des données sensibles qui doivent être effacées de manière sécurisée avant la vente.",
+        text: "Disques durs, baies de stockage ou SSD peuvent aussi être rachetés, surtout s'ils contiennent des données sensibles qui doivent être effacées de manière sécurisée avant la vente.",
       },
       {
         title: "Équipements de télécommunication",
@@ -59,50 +53,55 @@ const content = {
       },
       {
         title: "Matériel de bureautique",
-        text: "Imprimantes, scanneurs, photocopieurs et autres équipements bureautiques.",
+        text: "Imprimantes, numériseurs, photocopieurs et autres équipements de bureau.",
       },
       {
         title: "Écrans et moniteurs",
-        text: "Les moniteurs, que ce soit pour des postes de travail ou des configurations multi-écrans, particulièrement lorsqu'il s'agit d'équipements de grande qualité ou de haute résolution.",
+        text: "Les moniteurs de postes de travail ou de configurations multi-écrans, en particulier les équipements de grande qualité ou à haute résolution.",
       },
     ],
-    specialTitle: "Votre lot n'entre dans aucune catégorie ?",
-    specialText: (
-      <>
-        Pas d&apos;inquiétude : nous rachetons{" "}
-        <strong className="text-accent-bright">TOUT</strong> type de matériel
-        électronique, alors nous serons en mesure de vous faire une offre pour
-        votre lot.
-      </>
-    ),
-    benefitsEyebrow: "Les avantages",
-    benefitsTitle: "Pourquoi revendre son matériel informatique ?",
+    special: {
+      word: "TOUT",
+      title: "Votre lot n'entre dans aucune catégorie ?",
+      text: (
+        <>
+          Pas d&apos;inquiétude : nous rachetons <strong className="font-semibold text-mist">TOUT</strong> type de matériel
+          électronique. Nous serons en mesure de vous faire une offre pour votre lot.
+        </>
+      ),
+    },
+    benefitsTitle: "Pourquoi revendre son matériel informatique ?",
+    benefitsAlt: "Écrans et ordinateurs portables d'entreprise",
     benefits: [
       {
         title: "Optimisation des coûts",
-        text: "En revendant vos anciens équipements, vous récupérez une part non négligeable de l'investissement initial. Cet apport financier peut être réinjecté dans des projets d'innovation ou dans le renouvellement de votre infrastructure TI, réduisant ainsi les coûts globaux liés à l'acquisition de nouveaux matériels.",
+        text: "En revendant vos anciens équipements, vous récupérez une part non négligeable de l'investissement initial. Cet apport peut être réinjecté dans des projets d'innovation ou dans le renouvellement de votre infrastructure TI, ce qui réduit les coûts globaux liés à l'achat de nouveau matériel.",
       },
       {
         title: "Gestion efficace du cycle de vie TI",
-        text: "Plutôt que de conserver des équipements vieillissants qui ralentissent la productivité, vous pouvez les remplacer par des technologies plus modernes, plus rapides et plus adaptées à vos besoins actuels.",
+        text: "Plutôt que de conserver des équipements vieillissants qui ralentissent la productivité, vous pouvez les remplacer par des technologies plus modernes, plus rapides et mieux adaptées à vos besoins actuels.",
       },
       {
         title: "Sécurisation des données",
-        text: "Le rachat de matériel informatique par des prestataires spécialisés comprend souvent la gestion sécurisée de vos données sensibles. Ces entreprises offrent des services TI de suppression certifiée des données afin de garantir que vos informations ne tombent pas entre de mauvaises mains.",
+        text: "Le rachat de matériel informatique par des prestataires spécialisés comprend souvent la gestion sécurisée de vos données sensibles. Ces entreprises offrent une suppression certifiée des données afin que vos informations ne tombent pas entre de mauvaises mains.",
       },
       {
         title: "Adaptation à l'évolution technologique",
-        text: "Avec les avancées rapides en matière de technologie, garder du matériel obsolète peut freiner la croissance de votre entreprise. Le rachat de matériel informatique permet de vous adapter plus rapidement aux nouvelles tendances et aux innovations, garantissant ainsi une infrastructure TI à jour et performante.",
+        text: "Avec des avancées technologiques rapides, garder du matériel obsolète peut freiner la croissance de votre entreprise. Le rachat vous permet de vous adapter plus vite aux nouvelles tendances et innovations, pour une infrastructure TI à jour et performante.",
       },
     ],
-    ctaTitle: "Un lot à vendre ?",
+    ctaTitle: "Un lot à vendre ?",
     ctaText: "Obtenez une estimation gratuite avec une réponse dans un délai de 24 heures.",
   },
   en: {
-    eyebrow: "Our categories",
     title: "What we buy",
-    subtitle:
-      "From workstations to data centres: Techno Lot values all your IT and electronic equipment.",
+    intro:
+      "From workstations to data centres: Techno Lot puts a value on all your IT and electronic equipment, whatever the size of the lot.",
+    heroCta: "Get a quote",
+    ribbon: "Equipment we buy",
+    railTitle: "Equipment categories",
+    railIntro: "Keep scrolling to browse each family of equipment.",
+    railLabel: "Categories of equipment we buy",
     categories: [
       {
         title: "Computers and laptops",
@@ -114,11 +113,11 @@ const content = {
       },
       {
         title: "Network equipment",
-        text: "Routers, switches, firewalls and other network equipment are also included in buyback processes. Although essential to a company's operations, this equipment can quickly become outdated in the face of new technologies.",
+        text: "Routers, switches, firewalls and other network equipment are also part of the buyback. Although essential to a company's operations, this equipment can quickly become outdated by new technologies.",
       },
       {
         title: "Storage",
-        text: "Storage devices such as hard drives, storage arrays and SSDs can also be bought back, especially when they contain sensitive data that must be securely erased before sale.",
+        text: "Hard drives, storage arrays and SSDs can also be bought back, especially when they contain sensitive data that must be securely erased before sale.",
       },
       {
         title: "Telecommunications equipment",
@@ -130,23 +129,25 @@ const content = {
       },
       {
         title: "Screens and monitors",
-        text: "Monitors, whether for workstations or multi-screen setups, particularly high-quality or high-resolution equipment.",
+        text: "Monitors for workstations or multi-screen setups, particularly high-quality or high-resolution equipment.",
       },
     ],
-    specialTitle: "Your lot doesn't fit any category?",
-    specialText: (
-      <>
-        No worries: we buy <strong className="text-accent-bright">ALL</strong>{" "}
-        types of electronic equipment, so we will be able to make you an offer
-        for your lot.
-      </>
-    ),
-    benefitsEyebrow: "The benefits",
+    special: {
+      word: "ALL",
+      title: "Your lot doesn't fit any category?",
+      text: (
+        <>
+          No worries: we buy <strong className="font-semibold text-mist">ALL</strong> types of electronic equipment, so we
+          will be able to make you an offer for your lot.
+        </>
+      ),
+    },
     benefitsTitle: "Why resell your IT equipment?",
+    benefitsAlt: "Business monitors and laptops",
     benefits: [
       {
         title: "Cost optimization",
-        text: "By reselling your old equipment, you recover a significant part of your initial investment. This financial contribution can be reinvested in innovation projects or in renewing your IT infrastructure, reducing the overall costs of acquiring new equipment.",
+        text: "By reselling your old equipment, you recover a significant part of your initial investment. That money can be reinvested in innovation projects or in renewing your IT infrastructure, reducing the overall cost of acquiring new equipment.",
       },
       {
         title: "Effective IT life-cycle management",
@@ -154,11 +155,11 @@ const content = {
       },
       {
         title: "Data security",
-        text: "IT equipment buyback by specialized providers often includes secure handling of your sensitive data. These companies offer certified data-erasure services to ensure your information doesn't fall into the wrong hands.",
+        text: "IT equipment buyback by specialized providers often includes secure handling of your sensitive data. These companies offer certified data erasure so your information doesn't fall into the wrong hands.",
       },
       {
         title: "Keeping pace with technology",
-        text: "With rapid technological advances, holding on to obsolete equipment can hinder your company's growth. IT equipment buyback lets you adapt faster to new trends and innovations, ensuring an up-to-date, high-performing IT infrastructure.",
+        text: "With rapid technological advances, holding on to obsolete equipment can hinder your company's growth. Buyback lets you adapt faster to new trends and innovations, for an up-to-date, high-performing IT infrastructure.",
       },
     ],
     ctaTitle: "A lot to sell?",
@@ -168,85 +169,87 @@ const content = {
 
 export default function AchatPage({ locale }: { locale: Locale }) {
   const t = content[locale];
+  const items: RailItem[] = t.categories.map((c, i) => ({ ...c, image: images[i] }));
+
   return (
     <>
       <PageHero
-        eyebrow={t.eyebrow}
         title={t.title}
-        subtitle={t.subtitle}
-        image="/photos/datacenter.jpg"
+        intro={t.intro}
+        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", width: 86 }}
+      >
+        <div className="mt-8">
+          <PrimaryButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</PrimaryButtonLink>
+        </div>
+      </PageHero>
+
+      {/* 1. Lime : ruban des catégories qui défile avec la page */}
+      <section data-theme="lime" aria-label={t.ribbon} className="relative overflow-clip py-7 sm:py-9">
+        <Marquee label={t.ribbon} speed={44}>
+          {t.categories.map((c) => (
+            <span key={c.title} className="flex items-center gap-8 pr-8 font-display text-2xl font-bold tracking-[-0.01em] text-ink sm:text-4xl">
+              {c.title}
+              <span aria-hidden="true" className="h-3 w-3 rotate-45 bg-ink" />
+            </span>
+          ))}
+        </Marquee>
+      </section>
+
+      {/* 2. Vert profond, épinglé : les catégories défilent avec leurs objets */}
+      <CategoryRail
+        theme="deep"
+        heading={t.railTitle}
+        intro={t.railIntro}
+        items={items}
+        label={t.railLabel}
+        special={{
+          ...t.special,
+          action: <InkButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</InkButtonLink>,
+        }}
       />
 
-      <section className="container-site pb-16">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {t.categories.map(({ title, text }, i) => {
-            const Icon = categoryIcons[i];
-            return (
-              <Reveal key={title} delay={(i % 4) * 0.08} className="h-full">
-                <TiltCard className="h-full">
-                  <div className="glass glass-hover flex h-full flex-col p-6">
-                    <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/30">
-                      <Icon className="h-5 w-5 text-accent" aria-hidden />
-                    </div>
-                    <h2 className="font-display text-lg font-semibold text-white">
-                      {title}
-                    </h2>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                      {text}
-                    </p>
-                  </div>
-                </TiltCard>
-              </Reveal>
-            );
-          })}
-
-          {/* Carte spéciale : tout le reste */}
-          <Reveal delay={0.24} className="h-full">
-            <TiltCard className="h-full">
-              <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-accent/40 bg-accent/5 p-6 shadow-glow backdrop-blur-md">
-                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 ring-1 ring-accent/50">
-                  <PackageOpen className="h-5 w-5 text-accent-bright" aria-hidden />
-                </div>
-                <h2 className="font-display text-lg font-semibold text-white">
-                  {t.specialTitle}
+      {/* 3. Menthe : titre et image collés à gauche, avantages qui défilent à droite */}
+      <Chapter theme="mint" glow="right" aria-labelledby="achat-avantages">
+        <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+          <div className="lg:col-span-5">
+            <div className="lg:sticky lg:top-[calc(var(--site-header-h,96px)+32px)]">
+              <Reveal>
+                <h2
+                  id="achat-avantages"
+                  className="font-display text-[clamp(2rem,4.4vw,3.4rem)] font-bold leading-[1.04] tracking-[-0.025em] text-mist"
+                >
+                  {t.benefitsTitle}
                 </h2>
-                <p className="mt-2 text-sm leading-relaxed text-slate-200">
-                  {t.specialText}
-                </p>
-              </div>
-            </TiltCard>
-          </Reveal>
-        </div>
-      </section>
-
-      <section className="container-site pb-8">
-        <Reveal>
-          <span className="eyebrow">{t.benefitsEyebrow}</span>
-          <h2 className="section-title">{t.benefitsTitle}</h2>
-        </Reveal>
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          {t.benefits.map(({ title, text }, i) => {
-            const Icon = argumentIcons[i];
-            return (
-              <Reveal key={title} delay={(i % 2) * 0.1} className="h-full">
-                <div className="glass glass-hover flex h-full gap-5 p-7">
-                  <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 ring-1 ring-accent/30">
-                    <Icon className="h-5 w-5 text-accent" aria-hidden />
-                  </div>
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-white">
-                      {title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                      {text}
-                    </p>
-                  </div>
-                </div>
               </Reveal>
-            );
-          })}
+              <Parallax amount={36} className="mt-10 hidden lg:block">
+                <Image
+                  src="/images/flux/seconde-vie.webp"
+                  alt={t.benefitsAlt}
+                  width={1200}
+                  height={843}
+                  sizes="420px"
+                  className="h-auto w-full drop-shadow-[0_30px_30px_rgba(14,58,32,0.22)]"
+                />
+              </Parallax>
+            </div>
+          </div>
+          <ol className="lg:col-span-7">
+            {t.benefits.map((b, i) => (
+              <li key={b.title}>
+                <Reveal delay={i * 0.07} className="grid gap-3 border-t border-line-strong py-9 sm:grid-cols-[5rem_1fr] sm:gap-6">
+                  <span className="font-display text-4xl font-bold leading-none tracking-[-0.03em] text-emerald sm:text-5xl">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <h3 className="font-display text-xl font-bold leading-snug text-mist sm:text-2xl">{b.title}</h3>
+                    <p className="mt-3 text-base leading-relaxed text-moss">{b.text}</p>
+                  </div>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
         </div>
-      </section>
+      </Chapter>
 
       <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} />
     </>

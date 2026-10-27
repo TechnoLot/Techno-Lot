@@ -1,16 +1,20 @@
 import type { ReactNode } from "react";
 import MotionProvider from "@/components/MotionProvider";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import ScrollProgress from "@/components/ScrollProgress";
-import FloatingCall from "@/components/FloatingCall";
 import SetDocumentLang from "@/components/SetDocumentLang";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SmoothScroll } from "@/components/site/SmoothScroll";
 import { site } from "@/lib/site";
 import { getDict, type Locale } from "@/lib/i18n";
+// Système de design du site public (thèmes de chapitres, boutons…) — limité à .site-root
+import "@/app/site.css";
 
 /**
- * Habillage commun d'une section linguistique : en-tête, pied de page,
- * bouton d'appel et JSON-LD localisés, plus l'attribut lang du document.
+ * Habillage commun d'une section linguistique : en-tête, pied de page et
+ * JSON-LD localisés, défilement lissé, attribut lang.
+ * `.site-root` porte les jetons de couleur de la marque, Inter / Chakra Petch
+ * et les thèmes de chapitre (app/site.css) ; l'admin (même layout racine)
+ * n'est pas concerné. `id="top"` sert au lien « Haut de page » du pied.
  */
 export default function LocaleShell({
   locale,
@@ -53,13 +57,22 @@ export default function LocaleShell({
           __html: JSON.stringify(localBusinessJsonLd),
         }}
       />
-      <MotionProvider>
-        <ScrollProgress />
-        <Header locale={locale} />
-        <main className="flex-1 pt-20">{children}</main>
-        <Footer locale={locale} />
-        <FloatingCall locale={locale} />
-      </MotionProvider>
+      <div id="top" className="site-root flex min-h-screen flex-1 flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-gradient-accent focus:px-5 focus:py-2.5 focus:font-display focus:font-semibold focus:text-ink"
+        >
+          {t.shell.skipToContent}
+        </a>
+        <MotionProvider>
+          <SiteHeader locale={locale} />
+          <main id="main" className="site-main flex-1">
+            {children}
+          </main>
+          <SiteFooter locale={locale} />
+        </MotionProvider>
+        <SmoothScroll />
+      </div>
     </>
   );
 }

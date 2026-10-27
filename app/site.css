@@ -1,0 +1,705 @@
+/* ------------------------------------------------------------------ */
+/* Site public Techno Lot — système de design de la marque             */
+/* Bleu nuit de l'ancien héros, vert du logo (lime → émeraude),        */
+/* Chakra Petch (titres) + Inter (texte). Composition en « chapitres » */
+/* : chaque section est un aplat pleine largeur réglé par data-theme.  */
+/*                                                                    */
+/* Chargée uniquement par components/LocaleShell.tsx (site public).    */
+/* Tout est limité à .site-root : app/globals.css et l'admin ne sont   */
+/* pas affectés. CSS simple (pas de @tailwind/@apply ici).             */
+/* Jetons Tailwind correspondants : tailwind.config.ts (siteColors).   */
+/* ------------------------------------------------------------------ */
+
+.site-root {
+  /* Couleurs (triplets RGB, utilisés via rgb(var(--tl-x) / alpha)) */
+  --tl-paper: 255 255 255;        /* #ffffff fond principal */
+  --tl-cream: 250 247 241;        /* #faf7f1 (compatibilité, éviter) */
+  --tl-sand: 243 238 228;         /* #f3eee4 sections douces */
+  --tl-sand-deep: 233 225 210;    /* #e9e1d2 bordures, cartes */
+  --tl-forest: 12 15 13;          /* #0c0f0d sections sombres */
+  --tl-forest-deep: 6 8 7;        /* #060807 pied de page */
+  --tl-ink: 10 10 10;             /* #0a0a0a encre */
+  --tl-mist: 10 10 10;            /* texte principal (s'inverse) */
+  --tl-moss: 79 86 80;            /* #4f5650 texte secondaire (s'inverse) */
+  --tl-moss-a: 1;
+  --tl-emerald: 43 122 16;        /* #2b7a10 vert texte sur blanc (5,4:1) */
+  --tl-emerald-soft: 43 122 16;
+  --tl-emerald-soft-a: 0.1;
+  --tl-vivid: 107 214 59;         /* #6bd63b vert du logo : aplats, texte encre dessus (10,7:1) */
+  --tl-vivid-deep: 94 203 51;     /* #5ecb33 vert soutenu */
+  --tl-deep: 14 58 32;            /* #0e3a20 vert « argent » : chapitres sombres, héros */
+  --tl-leaf: 46 139 20;           /* #2e8b14 vert moyen (blanc 4,4:1, encre 4,5:1) */
+  --tl-mint: 232 245 224;         /* #e8f5e0 menthe pâle : chapitres clairs */
+  --tl-cta: 107 214 59;           /* fond .bg-gradient-accent (dégradé lime → émeraude ajouté plus bas) */
+  --tl-surface: 241 245 239;      /* #f1f5ef gris-vert très pâle : bandes à pas de ton */
+  --tl-surface-a: 1;
+  --tl-surface-2: 228 237 223;    /* #e4eddf */
+  --tl-surface-2-a: 1;
+  --tl-line: 10 10 10;
+  --tl-line-a: 0.08;
+  --tl-line-strong: 10 10 10;
+  --tl-line-strong-a: 0.14;
+
+  /* Hauteur de l'en-tête fixe : barre du haut 40 px + barre de navigation 72 px (sans filet) */
+  --site-header-h: 112px;
+
+  /* Typographie de la marque (ancien héros) : Chakra Petch pour les titres
+     (font-display) et Inter pour le texte (font-sans), chargées par app/layout.tsx */
+
+  color-scheme: light;
+  background-color: rgb(var(--tl-paper));
+  color: rgb(var(--tl-ink));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+/* Le body (partagé avec l'admin) passe en clair seulement quand le site public est monté */
+html:has(.site-root) {
+  color-scheme: light;
+}
+html:has(.site-root) body {
+  background-color: #ffffff;
+  background-image: none;
+  color: #0a0a0a;
+}
+html:has(.site-root) ::-webkit-scrollbar-track {
+  background: #0a0f1c;
+}
+html:has(.site-root) ::-webkit-scrollbar-thumb {
+  background: #2e8b14;
+}
+html:has(.site-root) ::-webkit-scrollbar-thumb:hover {
+  background: #5ecb33;
+}
+
+.site-root ::selection {
+  background: #6bd63b;
+  color: #0a0a0a;
+}
+
+.site-root :focus-visible {
+  outline: 2px solid rgb(var(--tl-emerald));
+  outline-offset: 3px;
+}
+
+/* Décalage sous l'en-tête fixe. Une page dont le premier bloc gère lui-même
+   l'espace (PageHero, héros de l'accueil) pose `data-under-header`
+   sur ce bloc : le décalage est alors retiré et le héros passe sous l'en-tête. */
+.site-main {
+  padding-top: var(--site-header-h);
+}
+.site-main:has(> [data-under-header]) {
+  padding-top: 0;
+}
+
+/* Transition : les pages pas encore migrées (ancien thème sombre, texte blanc)
+   gardent leur fond nuit pour rester lisibles. Une page migrée est reconnue à
+   un élément `data-under-header` (posé par PageHero) ou `data-site-page`
+   (à poser sur le premier bloc des pages sans PageHero). */
+.site-main:not(:has([data-under-header], [data-site-page])) {
+  color-scheme: dark;
+  background-color: #0a0f1c;
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(94, 203, 51, 0.08), transparent);
+  color: #e2e8f0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Thèmes de section (« chapitres »)                                     */
+/* ------------------------------------------------------------------ */
+
+/* Thèmes de section : data-theme sur l'aplat règle fond, text-mist, text-moss,
+   text-emerald, bg-surface(-2), border-line(-strong) et le bouton principal. */
+
+/* Sombre : fond noir, texte clair */
+.site-root [data-theme="dark"] {
+  background-color: rgb(var(--tl-forest));
+  color: #f5f7f5;
+  --tl-mist: 245 247 245;
+  --tl-moss: 167 177 170;
+  --tl-moss-a: 1;
+  --tl-emerald: 107 214 59;       /* vert vif lisible sur noir (10,4:1) */
+  --tl-emerald-soft: 107 214 59;
+  --tl-emerald-soft-a: 0.14;
+  --tl-surface: 22 27 24;
+  --tl-surface-a: 1;
+  --tl-surface-2: 31 38 34;
+  --tl-surface-2-a: 1;
+  --tl-line: 255 255 255;
+  --tl-line-a: 0.12;
+  --tl-line-strong: 255 255 255;
+  --tl-line-strong-a: 0.2;
+}
+
+/* Vert vif : aplat vert du logo, texte encre */
+.site-root [data-theme="green"] {
+  background-color: rgb(var(--tl-vivid));
+  color: #0a0a0a;
+  --tl-mist: 10 10 10;
+  --tl-moss: 10 10 10;
+  --tl-moss-a: 0.74;
+  --tl-emerald: 31 79 12;         /* #1f4f0c vert foncé sur vert (5,2:1) */
+  --tl-emerald-soft: 255 255 255;
+  --tl-emerald-soft-a: 0.3;
+  --tl-surface: 255 255 255;
+  --tl-surface-a: 0.35;
+  --tl-surface-2: 255 255 255;
+  --tl-surface-2-a: 0.5;
+  --tl-line: 10 10 10;
+  --tl-line-a: 0.14;
+  --tl-line-strong: 10 10 10;
+  --tl-line-strong-a: 0.24;
+  --tl-cta: 10 15 28;             /* bouton principal : bleu nuit sur vert */
+}
+
+/* Clair : remet la palette par défaut (ex. carte blanche dans une section sombre) */
+.site-root [data-theme="light"] {
+  background-color: rgb(var(--tl-paper));
+  color: #0a0a0a;
+  --tl-mist: 10 10 10;
+  --tl-moss: 79 86 80;
+  --tl-moss-a: 1;
+  --tl-emerald: 43 122 16;
+  --tl-emerald-soft: 43 122 16;
+  --tl-emerald-soft-a: 0.1;
+  --tl-surface: 241 245 239;
+  --tl-surface-a: 1;
+  --tl-surface-2: 228 237 223;
+  --tl-surface-2-a: 1;
+  --tl-line: 10 10 10;
+  --tl-line-a: 0.08;
+  --tl-line-strong: 10 10 10;
+  --tl-line-strong-a: 0.14;
+  --tl-cta: 107 214 59;
+}
+
+/* ------------------------------------------------------------------ */
+/* Chapitres de couleur Techno Lot : chaque section est un aplat plein  */
+/* écran d'une couleur de la marque (vert « argent », lime, menthe).    */
+/* ------------------------------------------------------------------ */
+
+/* Bleu nuit : la couleur de l'ancien héros Techno Lot (night-900) */
+.site-root [data-theme="night"] {
+  background-color: #0a0f1c;
+  color: #ffffff;
+  --tl-mist: 255 255 255;
+  --tl-moss: 203 213 225;         /* #cbd5e1 (12:1 sur bleu nuit) */
+  --tl-moss-a: 1;
+  --tl-emerald: 107 214 59;       /* lime lisible sur bleu nuit (9,6:1) */
+  --tl-emerald-soft: 107 214 59;
+  --tl-emerald-soft-a: 0.14;
+  --tl-surface: 255 255 255;
+  --tl-surface-a: 0.05;
+  --tl-surface-2: 255 255 255;
+  --tl-surface-2-a: 0.09;
+  --tl-line: 255 255 255;
+  --tl-line-a: 0.1;
+  --tl-line-strong: 255 255 255;
+  --tl-line-strong-a: 0.18;
+}
+
+/* Vert profond : fait ressortir le logo (lime 7:1, blanc 12,8:1) */
+.site-root [data-theme="deep"] {
+  background-color: rgb(var(--tl-deep));
+  color: #ffffff;
+  --tl-mist: 255 255 255;
+  --tl-moss: 255 255 255;
+  --tl-moss-a: 0.78;
+  --tl-emerald: 107 214 59;
+  --tl-emerald-soft: 107 214 59;
+  --tl-emerald-soft-a: 0.16;
+  --tl-surface: 255 255 255;
+  --tl-surface-a: 0.07;
+  --tl-surface-2: 255 255 255;
+  --tl-surface-2-a: 0.12;
+  --tl-line: 255 255 255;
+  --tl-line-a: 0.14;
+  --tl-line-strong: 255 255 255;
+  --tl-line-strong-a: 0.24;
+}
+
+/* Lime : le vert du logo en aplat, texte encre (10,7:1) */
+.site-root [data-theme="lime"] {
+  background-color: rgb(var(--tl-vivid));
+  color: #0a0a0a;
+  --tl-mist: 10 10 10;
+  --tl-moss: 10 10 10;
+  --tl-moss-a: 0.78;
+  --tl-emerald: 14 58 32;         /* vert profond sur lime (6,8:1) */
+  --tl-emerald-soft: 255 255 255;
+  --tl-emerald-soft-a: 0.32;
+  --tl-surface: 255 255 255;
+  --tl-surface-a: 0.38;
+  --tl-surface-2: 255 255 255;
+  --tl-surface-2-a: 0.55;
+  --tl-line: 10 10 10;
+  --tl-line-a: 0.14;
+  --tl-line-strong: 10 10 10;
+  --tl-line-strong-a: 0.24;
+  --tl-cta: 10 15 28;             /* bouton principal : bleu nuit sur lime */
+}
+
+/* Menthe : chapitre clair et frais, texte encre */
+.site-root [data-theme="mint"] {
+  background-color: rgb(var(--tl-mint));
+  color: #0a0a0a;
+  --tl-mist: 10 10 10;
+  --tl-moss: 49 61 52;            /* #313d34 (10:1 sur menthe) */
+  --tl-moss-a: 1;
+  --tl-emerald: 31 99 12;         /* #1f630c (6,4:1 sur menthe) */
+  --tl-emerald-soft: 31 99 12;
+  --tl-emerald-soft-a: 0.1;
+  --tl-surface: 255 255 255;
+  --tl-surface-a: 1;
+  --tl-surface-2: 214 236 202;
+  --tl-surface-2-a: 1;
+  --tl-line: 10 10 10;
+  --tl-line-a: 0.1;
+  --tl-line-strong: 10 10 10;
+  --tl-line-strong-a: 0.16;
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilitaires (préfixés site- : .glass reste celui de l'admin)        */
+/* ------------------------------------------------------------------ */
+
+/* Anciennes classes « verre » : gardées pour compatibilité, rendues en aplats
+   tonaux (pas de flou ni d'ombre au repos). */
+.site-glass {
+  background: rgb(var(--tl-surface) / var(--tl-surface-a));
+}
+.site-glass-light {
+  background: rgb(var(--tl-surface) / var(--tl-surface-a));
+}
+
+/* Filet horizontal « éditorial » */
+.site-rule-x {
+  height: 1px;
+  background-image: linear-gradient(to right, rgb(var(--tl-line-strong) / var(--tl-line-strong-a)), transparent);
+}
+
+/* ------------------------------------------------------------------ */
+/* Lenis (défilement lissé) : évite le double lissage                  */
+/* ------------------------------------------------------------------ */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ */
+/* Entrées du héros en CSS pur (LCP)                                   */
+/* Délai via la variable --d ; --to = position finale d'un chiffre.    */
+/* ------------------------------------------------------------------ */
+
+.hero-word {
+  animation: heroWordIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) both;
+}
+.hero-item {
+  animation: heroItemIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0s) both;
+}
+.hero-digit {
+  transform: translateY(var(--to, 0));
+  animation: heroDigitRoll 1.15s cubic-bezier(0.3, 1.35, 0.5, 1) var(--d, 0s) both;
+}
+
+@keyframes heroWordIn {
+  from { opacity: 0; transform: translateY(135%); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes heroItemIn {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes heroDigitRoll {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--to, 0)); }
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ------------------------------------------------------------------ */
+/* Keyframes partagées (en style inline : animation: "riseIn …")       */
+/* ------------------------------------------------------------------ */
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(6%, -8%) scale(1.08); }
+  50% { transform: translate(-5%, 6%) scale(0.95); }
+  75% { transform: translate(4%, 4%) scale(1.05); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes scroll-hint {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes sweep {
+  0% { transform: translateX(-120%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes morphLetter {
+  from { opacity: 0; transform: translateY(14px) rotateX(-70deg); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); }
+}
+@keyframes heroLineIn {
+  from { opacity: 0; filter: blur(6px); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes heroRiseIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes underlineIn {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes stepProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Boutons de la marque (components/site/Button.tsx)                   */
+/* Style de l'ancien site : pilule, dégradé lime → émeraude, libellé   */
+/* encre en majuscules espacées, lueur verte au survol seulement.      */
+/* ------------------------------------------------------------------ */
+
+.site-root .bg-gradient-accent {
+  background-image: linear-gradient(120deg, #5ecb33, #34d399);
+}
+.site-root [data-theme="lime"] .bg-gradient-accent,
+.site-root [data-theme="green"] .bg-gradient-accent {
+  background-image: none;
+  color: #ffffff;
+}
+
+:where(.tl-btn) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 9999px;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    filter 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.tl-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+:where(.tl-btn-md) {
+  padding: 0.95rem 1.75rem;
+  font-size: 0.8125rem;
+}
+:where(.tl-btn-sm) {
+  padding: 0.7rem 1.25rem;
+  font-size: 0.75rem;
+}
+@media (min-width: 640px) {
+  :where(.tl-btn-md) {
+    font-size: 0.875rem;
+  }
+}
+.tl-btn-arrow {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-btn:hover .tl-btn-arrow,
+.tl-btn:focus-visible .tl-btn-arrow {
+  transform: translateX(4px);
+}
+
+/* Principal : dégradé de l'ancien site, texte encre (≈ 10:1) */
+.tl-btn-primary {
+  background-color: #5ecb33;
+  background-image: linear-gradient(120deg, #5ecb33, #34d399);
+  color: #0a0a0a;
+}
+.tl-btn-primary:hover,
+.tl-btn-primary:focus-visible {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(94, 203, 51, 0.35),
+    0 12px 34px -8px rgba(94, 203, 51, 0.55);
+}
+/* Sur lime ou vert : bleu nuit, texte blanc */
+.site-root [data-theme="lime"] .tl-btn-primary,
+.site-root [data-theme="green"] .tl-btn-primary {
+  background-color: #0a0f1c;
+  background-image: none;
+  color: #ffffff;
+}
+.site-root [data-theme="lime"] .tl-btn-primary:hover,
+.site-root [data-theme="green"] .tl-btn-primary:hover,
+.site-root [data-theme="lime"] .tl-btn-primary:focus-visible,
+.site-root [data-theme="green"] .tl-btn-primary:focus-visible {
+  filter: none;
+  background-color: #16203a;
+  box-shadow: 0 14px 30px -12px rgba(6, 10, 20, 0.6);
+}
+
+/* Contour : suit le thème (border-line-strong, text-mist) */
+.tl-btn-ghost {
+  border: 1.5px solid rgb(var(--tl-line-strong) / max(var(--tl-line-strong-a), 0.28));
+  background-color: transparent;
+  color: rgb(var(--tl-mist));
+}
+.tl-btn-ghost:hover,
+.tl-btn-ghost:focus-visible {
+  border-color: rgb(var(--tl-emerald));
+  background-color: rgb(var(--tl-emerald-soft) / var(--tl-emerald-soft-a));
+}
+
+/* Bleu nuit, texte blanc (blanc sur les thèmes sombres) */
+.tl-btn-ink {
+  background-color: #0a0f1c;
+  color: #ffffff;
+}
+.tl-btn-ink:hover,
+.tl-btn-ink:focus-visible {
+  background-color: #16203a;
+  box-shadow: 0 14px 30px -12px rgba(6, 10, 20, 0.6);
+}
+.site-root [data-theme="night"] .tl-btn-ink,
+.site-root [data-theme="dark"] .tl-btn-ink,
+.site-root [data-theme="deep"] .tl-btn-ink {
+  background-color: #ffffff;
+  color: #0a0f1c;
+}
+.site-root [data-theme="night"] .tl-btn-ink:hover,
+.site-root [data-theme="dark"] .tl-btn-ink:hover,
+.site-root [data-theme="deep"] .tl-btn-ink:hover {
+  background-color: #e8f5e0;
+}
+
+/* Pilule + pastille fléchée */
+.tl-btn-pill {
+  padding: 0.375rem 0.375rem 0.375rem 1.5rem;
+  font-size: 0.8125rem;
+  background-color: #ffffff;
+  color: #0a0a0a;
+  gap: 0.9rem;
+}
+.tl-btn-pill-dot {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: #0a0f1c;
+  color: #8be95f;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+.tl-btn-pill:hover .tl-btn-pill-dot,
+.tl-btn-pill:focus-visible .tl-btn-pill-dot {
+  background-image: linear-gradient(120deg, #5ecb33, #34d399);
+  color: #0a0a0a;
+}
+.tl-btn-pill:hover,
+.tl-btn-pill:focus-visible {
+  box-shadow: 0 14px 30px -14px rgba(6, 10, 20, 0.55);
+}
+.site-root [data-theme="light"] .tl-btn-pill,
+.site-root [data-theme="mint"] .tl-btn-pill {
+  background-color: #0a0f1c;
+  color: #ffffff;
+}
+.site-root [data-theme="light"] .tl-btn-pill-dot,
+.site-root [data-theme="mint"] .tl-btn-pill-dot {
+  background-image: linear-gradient(120deg, #5ecb33, #34d399);
+  color: #0a0a0a;
+}
+
+/* ------------------------------------------------------------------ */
+/* Révélation au défilement (components/site/Reveal.tsx)               */
+/* Le contenu est visible au rendu serveur ; seul un bloc hors écran,  */
+/* « armé » par le JS après hydratation, est masqué puis révélé.       */
+/* ------------------------------------------------------------------ */
+
+.tl-reveal[data-armed]:not([data-in]) {
+  opacity: 0;
+  transform: translate3d(0, var(--tl-reveal-y, 24px), 0);
+}
+.tl-reveal[data-armed] {
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--tl-reveal-d, 0s),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--tl-reveal-d, 0s);
+}
+
+/* ------------------------------------------------------------------ */
+/* Accordéon FAQ (components/site/Accordion.tsx)                       */
+/* ------------------------------------------------------------------ */
+
+.tl-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 0.45s;
+}
+.tl-acc-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 0s;
+}
+.tl-acc-panel > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.tl-acc-icon {
+  position: relative;
+  display: inline-flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1.5px solid rgb(var(--tl-line-strong) / max(var(--tl-line-strong-a), 0.28));
+  color: rgb(var(--tl-mist));
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-acc-icon::before,
+.tl-acc-icon::after {
+  content: "";
+  position: absolute;
+  width: 0.8rem;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.tl-acc-icon::after {
+  transform: rotate(90deg);
+}
+.tl-acc-trigger:hover .tl-acc-icon {
+  border-color: rgb(var(--tl-emerald));
+  color: rgb(var(--tl-emerald));
+}
+.tl-acc-item[data-open="true"] .tl-acc-icon {
+  border-color: transparent;
+  background-image: linear-gradient(120deg, #5ecb33, #34d399);
+  color: #0a0a0a;
+  transform: rotate(180deg);
+}
+.tl-acc-item[data-open="true"] .tl-acc-icon::after {
+  transform: rotate(0deg);
+}
+.site-root [data-theme="lime"] .tl-acc-item[data-open="true"] .tl-acc-icon {
+  background-image: none;
+  background-color: #0a0f1c;
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------------ */
+/* Héros des pages intérieures (components/site/PageHero.tsx)          */
+/* Lueurs vertes diffuses de l'ancien héros + constellation.           */
+/* ------------------------------------------------------------------ */
+
+.tl-glow {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+.tl-glow-a {
+  animation: tlGlowDrift 18s ease-in-out infinite alternate;
+}
+.tl-glow-b {
+  animation: tlGlowDrift 24s ease-in-out infinite alternate-reverse;
+}
+.tl-float {
+  animation: tlFloat 7s ease-in-out infinite;
+}
+
+@keyframes tlGlowDrift {
+  0% { transform: translate3d(-4%, -3%, 0) scale(1); }
+  100% { transform: translate3d(5%, 4%, 0) scale(1.1); }
+}
+@keyframes tlFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
+  50% { transform: translate3d(0, -14px, 0) rotate(1deg); }
+}
+
+/* ------------------------------------------------------------------ */
+/* Mouvement réduit                                                    */
+/* (app/globals.css raccourcit déjà toutes les animations)             */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-word,
+  .hero-item,
+  .hero-digit,
+  .tl-glow-a,
+  .tl-glow-b,
+  .tl-float {
+    animation: none !important;
+  }
+  .tl-reveal[data-armed]:not([data-in]) {
+    opacity: 1;
+    transform: none;
+  }
+  .tl-btn,
+  .tl-btn-arrow,
+  .tl-acc-panel,
+  .tl-acc-icon,
+  .tl-acc-icon::before,
+  .tl-acc-icon::after {
+    transition: none !important;
+  }
+  .tl-btn:active {
+    transform: none;
+  }
+}

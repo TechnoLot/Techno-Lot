@@ -1,0 +1,127 @@
+/* Sections interactives de l'accueil (Etapes, Palette, Donnees). Classes préfixées. */
+
+/* ------------------------------------------------------------------ */
+/* Etapes : accordéon (vertical sur mobile, horizontal dès 1024 px)    */
+/* ------------------------------------------------------------------ */
+
+/* Lueurs vertes discrètes du chapitre bleu nuit */
+.etapes-pin {
+  isolation: isolate;
+}
+.etapes-pin::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48% 42% at 84% 14%, rgba(107, 214, 59, 0.1), transparent 70%),
+    radial-gradient(38% 40% at 6% 96%, rgba(52, 211, 153, 0.07), transparent 70%);
+}
+
+.etapes-acc {
+  container-type: size;
+}
+
+/* Mobile : bandes de 64 px, le panneau ouvert prend la hauteur restante */
+.etapes-panel {
+  flex: 0 0 64px;
+  min-width: 0;
+  min-height: 0;
+  transition: flex-grow 450ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.etapes-panel[data-open] {
+  flex-grow: 1;
+}
+/* Le contenu garde la taille du panneau ouvert : rien ne se recompose pendant l'ouverture */
+.etapes-content {
+  width: 100%;
+  height: calc(100% - 64px);
+}
+@supports (height: 1cqh) {
+  .etapes-content {
+    height: calc(100cqh - 256px);
+  }
+}
+
+/* Grand écran : panneau ouvert ≈ 58 %, les trois autres en bandes verticales */
+@media (min-width: 1024px) {
+  .etapes-panel {
+    flex: 14 1 0;
+  }
+  .etapes-panel[data-open] {
+    flex-grow: 58;
+  }
+  .etapes-content {
+    width: 58%;
+    height: 100%;
+  }
+  @supports (width: 1cqw) {
+    .etapes-content {
+      width: 58cqw;
+      height: 100%;
+    }
+  }
+}
+
+/* Maquettes : réduites quand la place manque (petits téléphones), masquées si trop basses */
+.etapes-stage {
+  container-type: size;
+}
+@container (max-height: 270px) {
+  .etapes-mock {
+    transform: scale(0.82);
+  }
+}
+@container (max-height: 215px) {
+  .etapes-mock {
+    transform: scale(0.66);
+  }
+}
+@container (max-height: 160px) {
+  .etapes-mock {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .etapes-panel {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Palette : la scène sert de conteneur ; la palette chargée            */
+/* (1400 × 900) tient dans sa largeur ET sa hauteur.                   */
+/* ------------------------------------------------------------------ */
+.palette-scene {
+  container-type: size;
+}
+.palette-stage {
+  width: min(100%, 680px);
+  aspect-ratio: 1400 / 900;
+}
+@supports (width: 1cqh) {
+  .palette-stage {
+    width: min(100cqw, 148cqh, 680px);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Donnees : le certificat (feuille 8,5 × 11) tient dans la scène       */
+/* ------------------------------------------------------------------ */
+.donnees-scene {
+  container-type: size;
+}
+.donnees-cert {
+  width: min(78%, 320px);
+}
+@supports (width: 1cqh) {
+  .donnees-cert {
+    width: min(78cqw, 320px, 64cqh);
+  }
+}
+/* La feuille est son propre conteneur : texte, lignes et sceau suivent sa largeur (cqw) */
+.donnees-paper {
+  container-type: inline-size;
+}
