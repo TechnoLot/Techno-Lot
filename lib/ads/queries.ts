@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isGoogleConfigured, isMetaConfigured } from "@/lib/ads/sync";
+import { averageCpl } from "@/lib/ads/verdict";
 import {
   ADS_PERIODS,
   NO_ID,
@@ -7,7 +8,6 @@ import {
   type AdPlatform,
   type AdsOverview,
   type AdSummary,
-  type BreakdownItem,
   type ConfigStatus,
   type DailyPoint,
   type DateRange,
@@ -233,23 +233,6 @@ export const PUBLISHER_LABELS: Record<string, string> = {
   autre: "Autre",
 };
 
-export const SOURCE_LABELS: Record<SessionPlatform, string> = {
-  meta: "Meta (Facebook / Instagram)",
-  google: "Google Ads",
-  organic: "Organique",
-  referral: "Sites référents",
-  direct: "Direct",
-  email: "Courriel",
-  other: "Autre",
-};
-
-export const DEVICE_LABELS: Record<string, string> = {
-  mobile: "Mobile",
-  tablet: "Tablette",
-  desktop: "Ordinateur",
-  inconnu: "Inconnu",
-};
-
 /**
  * Évite le double comptage quand une même pub/jour a à la fois une ligne
  * « all » et des lignes ventilées par réseau : on garde la ventilation.
@@ -274,21 +257,98 @@ export function dedupeMetrics(rows: MetricRow[]): MetricRow[] {
 /* Conversion → clients                                                */
 /* ================================================================== */
 
-export type ClientIndex = Map<string, { profit: number | null }>;
+/**
+ * Un lead devient « client acquis » quand un lot ACHETÉ ou VENDU (les lots
+ * en négociation ou annulés ne comptent pas) porte son courriel ou son
+ * téléphone, et que ce lot date du lead ou d'après (petite tolérance pour
+ * les dates saisies à la main). Chaque lot n'est rattaché qu'une fois, au
+ * premier lead (ordre chronologique) qui y correspond : un client qui remplit
+ * le formulaire deux fois n'est pas compté deux fois, et la somme des pubs
+ * égale le total.
+ */
+export const CLIENT_LOT_STATUSES = ["purchased", "sold"] as const;
+/** Un lot daté jusqu'à N jours AVANT le lead compte quand même (saisie approximative). */
+export const LOT_BEFORE_LEAD_GRACE_DAYS = 2;
 
-/** courriel (minuscules) → profit cumulé des lots vendus (null si rien vendu). */
+export type ClientLot = {
+  id: string;
+  /** Jour d'achat "YYYY-MM-DD" (purchased_at, sinon jour de création) */
+  day: string;
+  /** Profit si vendu (prix de vente − prix d'achat), sinon null */
+  profit: number | null;
+};
+
+export type ClientIndex = {
+  byEmail: Map<string, ClientLot[]>;
+  byPhone: Map<string, ClientLot[]>;
+};
+
+export function emptyClientIndex(): ClientIndex {
+  return { byEmail: new Map(), byPhone: new Map() };
+}
+
+/** Téléphone normalisé : 10 derniers chiffres (null si moins de 10). */
+export function phoneKey(p: string | null | undefined): string | null {
+  const digits = (p ?? "").replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : null;
+}
+
 export function buildClientIndex(lots: LotRow[]): ClientIndex {
-  const idx: ClientIndex = new Map();
+  const idx = emptyClientIndex();
+  const push = (map: Map<string, ClientLot[]>, k: string, lot: ClientLot) => {
+    const list = map.get(k);
+    if (list) list.push(lot);
+    else map.set(k, [lot]);
+  };
   for (const l of lots) {
-    const email = clean(l.client_email)?.toLowerCase();
-    if (!email) continue;
-    const cur = idx.get(email) ?? { profit: null };
-    if (l.sale_price != null) {
-      cur.profit = (cur.profit ?? 0) + num(l.sale_price) - num(l.purchase_price);
-    }
-    idx.set(email, cur);
+    if (!(CLIENT_LOT_STATUSES as readonly string[]).includes(l.status ?? "")) continue;
+    const email = clean(l.client_email)?.toLowerCase() ?? null;
+    const phone = phoneKey(l.client_phone);
+    if (!email && !phone) continue;
+    const purchased = (l.purchased_at ?? "").slice(0, 10);
+    const lot: ClientLot = {
+      id: l.id,
+      day: DAY_RE.test(purchased) ? purchased : torontoDay(l.created_at),
+      profit: l.sale_price != null ? num(l.sale_price) - num(l.purchase_price) : null,
+    };
+    if (email) push(idx.byEmail, email, lot);
+    if (phone) push(idx.byPhone, phone, lot);
   }
   return idx;
+}
+
+export type LeadClaim = { lots: number; profit: number | null };
+
+/**
+ * Rattache les lots clients aux leads (premier lead chronologique gagnant).
+ * Résultat : id du lead → nombre de lots rattachés et leur profit.
+ */
+export function claimClients(
+  leads: Pick<LeadRow, "id" | "created_at" | "courriel" | "telephone">[],
+  clients: ClientIndex,
+): Map<string, LeadClaim> {
+  const out = new Map<string, LeadClaim>();
+  const taken = new Set<string>();
+  const sorted = [...leads].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  for (const l of sorted) {
+    const minDay = addDays(torontoDay(l.created_at), -LOT_BEFORE_LEAD_GRACE_DAYS);
+    const email = clean(l.courriel)?.toLowerCase();
+    const phone = phoneKey(l.telephone);
+    const candidates = [
+      ...(email ? clients.byEmail.get(email) ?? [] : []),
+      ...(phone ? clients.byPhone.get(phone) ?? [] : []),
+    ];
+    let lots = 0;
+    let profit: number | null = null;
+    for (const lot of candidates) {
+      if (taken.has(lot.id) || lot.day < minDay) continue;
+      taken.add(lot.id);
+      lots += 1;
+      if (lot.profit != null) profit = (profit ?? 0) + lot.profit;
+    }
+    if (lots > 0) out.set(l.id, { lots, profit });
+  }
+  return out;
 }
 
 /* ================================================================== */
@@ -309,7 +369,7 @@ type Acc = {
   formViews: number;
   formStarts: number;
   leads: number;
-  clientEmails: Set<string>;
+  clients: number;
   profit: number;
 };
 
@@ -328,7 +388,7 @@ function newAcc(platform: AdPlatform, adId: string): Acc {
     formViews: 0,
     formStarts: 0,
     leads: 0,
-    clientEmails: new Set(),
+    clients: 0,
     profit: 0,
   };
 }
@@ -364,20 +424,6 @@ export function finalizeTotals(t: Omit<Totals, "ctr" | "cpl" | "convRate">): Tot
   };
 }
 
-function bump(map: Map<string, BreakdownItem>, key: string, label: string, f: Partial<BreakdownItem>) {
-  const cur = map.get(key) ?? { key, label, visits: 0, leads: 0, spend: 0 };
-  cur.visits += f.visits ?? 0;
-  cur.leads += f.leads ?? 0;
-  cur.spend += f.spend ?? 0;
-  map.set(key, cur);
-}
-
-function sortBreakdown(map: Map<string, BreakdownItem>): BreakdownItem[] {
-  return Array.from(map.values()).sort(
-    (a, b) => b.visits - a.visits || b.leads - a.leads || b.spend - a.spend,
-  );
-}
-
 export type AnalyzeOptions = {
   range: DateRange;
   platform: PlatformFilter;
@@ -389,22 +435,20 @@ export type Analysis = {
   totals: Totals;
   ads: AdSummary[];
   daily: DailyPoint[];
-  bySource: BreakdownItem[];
-  byPublisher: BreakdownItem[];
-  byDevice: BreakdownItem[];
   leads: LeadItem[];
-  bestAdKey: string | null;
 };
 
 /**
  * Agrège les données brutes d'une période. Pure : aucune I/O, testable
- * avec des fixtures. Les totaux / funnel ne comptent que le payant
- * (Meta + Google) ; la répartition par source inclut organique, direct…
+ * avec des fixtures. Seul le payant (Meta + Google, selon le filtre) compte.
+ * Le rattachement des clients se fait sur TOUS les leads de la période avant
+ * filtrage, pour que la vue d'ensemble et le détail d'une pub concordent.
  */
 export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOptions): Analysis {
   const { range, platform: filter, adKey: onlyKey } = opts;
   const metrics = dedupeMetrics(raw.metrics);
   const nameIndex = buildNameIndex(metrics);
+  const claims = claimClients(raw.leads, clients);
   const accs = new Map<string, Acc>();
   const keep = (p: SessionPlatform): p is AdPlatform =>
     isPaid(p) && (filter === "all" || filter === p);
@@ -422,38 +466,27 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
   const daily = new Map<string, DailyPoint>();
   for (const d of listDays(range)) daily.set(d, { day: d, spend: 0, leads: 0, visits: 0, clicks: 0 });
 
-  const bySource = new Map<string, BreakdownItem>();
-  const byPublisher = new Map<string, BreakdownItem>();
-  const byDevice = new Map<string, BreakdownItem>();
-
   /* --- Métriques plateformes ------------------------------------- */
   for (const m of metrics) {
     const p = normPlatform(m.platform);
     if (!keep(p)) continue;
     const id = clean(m.ad_id) ?? clean(m.ad_name) ?? clean(m.campaign_id) ?? NO_ID;
-    const k = adKey(p, id);
+    if (!inScope(adKey(p, id))) continue;
     const spend = num(m.spend);
     const clicks = num(m.link_clicks) > 0 ? num(m.link_clicks) : num(m.clicks);
-    if (onlyKey === undefined || onlyKey === k) {
-      const a = accFor(p, id);
-      a.name = a.name ?? clean(m.ad_name);
-      a.campaign = a.campaign ?? clean(m.campaign_name);
-      a.spend += spend;
-      a.impressions += num(m.impressions);
-      a.clicks += clicks;
-      const pub = (m.publisher ?? "all").toLowerCase();
-      if (pub !== "all") a.publishers.add(pub);
-      const dp = daily.get(m.date);
-      if (dp) {
-        dp.spend += spend;
-        dp.clicks += clicks;
-      }
-      if (pub !== "all") {
-        const pk = publisherOf(p, pub, null);
-        bump(byPublisher, pk, PUBLISHER_LABELS[pk] ?? pub, { spend });
-      }
+    const a = accFor(p, id);
+    a.name = a.name ?? clean(m.ad_name);
+    a.campaign = a.campaign ?? clean(m.campaign_name);
+    a.spend += spend;
+    a.impressions += num(m.impressions);
+    a.clicks += clicks;
+    const pub = (m.publisher ?? "all").toLowerCase();
+    if (pub !== "all") a.publishers.add(publisherOf(p, pub, null));
+    const dp = daily.get(m.date);
+    if (dp) {
+      dp.spend += spend;
+      dp.clicks += clicks;
     }
-    if (!onlyKey) bump(bySource, p, SOURCE_LABELS[p], { spend });
   }
 
   /* --- Événements par session ----------------------------------- */
@@ -471,8 +504,6 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
   for (const s of raw.sessions) {
     sessionById.set(s.id, s);
     const p = normPlatform(s.platform);
-    const device = (s.device ?? "inconnu").toLowerCase();
-    if (!onlyKey) bump(bySource, p, SOURCE_LABELS[p], { visits: 1 });
     if (!keep(p)) {
       sessionKey.set(s.id, null);
       continue;
@@ -485,30 +516,28 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
     a.fallbackName = a.fallbackName ?? clean(s.utm_content);
     a.campaign = a.campaign ?? clean(s.utm_campaign);
     a.visits += 1;
-    const pub = publisherOf(p, s.placement, s.utm_source);
-    a.publishers.add(pub);
+    a.publishers.add(publisherOf(p, s.placement, s.utm_source));
     const ev = sessionEvents.get(s.id);
     if (ev?.has("form_view")) a.formViews += 1;
     if (ev?.has("form_start")) a.formStarts += 1;
     const dp = daily.get(torontoDay(s.created_at));
     if (dp) dp.visits += 1;
-    bump(byPublisher, pub, PUBLISHER_LABELS[pub] ?? pub, { visits: 1 });
-    bump(byDevice, device, DEVICE_LABELS[device] ?? device, { visits: 1 });
   }
 
   /* --- Leads ---------------------------------------------------- */
-  type PendingLead = { row: LeadRow; platform: SessionPlatform; key: string | null };
+  type PendingLead = { row: LeadRow; platform: SessionPlatform; key: string; claim: LeadClaim | undefined };
   const pending: PendingLead[] = [];
   for (const l of raw.leads) {
     const session = l.session_id ? sessionById.get(l.session_id) : undefined;
     const p = normPlatform(l.platform ?? session?.platform);
-    if (!onlyKey) bump(bySource, p, SOURCE_LABELS[p], { leads: 1 });
     if (!keep(p)) continue;
     const hasOwnId = clean(l.ad_id) || clean(l.utm_content) || clean(l.utm_campaign);
+    // Sans identifiant propre : on reprend la pub de la visite, si elle vient de la même plateforme
+    const sKey = session ? sessionKey.get(session.id) : null;
     const id = hasOwnId
       ? resolveAdId(p, l, nameIndex)
-      : session && sessionKey.get(session.id)
-        ? (sessionKey.get(session.id) as string).slice(p.length + 1)
+      : sKey && sKey.startsWith(`${p}:`)
+        ? sKey.slice(p.length + 1)
         : NO_ID;
     const k = adKey(p, id);
     if (!inScope(k)) continue;
@@ -516,27 +545,20 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
     a.fallbackName = a.fallbackName ?? clean(l.utm_content);
     a.campaign = a.campaign ?? clean(l.utm_campaign);
     a.leads += 1;
-    const email = clean(l.courriel)?.toLowerCase();
-    const client = email ? clients.get(email) : undefined;
-    if (email && client && !a.clientEmails.has(email)) {
-      a.clientEmails.add(email);
-      a.profit += client.profit ?? 0;
+    const claim = claims.get(l.id);
+    if (claim) {
+      a.clients += 1;
+      a.profit += claim.profit ?? 0;
     }
     const dp = daily.get(torontoDay(l.created_at));
     if (dp) dp.leads += 1;
-    const pub = publisherOf(p, l.placement ?? session?.placement ?? null, l.utm_source ?? session?.utm_source ?? null);
-    bump(byPublisher, pub, PUBLISHER_LABELS[pub] ?? pub, { leads: 1 });
-    const device = (session?.device ?? "inconnu").toLowerCase();
-    bump(byDevice, device, DEVICE_LABELS[device] ?? device, { leads: 1 });
-    pending.push({ row: l, platform: p, key: k });
+    pending.push({ row: l, platform: p, key: k, claim });
   }
 
   /* --- Résumés par pub ------------------------------------------ */
   const ads: AdSummary[] = [];
   const total = { ...emptyTotals() };
-  const allClients = new Set<string>();
   for (const [k, a] of Array.from(accs.entries())) {
-    if (!inScope(k)) continue;
     const t = finalizeTotals({
       impressions: a.impressions,
       clicks: a.clicks,
@@ -544,7 +566,7 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
       formViews: a.formViews,
       formStarts: a.formStarts,
       leads: a.leads,
-      clients: a.clientEmails.size,
+      clients: a.clients,
       spend: a.spend,
       profit: a.profit,
     });
@@ -564,45 +586,29 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
     total.formViews += t.formViews;
     total.formStarts += t.formStarts;
     total.leads += t.leads;
+    total.clients += t.clients;
     total.spend += t.spend;
-    for (const e of Array.from(a.clientEmails)) {
-      if (!allClients.has(e)) {
-        allClients.add(e);
-        total.profit += clients.get(e)?.profit ?? 0;
-      }
-    }
+    total.profit += t.profit;
   }
-  total.clients = allClients.size;
   ads.sort((x, y) => y.leads - x.leads || y.spend - x.spend || y.visits - x.visits);
-
-  let bestAdKey: string | null = null;
-  let bestCpl = Infinity;
-  for (const a of ads) {
-    if (a.leads >= 2 && a.cpl != null && a.cpl < bestCpl) {
-      bestCpl = a.cpl;
-      bestAdKey = a.key;
-    }
-  }
 
   const byKey = new Map(ads.map((a) => [a.key, a]));
   const leads: LeadItem[] = pending
-    .map(({ row, platform, key }) => {
-      const email = clean(row.courriel);
-      const client = email ? clients.get(email.toLowerCase()) : undefined;
-      const ad = key ? byKey.get(key) : undefined;
+    .map(({ row, platform, key, claim }) => {
+      const ad = byKey.get(key);
       return {
         id: row.id,
         createdAt: row.created_at,
         nom: clean(row.nom) ?? "Sans nom",
-        courriel: email,
+        courriel: clean(row.courriel),
         telephone: clean(row.telephone),
         platform,
         adKey: key,
         adName: ad?.name ?? null,
         adHref: ad?.href ?? null,
         placement: row.placement ?? null,
-        converted: Boolean(client),
-        profit: client?.profit ?? null,
+        converted: Boolean(claim),
+        profit: claim?.profit ?? null,
       };
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -611,11 +617,7 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
     totals: finalizeTotals(total),
     ads,
     daily: Array.from(daily.values()),
-    bySource: sortBreakdown(bySource),
-    byPublisher: sortBreakdown(byPublisher),
-    byDevice: sortBreakdown(byDevice),
     leads,
-    bestAdKey,
   };
 }
 
@@ -695,24 +697,31 @@ export async function fetchRaw(supabase: Supa, range: DateRange): Promise<RawAds
   return { sessions, events, leads, metrics };
 }
 
+/** Lots achetés / vendus (lecture seule), indexés par courriel et téléphone. */
 export async function fetchClientIndex(supabase: Supa): Promise<ClientIndex> {
   const lots = await fetchPaged<LotRow>((a, b) =>
     supabase
       .from("lots")
-      .select("client_email, purchase_price, sale_price, status")
-      .not("client_email", "is", null)
+      .select("id, created_at, purchased_at, client_email, client_phone, purchase_price, sale_price, status")
+      .in("status", [...CLIENT_LOT_STATUSES])
       .order("id", { ascending: true })
       .range(a, b),
   );
   return buildClientIndex(lots);
 }
 
-export async function getLastSync(supabase: Supa = createClient()): Promise<LastSync> {
-  const { data } = await supabase
+/** Dernière synchronisation (toutes plateformes, ou une seule). */
+export async function getLastSync(
+  platform?: AdPlatform | null,
+  supabase: Supa = createClient(),
+): Promise<LastSync> {
+  let query = supabase
     .from("ad_sync_runs")
     .select("created_at, platform, ok, rows_upserted, message")
     .order("created_at", { ascending: false })
     .limit(1);
+  if (platform) query = query.eq("platform", platform);
+  const { data } = await query;
   const row = (data?.[0] ?? null) as SyncRunRow | null;
   return row
     ? { at: row.created_at, ok: row.ok, platform: row.platform, message: row.message }
@@ -724,8 +733,25 @@ export function getConfigStatus(): ConfigStatus {
   return { meta: isMetaConfigured(), google: isGoogleConfigured() };
 }
 
+/** Filtre plateforme : Meta par défaut, « all » pour tout voir. */
 export function parsePlatformFilter(v: string | undefined): PlatformFilter {
-  return v === "meta" || v === "google" ? v : "all";
+  return v === "google" || v === "all" ? v : "meta";
+}
+
+async function loadPeriod(
+  range: DateRange,
+): Promise<{ raw: RawAdsData; clients: ClientIndex; error: string | null }> {
+  const supabase = createClient();
+  try {
+    const [raw, clients] = await Promise.all([fetchRaw(supabase, range), fetchClientIndex(supabase)]);
+    return { raw, clients, error: null };
+  } catch (e) {
+    return {
+      raw: { sessions: [], events: [], leads: [], metrics: [] },
+      clients: emptyClientIndex(),
+      error: e instanceof Error ? e.message : String(e),
+    };
+  }
 }
 
 export async function getAdsOverview(params: {
@@ -733,43 +759,19 @@ export async function getAdsOverview(params: {
   from?: string;
   to?: string;
   platform?: string;
-}): Promise<AdsOverview & { periodKey: string; platform: PlatformFilter; bestAdKey: string | null; error: string | null }> {
-  const supabase = createClient();
-  const { key, range, prevRange } = resolveRange(params);
+}): Promise<AdsOverview & { periodKey: string; platform: PlatformFilter; error: string | null }> {
+  const { key, range } = resolveRange(params);
   const platform = parsePlatformFilter(params.platform);
-  let error: string | null = null;
-  let raw: RawAdsData = { sessions: [], events: [], leads: [], metrics: [] };
-  let prevRaw: RawAdsData = raw;
-  let clients: ClientIndex = new Map();
-  try {
-    [raw, prevRaw, clients] = await Promise.all([
-      fetchRaw(supabase, range),
-      fetchRaw(supabase, prevRange),
-      fetchClientIndex(supabase),
-    ]);
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-  }
+  const { raw, clients, error } = await loadPeriod(range);
   const cur = analyze(raw, clients, { range, platform });
-  const prev = analyze(prevRaw, clients, { range: prevRange, platform });
   return {
     periodKey: key,
     platform,
     error,
     range,
-    prevRange,
     totals: cur.totals,
-    prevTotals: prev.totals,
-    daily: cur.daily,
+    avgCpl: averageCpl(cur.totals.spend, cur.totals.leads),
     ads: cur.ads,
-    bestAdKey: cur.bestAdKey,
-    bySource: cur.bySource,
-    byPublisher: cur.byPublisher,
-    byDevice: cur.byDevice,
-    recentLeads: cur.leads.slice(0, 8),
-    hasAnyData:
-      raw.sessions.length + raw.leads.length + raw.metrics.length > 0 ||
-      prevRaw.sessions.length + prevRaw.leads.length + prevRaw.metrics.length > 0,
   };
 }
 
@@ -780,34 +782,19 @@ export async function getAdDetail(params: {
   from?: string;
   to?: string;
 }): Promise<AdDetail & { periodKey: string; error: string | null }> {
-  const supabase = createClient();
-  const { key, range, prevRange } = resolveRange(params);
+  const { key, range } = resolveRange(params);
   const k = adKey(params.platform, params.adId);
-  let error: string | null = null;
-  let raw: RawAdsData = { sessions: [], events: [], leads: [], metrics: [] };
-  let prevRaw: RawAdsData = raw;
-  let clients: ClientIndex = new Map();
-  try {
-    [raw, prevRaw, clients] = await Promise.all([
-      fetchRaw(supabase, range),
-      fetchRaw(supabase, prevRange),
-      fetchClientIndex(supabase),
-    ]);
-  } catch (e) {
-    error = e instanceof Error ? e.message : String(e);
-  }
-  const cur = analyze(raw, clients, { range, platform: params.platform, adKey: k });
-  const prev = analyze(prevRaw, clients, { range: prevRange, platform: params.platform, adKey: k });
+  const { raw, clients, error } = await loadPeriod(range);
+  // Toute la plateforme (CPL moyen, chiffres de la pub), puis cette pub seule (jour par jour, leads)
+  const all = analyze(raw, clients, { range, platform: params.platform });
+  const one = analyze(raw, clients, { range, platform: params.platform, adKey: k });
   return {
     periodKey: key,
     error,
     range,
-    prevRange,
-    ad: cur.ads[0] ?? null,
-    prevTotals: prev.totals,
-    daily: cur.daily,
-    leads: cur.leads,
-    byPublisher: cur.byPublisher,
-    byDevice: cur.byDevice,
+    ad: all.ads.find((a) => a.key === k) ?? null,
+    avgCpl: averageCpl(all.totals.spend, all.totals.leads),
+    daily: one.daily,
+    leads: one.leads,
   };
 }

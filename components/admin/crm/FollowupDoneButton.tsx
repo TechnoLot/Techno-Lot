@@ -32,10 +32,10 @@ export default function FollowupDoneButton({
         });
       }}
       title="Marque le suivi comme fait — le rappel reviendra après le prochain délai"
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
         error
-          ? "border-red-500/40 bg-red-500/10 text-red-300"
-          : "border-amber-400/30 bg-amber-400/10 text-amber-200 hover:border-amber-400/60"
+          ? "border-[#eaa9a2] bg-[#fef3f2] text-[#b42318]"
+          : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:bg-[#f4f7f2]"
       }`}
     >
       {pending ? (

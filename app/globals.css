@@ -3,39 +3,38 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+/* Fond par défaut (admin, version B claire). Le site public le remplace
+   via html:has(.site-root) body dans app/site.css. */
 body {
-  @apply bg-night-900 text-slate-200 antialiased;
-  background-image: radial-gradient(
-    ellipse 80% 50% at 50% -10%,
-    rgba(94, 203, 51, 0.08),
-    transparent
-  );
+  @apply antialiased;
+  background-color: #f4f7f2;
+  color: #0a0a0a;
 }
 
 ::selection {
-  background: rgba(94, 203, 51, 0.35);
-  color: #fff;
+  background: #6bd63b;
+  color: #0a0a0a;
 }
 
 ::-webkit-scrollbar {
   width: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: #060a14;
+  background: #eef2ec;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2c4d;
+  background: #c9d6c3;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2c3d66;
+  background: #a9b8a2;
 }
 
 @layer components {
@@ -43,13 +42,14 @@ body {
     @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
   }
 
-  /* Carte en verre dépoli */
+  /* Carte admin (version B) : blanche, filet #e3eadf, rayon 16 px.
+     Le nom « glass » est conservé pour les pages existantes. */
   .glass {
-    @apply rounded-2xl border border-white/10 bg-white/[0.04] shadow-card backdrop-blur-md;
+    @apply rounded-2xl border border-[#e3eadf] bg-white text-[#0a0a0a];
   }
 
   .glass-hover {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:border-accent/40 hover:bg-white/[0.07] hover:shadow-glow;
+    @apply transition-colors duration-200 hover:border-[#c9d6c3];
   }
 
   /* Texte en dégradé accent */
@@ -57,21 +57,22 @@ body {
     @apply bg-accent-gradient bg-clip-text text-transparent;
   }
 
-  /* Bouton CTA principal avec glow */
+  /* Bouton principal : pilule vert foncé, texte blanc (5,4:1) */
   .btn-primary {
-    @apply relative inline-flex items-center justify-center gap-2 rounded-full bg-accent-gradient px-7 py-3.5 font-display text-sm font-semibold uppercase tracking-wider text-night-950 shadow-glow transition-all duration-300 hover:shadow-glow-lg hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-[#257a10] px-5 py-2.5 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#1e6a0b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60;
   }
 
+  /* Bouton secondaire : pilule blanche, bordure #c9d6c3, texte encre */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-7 py-3.5 font-display text-sm font-semibold uppercase tracking-wider text-white backdrop-blur-md transition-all duration-300 hover:border-accent/50 hover:text-accent-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-5 py-2.5 text-sm font-semibold text-[#0a0a0a] transition-colors duration-150 hover:border-[#a9b8a2] hover:bg-[#f4f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .field {
-    @apply w-full rounded-xl border border-white/10 bg-night-800/80 px-4 py-3 text-sm text-white placeholder:text-slate-500 transition-colors focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/40;
+    @apply w-full rounded-[10px] border border-[#c9d6c3] bg-white px-3.5 py-2.5 text-sm text-[#0a0a0a] placeholder:text-[#6b766d] transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40;
   }
 
   .field-error {
-    @apply border-red-500/60 focus:border-red-500 focus:ring-red-500/40;
+    @apply border-[#b42318] focus:border-[#b42318] focus:ring-[#b42318]/25;
   }
 
   .section-title {
@@ -82,48 +83,44 @@ body {
     @apply mb-3 inline-block font-display text-xs font-semibold uppercase tracking-[0.25em] text-accent;
   }
 
-  /* ---------- Admin (dashboard) — n'affecte pas le site public ---------- */
+  /* ---------- Admin (dashboard, version B claire) — n'affecte pas le site public ---------- */
 
-  /* Surface de carte admin : fond légèrement dégradé, filet lumineux en
-     haut, ombre teintée nuit. Plus sobre que .glass (pas de blur). */
   .admin-card {
-    @apply rounded-2xl border border-white/[0.07] shadow-admin-card;
-    background-image: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.035),
-      rgba(255, 255, 255, 0.015)
-    );
-    background-color: rgba(10, 15, 28, 0.6);
+    @apply rounded-2xl border border-[#e3eadf] bg-white text-[#0a0a0a];
   }
 
   .admin-card-interactive {
-    @apply transition-[border-color,background-color,transform] duration-200 hover:border-white/[0.12];
+    @apply transition-colors duration-200 hover:border-[#c9d6c3];
   }
 
-  /* Petit libellé de section (sentence case, pas de tracking extrême) */
   .admin-eyebrow {
-    @apply font-display text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500;
+    @apply font-display text-[11px] font-semibold uppercase tracking-[0.14em] text-[#4f5a52];
   }
 
   .admin-card-title {
-    @apply font-display text-[15px] font-semibold tracking-tight text-white;
+    @apply font-display text-base font-semibold tracking-tight text-[#0a0a0a];
   }
 
   .admin-focus {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+
+  /* Focus sur la barre latérale bleu nuit */
+  .nav-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f1c];
   }
 
   .admin-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-slate-200 transition-[background-color,border-color,color,transform] duration-200 hover:border-white/20 hover:bg-white/[0.06] hover:text-white active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-xs font-semibold text-[#0a0a0a] transition-colors duration-150 hover:border-[#a9b8a2] hover:bg-[#f4f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-white;
   }
 
   .admin-btn-accent {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-xs font-semibold text-night-950 shadow-[0_6px_20px_-8px_rgba(94,203,51,0.7)] transition-[background-color,transform,box-shadow] duration-200 hover:bg-accent-bright active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-night-950;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-transparent bg-[#257a10] px-3.5 py-2 text-xs font-semibold text-white transition-colors duration-150 hover:bg-[#1e6a0b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-white;
   }
 
   /* Contrôle segmenté (périodes, filtres de statut) */
   .admin-segment {
-    @apply inline-flex max-w-full gap-0.5 overflow-x-auto rounded-xl border border-white/[0.07] bg-night-900/70 p-1;
+    @apply inline-flex max-w-full gap-0.5 overflow-x-auto rounded-full border border-[#e3eadf] bg-white p-1;
     scrollbar-width: none;
   }
   .admin-segment::-webkit-scrollbar {
@@ -131,7 +128,7 @@ body {
   }
 
   .admin-kbd {
-    @apply inline-flex h-5 min-w-[20px] items-center justify-center rounded-md border border-white/10 bg-white/[0.04] px-1.5 font-sans text-[10px] font-medium text-slate-400;
+    @apply inline-flex h-5 min-w-[20px] items-center justify-center rounded-md border border-white/15 bg-white/[0.06] px-1.5 font-sans text-[10px] font-medium text-[#cbd5e1];
   }
 }
 

@@ -89,19 +89,19 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-display text-base font-semibold text-white">
+            <p className="font-display text-base font-semibold text-[#0a0a0a]">
               {name}
             </p>
             {contact.contact_priority === 1 && (
               <Star
-                className="h-3.5 w-3.5 text-accent"
+                className="h-3.5 w-3.5 text-[#257a10]"
                 aria-label="Contact principal"
               />
             )}
             <StageBadge stage={contact.stage} />
             {contact.is_fallback_contact && (
               <span
-                className="inline-flex items-center rounded-full border border-orange-400/30 bg-orange-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-200"
+                className="inline-flex items-center rounded-full bg-[#fff4ed] px-2 py-0.5 text-xs font-medium text-[#b93815]"
                 title={
                   contact.fallback_reason ??
                   "Aucun titre TI direct trouvé — meilleure estimation"
@@ -112,17 +112,17 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             )}
           </div>
           {contact.title && (
-            <p className="mt-0.5 text-sm text-slate-400">{contact.title}</p>
+            <p className="mt-0.5 text-sm text-[#4f5a52]">{contact.title}</p>
           )}
           {contact.priority_reason && (
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#4f5a52]">
               {contact.priority_reason}
             </p>
           )}
         </div>
 
         {/* Changement de stage manuel */}
-        <label className="flex items-center gap-2 text-xs text-slate-500">
+        <label className="flex items-center gap-2 text-xs text-[#4f5a52]">
           Stage
           <select
             value={contact.stage}
@@ -132,7 +132,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                 updateContactStage(contact.id, e.target.value as ContactStage),
               )
             }
-            className="rounded-lg border border-white/10 bg-night-800/80 px-2 py-1.5 text-xs text-white focus:border-accent/60 focus:outline-none"
+            className="rounded-[10px] border border-[#c9d6c3] bg-white px-2 py-1.5 text-[13px] text-[#0a0a0a] focus:border-[#6bd63b] focus:outline-none"
             aria-label={`Stage de ${name}`}
           >
             {STAGES.map((s) => (
@@ -147,12 +147,12 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       {/* Coordonnées avec statut de vérification */}
       <div className="mt-4 flex flex-col gap-2 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <Mail className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+          <Mail className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
           {contact.email ? (
             <>
               <a
                 href={`mailto:${contact.email}`}
-                className="text-slate-200 hover:text-accent-bright"
+                className="text-[#0a0a0a] hover:text-[#257a10]"
               >
                 {contact.email}
               </a>
@@ -164,7 +164,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   onClick={() =>
                     run("verify-email", () => markVerified(contact.id, "email"))
                   }
-                  className="inline-flex items-center gap-1 text-[11px] text-slate-500 underline-offset-2 hover:text-accent-bright hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-[#4f5a52] underline-offset-2 hover:text-[#257a10] hover:underline"
                 >
                   <BadgeCheck className="h-3 w-3" aria-hidden />
                   Confirmer
@@ -172,11 +172,11 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               )}
             </>
           ) : (
-            <span className="text-slate-600">Pas de courriel</span>
+            <span className="text-[#5f6b62]">Pas de courriel</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Phone className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+          <Phone className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
           {contact.phone ? (
             <>
               <a
@@ -189,7 +189,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                     }),
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent-bright transition-colors hover:border-accent hover:shadow-glow"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#a9d896] bg-[#eaf6e3] px-3 py-1.5 text-xs font-semibold text-[#257a10] transition-colors hover:border-[#257a10]"
                 title="Lance l'appel (iPhone, Android, Teams…) et journalise l'activité"
               >
                 <PhoneCall className="h-3 w-3" aria-hidden />
@@ -203,7 +203,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   onClick={() =>
                     run("verify-phone", () => markVerified(contact.id, "phone"))
                   }
-                  className="inline-flex items-center gap-1 text-[11px] text-slate-500 underline-offset-2 hover:text-accent-bright hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-[#4f5a52] underline-offset-2 hover:text-[#257a10] hover:underline"
                 >
                   <BadgeCheck className="h-3 w-3" aria-hidden />
                   Confirmer
@@ -211,45 +211,45 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               )}
             </>
           ) : (
-            <span className="text-slate-600">Pas de téléphone</span>
+            <span className="text-[#5f6b62]">Pas de téléphone</span>
           )}
         </div>
         {contact.linkedin_url && (
           <div className="flex items-center gap-2">
-            <Linkedin className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+            <Linkedin className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
             <a
               href={contact.linkedin_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-slate-400 hover:text-accent-bright"
+              className="text-[#4f5a52] hover:text-[#257a10]"
             >
               Profil LinkedIn
             </a>
           </div>
         )}
         {contact.notes && (
-          <p className="mt-1 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-slate-400">
+          <p className="mt-1 rounded-lg border border-[#edf2ea] bg-[#f8faf6] px-3 py-2 text-xs text-[#4f5a52]">
             {contact.notes}
           </p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#edf2ea] pt-4">
         {contact.stage !== "converted" &&
           contact.stage !== "lost" &&
           contact.stage !== "sequence_active" && (
-            <div className="inline-flex items-stretch overflow-hidden rounded-full border border-accent/40 bg-accent/10">
+            <div className="flex w-full items-stretch overflow-hidden rounded-full border border-[#c9d6c3] bg-white sm:inline-flex sm:w-auto">
               <select
                 value={introTemplate}
                 disabled={isWorking}
                 onChange={(e) => setIntroTemplate(e.target.value as TemplateType)}
                 aria-label="Choisir le modèle à envoyer"
                 title="Choisir le modèle à envoyer"
-                className="border-r border-accent/30 bg-transparent px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[13px] font-medium text-[#0a0a0a] focus:outline-none"
               >
                 {INTRO_TEMPLATE_TYPES.map((t) => (
-                  <option key={t} value={t} className="bg-night-800">
+                  <option key={t} value={t} className="bg-white">
                     {TEMPLATE_TYPE_LABELS[t]}
                   </option>
                 ))}
@@ -269,7 +269,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                     "Courriel envoyé — contact en séquence.",
                   )
                 }
-                className="inline-flex items-center gap-1.5 bg-accent px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-night-950 transition-colors hover:bg-accent-bright disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#257a10] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#1f6a0d] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy === "intro" ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -295,7 +295,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                     `Relance ${i + 1} envoyée.`,
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-cyan-200 transition-colors hover:border-cyan-400/60 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#b4e3f0] bg-[#ecfbff] px-3.5 py-2 text-[13px] font-semibold text-[#0e7090] transition-colors hover:border-[#6fc3db] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy === t ? (
                   <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -320,7 +320,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   }),
               )
             }
-            className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright transition-colors hover:border-accent hover:shadow-glow"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
             title="Lance l'appel sur ton appareil (cell, Teams, FaceTime…) et journalise l'activité"
           >
             <PhoneCall className="h-3 w-3" aria-hidden />
@@ -342,7 +342,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               "Appel journalisé.",
             )
           }
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-accent/40 hover:text-accent-bright disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
         >
           {busy === "log-call" ? (
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -356,7 +356,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           type="button"
           disabled={isWorking}
           onClick={() => setNoteOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-accent/40 hover:text-accent-bright disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
         >
           <StickyNote className="h-3 w-3" aria-hidden />
           Note
@@ -366,7 +366,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           type="button"
           disabled={isWorking}
           onClick={() => setEditOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-300 transition-colors hover:border-accent/40 hover:text-accent-bright disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
           title="Modifier les infos du contact"
         >
           <Pencil className="h-3 w-3" aria-hidden />
@@ -390,7 +390,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                 }
               });
             }}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright transition-colors hover:border-accent hover:shadow-glow disabled:opacity-50"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
             title="Crée un lot (source manuelle) et lie ce contact"
           >
             {busy === "convert" ? (
@@ -404,7 +404,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
         {contact.stage === "converted" && contact.lot_id && (
           <a
             href={`/admin/lots/${contact.lot_id}`}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright hover:shadow-glow"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
           >
             <Trophy className="h-3 w-3" aria-hidden />
             Voir le lot
@@ -423,10 +423,10 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             run("delete", () => deleteContact(contact.id));
           }}
           title="Supprime le contact et son historique (le lot lié n'est pas touché)"
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
             confirmingDelete
-              ? "border-red-500/60 bg-red-500/20 text-red-200"
-              : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-red-500/40 hover:text-red-300"
+              ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
+              : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
           }`}
         >
           {busy === "delete" ? (
@@ -440,7 +440,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
 
       {editOpen && (
         <form
-          className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
+          className="mt-4 rounded-xl border border-[#e3eadf] bg-[#f8faf6] p-4"
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
@@ -462,14 +462,14 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           }}
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="font-display text-xs font-semibold uppercase tracking-wider text-slate-300">
+            <p className="font-display text-sm font-semibold text-[#0a0a0a]">
               Modifier le contact
             </p>
             <button
               type="button"
               onClick={() => setEditOpen(false)}
               aria-label="Fermer"
-              className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-slate-400 hover:text-white"
+              className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
@@ -525,14 +525,14 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             <button
               type="button"
               onClick={() => setEditOpen(false)}
-              className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white"
+              className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
             >
               Annuler
             </button>
             <button
               type="submit"
               disabled={isWorking}
-              className="btn-primary !px-5 !py-2 !text-xs disabled:opacity-50"
+              className="btn-primary !px-5 !py-2 !text-sm disabled:opacity-50"
             >
               {busy === "edit" ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -570,13 +570,13 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Ex. : a demandé de rappeler en septembre…"
-            className="field !py-2 text-xs"
+            className="field !py-2 text-sm"
             autoFocus
           />
           <button
             type="submit"
             disabled={isWorking || !note.trim()}
-            className="shrink-0 rounded-xl border border-accent/40 bg-accent/10 px-4 text-xs font-semibold text-accent-bright hover:shadow-glow disabled:opacity-50"
+            className="shrink-0 rounded-full bg-[#257a10] px-4 text-[13px] font-semibold text-white hover:bg-[#1f6a0d] disabled:opacity-50"
           >
             Ajouter
           </button>
@@ -586,13 +586,13 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+          className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
         >
           {error}
         </p>
       )}
       {success && !error && (
-        <p className="mt-3 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs text-accent-bright">
+        <p className="mt-3 rounded-lg border border-[#b7dca5] bg-[#eaf6e3] px-3 py-2 text-xs text-[#257a10]">
           {success}
         </p>
       )}

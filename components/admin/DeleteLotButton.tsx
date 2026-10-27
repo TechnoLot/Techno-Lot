@@ -34,7 +34,7 @@ export default function DeleteLotButton({ id }: { id: string }) {
       {error && (
         <p
           role="alert"
-          className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+          className="mb-2 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
         >
           Suppression impossible : {error}
         </p>
@@ -43,10 +43,10 @@ export default function DeleteLotButton({ id }: { id: string }) {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-display text-xs font-semibold uppercase tracking-wider transition-colors disabled:opacity-70 ${
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors disabled:opacity-70 ${
         confirming
-          ? "border-red-500/60 bg-red-500/20 text-red-200"
-          : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-red-500/40 hover:text-red-300"
+          ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
+          : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
       }`}
     >
       {pending ? (

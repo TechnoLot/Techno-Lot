@@ -51,8 +51,8 @@ export default function NewLotTabs({
     <div>
       {calcLots.length > 0 && (
         <div className="mb-6">
-          <h3 className="mb-3 flex items-center gap-2 font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-            <Calculator className="h-3.5 w-3.5" aria-hidden />
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#0a0a0a]">
+            <Calculator className="h-4 w-4 text-[#4f5a52]" aria-hidden />
             Pré-remplir depuis la calculatrice
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -63,14 +63,14 @@ export default function NewLotTabs({
                 onClick={() => onSelectCalcLot(lot)}
                 className={`group rounded-xl border px-4 py-3 text-left transition ${
                   selectedCalcLot === lot.id
-                    ? "border-accent/60 bg-accent/10 shadow-glow"
-                    : "border-white/10 bg-white/[0.04] hover:border-accent/40"
+                    ? "border-[#6bd63b] bg-[#eaf6e3]"
+                    : "border-[#e3eadf] bg-white hover:border-[#a9d896]"
                 }`}
               >
-                <p className="text-sm font-semibold text-white group-hover:text-accent-bright">
+                <p className="text-sm font-semibold text-[#0a0a0a] group-hover:text-[#257a10]">
                   {lot.name}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-[#4f5a52]">
                   {formatMoney(lot.offerPrice)} · {lot.unitCount} unité{lot.unitCount > 1 ? "s" : ""}
                 </p>
               </button>
@@ -82,7 +82,7 @@ export default function NewLotTabs({
       <div
         role="tablist"
         aria-label="Mode de saisie"
-        className="mb-6 inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1"
+        className="mb-5 inline-flex max-w-full overflow-x-auto rounded-full border border-[#e3eadf] bg-white p-1"
       >
         <TabButton
           active={tab === "manual"}
@@ -101,17 +101,17 @@ export default function NewLotTabs({
       </div>
 
       {tab === "paste" ? (
-        <div className="glass p-6 sm:p-8">
+        <div className="rounded-2xl border border-[#e3eadf] bg-white p-5 sm:p-8">
           <PasteEmailPanel onExtracted={onExtracted} />
         </div>
       ) : (
-        <div className="glass p-6 sm:p-8">
+        <div className="rounded-2xl border border-[#e3eadf] bg-white p-5 sm:p-8">
           {confidence !== null && (
             <div
               className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
                 confidence >= 0.7
-                  ? "border-accent/30 bg-accent/10 text-accent-bright"
-                  : "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                  ? "border-[#b7dca5] bg-[#eaf6e3] text-[#257a10]"
+                  : "border-[#f6cf96] bg-[#fff6ed] text-[#b54708]"
               }`}
             >
               L&apos;IA a extrait ces valeurs avec une confiance de{" "}
@@ -122,7 +122,7 @@ export default function NewLotTabs({
             </div>
           )}
           {selectedCalcLot && (
-            <div className="mb-6 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-accent-bright">
+            <div className="mb-6 rounded-xl border border-[#b7dca5] bg-[#eaf6e3] px-4 py-3 text-sm text-[#257a10]">
               Pré-rempli depuis la calculatrice. Ajuste le client et les détails avant d&apos;enregistrer.
             </div>
           )}
@@ -150,10 +150,10 @@ function TabButton({
       role="tab"
       aria-selected={active}
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-wider transition-colors ${
+      className={`inline-flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
         active
-          ? "bg-accent text-night-950 shadow-glow"
-          : "text-slate-400 hover:text-white"
+          ? "bg-[#6bd63b] text-[#0a0a0a]"
+          : "text-[#4f5a52] hover:text-[#0a0a0a]"
       }`}
     >
       {icon}

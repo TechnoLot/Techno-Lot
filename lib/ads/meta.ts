@@ -167,3 +167,11 @@ export async function fetchMetaInsights(range: {
   }
   return rows;
 }
+
+/** Présence (jamais la valeur) de chaque variable Meta, pour l'écran de connexion. */
+export function getMetaEnvStatus(): { token: boolean; account: boolean } {
+  return {
+    token: Boolean(process.env.META_ACCESS_TOKEN?.trim()),
+    account: Boolean(getMetaAccountId()),
+  };
+}

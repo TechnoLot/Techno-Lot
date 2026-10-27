@@ -67,13 +67,10 @@ export default async function SuivisPage() {
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <header className="mb-8">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Prospection
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
           Suivis à faire
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-slate-400">
+        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
           Leads à rappeler aujourd&apos;hui — date planifiée dans une note,
           ou délai après contact (intéressé ≥ 3 j, contacté ≥ 7 j).
         </p>
@@ -82,7 +79,7 @@ export default async function SuivisPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           Impossible de charger les données : {error.message}
         </div>
@@ -90,20 +87,20 @@ export default async function SuivisPage() {
 
       {dueFollowups.length === 0 && upcomingFollowups.length === 0 ? (
         <div className="glass p-12 text-center">
-          <BellRing className="mx-auto h-8 w-8 text-slate-600" aria-hidden />
-          <p className="mt-3 font-display text-lg font-semibold text-white">
+          <BellRing className="mx-auto h-8 w-8 text-[#5f6b62]" aria-hidden />
+          <p className="mt-3 font-display text-lg font-semibold text-[#0a0a0a]">
             Aucun suivi à faire
           </p>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[#4f5a52]">
             Marque un lead comme « Contacté » ou « Intéressé » — ou écris une
             note comme « à rappeler lundi » — pour planifier un rappel.
           </p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-amber-400/25 bg-amber-400/5 p-5">
+        <div className="rounded-2xl border border-[#e3eadf] bg-white p-4 sm:p-5">
           <div className="flex items-center gap-2">
-            <BellRing className="h-4 w-4 text-amber-300" aria-hidden />
-            <p className="font-display text-sm font-semibold uppercase tracking-wider text-amber-200">
+            <BellRing className="h-4 w-4 text-[#b54708]" aria-hidden />
+            <p className="font-display text-lg font-semibold text-[#0a0a0a]">
               {dueFollowups.length > 0
                 ? `${dueFollowups.length} suivi${dueFollowups.length > 1 ? "s" : ""} à faire`
                 : "Suivis planifiés"}
@@ -115,25 +112,25 @@ export default async function SuivisPage() {
               {dueFollowups.map(({ company: c, overdue, plannedOn }) => (
                 <li
                   key={c.id}
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-2.5 transition-colors hover:border-amber-400/40 hover:bg-white/[0.04]"
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-[#e3eadf] bg-white px-3.5 py-3 transition-colors hover:border-[#c9d6c3] hover:bg-[#f8faf6]"
                 >
                   <Link
                     href={`/admin/crm/${c.id}`}
                     className="group flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1"
                   >
-                    <span className="text-sm font-medium text-white group-hover:text-amber-100">
+                    <span className="text-[15px] font-semibold text-[#0a0a0a] group-hover:text-[#257a10]">
                       {c.name}
                     </span>
                     <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                         c.lead_status === "interested"
-                          ? "border-accent/40 bg-accent/15 text-accent-bright"
-                          : "border-sky-400/30 bg-sky-400/10 text-sky-200"
+                          ? "border-transparent bg-[#e2f3d8] text-[#257a10]"
+                          : "border-transparent bg-[#eff6ff] text-[#175cd3]"
                       }`}
                     >
                       {LEAD_STATUS_LABELS[c.lead_status]}
                     </span>
-                    <span className="text-xs text-amber-200/80">
+                    <span className="text-[13px] font-medium text-[#b54708]">
                       {plannedOn
                         ? overdue === 0
                           ? "à rappeler aujourd'hui"
@@ -143,7 +140,7 @@ export default async function SuivisPage() {
                           : `en retard de ${overdue} jour${overdue > 1 ? "s" : ""}`}
                     </span>
                     {c.main_phone && (
-                      <span className="text-xs text-slate-400">{c.main_phone}</span>
+                      <span className="text-[13px] text-[#4f5a52]">{c.main_phone}</span>
                     )}
                   </Link>
                   <FollowupDoneButton companyId={c.id} />
@@ -154,9 +151,9 @@ export default async function SuivisPage() {
 
           {upcomingFollowups.length > 0 && (
             <div
-              className={`${dueFollowups.length > 0 ? "mt-4 border-t border-amber-400/15 pt-3" : "mt-3"}`}
+              className={`${dueFollowups.length > 0 ? "mt-5 border-t border-[#edf2ea] pt-4" : "mt-3"}`}
             >
-              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-200/60">
+              <p className="text-sm font-semibold text-[#0a0a0a]">
                 À venir
               </p>
               <ul className="mt-2 flex flex-col gap-1">
@@ -164,9 +161,9 @@ export default async function SuivisPage() {
                   <li key={c.id}>
                     <Link
                       href={`/admin/crm/${c.id}`}
-                      className="group inline-flex flex-wrap items-center gap-x-2 text-xs text-slate-400 hover:text-amber-100"
+                      className="group inline-flex flex-wrap items-center gap-x-2 text-[13px] text-[#4f5a52] hover:text-[#257a10]"
                     >
-                      <span className="font-medium text-slate-300 group-hover:text-amber-100">
+                      <span className="font-medium text-[#0a0a0a] group-hover:text-[#257a10]">
                         {c.name}
                       </span>
                       <span>— {formatFollowupDate(plannedOn)}</span>

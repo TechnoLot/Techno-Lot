@@ -66,20 +66,17 @@ export default async function NewLotPage() {
       <div className="mb-6">
         <Link
           href="/admin/lots"
-          className="inline-flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Retour aux lots
         </Link>
       </div>
       <header className="mb-8 max-w-2xl">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Créer
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
           Nouveau lot
         </h1>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm text-[#4f5a52]">
           Saisis les informations manuellement, ou colle un courriel et laisse
           l&apos;IA extraire les données automatiquement.
         </p>

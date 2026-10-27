@@ -169,30 +169,27 @@ export default async function CrmPage({
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-            Prospection
-          </p>
-          <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
             CRM
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-slate-400">
+          <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
             Meilleurs prospects du jour, triés par pertinence. Clique une
             compagnie pour voir ses contacts TI et envoyer l&apos;info Techno Lot.
           </p>
         </div>
         <div
-          className="shrink-0 rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 shadow-glow sm:max-w-xs sm:text-right"
+          className="shrink-0 rounded-2xl border border-[#e3eadf] bg-white px-4 py-3 sm:max-w-xs sm:text-right"
           role="note"
           aria-label="Rappel motivation"
         >
-          <p className="flex items-center justify-center gap-2 font-display text-sm font-black uppercase tracking-wider text-accent-bright sm:justify-end sm:text-base">
-            <DollarSign className="h-4 w-4" aria-hidden />
+          <p className="flex items-center justify-center gap-2 font-display text-sm font-bold text-[#0a0a0a] sm:justify-end sm:text-base">
+            <DollarSign className="h-4 w-4 text-[#257a10]" aria-hidden />
             <span>
               Pick up the phone
               <br />
               and start dialing
             </span>
-            <PhoneCall className="h-4 w-4" aria-hidden />
+            <PhoneCall className="h-4 w-4 text-[#257a10]" aria-hidden />
           </p>
         </div>
       </header>
@@ -200,24 +197,24 @@ export default async function CrmPage({
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           Impossible de charger les données : {error.message}
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
         {kpis.map((k) => {
           const inner = (
             <>
-              <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-                {k.label}
-              </p>
               <p
-                className={`mt-2 font-display text-3xl font-bold tabular-nums ${
-                  k.accent ? "text-accent-bright" : "text-white"
+                className={`text-[13px] font-medium leading-snug ${
+                  k.accent ? "text-[#0a0a0a]" : "text-[#4f5a52]"
                 }`}
               >
+                {k.label}
+              </p>
+              <p className="mt-2 font-display text-3xl font-bold tabular-nums text-[#0a0a0a] sm:text-4xl">
                 {k.value}
               </p>
             </>
@@ -226,12 +223,21 @@ export default async function CrmPage({
             <Link
               key={k.label}
               href={k.href}
-              className="glass p-5 transition-colors hover:border-accent/40"
+              className={`rounded-2xl border p-4 transition-colors sm:p-5 ${
+                k.accent
+                  ? "border-[#6bd63b] bg-[#6bd63b] hover:bg-[#62c936]"
+                  : "border-[#e3eadf] bg-white hover:border-[#a9d896]"
+              }`}
             >
               {inner}
             </Link>
           ) : (
-            <div key={k.label} className="glass p-5">
+            <div
+              key={k.label}
+              className={`rounded-2xl border p-4 sm:p-5 ${
+                k.accent ? "border-[#6bd63b] bg-[#6bd63b]" : "border-[#e3eadf] bg-white"
+              }`}
+            >
               {inner}
             </div>
           );
@@ -245,7 +251,7 @@ export default async function CrmPage({
         <AddCompanyButton />
       </div>
 
-      <p className="mb-3 text-xs text-slate-500">
+      <p className="mb-3 text-[13px] text-[#4f5a52]">
         {companies.length} compagnie{companies.length > 1 ? "s" : ""}
         {!includePartners && " (partenaires masqués)"}
       </p>

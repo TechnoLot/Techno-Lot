@@ -17,46 +17,36 @@ export default function LoginPage({
   const target = adminEmails[0] ?? "info@technolot.ca";
 
   return (
-    <div className="relative min-h-screen bg-night-950">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute -top-40 left-1/2 h-[560px] w-[560px] -translate-x-1/2 rounded-full bg-accent/10 blur-[120px]" />
-      </div>
-
-      <div className="relative flex min-h-screen items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="glass space-y-7 p-8">
-            <Image
-              src="/logo.png"
-              alt="Techno Lot"
-              width={200}
-              height={120}
-              priority
-              className="mx-auto h-14 w-auto"
-            />
-            <div className="text-center">
-              <p className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-accent">
-                Tableau de bord
-              </p>
-              <h1 className="mt-3 font-display text-2xl font-bold text-white">
-                Connexion admin
-              </h1>
-              <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                Entre ton nom d&apos;utilisateur et ton mot de passe.
-              </p>
-            </div>
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f7f2] px-4 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="rounded-2xl border border-[#e3eadf] bg-white p-7 shadow-[0_1px_2px_rgba(16,24,16,0.04)] sm:p-8">
+          <Image
+            src="/logo-clair.png"
+            alt="Techno Lot"
+            width={200}
+            height={116}
+            priority
+            className="mx-auto h-12 w-auto"
+          />
+          <div className="mt-6 text-center">
+            <h1 className="font-display text-2xl font-bold text-[#0a0a0a]">
+              Connexion
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-[#4f5a52]">
+              Tableau de bord Techno Lot
+            </p>
+          </div>
+          <div className="mt-7">
             <LoginForm
               email={target}
               next={searchParams.next ?? "/admin"}
               initialError={searchParams.error}
             />
           </div>
-          <p className="mt-6 text-center text-xs text-slate-500">
-            Accès réservé à l&apos;équipe Techno Lot.
-          </p>
         </div>
+        <p className="mt-5 text-center text-[13px] text-[#4f5a52]">
+          Accès réservé à l&apos;équipe Techno Lot.
+        </p>
       </div>
     </div>
   );

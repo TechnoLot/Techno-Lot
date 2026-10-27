@@ -30,32 +30,29 @@ export default async function EditLotPage({
       <div className="mb-6">
         <Link
           href="/admin/lots"
-          className="inline-flex items-center gap-2 text-xs text-slate-400 transition-colors hover:text-white"
+          className="inline-flex items-center gap-2 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Retour aux lots
         </Link>
       </div>
 
-      <header className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <header className="mb-8 flex max-w-3xl flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-              Modifier
-            </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
+              {lot.client_name}
+            </h1>
             <StatusPill status={lot.status} />
           </div>
-          <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
-            {lot.client_name}
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[#4f5a52]">
             Acheté le {formatDate(lot.purchased_at)} • source : {lot.source}
           </p>
         </div>
         <DeleteLotButton id={lot.id} />
       </header>
 
-      <div className="glass max-w-3xl p-6 sm:p-8">
+      <div className="max-w-3xl rounded-2xl border border-[#e3eadf] bg-white p-5 sm:p-8">
         <LotForm
           mode="edit"
           lotId={lot.id}

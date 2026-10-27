@@ -54,10 +54,10 @@ export default function FollowupActions({
                   ? `Relance ${step} déjà envoyée — cliquer pour renvoyer`
                   : `Envoyer la relance ${step}`
               }
-              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 sent
-                  ? "border-accent/30 bg-accent/5 text-accent-bright/70"
-                  : "border-cyan-400/30 bg-cyan-400/10 text-cyan-200 hover:border-cyan-400/60"
+                  ? "border-[#b7dca5] bg-[#f3faef] text-[#257a10]"
+                  : "border-[#b4e3f0] bg-[#ecfbff] text-[#0e7090] hover:border-[#6fc3db]"
               }`}
             >
               {busy === step ? (
@@ -73,7 +73,7 @@ export default function FollowupActions({
         })}
       </div>
       {error && (
-        <p role="alert" className="text-right text-[11px] text-red-300">
+        <p role="alert" className="text-right text-xs text-[#b42318]">
           {error}
         </p>
       )}

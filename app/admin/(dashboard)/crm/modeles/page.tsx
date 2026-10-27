@@ -30,20 +30,17 @@ export default async function ModelesPage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:text-accent-bright"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
       </Link>
 
       <header className="mb-8 mt-4">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Prospection
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
           Modèles de courriels
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-slate-400">
+        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
           Le contenu des envois « info Techno Lot » et des relances. Les
           changements prennent effet immédiatement, sans redéploiement.
         </p>
@@ -52,9 +49,9 @@ export default async function ModelesPage() {
       <div className="flex max-w-3xl flex-col gap-6">
         {templates.length === 0 && (
           <div className="glass p-12 text-center">
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-[#4f5a52]">
               Aucun modèle en base. Insère des lignes dans{" "}
-              <code className="text-accent-bright">email_templates</code>.
+              <code className="text-[#0a0a0a]">email_templates</code>.
             </p>
           </div>
         )}

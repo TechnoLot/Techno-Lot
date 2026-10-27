@@ -46,7 +46,7 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-secondary !px-4 !py-2.5 !text-xs"
+        className="inline-flex items-center justify-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-5 py-2.5 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2"
       >
         <Plus className="h-4 w-4" aria-hidden />
         Ajouter un contact
@@ -57,14 +57,14 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
   return (
     <form onSubmit={submit} className="glass w-full p-5">
       <div className="mb-4 flex items-center justify-between">
-        <p className="font-display text-sm font-semibold uppercase tracking-wider text-white">
+        <p className="font-display text-base font-semibold text-[#0a0a0a]">
           Nouveau contact
         </p>
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Fermer"
-          className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-slate-400 hover:text-white"
+          className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>
@@ -102,7 +102,7 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+          className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
         >
           {error}
         </p>
@@ -112,14 +112,14 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white"
+          className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
         >
           Annuler
         </button>
         <button
           type="submit"
           disabled={pending}
-          className="btn-primary !px-5 !py-2 !text-xs disabled:opacity-50"
+          className="btn-primary !px-5 !py-2 !text-sm disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

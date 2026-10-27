@@ -19,21 +19,21 @@ export default function CalculatricePage({
     : "/admin/calculatrice/embed";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-[#0a0a0a] sm:text-3xl">
             Calculatrice de lot
           </h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-[#4f5a52]">
             Estime la valeur d&apos;un lot, calcule l&apos;offre à payer et
             envoie le devis au client.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/admin/calculatrice/enregistres"
-            className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-xs font-semibold text-accent-bright transition hover:border-accent hover:shadow-glow"
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-4 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
           >
             <FolderOpen className="h-3.5 w-3.5" aria-hidden />
             Lots enregistrés
@@ -42,14 +42,14 @@ export default function CalculatricePage({
             href={embedSrc}
             target="_blank"
             rel="noopener"
-            className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-300 transition hover:border-accent/40 hover:text-accent-bright"
+            className="inline-flex items-center gap-1 rounded-full px-3 py-2 text-[13px] font-medium text-[#257a10] transition-colors hover:bg-[#eaf6e3]"
           >
             Ouvrir en plein écran ↗
           </a>
         </div>
       </header>
 
-      <div className="overflow-hidden rounded-2xl border border-white/5 bg-night-950 shadow-card">
+      <div className="overflow-hidden rounded-2xl border border-[#e3eadf] bg-white">
         <iframe
           src={embedSrc}
           title="Calculatrice de lot TechnoLot"

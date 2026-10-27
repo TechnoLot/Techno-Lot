@@ -28,18 +28,18 @@ export default async function LotsEnregistresPage() {
   const lots = (data ?? []) as SavedLotRow[];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/admin/calculatrice"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:text-accent-bright"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Calculatrice
         </Link>
         <Link
           href="/admin/calculatrice"
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-slate-300 transition hover:border-accent/40 hover:text-accent-bright"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-4 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
         >
           <Calculator className="h-3.5 w-3.5" aria-hidden />
           Nouveau lot
@@ -47,10 +47,10 @@ export default async function LotsEnregistresPage() {
       </div>
 
       <header>
-        <h1 className="font-display text-2xl font-semibold tracking-tight text-white">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-[#0a0a0a] sm:text-3xl">
           Lots enregistrés
         </h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-[#4f5a52]">
           Partagés entre tous les admins. Clique « Ouvrir » pour rouvrir le lot
           dans la calculatrice.
         </p>
@@ -59,7 +59,7 @@ export default async function LotsEnregistresPage() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           Impossible de charger les lots : {error.message}
         </div>

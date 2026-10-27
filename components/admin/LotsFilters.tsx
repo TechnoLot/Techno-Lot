@@ -49,7 +49,7 @@ export default function LotsFilters() {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="relative sm:w-80">
         <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
           aria-hidden
         />
         <input
@@ -58,24 +58,24 @@ export default function LotsFilters() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Rechercher un client…"
           aria-label="Rechercher un client"
-          className="field !rounded-xl !py-2.5 pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
+          className="field !py-2.5 pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2">
           {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin text-slate-500" aria-hidden />
+            <Loader2 className="h-4 w-4 animate-spin text-[#4f5a52]" aria-hidden />
           ) : q ? (
             <button
               type="button"
               onClick={() => setQ("")}
               aria-label="Effacer la recherche"
-              className="admin-focus flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:bg-white/[0.06] hover:text-white"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 flex h-6 w-6 items-center justify-center rounded-md text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
           ) : null}
         </span>
       </div>
-      <div role="tablist" aria-label="Filtrer par statut" className="admin-segment">
+      <div role="tablist" aria-label="Filtrer par statut" className="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-[#e3eadf] bg-white p-1 [scrollbar-width:none]">
         {STATUS_TABS.map(({ key, label }) => {
           const active = status === key;
           return (
@@ -85,8 +85,8 @@ export default function LotsFilters() {
               role="tab"
               aria-selected={active}
               onClick={() => pickStatus(key)}
-              className={`admin-focus relative shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                active ? "text-white" : "text-slate-400 hover:text-white"
+              className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 relative shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                active ? "text-[#0a0a0a]" : "text-[#4f5a52] hover:text-[#0a0a0a]"
               }`}
             >
               {active && (
@@ -94,7 +94,7 @@ export default function LotsFilters() {
                   layoutId={layoutId}
                   aria-hidden
                   transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                  className="absolute inset-0 rounded-lg bg-white/[0.08] ring-1 ring-inset ring-white/[0.08]"
+                  className="absolute inset-0 rounded-full bg-[#6bd63b]"
                 />
               )}
               <span className="relative">{label}</span>

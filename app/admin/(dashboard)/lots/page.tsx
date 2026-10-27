@@ -56,7 +56,7 @@ export default async function LotsListPage({
           </>
         }
         actions={
-          <Link href="/admin/lots/nouveau" className="admin-btn-accent !py-2.5">
+          <Link href="/admin/lots/nouveau" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#257a10] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1f6a0d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2">
             <Plus className="h-4 w-4" aria-hidden />
             Nouveau lot
           </Link>
@@ -70,7 +70,7 @@ export default async function LotsListPage({
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           Erreur : {error.message}
         </div>

@@ -59,10 +59,10 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
   if (lots.length === 0) {
     return (
       <div className="glass p-12 text-center">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-[#4f5a52]">
           Aucun lot enregistré pour l&apos;instant.
         </p>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-[#4f5a52]">
           Dans la calculatrice, clique « Enregistrer le lot » pour le retrouver
           ici (et sur les autres appareils).
         </p>
@@ -75,7 +75,7 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           {error}
         </p>
@@ -86,10 +86,10 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
           className="glass flex flex-wrap items-center justify-between gap-3 p-4"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-base font-semibold text-white">
+            <p className="truncate font-display text-base font-semibold text-[#0a0a0a]">
               {l.name}
             </p>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-0.5 text-xs text-[#4f5a52]">
               {l.itemCount} item{l.itemCount > 1 ? "s" : ""}
               {" · "}enregistré {formatDate(l.savedDate ?? l.updatedAt)}
               {l.createdByEmail && ` · par ${l.createdByEmail}`}
@@ -100,7 +100,7 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
               type="button"
               disabled={isWorking}
               onClick={() => openLot(l.id)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-accent-bright transition-colors hover:border-accent hover:shadow-glow disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#257a10] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#1f6a0d] disabled:opacity-50"
             >
               <Calculator className="h-3 w-3" aria-hidden />
               Ouvrir
@@ -109,10 +109,10 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
               type="button"
               disabled={isWorking}
               onClick={() => deleteLot(l.id, l.name)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
                 confirmingId === l.id
-                  ? "border-red-500/60 bg-red-500/20 text-red-200"
-                  : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-red-500/40 hover:text-red-300"
+                  ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
+                  : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
               }`}
             >
               {busy === l.id ? (

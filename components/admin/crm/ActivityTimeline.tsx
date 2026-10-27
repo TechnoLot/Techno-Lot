@@ -25,12 +25,12 @@ const ICONS: Record<ActivityType, LucideIcon> = {
 };
 
 const ICON_STYLES: Record<ActivityType, string> = {
-  call_logged: "border-violet-400/30 bg-violet-400/10 text-violet-200",
-  intro_email_sent: "border-accent/40 bg-accent/10 text-accent-bright",
-  followup_sent: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
-  reply_received: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-  sequence_step: "border-white/10 bg-white/[0.04] text-slate-300",
-  manual_note: "border-white/10 bg-white/[0.04] text-slate-300",
+  call_logged: "border-[#d9cffb] bg-[#f4f1fe] text-[#5b3fb8]",
+  intro_email_sent: "border-[#a9d896] bg-[#eaf6e3] text-[#257a10]",
+  followup_sent: "border-[#b4e3f0] bg-[#ecfbff] text-[#0e7090]",
+  reply_received: "border-[#f6cf96] bg-[#fff6ed] text-[#b54708]",
+  sequence_step: "border-[#e3eadf] bg-[#f8faf6] text-[#0a0a0a]",
+  manual_note: "border-[#e3eadf] bg-[#f8faf6] text-[#0a0a0a]",
 };
 
 function formatDateTime(iso: string): string {
@@ -57,7 +57,7 @@ export default function ActivityTimeline({
 }) {
   if (activities.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-slate-500">
+      <p className="py-6 text-center text-sm text-[#4f5a52]">
         Aucune activité pour l&apos;instant.
       </p>
     );
@@ -76,7 +76,7 @@ export default function ActivityTimeline({
           <li key={a.id} className="relative flex gap-3 pb-5 last:pb-0">
             {i < activities.length - 1 && (
               <span
-                className="absolute left-[15px] top-8 h-[calc(100%-2rem)] w-px bg-white/5"
+                className="absolute left-[15px] top-8 h-[calc(100%-2rem)] w-px bg-[#e3eadf]"
                 aria-hidden
               />
             )}
@@ -86,21 +86,21 @@ export default function ActivityTimeline({
               <Icon className="h-3.5 w-3.5" aria-hidden />
             </span>
             <div className="min-w-0 pt-1">
-              <p className="text-sm text-white">
+              <p className="text-sm text-[#0a0a0a]">
                 <span className="font-medium">{label}</span>
                 {contact && (
-                  <span className="text-slate-400"> — {contactName(contact)}</span>
+                  <span className="text-[#4f5a52]"> — {contactName(contact)}</span>
                 )}
               </p>
               {a.subject && (
-                <p className="mt-0.5 truncate text-xs text-slate-400">
+                <p className="mt-0.5 truncate text-xs text-[#4f5a52]">
                   Objet : {a.subject}
                 </p>
               )}
               {a.outcome && (
-                <p className="mt-0.5 text-xs text-slate-400">{a.outcome}</p>
+                <p className="mt-0.5 text-xs text-[#4f5a52]">{a.outcome}</p>
               )}
-              <p className="mt-0.5 text-xs text-slate-600">
+              <p className="mt-0.5 text-xs text-[#5f6b62]">
                 {formatDateTime(a.occurred_at)}
               </p>
             </div>

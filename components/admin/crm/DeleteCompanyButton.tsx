@@ -59,10 +59,10 @@ export default function DeleteCompanyButton({
             ? `Attention : ${companyName} a un contact converti (client). La compagnie et ses contacts seront supprimés ; les lots liés restent intacts.`
             : `Supprimer ${companyName} et tous ses contacts + activités`
         }
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider transition-colors disabled:opacity-50 ${
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
           confirming
-            ? "border-red-500/60 bg-red-500/20 text-red-200"
-            : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-red-500/40 hover:text-red-300"
+            ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
+            : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
         }`}
       >
         {pending ? (
@@ -73,7 +73,7 @@ export default function DeleteCompanyButton({
         {confirming ? "Confirmer la suppression" : "Supprimer le prospect"}
       </button>
       {error && (
-        <p role="alert" className="text-xs text-red-300">
+        <p role="alert" className="text-xs text-[#b42318]">
           {error}
         </p>
       )}

@@ -76,7 +76,11 @@ export type MetricRow = {
 };
 
 export type LotRow = {
+  id: string;
+  created_at: string;
+  purchased_at: string | null; // date "YYYY-MM-DD"
   client_email: string | null;
+  client_phone: string | null;
   purchase_price: number | string | null;
   sale_price: number | string | null;
   status: string | null;
@@ -143,14 +147,6 @@ export type DailyPoint = {
   clicks: number;
 };
 
-export type BreakdownItem = {
-  key: string;
-  label: string;
-  visits: number;
-  leads: number;
-  spend: number;
-};
-
 export type LeadItem = {
   id: string;
   createdAt: string;
@@ -162,7 +158,9 @@ export type LeadItem = {
   adName: string | null;
   adHref: string | null;
   placement: string | null;
+  /** Ce lead a amené un client : lot acheté/vendu à son courriel ou téléphone, après le lead */
   converted: boolean;
+  /** Profit des lots vendus rattachés à ce lead (null si rien de vendu) */
   profit: number | null;
 };
 
@@ -172,25 +170,17 @@ export type LastSync = { at: string; ok: boolean; platform: string; message: str
 
 export type AdsOverview = {
   range: DateRange;
-  prevRange: DateRange;
   totals: Totals;
-  prevTotals: Totals;
-  daily: DailyPoint[];
+  /** CPL moyen de la période (dépenses ÷ leads), null sans lead ou sans dépense */
+  avgCpl: number | null;
   ads: AdSummary[];
-  bySource: BreakdownItem[];
-  byPublisher: BreakdownItem[];
-  byDevice: BreakdownItem[];
-  recentLeads: LeadItem[];
-  hasAnyData: boolean;
 };
 
 export type AdDetail = {
   range: DateRange;
-  prevRange: DateRange;
   ad: AdSummary | null;
-  prevTotals: Totals;
+  /** CPL moyen de la plateforme sur la période, pour le verdict */
+  avgCpl: number | null;
   daily: DailyPoint[];
   leads: LeadItem[];
-  byPublisher: BreakdownItem[];
-  byDevice: BreakdownItem[];
 };

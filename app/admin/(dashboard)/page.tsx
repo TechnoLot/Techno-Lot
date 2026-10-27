@@ -1,132 +1,165 @@
 import Link from "next/link";
-import { ArrowRight, Plus } from "lucide-react";
-import CalculatriceButton from "@/components/admin/CalculatriceButton";
+import { Plus } from "lucide-react";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { PERIODS, type Lot, type PeriodKey } from "@/lib/admin/types";
-import { endOfPeriod, previousPeriodBounds, startOfPeriod } from "@/lib/admin/dates";
+import { isAdminEmail } from "@/lib/admin/config";
+import { endOfPeriod, startOfPeriod } from "@/lib/admin/dates";
+import type { Lot, PeriodKey } from "@/lib/admin/types";
+import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
+import { getEbayTotals } from "@/lib/ebay/ventes";
+import { getAdSpend } from "@/lib/ads/depenses";
 import PageHeader from "@/components/admin/PageHeader";
-import PeriodPills from "@/components/admin/PeriodPills";
-import KpiCards, { type KpiSpec } from "@/components/admin/KpiCards";
-import LotsChart from "@/components/admin/LotsChart";
-import TopClients from "@/components/admin/TopClients";
-import RecentActivity from "@/components/admin/RecentActivity";
-import PendingSales from "@/components/admin/PendingSales";
-import SavedCalcLots, { type CalcLotSummary } from "@/components/admin/SavedCalcLots";
-import TrackingSources from "@/components/admin/TrackingSources";
-import {
-  AD_PLATFORM_ORDER,
-  normalizePlatform,
-  type AdPlatform,
-} from "@/lib/ads/platforms";
-import TrackingFunnel from "@/components/admin/TrackingFunnel";
-import TrackingRoi, { type AdSpendRow } from "@/components/admin/TrackingRoi";
+import CalculatriceButton from "@/components/admin/CalculatriceButton";
+import AFaireTiles from "@/components/admin/accueil/AFaireTiles";
+import ChiffresTiles, { CHIFFRES_PERIODES } from "@/components/admin/accueil/ChiffresTiles";
+import DerniersLots from "@/components/admin/accueil/DerniersLots";
+import DernieresSoumissions, {
+  type SoumissionRow,
+} from "@/components/admin/accueil/DernieresSoumissions";
 
 export const dynamic = "force-dynamic";
 
-type Sale = { sale_price: number | string; sold_at: string };
-type Metrics = { count: number; spent: number; revenue: number; profit: number };
+const TZ = "America/Toronto";
 
-function computeMetrics(lots: Lot[], sales: Sale[]): Metrics {
-  let spent = 0;
-  let revenue = 0;
-  for (const l of lots) {
-    spent += Number(l.purchase_price);
-    if (l.sale_price != null) {
-      revenue += Number(l.sale_price);
+type Sale = { sale_price: number | string; sold_at: string };
+type SupabaseServer = ReturnType<typeof createClient>;
+
+/** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
+function torontoToday(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(now);
+}
+
+/** Les 10 derniers chiffres d'un téléphone (null si moins de 10 chiffres). */
+function phoneKey(v: string | null | undefined): string | null {
+  const digits = (v ?? "").replace(/\D/g, "");
+  return digits.length >= 10 ? digits.slice(-10) : null;
+}
+
+/**
+ * Soumissions des 30 derniers jours qui ne sont liées à aucun lot
+ * (lots.soumission_id, ou même courriel ou téléphone). La table soumissions n'a pas de politique de
+ * lecture pour « authenticated » : on la lit avec la clé service (serveur
+ * seulement, admin vérifié) quand elle est configurée. Sans clé, `readable`
+ * est faux et le compte reste inconnu.
+ */
+async function fetchSoumissionsATraiter(
+  supabase: SupabaseServer,
+  now: Date,
+): Promise<{ readable: boolean; rows: SoumissionRow[] }> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return { readable: false, rows: [] };
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || !isAdminEmail(user.email)) return { readable: false, rows: [] };
+
+  const service = createServiceClient(url, serviceKey, { auth: { persistSession: false } });
+  const since = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+  const { data, error } = await service
+    .from("soumissions")
+    .select('id, "DATE", nom, courriel, telephone, message')
+    .gte("DATE", since)
+    .order("DATE", { ascending: false })
+    .limit(200);
+  if (error || !data) return { readable: false, rows: [] };
+
+  type Raw = {
+    id: string;
+    DATE: string;
+    nom: string | null;
+    courriel: string | null;
+    telephone: string | null;
+    message: string | null;
+  };
+  const raw = data as unknown as Raw[];
+  const ids = raw.map((r) => r.id);
+  const linked = new Set<string>();
+  // Créer un lot ne remplit pas toujours lots.soumission_id : un lot créé
+  // depuis la plus ancienne soumission pour le même courriel ou le même
+  // téléphone compte aussi comme « traité ».
+  const emails = new Set<string>();
+  const phones = new Set<string>();
+  if (ids.length > 0) {
+    const oldest = raw[raw.length - 1]?.DATE ?? since;
+    const [{ data: lotsLinked }, { data: lotsRecent }] = await Promise.all([
+      service.from("lots").select("soumission_id").in("soumission_id", ids),
+      service.from("lots").select("client_email, client_phone").gte("created_at", oldest),
+    ]);
+    for (const l of (lotsLinked ?? []) as { soumission_id: string | null }[]) {
+      if (l.soumission_id) linked.add(l.soumission_id);
+    }
+    for (const l of (lotsRecent ?? []) as { client_email: string | null; client_phone: string | null }[]) {
+      const email = l.client_email?.trim().toLowerCase();
+      if (email) emails.add(email);
+      const phone = phoneKey(l.client_phone);
+      if (phone) phones.add(phone);
     }
   }
-  for (const s of sales) {
-    revenue += Number(s.sale_price);
-  }
+  const handled = (r: Raw) => {
+    if (linked.has(r.id)) return true;
+    const email = r.courriel?.trim().toLowerCase();
+    if (email && emails.has(email)) return true;
+    const phone = phoneKey(r.telephone);
+    return phone !== null && phones.has(phone);
+  };
   return {
-    count: lots.length,
-    spent,
-    revenue,
-    profit: revenue - spent,
+    readable: true,
+    rows: raw
+      .filter((r) => !handled(r))
+      .map((r) => ({
+        id: r.id,
+        date: r.DATE,
+        nom: r.nom,
+        courriel: r.courriel,
+        telephone: r.telephone,
+        message: r.message,
+      })),
   };
 }
 
-const TZ = "America/Toronto";
-
-function greeting(now: Date): string {
-  const hour = Number(
-    new Intl.DateTimeFormat("fr-CA", { hour: "numeric", hourCycle: "h23", timeZone: TZ })
-      .format(now)
-      .replace(/\D/g, ""),
-  );
-  if (hour < 5 || hour >= 18) return "Bonsoir";
-  if (hour < 12) return "Bonjour";
-  return "Bon après-midi";
-}
-
-function addDays(isoDate: string, n: number): string {
-  const d = new Date(isoDate + "T00:00:00Z");
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-}
-
-type SupabaseServer = ReturnType<typeof createClient>;
-
-/**
- * Sessions distinctes par étape (page_view / form_view|form_start /
- * form_submit) sur la période. Paginé (PostgREST plafonne à 1000 lignes),
- * avec une limite de sécurité.
- */
-async function fetchFunnel(
-  supabase: SupabaseServer,
-  start: string | null,
-  endExclusive: string | null,
-) {
-  const visits = new Set<string>();
-  const forms = new Set<string>();
-  const submits = new Set<string>();
-  const PAGE = 1000;
-  for (let page = 0; page < 20; page++) {
-    let q = supabase
-      .from("ad_events")
-      .select("session_id, type")
-      .in("type", ["page_view", "form_view", "form_start", "form_submit"])
-      .order("id", { ascending: true })
-      .range(page * PAGE, page * PAGE + PAGE - 1);
-    if (start) q = q.gte("created_at", start);
-    if (endExclusive) q = q.lt("created_at", endExclusive);
-    const { data, error } = await q;
-    if (error || !data) break;
-    for (const row of data as { session_id: string | null; type: string }[]) {
-      const sid = row.session_id ?? "";
-      if (!sid) continue;
-      if (row.type === "page_view") visits.add(sid);
-      else if (row.type === "form_submit") submits.add(sid);
-      else forms.add(sid);
-    }
-    if (data.length < PAGE) break;
+/** Même règle que /admin/crm/suivis : rappels dus (note ou délai de statut). */
+async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
+  const { data } = await supabase
+    .from("companies")
+    .select("lead_status, lead_status_changed_at, next_followup_on")
+    .eq("is_partner_not_client", false);
+  let count = 0;
+  for (const c of (data ?? []) as {
+    lead_status: LeadStatus;
+    lead_status_changed_at: string;
+    next_followup_on: string | null;
+  }[]) {
+    const planned = c.next_followup_on;
+    if (planned && planned > todayIso) continue;
+    const noteOverdue = planned ? daysSince(planned + "T00:00:00") : null;
+    const statusOverdue = followupOverdueDays(c);
+    if (noteOverdue === null && statusOverdue === null) continue;
+    count++;
   }
-  // Une session qui a envoyé le formulaire l'a forcément consulté.
-  submits.forEach((s) => forms.add(s));
-  forms.forEach((s) => visits.add(s));
-  return { visits: visits.size, formViews: forms.size, submits: submits.size };
+  return count;
 }
 
-export default async function DashboardPage({
+export default async function AccueilPage({
   searchParams,
 }: {
   searchParams: { period?: string };
 }) {
-  const period = (
-    PERIODS.find((p) => p.key === searchParams.period)?.key ?? "30d"
-  ) as PeriodKey;
-  const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? "";
+  const period: PeriodKey = CHIFFRES_PERIODES.includes(searchParams.period as PeriodKey)
+    ? (searchParams.period as PeriodKey)
+    : "month";
 
   const supabase = createClient();
+  const now = new Date();
+  const todayIso = torontoToday(now);
+  // Bornes calculées sur la date de Toronto (startOfPeriod lit la date UTC).
+  const torontoNow = new Date(todayIso + "T12:00:00Z");
+  const start = startOfPeriod(period, torontoNow);
+  const end = endOfPeriod(period, torontoNow);
 
-  const start = startOfPeriod(period);
-  const end = endOfPeriod(period);
-  const endExclusive = end ? addDays(end, 1) : null;
-
-  let lotsQuery = supabase
-    .from("lots")
-    .select("*")
-    .order("purchased_at", { ascending: false });
+  // Chiffres : lots achetés dans la période (purchased_at) + ventes manuelles (sold_at)
+  let lotsQuery = supabase.from("lots").select("purchase_price, sale_price");
   if (start) lotsQuery = lotsQuery.gte("purchased_at", start);
   if (end) lotsQuery = lotsQuery.lte("purchased_at", end);
 
@@ -134,154 +167,54 @@ export default async function DashboardPage({
   if (start) salesQuery = salesQuery.gte("sold_at", start);
   if (end) salesQuery = salesQuery.lte("sold_at", end);
 
-  const pendingQuery = supabase
-    .from("lots")
-    .select("*")
-    .eq("status", "purchased")
-    .is("sale_price", null)
-    .order("purchased_at", { ascending: false });
-
-  const savedLotsQuery = supabase
-    .from("saved_lots")
-    .select("id, name, data, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(5);
-
-  // Suivi publicitaire (tables ad_*)
-  let leadsQuery = supabase.from("ad_leads").select("platform").limit(5000);
-  if (start) leadsQuery = leadsQuery.gte("created_at", start);
-  if (endExclusive) leadsQuery = leadsQuery.lt("created_at", endExclusive);
-
-  let spendQuery = supabase.from("ad_metrics_daily").select("platform, spend").limit(10000);
-  if (start) spendQuery = spendQuery.gte("date", start);
-  if (end) spendQuery = spendQuery.lte("date", end);
-
-  const prevBounds = previousPeriodBounds(period);
-
   const [
     { data: lotsRaw, error },
     { data: salesRaw },
-    { data: pendingRaw },
-    { data: savedLotsRaw },
-    { data: leadsRaw },
-    { data: spendRaw },
-    funnel,
-    prevResults,
+    { data: derniersRaw },
+    { count: negoCount },
+    { count: prixCount },
+    suivisCount,
+    soumissions,
+    ebay,
+    pubs,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
-    pendingQuery,
-    savedLotsQuery,
-    leadsQuery,
-    spendQuery,
-    fetchFunnel(supabase, start, endExclusive),
-    prevBounds
-      ? Promise.all([
-          supabase
-            .from("lots")
-            .select("*")
-            .gte("purchased_at", prevBounds.start)
-            .lte("purchased_at", prevBounds.end),
-          supabase
-            .from("sales")
-            .select("sale_price, sold_at")
-            .gte("sold_at", prevBounds.start)
-            .lte("sold_at", prevBounds.end),
-        ])
-      : Promise.resolve(null),
+    supabase
+      .from("lots")
+      .select("*")
+      .order("purchased_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("lots")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "negotiating"),
+    // Prix de vente à saisir : même règle que l'ancien bloc « Ventes en attente »
+    supabase
+      .from("lots")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "purchased")
+      .is("sale_price", null),
+    countSuivisAFaire(supabase, todayIso),
+    fetchSoumissionsATraiter(supabase, now),
+    getEbayTotals(start, end),
+    getAdSpend(start, end),
   ]);
 
-  const lots = (lotsRaw ?? []) as Lot[];
-  const sales = (salesRaw ?? []) as Sale[];
-  const pendingLots = (pendingRaw ?? []) as Lot[];
-  const prevLots = (prevResults?.[0].data ?? []) as Lot[];
-  const prevSales = (prevResults?.[1].data ?? []) as Sale[];
-
-  const current = computeMetrics(lots, sales);
-  const prev = computeMetrics(prevLots, prevSales);
-  const hasPrev = prevBounds !== null;
-
-  type SavedLotRow = {
-    id: string;
-    name: string;
-    data: { items?: { desc: string; qte: number; bas: number | null; moyen: number | null }[]; usd?: boolean; taux?: number } | null;
-    updated_at: string;
-  };
-
-  const calcLots: CalcLotSummary[] = ((savedLotsRaw ?? []) as SavedLotRow[]).map((l) => {
-    const items = l.data?.items ?? [];
-    const usd = l.data?.usd ?? false;
-    const taux = usd ? (l.data?.taux ?? 1.37) : 1;
-    let totalBas = 0;
-    let totalMoyen = 0;
-    let unites = 0;
-    for (const it of items) {
-      unites += it.qte;
-      if (it.bas != null) totalBas += it.bas * it.qte * taux;
-      if (it.moyen != null) totalMoyen += it.moyen * it.qte * taux;
-    }
-    const valeurLot = totalBas > 0 ? totalBas : totalMoyen;
-    return {
-      id: l.id,
-      name: l.name,
-      offerPrice: Math.round((valeurLot / 2.5) * 100) / 100,
-      itemCount: items.length,
-      unitCount: unites,
-      updatedAt: l.updated_at,
-    };
-  });
-
-  // Agrégats publicitaires
-  const leadCounts: Partial<Record<AdPlatform, number>> = {};
-  for (const row of (leadsRaw ?? []) as { platform: string | null }[]) {
-    const p = normalizePlatform(row.platform);
-    leadCounts[p] = (leadCounts[p] ?? 0) + 1;
+  let achats = 0;
+  let ventesLots = 0;
+  const lotsPeriode = (lotsRaw ?? []) as Pick<Lot, "purchase_price" | "sale_price">[];
+  for (const l of lotsPeriode) {
+    achats += Number(l.purchase_price);
+    if (l.sale_price != null) ventesLots += Number(l.sale_price);
   }
-  const spendByPlatform: Partial<Record<AdPlatform, number>> = {};
-  for (const row of (spendRaw ?? []) as { platform: string | null; spend: number | string | null }[]) {
-    const p = normalizePlatform(row.platform);
-    spendByPlatform[p] = (spendByPlatform[p] ?? 0) + Number(row.spend ?? 0);
-  }
-  const spendRows: AdSpendRow[] = AD_PLATFORM_ORDER.map((p) => ({
-    platform: p,
-    spend: spendByPlatform[p] ?? 0,
-    leads: leadCounts[p] ?? 0,
-  }));
+  let ventesManuelles = 0;
+  for (const s of (salesRaw ?? []) as Sale[]) ventesManuelles += Number(s.sale_price);
+  const ventesEbay = ebay.revenue;
+  const ventes = ventesLots + ventesManuelles + ventesEbay;
+  const profit = ventes - achats - (ebay.fees ?? 0);
 
-  const cards: KpiSpec[] = [
-    {
-      label: "Lots achetés",
-      value: current.count,
-      prev: hasPrev ? prev.count : null,
-      format: "count",
-      icon: "lots",
-    },
-    {
-      label: "Montant acheté",
-      value: current.spent,
-      prev: hasPrev ? prev.spent : null,
-      format: "money",
-      icon: "spent",
-    },
-    {
-      label: "Ventes",
-      value: current.revenue,
-      prev: hasPrev ? prev.revenue : null,
-      format: "money",
-      variant: "green",
-      icon: "revenue",
-    },
-    {
-      label: "Profit",
-      value: current.profit,
-      prev: hasPrev ? prev.profit : null,
-      format: "money",
-      variant: "gradient",
-      icon: "profit",
-    },
-  ];
-
-  const now = new Date();
   const today = new Intl.DateTimeFormat("fr-CA", {
     weekday: "long",
     day: "numeric",
@@ -290,83 +223,85 @@ export default async function DashboardPage({
     timeZone: TZ,
   }).format(now);
 
+  const soumissionsCount = soumissions.readable ? soumissions.rows.length : null;
+
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
         eyebrow={today.charAt(0).toUpperCase() + today.slice(1)}
-        title={`${greeting(now)}.`}
-        description={`Achats, ventes et profit sur la période « ${periodLabel} ».`}
+        title="Bonjour"
         actions={
           <>
-            <CalculatriceButton />
-            <Link href="/admin/lots/nouveau" className="admin-btn-accent !py-2.5">
+            <Link href="/admin/lots/nouveau" className="btn-primary">
               <Plus className="h-4 w-4" aria-hidden />
               Nouveau lot
             </Link>
+            <CalculatriceButton />
           </>
         }
       />
 
-      <div className="mb-5">
-        <PeriodPills current={period} />
-      </div>
-
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fdecea] px-4 py-3 text-sm text-[#b42318]"
         >
           Impossible de charger les données : {error.message}
         </div>
       )}
 
-      <KpiCards cards={cards} />
+      <div className="flex flex-col gap-8 sm:gap-10">
+        <AFaireTiles
+          tiles={[
+            {
+              label: "Soumissions à traiter",
+              count: soumissionsCount,
+              hint: soumissions.readable ? "Reçues ces 30 derniers jours" : "Lecture à activer",
+              // Traitées dans le bloc « Dernières soumissions » plus bas
+              href: soumissions.rows.length > 0 ? "#soumissions" : null,
+            },
+            {
+              label: "Suivis à faire",
+              count: suivisCount,
+              hint: "Prospects à relancer",
+              href: "/admin/crm/suivis",
+            },
+            {
+              label: "Lots en négociation",
+              count: negoCount ?? 0,
+              hint: "Offre à conclure",
+              href: "/admin/lots?status=negotiating",
+            },
+            {
+              label: "Prix de vente à saisir",
+              count: prixCount ?? 0,
+              hint: "Lots achetés sans prix de vente",
+              href: "/admin/lots?status=purchased",
+            },
+          ]}
+        />
 
-      <div className="mt-4 animate-fade-up sm:mt-5" style={{ animationDelay: "120ms" }}>
-        <LotsChart lots={lots} period={period} />
+        <ChiffresTiles
+          period={period}
+          data={{
+            ventes,
+            ventesLots,
+            ventesManuelles,
+            ventesEbay,
+            ebayConfigured: ebay.configured,
+            achats,
+            nbLots: lotsPeriode.length,
+            fraisEbay: ebay.fees,
+            profit,
+            pubsConfigured: pubs.configured,
+            pubs: pubs.spend,
+          }}
+        />
+
+        {soumissions.rows.length > 0 && <DernieresSoumissions rows={soumissions.rows} />}
+
+        <DerniersLots lots={(derniersRaw ?? []) as Lot[]} />
       </div>
-
-      <div
-        className="mt-4 grid animate-fade-up gap-4 sm:mt-5 sm:gap-5 lg:grid-cols-2 2xl:grid-cols-3"
-        style={{ animationDelay: "200ms" }}
-      >
-        <RecentActivity lots={lots.slice(0, 6)} />
-        <PendingSales lots={pendingLots} />
-        <div className="lg:col-span-2 2xl:col-span-1">
-          <TopClients lots={lots} />
-        </div>
-      </div>
-
-      {calcLots.length > 0 && (
-        <div className="mt-4 sm:mt-5">
-          <SavedCalcLots lots={calcLots} />
-        </div>
-      )}
-
-      <section className="mt-10" aria-labelledby="marketing-title">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <h2 id="marketing-title" className="font-display text-lg font-semibold tracking-tight text-white">
-              Publicités et provenance des leads
-            </h2>
-            <p className="mt-0.5 text-xs text-slate-500">Suivi réel du site sur la période « {periodLabel} »</p>
-          </div>
-          <Link
-            href="/admin/pubs"
-            className="admin-focus inline-flex shrink-0 items-center gap-1 rounded-md text-xs font-medium text-slate-400 transition-colors hover:text-accent-bright"
-          >
-            Voir les publicités
-            <ArrowRight className="h-3 w-3" aria-hidden />
-          </Link>
-        </div>
-        <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-          <TrackingSources counts={leadCounts} />
-          <TrackingFunnel {...funnel} />
-        </div>
-        <div className="mt-4 sm:mt-5">
-          <TrackingRoi rows={spendRows} />
-        </div>
-      </section>
     </div>
   );
 }

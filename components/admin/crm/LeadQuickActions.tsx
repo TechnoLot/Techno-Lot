@@ -18,10 +18,10 @@ import {
 } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<LeadStatus, string> = {
-  not_contacted: "border-white/10 bg-white/[0.04] text-slate-400",
-  contacted: "border-sky-400/30 bg-sky-400/10 text-sky-200",
-  interested: "border-accent/40 bg-accent/15 text-accent-bright",
-  not_interested: "border-red-500/30 bg-red-500/10 text-red-300",
+  not_contacted: "border-[#c9d6c3] bg-white text-[#4f5a52]",
+  contacted: "border-[#c3dafa] bg-[#eff6ff] text-[#175cd3]",
+  interested: "border-[#a9d896] bg-[#e2f3d8] text-[#257a10]",
+  not_interested: "border-[#f4c7c3] bg-[#fef3f2] text-[#b42318]",
 };
 
 /**
@@ -127,7 +127,7 @@ export default function LeadQuickActions({
             ))}
           </select>
           <span
-            className={`pointer-events-none inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${STATUS_STYLES[status]}`}
+            className={`pointer-events-none inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[status]}`}
           >
             {busy === "status" ? (
               <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -165,8 +165,8 @@ export default function LeadQuickActions({
           aria-label={hasNote ? "Modifier la note" : "Ajouter une note"}
           className={`inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
             hasNote
-              ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
-              : "border-white/10 bg-white/[0.04] text-slate-500 hover:text-white"
+              ? "border-[#f3bd70] bg-[#fff6ed] text-[#b54708]"
+              : "border-[#c9d6c3] bg-white text-[#4f5a52] hover:text-[#0a0a0a]"
           }`}
         >
           <StickyNote className="h-3 w-3" aria-hidden />
@@ -174,7 +174,7 @@ export default function LeadQuickActions({
 
         {followupOn && (
           <span
-            className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200"
+            className="inline-flex items-center gap-1 rounded-full border border-[#f6cf96] bg-[#fff6ed] px-2 py-0.5 text-xs font-semibold text-[#b54708]"
             title={`Rappel planifié le ${followupOn}`}
           >
             <CalendarClock className="h-3 w-3" aria-hidden />
@@ -184,7 +184,7 @@ export default function LeadQuickActions({
       </div>
 
       {!compact && hasNote && !noteOpen && (
-        <p className="max-w-md rounded-lg border border-amber-400/15 bg-amber-400/5 px-3 py-2 text-xs leading-snug text-amber-100/80">
+        <p className="max-w-md rounded-lg border border-[#fbe6c9] bg-[#fffaf3] px-3 py-2 text-xs leading-snug text-[#93370d]">
           {notes}
         </p>
       )}
@@ -199,7 +199,7 @@ export default function LeadQuickActions({
             className="field !px-3 !py-2 text-xs"
             autoFocus
           />
-          <label className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#4f5a52]">
             <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
             Rappel
             <input
@@ -207,14 +207,14 @@ export default function LeadQuickActions({
               value={followupDate}
               onChange={(e) => setFollowupDate(e.target.value)}
               aria-label="Date de rappel (laisser vide pour détecter depuis la note)"
-              className="field !w-auto !px-2 !py-1 text-xs [color-scheme:dark]"
+              className="field !w-auto !px-2 !py-1 text-xs [color-scheme:light]"
             />
             {followupDate && (
               <button
                 type="button"
                 onClick={() => setFollowupDate("")}
                 aria-label="Effacer la date de rappel"
-                className="text-slate-500 hover:text-white"
+                className="text-[#4f5a52] hover:text-[#0a0a0a]"
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>
@@ -228,7 +228,7 @@ export default function LeadQuickActions({
                 onClick={deleteNote}
                 title="Supprimer la note (et son rappel planifié)"
                 aria-label="Supprimer la note"
-                className="mr-auto inline-flex h-6 items-center justify-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-red-300 transition-colors hover:border-red-500/60 disabled:opacity-50"
+                className="mr-auto inline-flex h-6 items-center justify-center gap-1 rounded-full border border-[#f4c7c3] bg-[#fef3f2] px-2.5 text-xs font-semibold text-[#b42318] transition-colors hover:border-[#d9776c] disabled:opacity-50"
               >
                 <Trash2 className="h-3 w-3" aria-hidden />
                 Supprimer
@@ -238,7 +238,7 @@ export default function LeadQuickActions({
               type="button"
               onClick={() => setNoteOpen(false)}
               aria-label="Annuler"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-slate-400 hover:text-white"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#c9d6c3] bg-white text-[#4f5a52] hover:text-[#0a0a0a]"
             >
               <X className="h-3 w-3" aria-hidden />
             </button>
@@ -247,7 +247,7 @@ export default function LeadQuickActions({
               disabled={pending}
               onClick={saveNote}
               aria-label="Enregistrer la note"
-              className="inline-flex h-6 items-center justify-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-accent-bright hover:shadow-glow disabled:opacity-50"
+              className="inline-flex h-6 items-center justify-center gap-1 rounded-full bg-[#257a10] px-2.5 text-xs font-semibold text-white hover:bg-[#1f6a0d] disabled:opacity-50"
             >
               {busy === "note" ? (
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -261,7 +261,7 @@ export default function LeadQuickActions({
       )}
 
       {error && (
-        <p role="alert" className="text-[11px] text-red-300">
+        <p role="alert" className="text-xs text-[#b42318]">
           {error}
         </p>
       )}

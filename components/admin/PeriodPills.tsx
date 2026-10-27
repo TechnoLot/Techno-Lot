@@ -5,7 +5,17 @@ import { useId, useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { PERIODS, type PeriodKey } from "@/lib/admin/types";
 
-export default function PeriodPills({ current }: { current: PeriodKey }) {
+/**
+ * Sélecteur de période (paramètre d'URL `period`). `options` limite les
+ * choix proposés (par défaut : toutes les périodes de PERIODS).
+ */
+export default function PeriodPills({
+  current,
+  options,
+}: {
+  current: PeriodKey;
+  options?: PeriodKey[];
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -13,6 +23,7 @@ export default function PeriodPills({ current }: { current: PeriodKey }) {
   const [optimistic, setOptimistic] = useState<PeriodKey | null>(null);
   const selected = pending && optimistic ? optimistic : current;
   const layoutId = `period-${useId()}`;
+  const list = options ? PERIODS.filter((p) => options.includes(p.key)) : PERIODS;
 
   function pick(key: PeriodKey) {
     if (key === current) return;
@@ -29,9 +40,9 @@ export default function PeriodPills({ current }: { current: PeriodKey }) {
       role="tablist"
       aria-label="Période"
       aria-busy={pending}
-      className={`admin-segment transition-opacity ${pending ? "opacity-80" : ""}`}
+      className={`admin-segment transition-opacity ${pending ? "opacity-70" : ""}`}
     >
-      {PERIODS.map((p) => {
+      {list.map((p) => {
         const active = p.key === selected;
         return (
           <button
@@ -40,8 +51,8 @@ export default function PeriodPills({ current }: { current: PeriodKey }) {
             role="tab"
             aria-selected={active}
             onClick={() => pick(p.key)}
-            className={`admin-focus relative shrink-0 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              active ? "text-night-950" : "text-slate-400 hover:text-white"
+            className={`admin-focus relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+              active ? "text-[#0a0a0a]" : "text-[#4f5a52] hover:text-[#0a0a0a]"
             }`}
           >
             {active && (
@@ -49,7 +60,7 @@ export default function PeriodPills({ current }: { current: PeriodKey }) {
                 layoutId={layoutId}
                 aria-hidden
                 transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                className="absolute inset-0 rounded-lg bg-accent shadow-[0_4px_14px_-4px_rgba(94,203,51,0.7)]"
+                className="absolute inset-0 rounded-full bg-[#6bd63b]"
               />
             )}
             <span className="relative">{p.label}</span>

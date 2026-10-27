@@ -76,15 +76,15 @@ export default function LoginForm({
     return (
       <div
         role="status"
-        className="rounded-2xl border border-accent/30 bg-accent/10 p-6 text-center"
+        className="rounded-2xl border border-[#b7dca5] bg-[#eaf6e3] p-6 text-center"
       >
-        <CheckCircle2 className="mx-auto h-9 w-9 text-accent" aria-hidden />
-        <p className="mt-3 font-display text-lg font-semibold text-white">
+        <CheckCircle2 className="mx-auto h-9 w-9 text-[#257a10]" aria-hidden />
+        <p className="mt-3 font-display text-lg font-semibold text-[#0a0a0a]">
           Lien envoyé.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-300">
+        <p className="mt-2 text-sm leading-relaxed text-[#0a0a0a]">
           Vérifie la boîte de{" "}
-          <span className="font-semibold text-white">{email}</span> et clique
+          <span className="font-semibold text-[#0a0a0a]">{email}</span> et clique
           sur le lien pour te connecter. Tu pourras ensuite changer ton mot de
           passe dans « Mon compte ».
         </p>
@@ -95,17 +95,17 @@ export default function LoginForm({
   const busy = status === "loading" || status === "sending-link";
 
   return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
+    <form onSubmit={submit} className="space-y-5" noValidate>
       <div>
         <label
           htmlFor="admin-username"
-          className="mb-1.5 block text-xs font-semibold text-slate-400"
+          className="mb-1.5 block text-sm font-medium text-[#0a0a0a]"
         >
           Nom d&apos;utilisateur
         </label>
         <div className="relative">
           <User
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
             aria-hidden
           />
           <input
@@ -119,7 +119,7 @@ export default function LoginForm({
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="field pl-10"
+            className="w-full rounded-[10px] border border-[#c9d6c3] bg-white py-3 text-[15px] text-[#0a0a0a] placeholder:text-[#5f6b62] transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-4"
           />
         </div>
       </div>
@@ -127,13 +127,13 @@ export default function LoginForm({
       <div>
         <label
           htmlFor="admin-password"
-          className="mb-1.5 block text-xs font-semibold text-slate-400"
+          className="mb-1.5 block text-sm font-medium text-[#0a0a0a]"
         >
           Mot de passe
         </label>
         <div className="relative">
           <Lock
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
             aria-hidden
           />
           <input
@@ -144,13 +144,13 @@ export default function LoginForm({
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="field pl-10 pr-11"
+            className="w-full rounded-[10px] border border-[#c9d6c3] bg-white py-3 text-[15px] text-[#0a0a0a] placeholder:text-[#5f6b62] transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-11"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition-colors hover:text-white"
+            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" aria-hidden />
@@ -164,7 +164,7 @@ export default function LoginForm({
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="flex items-start gap-2 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{error}</span>
@@ -174,7 +174,7 @@ export default function LoginForm({
       <button
         type="submit"
         disabled={busy}
-        className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#257a10] px-6 py-3 text-[15px] font-semibold text-white transition-colors hover:bg-[#1f6a0d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {status === "loading" ? (
           <>
@@ -193,14 +193,15 @@ export default function LoginForm({
         type="button"
         onClick={sendLink}
         disabled={busy}
-        className="mx-auto flex items-center gap-1.5 text-xs text-slate-500 transition-colors hover:text-slate-300 disabled:opacity-60"
+        title="Recevoir un lien de connexion par courriel"
+        className="mx-auto flex items-center gap-1.5 rounded-md text-sm font-medium text-[#257a10] underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] disabled:opacity-60"
       >
         {status === "sending-link" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
         ) : (
           <Mail className="h-3.5 w-3.5" aria-hidden />
         )}
-        Mot de passe oublié ? Recevoir un lien par courriel
+        Mot de passe oublié ?
       </button>
     </form>
   );

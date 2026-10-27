@@ -58,7 +58,7 @@ export default function PasteEmailPanel({
       <div>
         <label
           htmlFor="email-paste"
-          className="mb-2 block text-sm font-medium text-slate-300"
+          className="mb-2 block text-sm font-medium text-[#0a0a0a]"
         >
           Colle le courriel
         </label>
@@ -70,7 +70,7 @@ export default function PasteEmailPanel({
           className="field resize-y font-mono text-xs leading-relaxed"
           placeholder={`Ex :\n\nBonjour,\n\nSuite à notre discussion, je confirme l'achat du lot de 25 ordinateurs portables Dell Latitude pour un montant de 4 200 $. Je pourrai passer les prendre vendredi.\n\nMerci,\nClient X\ntel : 514-555-0100`}
         />
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-[#4f5a52]">
           L&apos;IA va extraire le client, le montant et un résumé, puis pré-remplir le formulaire. Tu vérifies et enregistres.
         </p>
       </div>
@@ -78,7 +78,7 @@ export default function PasteEmailPanel({
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="flex items-start gap-2 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           {error}

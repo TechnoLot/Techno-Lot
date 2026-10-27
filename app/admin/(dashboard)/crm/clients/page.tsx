@@ -41,20 +41,17 @@ export default async function ClientsPage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:text-accent-bright"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
       </Link>
 
       <header className="mb-8 mt-4">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Prospection
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
           Clients
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-slate-400">
+        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
           Les prospects convertis en clients, avec leur compagnie et le lot
           lié.
         </p>
@@ -63,7 +60,7 @@ export default async function ClientsPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
         >
           Impossible de charger les données : {error.message}
         </div>
@@ -71,11 +68,11 @@ export default async function ClientsPage() {
 
       {rows.length === 0 ? (
         <div className="glass p-12 text-center">
-          <Trophy className="mx-auto h-8 w-8 text-slate-600" aria-hidden />
-          <p className="mt-3 font-display text-lg font-semibold text-white">
+          <Trophy className="mx-auto h-8 w-8 text-[#5f6b62]" aria-hidden />
+          <p className="mt-3 font-display text-lg font-semibold text-[#0a0a0a]">
             Aucun client converti pour l&apos;instant
           </p>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[#4f5a52]">
             Utilise « Marquer comme client » sur un contact pour qu&apos;il
             apparaisse ici.
           </p>
@@ -85,7 +82,7 @@ export default async function ClientsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/10">
+                <tr className="border-b border-[#edf2ea]">
                   <Th>Client</Th>
                   <Th>Compagnie</Th>
                   <Th>Coordonnées</Th>
@@ -97,29 +94,29 @@ export default async function ClientsPage() {
                 {rows.map((r) => (
                   <tr
                     key={r.id}
-                    className="group border-b border-white/5 transition-colors last:border-b-0 hover:bg-white/[0.02]"
+                    className="group border-b border-[#edf2ea] transition-colors last:border-b-0 hover:bg-[#f8faf6]"
                   >
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-white">
+                      <p className="text-sm font-medium text-[#0a0a0a]">
                         {contactName(r)}
                       </p>
                       {r.title && (
-                        <p className="text-xs text-slate-500">{r.title}</p>
+                        <p className="text-xs text-[#4f5a52]">{r.title}</p>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {r.companies ? (
                         <Link
                           href={`/admin/crm/${r.companies.id}`}
-                          className="text-sm text-slate-300 hover:text-accent-bright"
+                          className="text-sm text-[#0a0a0a] hover:text-[#257a10]"
                         >
                           {r.companies.name}
                         </Link>
                       ) : (
-                        <span className="text-sm text-slate-600">—</span>
+                        <span className="text-sm text-[#5f6b62]">—</span>
                       )}
                       {r.companies?.region && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-[#4f5a52]">
                           {r.companies.region}
                         </p>
                       )}
@@ -128,7 +125,7 @@ export default async function ClientsPage() {
                       {r.email && (
                         <a
                           href={`mailto:${r.email}`}
-                          className="block text-xs text-slate-300 hover:text-accent-bright"
+                          className="block text-xs text-[#0a0a0a] hover:text-[#257a10]"
                         >
                           {r.email}
                         </a>
@@ -136,13 +133,13 @@ export default async function ClientsPage() {
                       {(r.phone ?? r.companies?.main_phone) && (
                         <a
                           href={`tel:${r.phone ?? r.companies?.main_phone}`}
-                          className="block text-xs text-slate-400 hover:text-accent-bright"
+                          className="block text-xs text-[#4f5a52] hover:text-[#257a10]"
                         >
                           {r.phone ?? r.companies?.main_phone}
                         </a>
                       )}
                       {!r.email && !r.phone && !r.companies?.main_phone && (
-                        <span className="text-sm text-slate-600">—</span>
+                        <span className="text-sm text-[#5f6b62]">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -150,16 +147,16 @@ export default async function ClientsPage() {
                         <Link href={`/admin/lots/${r.lots.id}`} className="block">
                           <div className="flex items-center gap-2">
                             <StatusPill status={r.lots.status} />
-                            <span className="font-display text-sm tabular-nums text-white">
+                            <span className="font-display text-sm tabular-nums text-[#0a0a0a]">
                               {formatMoney(r.lots.purchase_price)}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-xs text-slate-500">
+                          <p className="mt-0.5 text-xs text-[#4f5a52]">
                             {formatDate(r.lots.purchased_at)}
                           </p>
                         </Link>
                       ) : (
-                        <span className="text-sm text-slate-600">—</span>
+                        <span className="text-sm text-[#5f6b62]">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -170,7 +167,7 @@ export default async function ClientsPage() {
                           className="block"
                         >
                           <ChevronRight
-                            className="h-4 w-4 text-slate-500 transition-colors group-hover:text-accent"
+                            className="h-4 w-4 text-[#4f5a52] transition-colors group-hover:text-[#257a10]"
                             aria-hidden
                           />
                         </Link>
@@ -189,7 +186,7 @@ export default async function ClientsPage() {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="px-4 py-3 text-left font-display text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">
+    <th className="whitespace-nowrap px-4 py-3 text-left text-[13px] font-medium text-[#4f5a52]">
       {children}
     </th>
   );

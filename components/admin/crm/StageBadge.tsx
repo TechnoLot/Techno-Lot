@@ -1,19 +1,19 @@
 import { STAGE_LABELS, type ContactStage } from "@/lib/crm/types";
 
 const STYLES: Record<ContactStage, string> = {
-  new: "border-white/10 bg-white/[0.04] text-slate-300",
-  contacted: "border-sky-400/30 bg-sky-400/10 text-sky-200",
-  call_booked: "border-violet-400/30 bg-violet-400/10 text-violet-200",
-  call_done: "border-amber-400/30 bg-amber-400/10 text-amber-200",
-  sequence_active: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
-  converted: "border-accent/40 bg-accent/10 text-accent-bright",
-  lost: "border-red-500/20 bg-red-500/5 text-red-300/70",
+  new: "border-transparent bg-[#eef1ec] text-[#3b453e]",
+  contacted: "border-transparent bg-[#eff6ff] text-[#175cd3]",
+  call_booked: "border-transparent bg-[#f4f1fe] text-[#5b3fb8]",
+  call_done: "border-transparent bg-[#fff6ed] text-[#b54708]",
+  sequence_active: "border-transparent bg-[#ecfbff] text-[#0e7090]",
+  converted: "border-transparent bg-[#eaf6e3] text-[#257a10]",
+  lost: "border-transparent bg-[#fef3f2] text-[#b42318]",
 };
 
 export default function StageBadge({ stage }: { stage: ContactStage }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-wider ${STYLES[stage]}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-medium ${STYLES[stage]}`}
     >
       {STAGE_LABELS[stage]}
     </span>

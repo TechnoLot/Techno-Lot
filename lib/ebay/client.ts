@@ -7,10 +7,48 @@ const MARKETPLACE_ID = process.env.EBAY_MARKETPLACE_ID || "EBAY_CA";
 const EBAY_BASE = "https://api.ebay.com";
 const EBAY_BASE_Z = "https://apiz.ebay.com"; // commerce APIs
 
-type CachedToken = { token: string; expiresAt: number };
-let cached: CachedToken | null = null;
+/** Droits OAuth (scopes) utilisés par Techno Lot. */
+export const EBAY_SCOPES = {
+  inventory: "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
+  fulfillment: "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
+  analytics: "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
+  finances: "https://api.ebay.com/oauth/api_scope/sell.finances",
+  identity: "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly",
+} as const;
 
-async function getAccessToken(): Promise<string> {
+const ALL_SCOPES = Object.values(EBAY_SCOPES);
+
+/** Les trois clés eBay nécessaires sont présentes côté serveur. */
+export function isEbayConfigured(): boolean {
+  return Boolean(process.env.EBAY_APP_ID && process.env.EBAY_CERT_ID && process.env.EBAY_REFRESH_TOKEN);
+}
+
+/** Erreur d'API eBay avec le code HTTP (403 = droit manquant, etc.). */
+export class EbayApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public body: unknown,
+  ) {
+    super(message);
+    this.name = "EbayApiError";
+  }
+
+  /** Le jeton n'a pas le droit demandé (scope absent ou accès refusé). */
+  get isPermissionError(): boolean {
+    const text = JSON.stringify(this.body ?? "").toLowerCase();
+    return this.status === 401 || this.status === 403 || text.includes("invalid_scope") || text.includes("insufficient");
+  }
+}
+
+type CachedToken = { token: string; expiresAt: number };
+// Un jeton par ensemble de droits : un refresh token sans « sell.finances »
+// ne doit pas bloquer la lecture des commandes.
+const cachedTokens = new Map<string, CachedToken>();
+
+async function getAccessToken(scopeList: readonly string[] = ALL_SCOPES): Promise<string> {
+  const scopes = scopeList.join(" ");
+  const cached = cachedTokens.get(scopes);
   // Réutilise le token si valide pour > 5 min
   if (cached && cached.expiresAt > Date.now() + 5 * 60 * 1000) {
     return cached.token;
@@ -23,14 +61,6 @@ async function getAccessToken(): Promise<string> {
     throw new Error("eBay not configured. Set EBAY_APP_ID / EBAY_CERT_ID / EBAY_REFRESH_TOKEN côté serveur (variables d’environnement Hostinger).");
   }
 
-  const scopes = [
-    "https://api.ebay.com/oauth/api_scope/sell.inventory.readonly",
-    "https://api.ebay.com/oauth/api_scope/sell.fulfillment.readonly",
-    "https://api.ebay.com/oauth/api_scope/sell.analytics.readonly",
-    "https://api.ebay.com/oauth/api_scope/sell.finances",
-    "https://api.ebay.com/oauth/api_scope/commerce.identity.readonly"
-  ].join(" ");
-
   const basic = Buffer.from(`${appId}:${certId}`).toString("base64");
   const r = await fetch("https://api.ebay.com/identity/v1/oauth2/token", {
     method: "POST",
@@ -42,38 +72,53 @@ async function getAccessToken(): Promise<string> {
       grant_type: "refresh_token",
       refresh_token: refreshToken,
       scope: scopes
-    }).toString()
+    }).toString(),
+    cache: "no-store"
   });
 
-  const data = await r.json();
+  const data = await r.json().catch(() => ({}));
   if (!r.ok || !data.access_token) {
-    throw new Error(`eBay token refresh failed: ${JSON.stringify(data)}`);
+    throw new EbayApiError(`eBay token refresh failed: ${JSON.stringify(data)}`, r.status, data);
   }
-  cached = {
+  cachedTokens.set(scopes, {
     token: data.access_token,
     expiresAt: Date.now() + (data.expires_in ?? 7200) * 1000
-  };
-  return cached.token;
+  });
+  return data.access_token as string;
 }
 
 export async function ebayFetch<T>(
   path: string,
-  opts: { base?: "api" | "apiz"; marketplace?: boolean; init?: RequestInit } = {}
+  opts: { base?: "api" | "apiz"; marketplace?: boolean; init?: RequestInit; scopes?: readonly string[] } = {}
 ): Promise<T> {
-  const token = await getAccessToken();
+  const token = await getAccessToken(opts.scopes);
   const base = opts.base === "apiz" ? EBAY_BASE_Z : EBAY_BASE;
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     Accept: "application/json"
   };
   if (opts.marketplace !== false) headers["X-EBAY-C-MARKETPLACE-ID"] = MARKETPLACE_ID;
-  const r = await fetch(base + path, { ...opts.init, headers });
+  const r = await fetch(base + path, { cache: "no-store", ...opts.init, headers });
   const text = await r.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: unknown = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { raw: text.slice(0, 500) };
+  }
   if (!r.ok) {
-    throw new Error(`eBay API ${r.status}: ${JSON.stringify(data)}`);
+    throw new EbayApiError(`eBay API ${r.status}: ${JSON.stringify(data)}`, r.status, data);
   }
   return data as T;
+}
+
+/** Nombre de commandes à expédier (appel léger, pour la page Ventes eBay). */
+export async function getAwaitingShipmentCount(): Promise<number> {
+  const data = await ebayFetch<EbayOrdersResp>(
+    `/sell/fulfillment/v1/order?limit=1&filter=orderfulfillmentstatus:%7BNOT_STARTED|IN_PROGRESS%7D`,
+    { scopes: [EBAY_SCOPES.fulfillment] }
+  );
+  return data.total ?? data.orders?.length ?? 0;
 }
 
 /** Résumé consolidé pour le dashboard. */

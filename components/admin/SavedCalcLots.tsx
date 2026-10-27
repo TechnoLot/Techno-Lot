@@ -22,40 +22,40 @@ export default function SavedCalcLots({
 
   return (
     <div className="glass overflow-hidden">
-      <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
-        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-white">
-          <Calculator className="h-4 w-4 text-accent" aria-hidden />
+      <div className="flex items-center justify-between border-b border-[#edf2ea] px-5 py-4">
+        <h2 className="flex items-center gap-2 font-display text-sm font-semibold text-[#0a0a0a]">
+          <Calculator className="h-4 w-4 text-[#257a10]" aria-hidden />
           Lots calculatrice
         </h2>
         <Link
           href="/admin/calculatrice/enregistres"
-          className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 transition-colors hover:text-accent-bright"
+          className="inline-flex items-center gap-1 text-[13px] font-medium text-[#257a10] hover:underline"
         >
           <FolderOpen className="h-3 w-3" aria-hidden />
           Voir tout
         </Link>
       </div>
-      <ul className="divide-y divide-white/5">
+      <ul className="divide-y divide-[#edf2ea]">
         {lots.map((lot) => (
           <li key={lot.id}>
             <Link
               href={`/admin/calculatrice?lot=${lot.id}`}
-              className="group flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-white/[0.03]"
+              className="group flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-[#f8faf6]"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-200 group-hover:text-accent-bright">
+                <p className="truncate text-sm font-medium text-[#0a0a0a] group-hover:text-[#257a10]">
                   {lot.name}
                 </p>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-[#4f5a52]">
                   {lot.itemCount} item{lot.itemCount > 1 ? "s" : ""} · {lot.unitCount} unité{lot.unitCount > 1 ? "s" : ""}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <span className="font-display text-sm font-semibold tabular-nums text-accent-bright">
+                <span className="font-display text-sm font-semibold tabular-nums text-[#257a10]">
                   {formatMoney(lot.offerPrice)}
                 </span>
                 <ExternalLink
-                  className="h-3.5 w-3.5 text-slate-500 transition-colors group-hover:text-accent"
+                  className="h-3.5 w-3.5 text-[#4f5a52] transition-colors group-hover:text-[#257a10]"
                   aria-hidden
                 />
               </div>

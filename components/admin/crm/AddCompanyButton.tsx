@@ -49,7 +49,7 @@ export default function AddCompanyButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn-primary !px-4 !py-2.5 !text-xs"
+        className="btn-primary !px-4 !py-2.5 !text-sm"
       >
         <Plus className="h-4 w-4" aria-hidden />
         Ajouter un prospect
@@ -57,7 +57,7 @@ export default function AddCompanyButton() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0a0f1c]/40 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-company-title"
@@ -72,7 +72,7 @@ export default function AddCompanyButton() {
             <div className="mb-4 flex items-center justify-between">
               <p
                 id="add-company-title"
-                className="font-display text-sm font-semibold uppercase tracking-wider text-white"
+                className="font-display text-lg font-semibold text-[#0a0a0a]"
               >
                 Nouveau prospect
               </p>
@@ -80,7 +80,7 @@ export default function AddCompanyButton() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer"
-                className="rounded-full border border-white/10 bg-white/[0.04] p-1.5 text-slate-400 hover:text-white"
+                className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
@@ -145,7 +145,7 @@ export default function AddCompanyButton() {
             {error && (
               <p
                 role="alert"
-                className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+                className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
               >
                 {error}
               </p>
@@ -155,14 +155,14 @@ export default function AddCompanyButton() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2 text-xs font-semibold uppercase tracking-wider text-slate-300 hover:text-white"
+                className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
               >
                 Annuler
               </button>
               <button
                 type="submit"
                 disabled={pending}
-                className="btn-primary !px-5 !py-2 !text-xs disabled:opacity-50"
+                className="btn-primary !px-5 !py-2 !text-sm disabled:opacity-50"
               >
                 {pending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

@@ -73,20 +73,17 @@ export default async function RelancesPage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 transition-colors hover:text-accent-bright"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
       </Link>
 
       <header className="mb-8 mt-4">
-        <p className="font-display text-[10px] font-semibold uppercase tracking-[0.3em] text-accent">
-          Suivi
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
           Relances
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-slate-400">
+        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
           Contacts en séquence active, les plus anciens envois en premier.
           Déclenche les relances 1, 2, 3 manuellement.
         </p>
@@ -94,10 +91,10 @@ export default async function RelancesPage() {
 
       {rows.length === 0 ? (
         <div className="glass p-12 text-center">
-          <p className="font-display text-lg font-semibold text-white">
+          <p className="font-display text-lg font-semibold text-[#0a0a0a]">
             Aucune séquence active
           </p>
-          <p className="mt-2 text-sm text-slate-400">
+          <p className="mt-2 text-sm text-[#4f5a52]">
             Les contacts apparaissent ici après l&apos;envoi de l&apos;email
             d&apos;intro post-appel.
           </p>
@@ -107,7 +104,7 @@ export default async function RelancesPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/10">
+                <tr className="border-b border-[#edf2ea]">
                   <Th>Contact</Th>
                   <Th>Compagnie</Th>
                   <Th>Dernier envoi</Th>
@@ -120,13 +117,13 @@ export default async function RelancesPage() {
                   return (
                     <tr
                       key={contact.id}
-                      className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.02]"
+                      className="border-b border-[#edf2ea] last:border-b-0 hover:bg-[#f8faf6]"
                     >
                       <td className="px-4 py-3">
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-[#0a0a0a]">
                           {contactName(contact)}
                         </p>
-                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-[#4f5a52]">
                           {contact.email ?? "Pas de courriel"}
                           {contact.email && (
                             <VerifiedBadge verified={contact.email_verified} />
@@ -137,32 +134,32 @@ export default async function RelancesPage() {
                         {contact.companies ? (
                           <Link
                             href={`/admin/crm/${contact.companies.id}`}
-                            className="text-sm text-slate-300 hover:text-accent-bright"
+                            className="text-sm text-[#0a0a0a] hover:text-[#257a10]"
                           >
                             {contact.companies.name}
                           </Link>
                         ) : (
-                          <span className="text-sm text-slate-600">—</span>
+                          <span className="text-sm text-[#5f6b62]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         {lastSent ? (
                           <>
-                            <p className="text-sm text-slate-300 whitespace-nowrap">
+                            <p className="text-sm text-[#0a0a0a] whitespace-nowrap">
                               {formatDate(lastSent)}
                             </p>
                             <p
                               className={`text-xs ${
                                 days != null && days >= 7
-                                  ? "font-semibold text-amber-300"
-                                  : "text-slate-500"
+                                  ? "font-semibold text-[#b54708]"
+                                  : "text-[#4f5a52]"
                               }`}
                             >
                               il y a {days} jour{days !== 1 ? "s" : ""}
                             </p>
                           </>
                         ) : (
-                          <span className="text-sm text-slate-600">—</span>
+                          <span className="text-sm text-[#5f6b62]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -193,7 +190,7 @@ function Th({
 }) {
   return (
     <th
-      className={`px-4 py-3 font-display text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500 ${
+      className={`whitespace-nowrap px-4 py-3 text-[13px] font-medium text-[#4f5a52] ${
         align === "right" ? "text-right" : "text-left"
       }`}
     >
