@@ -1,3 +1,5 @@
+import { site } from "@/lib/site";
+
 /**
  * Whitelist des courriels autorisés à accéder au tableau de bord admin.
  * Défini via la variable d'environnement ADMIN_EMAILS (liste séparée par
@@ -12,14 +14,13 @@ export function getAdminEmails(): string[] {
 
 /**
  * Noms d'utilisateur de connexion → courriel du compte Supabase.
- * ADMIN_USERNAMES = "nom:courriel,nom2:courriel2". Par défaut,
- * « lockedinantho » pointe vers le premier courriel admin.
+ * Par défaut, « info » (la casse ne compte pas : « Info ») pointe vers le
+ * courriel de l'entreprise (site.email), qui doit aussi être dans ADMIN_EMAILS.
+ * ADMIN_USERNAMES = "nom:courriel,nom2:courriel2" en ajoute d'autres.
  * Le mot de passe, lui, vit seulement dans Supabase Auth (haché).
  */
 export function getAdminUsernames(): Record<string, string> {
-  const map: Record<string, string> = {};
-  const fallback = getAdminEmails()[0];
-  if (fallback) map.lockedinantho = fallback;
+  const map: Record<string, string> = { info: site.email.toLowerCase() };
   for (const pair of (process.env.ADMIN_USERNAMES ?? "").split(",")) {
     const [user, email] = pair.split(":").map((s) => s?.trim().toLowerCase());
     if (user && email) map[user] = email;
