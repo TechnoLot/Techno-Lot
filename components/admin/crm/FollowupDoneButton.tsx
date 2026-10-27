@@ -34,8 +34,8 @@ export default function FollowupDoneButton({
       title="Marque le suivi comme fait — le rappel reviendra après le prochain délai"
       className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
         error
-          ? "border-[#eaa9a2] bg-[#fef3f2] text-[#b42318]"
-          : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:bg-[#f4f7f2]"
+          ? "border-admin-tint-red-line bg-admin-tint-red text-admin-danger"
+          : "border-admin-line-strong bg-admin-card text-admin-ink hover:bg-admin-page"
       }`}
     >
       {pending ? (

@@ -32,14 +32,14 @@ export default async function LotsEnregistresPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/admin/calculatrice"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
           Calculatrice
         </Link>
         <Link
           href="/admin/calculatrice"
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-4 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-4 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page"
         >
           <Calculator className="h-3.5 w-3.5" aria-hidden />
           Nouveau lot
@@ -47,10 +47,10 @@ export default async function LotsEnregistresPage() {
       </div>
 
       <header>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-[#0a0a0a] sm:text-3xl">
+        <h1 className="font-display text-2xl font-bold tracking-tight text-admin-ink sm:text-3xl">
           Lots enregistrés
         </h1>
-        <p className="mt-1 text-sm text-[#4f5a52]">
+        <p className="mt-1 text-sm text-admin-muted">
           Partagés entre tous les admins. Clique « Ouvrir » pour rouvrir le lot
           dans la calculatrice.
         </p>
@@ -59,7 +59,7 @@ export default async function LotsEnregistresPage() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           Impossible de charger les lots : {error.message}
         </div>

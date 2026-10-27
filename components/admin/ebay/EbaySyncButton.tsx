@@ -37,14 +37,14 @@ export default function EbaySyncButton({ configured }: { configured: boolean }) 
         type="button"
         onClick={sync}
         disabled={busy || !configured}
-        className="inline-flex items-center gap-2 rounded-full bg-[#257a10] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1e6a0c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#257a10] disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-full bg-[#257a10] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1e6a0c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-green disabled:cursor-not-allowed disabled:opacity-50"
       >
         <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} aria-hidden />
         {busy ? "Synchronisation…" : "Synchroniser avec eBay"}
       </button>
-      {!configured && <p className="text-xs text-[#4f5a52]">Disponible une fois eBay connecté.</p>}
+      {!configured && <p className="text-xs text-admin-muted">Disponible une fois eBay connecté.</p>}
       {result && (
-        <p role="status" className={`max-w-xs text-xs sm:text-right ${result.ok ? "text-[#257a10]" : "text-[#b42318]"}`}>
+        <p role="status" className={`max-w-xs text-xs sm:text-right ${result.ok ? "text-admin-green" : "text-admin-danger"}`}>
           {result.message}
         </p>
       )}

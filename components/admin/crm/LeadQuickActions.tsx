@@ -18,10 +18,10 @@ import {
 } from "@/lib/crm/types";
 
 const STATUS_STYLES: Record<LeadStatus, string> = {
-  not_contacted: "border-[#c9d6c3] bg-white text-[#4f5a52]",
-  contacted: "border-[#c3dafa] bg-[#eff6ff] text-[#175cd3]",
-  interested: "border-[#a9d896] bg-[#e2f3d8] text-[#257a10]",
-  not_interested: "border-[#f4c7c3] bg-[#fef3f2] text-[#b42318]",
+  not_contacted: "border-admin-line-strong bg-admin-card text-admin-muted",
+  contacted: "border-[#c3dafa] [[data-admin-theme=dark]_&]:border-admin-tint-blue-ink/30 bg-admin-tint-blue text-admin-tint-blue-ink",
+  interested: "border-admin-tint-green-line bg-admin-tint-green text-admin-green",
+  not_interested: "border-admin-tint-red-line bg-admin-tint-red text-admin-danger",
 };
 
 /**
@@ -165,8 +165,8 @@ export default function LeadQuickActions({
           aria-label={hasNote ? "Modifier la note" : "Ajouter une note"}
           className={`inline-flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
             hasNote
-              ? "border-[#f3bd70] bg-[#fff6ed] text-[#b54708]"
-              : "border-[#c9d6c3] bg-white text-[#4f5a52] hover:text-[#0a0a0a]"
+              ? "border-admin-tint-amber-line bg-admin-tint-amber text-admin-warning"
+              : "border-admin-line-strong bg-admin-card text-admin-muted hover:text-admin-ink"
           }`}
         >
           <StickyNote className="h-3 w-3" aria-hidden />
@@ -174,7 +174,7 @@ export default function LeadQuickActions({
 
         {followupOn && (
           <span
-            className="inline-flex items-center gap-1 rounded-full border border-[#f6cf96] bg-[#fff6ed] px-2 py-0.5 text-xs font-semibold text-[#b54708]"
+            className="inline-flex items-center gap-1 rounded-full border border-admin-tint-amber-line bg-admin-tint-amber px-2 py-0.5 text-xs font-semibold text-admin-warning"
             title={`Rappel planifié le ${followupOn}`}
           >
             <CalendarClock className="h-3 w-3" aria-hidden />
@@ -184,7 +184,7 @@ export default function LeadQuickActions({
       </div>
 
       {!compact && hasNote && !noteOpen && (
-        <p className="max-w-md rounded-lg border border-[#fbe6c9] bg-[#fffaf3] px-3 py-2 text-xs leading-snug text-[#93370d]">
+        <p className="max-w-md rounded-lg border border-admin-tint-amber-line bg-admin-tint-amber px-3 py-2 text-xs leading-snug text-admin-tint-amber-ink">
           {notes}
         </p>
       )}
@@ -199,7 +199,7 @@ export default function LeadQuickActions({
             className="field !px-3 !py-2 text-xs"
             autoFocus
           />
-          <label className="flex items-center gap-2 text-xs font-semibold text-[#4f5a52]">
+          <label className="flex items-center gap-2 text-xs font-semibold text-admin-muted">
             <CalendarClock className="h-3 w-3 shrink-0" aria-hidden />
             Rappel
             <input
@@ -207,14 +207,14 @@ export default function LeadQuickActions({
               value={followupDate}
               onChange={(e) => setFollowupDate(e.target.value)}
               aria-label="Date de rappel (laisser vide pour détecter depuis la note)"
-              className="field !w-auto !px-2 !py-1 text-xs [color-scheme:light]"
+              className="field !w-auto !px-2 !py-1 text-xs"
             />
             {followupDate && (
               <button
                 type="button"
                 onClick={() => setFollowupDate("")}
                 aria-label="Effacer la date de rappel"
-                className="text-[#4f5a52] hover:text-[#0a0a0a]"
+                className="text-admin-muted hover:text-admin-ink"
               >
                 <X className="h-3 w-3" aria-hidden />
               </button>
@@ -228,7 +228,7 @@ export default function LeadQuickActions({
                 onClick={deleteNote}
                 title="Supprimer la note (et son rappel planifié)"
                 aria-label="Supprimer la note"
-                className="mr-auto inline-flex h-6 items-center justify-center gap-1 rounded-full border border-[#f4c7c3] bg-[#fef3f2] px-2.5 text-xs font-semibold text-[#b42318] transition-colors hover:border-[#d9776c] disabled:opacity-50"
+                className="mr-auto inline-flex h-6 items-center justify-center gap-1 rounded-full border border-admin-tint-red-line bg-admin-tint-red px-2.5 text-xs font-semibold text-admin-danger transition-colors hover:border-admin-tint-red-line disabled:opacity-50"
               >
                 <Trash2 className="h-3 w-3" aria-hidden />
                 Supprimer
@@ -238,7 +238,7 @@ export default function LeadQuickActions({
               type="button"
               onClick={() => setNoteOpen(false)}
               aria-label="Annuler"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[#c9d6c3] bg-white text-[#4f5a52] hover:text-[#0a0a0a]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-admin-line-strong bg-admin-card text-admin-muted hover:text-admin-ink"
             >
               <X className="h-3 w-3" aria-hidden />
             </button>
@@ -261,7 +261,7 @@ export default function LeadQuickActions({
       )}
 
       {error && (
-        <p role="alert" className="text-xs text-[#b42318]">
+        <p role="alert" className="text-xs text-admin-danger">
           {error}
         </p>
       )}

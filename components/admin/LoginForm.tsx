@@ -76,15 +76,15 @@ export default function LoginForm({
     return (
       <div
         role="status"
-        className="rounded-2xl border border-[#b7dca5] bg-[#eaf6e3] p-6 text-center"
+        className="rounded-2xl border border-admin-tint-green-line bg-admin-tint-green p-6 text-center"
       >
-        <CheckCircle2 className="mx-auto h-9 w-9 text-[#257a10]" aria-hidden />
-        <p className="mt-3 font-display text-lg font-semibold text-[#0a0a0a]">
+        <CheckCircle2 className="mx-auto h-9 w-9 text-admin-green" aria-hidden />
+        <p className="mt-3 font-display text-lg font-semibold text-admin-ink">
           Lien envoyé.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-[#0a0a0a]">
+        <p className="mt-2 text-sm leading-relaxed text-admin-ink">
           Vérifie la boîte de{" "}
-          <span className="font-semibold text-[#0a0a0a]">{email}</span> et clique
+          <span className="font-semibold text-admin-ink">{email}</span> et clique
           sur le lien pour te connecter. Tu pourras ensuite changer ton mot de
           passe dans « Mon compte ».
         </p>
@@ -99,13 +99,13 @@ export default function LoginForm({
       <div>
         <label
           htmlFor="admin-username"
-          className="mb-1.5 block text-sm font-medium text-[#0a0a0a]"
+          className="mb-1.5 block text-sm font-medium text-admin-ink"
         >
           Nom d&apos;utilisateur
         </label>
         <div className="relative">
           <User
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted"
             aria-hidden
           />
           <input
@@ -119,7 +119,7 @@ export default function LoginForm({
             required
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-[10px] border border-[#c9d6c3] bg-white py-3 text-[15px] text-[#0a0a0a] placeholder:text-[#5f6b62] transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-4"
+            className="w-full rounded-[10px] border border-admin-line-strong bg-admin-card py-3 text-[15px] text-admin-ink placeholder:text-admin-faint transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-4"
           />
         </div>
       </div>
@@ -127,13 +127,13 @@ export default function LoginForm({
       <div>
         <label
           htmlFor="admin-password"
-          className="mb-1.5 block text-sm font-medium text-[#0a0a0a]"
+          className="mb-1.5 block text-sm font-medium text-admin-ink"
         >
           Mot de passe
         </label>
         <div className="relative">
           <Lock
-            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
+            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted"
             aria-hidden
           />
           <input
@@ -144,13 +144,13 @@ export default function LoginForm({
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-[10px] border border-[#c9d6c3] bg-white py-3 text-[15px] text-[#0a0a0a] placeholder:text-[#5f6b62] transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-11"
+            className="w-full rounded-[10px] border border-admin-line-strong bg-admin-card py-3 text-[15px] text-admin-ink placeholder:text-admin-faint transition-colors focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40 pl-10 pr-11"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
+            className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-admin-muted transition-colors hover:text-admin-ink"
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4" aria-hidden />
@@ -164,7 +164,7 @@ export default function LoginForm({
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="flex items-start gap-2 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{error}</span>
@@ -194,7 +194,7 @@ export default function LoginForm({
         onClick={sendLink}
         disabled={busy}
         title="Recevoir un lien de connexion par courriel"
-        className="mx-auto flex items-center gap-1.5 rounded-md text-sm font-medium text-[#257a10] underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] disabled:opacity-60"
+        className="mx-auto flex items-center gap-1.5 rounded-md text-sm font-medium text-admin-green underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] disabled:opacity-60"
       >
         {status === "sending-link" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

@@ -13,6 +13,41 @@ const tl = (name: string) => `rgb(var(--tl-${name}) / <alpha-value>)`;
 const tlA = (name: string) =>
   `rgb(var(--tl-${name}) / calc(<alpha-value> * var(--tl-${name}-a, 1)))`;
 
+/* Admin : couleurs par rôle branchées sur les variables --a-* de
+   app/globals.css ; `data-admin-theme="dark"` sur la coque les inverse. */
+const adm = (name: string) => `rgb(var(--a-${name}) / <alpha-value>)`;
+const adminColors = {
+  page: adm("page"),
+  card: adm("card"),
+  subtle: adm("subtle"),
+  hover: adm("hover"),
+  ink: adm("ink"),
+  muted: adm("muted"),
+  faint: adm("faint"),
+  line: { DEFAULT: adm("line"), soft: adm("line-soft"), strong: adm("line-strong") },
+  green: adm("green"),
+  danger: adm("danger"),
+  warning: adm("warning"),
+  tint: {
+    green: adm("tint-green"),
+    "green-ink": adm("tint-green-ink"),
+    "green-line": adm("tint-green-line"),
+    amber: adm("tint-amber"),
+    "amber-ink": adm("tint-amber-ink"),
+    "amber-line": adm("tint-amber-line"),
+    red: adm("tint-red"),
+    "red-strong": adm("tint-red-strong"),
+    "red-line": adm("tint-red-line"),
+    blue: adm("tint-blue"),
+    "blue-ink": adm("tint-blue-ink"),
+    violet: adm("tint-violet"),
+    "violet-ink": adm("tint-violet-ink"),
+    cyan: adm("tint-cyan"),
+    "cyan-ink": adm("tint-cyan-ink"),
+    gray: adm("tint-gray"),
+  },
+};
+
 const siteColors = {
   paper: tl("paper"),
   cream: tl("cream"),
@@ -68,6 +103,7 @@ const config: Config = {
           cyan: "#22D3EE",
         },
         ...siteColors,
+        admin: adminColors,
       },
       fontFamily: {
         display: ["var(--font-display)", "sans-serif"],

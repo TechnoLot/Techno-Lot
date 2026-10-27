@@ -89,19 +89,19 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-display text-base font-semibold text-[#0a0a0a]">
+            <p className="font-display text-base font-semibold text-admin-ink">
               {name}
             </p>
             {contact.contact_priority === 1 && (
               <Star
-                className="h-3.5 w-3.5 text-[#257a10]"
+                className="h-3.5 w-3.5 text-admin-green"
                 aria-label="Contact principal"
               />
             )}
             <StageBadge stage={contact.stage} />
             {contact.is_fallback_contact && (
               <span
-                className="inline-flex items-center rounded-full bg-[#fff4ed] px-2 py-0.5 text-xs font-medium text-[#b93815]"
+                className="inline-flex items-center rounded-full bg-admin-tint-amber px-2 py-0.5 text-xs font-medium text-admin-tint-amber-ink"
                 title={
                   contact.fallback_reason ??
                   "Aucun titre TI direct trouvé — meilleure estimation"
@@ -112,17 +112,17 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             )}
           </div>
           {contact.title && (
-            <p className="mt-0.5 text-sm text-[#4f5a52]">{contact.title}</p>
+            <p className="mt-0.5 text-sm text-admin-muted">{contact.title}</p>
           )}
           {contact.priority_reason && (
-            <p className="mt-0.5 text-xs text-[#4f5a52]">
+            <p className="mt-0.5 text-xs text-admin-muted">
               {contact.priority_reason}
             </p>
           )}
         </div>
 
         {/* Changement de stage manuel */}
-        <label className="flex items-center gap-2 text-xs text-[#4f5a52]">
+        <label className="flex items-center gap-2 text-xs text-admin-muted">
           Stage
           <select
             value={contact.stage}
@@ -132,7 +132,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                 updateContactStage(contact.id, e.target.value as ContactStage),
               )
             }
-            className="rounded-[10px] border border-[#c9d6c3] bg-white px-2 py-1.5 text-[13px] text-[#0a0a0a] focus:border-[#6bd63b] focus:outline-none"
+            className="rounded-[10px] border border-admin-line-strong bg-admin-card px-2 py-1.5 text-[13px] text-admin-ink focus:border-[#6bd63b] focus:outline-none"
             aria-label={`Stage de ${name}`}
           >
             {STAGES.map((s) => (
@@ -147,12 +147,12 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       {/* Coordonnées avec statut de vérification */}
       <div className="mt-4 flex flex-col gap-2 text-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <Mail className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
+          <Mail className="h-3.5 w-3.5 shrink-0 text-admin-muted" aria-hidden />
           {contact.email ? (
             <>
               <a
                 href={`mailto:${contact.email}`}
-                className="text-[#0a0a0a] hover:text-[#257a10]"
+                className="text-admin-ink hover:text-admin-green"
               >
                 {contact.email}
               </a>
@@ -164,7 +164,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   onClick={() =>
                     run("verify-email", () => markVerified(contact.id, "email"))
                   }
-                  className="inline-flex items-center gap-1 text-xs text-[#4f5a52] underline-offset-2 hover:text-[#257a10] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-admin-muted underline-offset-2 hover:text-admin-green hover:underline"
                 >
                   <BadgeCheck className="h-3 w-3" aria-hidden />
                   Confirmer
@@ -172,11 +172,11 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               )}
             </>
           ) : (
-            <span className="text-[#5f6b62]">Pas de courriel</span>
+            <span className="text-admin-faint">Pas de courriel</span>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Phone className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
+          <Phone className="h-3.5 w-3.5 shrink-0 text-admin-muted" aria-hidden />
           {contact.phone ? (
             <>
               <a
@@ -189,7 +189,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                     }),
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#a9d896] bg-[#eaf6e3] px-3 py-1.5 text-xs font-semibold text-[#257a10] transition-colors hover:border-[#257a10]"
+                className="inline-flex items-center gap-1.5 rounded-full border border-admin-tint-green-line bg-admin-tint-green px-3 py-1.5 text-xs font-semibold text-admin-green transition-colors hover:border-admin-green"
                 title="Lance l'appel (iPhone, Android, Teams…) et journalise l'activité"
               >
                 <PhoneCall className="h-3 w-3" aria-hidden />
@@ -203,7 +203,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   onClick={() =>
                     run("verify-phone", () => markVerified(contact.id, "phone"))
                   }
-                  className="inline-flex items-center gap-1 text-xs text-[#4f5a52] underline-offset-2 hover:text-[#257a10] hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-admin-muted underline-offset-2 hover:text-admin-green hover:underline"
                 >
                   <BadgeCheck className="h-3 w-3" aria-hidden />
                   Confirmer
@@ -211,45 +211,45 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               )}
             </>
           ) : (
-            <span className="text-[#5f6b62]">Pas de téléphone</span>
+            <span className="text-admin-faint">Pas de téléphone</span>
           )}
         </div>
         {contact.linkedin_url && (
           <div className="flex items-center gap-2">
-            <Linkedin className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
+            <Linkedin className="h-3.5 w-3.5 shrink-0 text-admin-muted" aria-hidden />
             <a
               href={contact.linkedin_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#4f5a52] hover:text-[#257a10]"
+              className="text-admin-muted hover:text-admin-green"
             >
               Profil LinkedIn
             </a>
           </div>
         )}
         {contact.notes && (
-          <p className="mt-1 rounded-lg border border-[#edf2ea] bg-[#f8faf6] px-3 py-2 text-xs text-[#4f5a52]">
+          <p className="mt-1 rounded-lg border border-admin-line-soft bg-admin-subtle px-3 py-2 text-xs text-admin-muted">
             {contact.notes}
           </p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#edf2ea] pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-admin-line-soft pt-4">
         {contact.stage !== "converted" &&
           contact.stage !== "lost" &&
           contact.stage !== "sequence_active" && (
-            <div className="flex w-full items-stretch overflow-hidden rounded-full border border-[#c9d6c3] bg-white sm:inline-flex sm:w-auto">
+            <div className="flex w-full items-stretch overflow-hidden rounded-full border border-admin-line-strong bg-admin-card sm:inline-flex sm:w-auto">
               <select
                 value={introTemplate}
                 disabled={isWorking}
                 onChange={(e) => setIntroTemplate(e.target.value as TemplateType)}
                 aria-label="Choisir le modèle à envoyer"
                 title="Choisir le modèle à envoyer"
-                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[13px] font-medium text-[#0a0a0a] focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[13px] font-medium text-admin-ink focus:outline-none"
               >
                 {INTRO_TEMPLATE_TYPES.map((t) => (
-                  <option key={t} value={t} className="bg-white">
+                  <option key={t} value={t} className="bg-admin-card">
                     {TEMPLATE_TYPE_LABELS[t]}
                   </option>
                 ))}
@@ -295,7 +295,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                     `Relance ${i + 1} envoyée.`,
                   )
                 }
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#b4e3f0] bg-[#ecfbff] px-3.5 py-2 text-[13px] font-semibold text-[#0e7090] transition-colors hover:border-[#6fc3db] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#b4e3f0] [[data-admin-theme=dark]_&]:border-admin-tint-cyan-ink/30 bg-admin-tint-cyan px-3.5 py-2 text-[13px] font-semibold text-admin-tint-cyan-ink transition-colors hover:border-[#6fc3db] [[data-admin-theme=dark]_&]:hover:border-admin-tint-cyan-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy === t ? (
                   <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -320,7 +320,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                   }),
               )
             }
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+            className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page"
             title="Lance l'appel sur ton appareil (cell, Teams, FaceTime…) et journalise l'activité"
           >
             <PhoneCall className="h-3 w-3" aria-hidden />
@@ -342,7 +342,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               "Appel journalisé.",
             )
           }
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page disabled:opacity-50"
         >
           {busy === "log-call" ? (
             <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -356,7 +356,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           type="button"
           disabled={isWorking}
           onClick={() => setNoteOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page disabled:opacity-50"
         >
           <StickyNote className="h-3 w-3" aria-hidden />
           Note
@@ -366,7 +366,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           type="button"
           disabled={isWorking}
           onClick={() => setEditOpen((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page disabled:opacity-50"
           title="Modifier les infos du contact"
         >
           <Pencil className="h-3 w-3" aria-hidden />
@@ -390,7 +390,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
                 }
               });
             }}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] disabled:opacity-50"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page disabled:opacity-50"
             title="Crée un lot (source manuelle) et lie ce contact"
           >
             {busy === "convert" ? (
@@ -404,7 +404,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
         {contact.stage === "converted" && contact.lot_id && (
           <a
             href={`/admin/lots/${contact.lot_id}`}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-[#c9d6c3] bg-white px-3.5 py-2 text-[13px] font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+            className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:bg-admin-page"
           >
             <Trophy className="h-3 w-3" aria-hidden />
             Voir le lot
@@ -425,8 +425,8 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           title="Supprime le contact et son historique (le lot lié n'est pas touché)"
           className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
             confirmingDelete
-              ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
-              : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
+              ? "border-admin-tint-red-line bg-admin-tint-red-strong text-admin-danger"
+              : "border-admin-line-strong bg-admin-card text-admin-ink hover:border-admin-tint-red-line hover:text-admin-danger"
           }`}
         >
           {busy === "delete" ? (
@@ -440,7 +440,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
 
       {editOpen && (
         <form
-          className="mt-4 rounded-xl border border-[#e3eadf] bg-[#f8faf6] p-4"
+          className="mt-4 rounded-xl border border-admin-line bg-admin-subtle p-4"
           onSubmit={(e) => {
             e.preventDefault();
             const fd = new FormData(e.currentTarget);
@@ -462,14 +462,14 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           }}
         >
           <div className="mb-3 flex items-center justify-between">
-            <p className="font-display text-sm font-semibold text-[#0a0a0a]">
+            <p className="font-display text-sm font-semibold text-admin-ink">
               Modifier le contact
             </p>
             <button
               type="button"
               onClick={() => setEditOpen(false)}
               aria-label="Fermer"
-              className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
+              className="rounded-full border border-admin-line-strong bg-admin-card p-1.5 text-admin-muted hover:bg-admin-page hover:text-admin-ink"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
@@ -525,7 +525,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
             <button
               type="button"
               onClick={() => setEditOpen(false)}
-              className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+              className="rounded-full border border-admin-line-strong bg-admin-card px-5 py-2 text-sm font-semibold text-admin-ink transition-colors hover:bg-admin-page"
             >
               Annuler
             </button>
@@ -586,13 +586,13 @@ export default function ContactCard({ contact }: { contact: Contact }) {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
+          className="mt-3 rounded-lg border border-admin-tint-red-line bg-admin-tint-red px-3 py-2 text-xs text-admin-danger"
         >
           {error}
         </p>
       )}
       {success && !error && (
-        <p className="mt-3 rounded-lg border border-[#b7dca5] bg-[#eaf6e3] px-3 py-2 text-xs text-[#257a10]">
+        <p className="mt-3 rounded-lg border border-admin-tint-green-line bg-admin-tint-green px-3 py-2 text-xs text-admin-green">
           {success}
         </p>
       )}

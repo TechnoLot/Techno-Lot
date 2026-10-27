@@ -2,7 +2,9 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import type { User } from "@supabase/supabase-js";
+import { isAdminEmail, resolvePrenom } from "@/lib/admin/config";
+import { site } from "@/lib/site";
 import { endOfPeriod, startOfPeriod } from "@/lib/admin/dates";
 import type { Lot, PeriodKey } from "@/lib/admin/types";
 import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
@@ -43,16 +45,13 @@ function phoneKey(v: string | null | undefined): string | null {
  * est faux et le compte reste inconnu.
  */
 async function fetchSoumissionsATraiter(
-  supabase: SupabaseServer,
+  user: User | null,
   now: Date,
 ): Promise<{ readable: boolean; rows: SoumissionRow[] }> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return { readable: false, rows: [] };
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user || !isAdminEmail(user.email)) return { readable: false, rows: [] };
 
   const service = createServiceClient(url, serviceKey, { auth: { persistSession: false } });
@@ -151,6 +150,12 @@ export default async function AccueilPage({
     : "month";
 
   const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // Prénom : user_metadata.prenom, sinon table par défaut (lib/admin/config.ts).
+  // Sans session (contournement local), on retombe sur le courriel de l'entreprise.
+  const prenom = resolvePrenom(user?.email ?? site.email, user?.user_metadata);
   const now = new Date();
   const todayIso = torontoToday(now);
   // Bornes calculées sur la date de Toronto (startOfPeriod lit la date UTC).
@@ -197,7 +202,7 @@ export default async function AccueilPage({
       .eq("status", "purchased")
       .is("sale_price", null),
     countSuivisAFaire(supabase, todayIso),
-    fetchSoumissionsATraiter(supabase, now),
+    fetchSoumissionsATraiter(user, now),
     getEbayTotals(start, end),
     getAdSpend(start, end),
   ]);
@@ -229,7 +234,7 @@ export default async function AccueilPage({
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
         eyebrow={today.charAt(0).toUpperCase() + today.slice(1)}
-        title="Bonjour"
+        title={prenom ? `Bonjour ${prenom}` : "Bonjour"}
         actions={
           <>
             <Link href="/admin/lots/nouveau" className="btn-primary">
@@ -244,7 +249,7 @@ export default async function AccueilPage({
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fdecea] px-4 py-3 text-sm text-[#b42318]"
+          className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           Impossible de charger les données : {error.message}
         </div>

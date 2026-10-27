@@ -61,8 +61,8 @@ export default function DeleteCompanyButton({
         }
         className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
           confirming
-            ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
-            : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
+            ? "border-admin-tint-red-line bg-admin-tint-red-strong text-admin-danger"
+            : "border-admin-line-strong bg-admin-card text-admin-ink hover:border-admin-tint-red-line hover:text-admin-danger"
         }`}
       >
         {pending ? (
@@ -73,7 +73,7 @@ export default function DeleteCompanyButton({
         {confirming ? "Confirmer la suppression" : "Supprimer le prospect"}
       </button>
       {error && (
-        <p role="alert" className="text-xs text-[#b42318]">
+        <p role="alert" className="text-xs text-admin-danger">
           {error}
         </p>
       )}

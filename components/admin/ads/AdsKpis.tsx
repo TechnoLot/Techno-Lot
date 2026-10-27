@@ -61,18 +61,18 @@ export default function AdsKpis({
         <div
           key={t.label}
           className={`min-w-0 rounded-2xl border p-4 last:col-span-2 sm:p-5 md:last:col-span-1 ${
-            t.highlight ? "border-[#6bd63b] bg-[#6bd63b]" : "border-[#e3eadf] bg-white"
+            t.highlight ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
           }`}
         >
-          <dt className={`text-[13px] font-medium ${t.highlight ? "text-[#0a0a0a]" : "text-[#4f5a52]"}`}>{t.label}</dt>
+          <dt className={`text-[13px] font-medium ${t.highlight ? "text-admin-ink" : "text-admin-muted"}`}>{t.label}</dt>
           <dd
             className={`mt-1.5 truncate font-display text-[26px] font-semibold leading-none tracking-tight sm:text-[30px] ${
-              t.tone === "pos" ? "text-[#257a10]" : t.tone === "neg" ? "text-[#b42318]" : "text-[#0a0a0a]"
+              t.tone === "pos" ? "text-admin-green" : t.tone === "neg" ? "text-admin-danger" : "text-admin-ink"
             }`}
           >
             {t.value}
           </dd>
-          <dd className={`mt-2 truncate text-[12px] ${t.highlight ? "text-[#0a0a0a]/75" : "text-[#4f5a52]"}`}>{t.hint}</dd>
+          <dd className={`mt-2 truncate text-[12px] ${t.highlight ? "text-admin-ink/75" : "text-admin-muted"}`}>{t.hint}</dd>
         </div>
       ))}
     </dl>

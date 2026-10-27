@@ -1,10 +1,10 @@
 import type { LotStatus } from "@/lib/admin/types";
 
 const STYLES: Record<LotStatus, { pill: string; dot: string }> = {
-  negotiating: { pill: "bg-[#fff6ed] text-[#b54708] ", dot: "bg-[#f79009]" },
-  purchased: { pill: "bg-[#eaf6e3] text-[#257a10]", dot: "bg-[#4fae2a]" },
-  sold: { pill: "bg-[#eff6ff] text-[#175cd3] ", dot: "bg-[#2e90fa]" },
-  cancelled: { pill: "bg-[#eef1ec] text-[#4f5a52]", dot: "bg-[#98a29a]" },
+  negotiating: { pill: "bg-admin-tint-amber text-admin-warning ", dot: "bg-[#f79009]" },
+  purchased: { pill: "bg-admin-tint-green text-admin-green", dot: "bg-[#4fae2a]" },
+  sold: { pill: "bg-admin-tint-blue text-admin-tint-blue-ink ", dot: "bg-[#2e90fa]" },
+  cancelled: { pill: "bg-admin-tint-gray text-admin-muted", dot: "bg-[#98a29a]" },
 };
 
 const LABELS: Record<LotStatus, string> = {

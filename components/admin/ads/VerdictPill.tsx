@@ -2,11 +2,11 @@ import { VERDICT_LABELS, type Verdict } from "@/lib/ads/verdict";
 
 /** Teintes douces par verdict : pastille + point de couleur. */
 export const VERDICT_TONES: Record<Verdict, { pill: string; dot: string }> = {
-  rentable: { pill: "bg-[#e5f4dc] text-[#1f6a0d]", dot: "bg-[#257a10]" },
-  prometteuse: { pill: "bg-[#effae6] text-[#2f6b14]", dot: "bg-[#6bd63b]" },
-  surveiller: { pill: "bg-[#fdf2e4] text-[#b54708]", dot: "bg-[#e08a2c]" },
-  trop_tot: { pill: "bg-[#eef1ec] text-[#4f5a52]", dot: "bg-[#9aa79d]" },
-  couper: { pill: "bg-[#fdeceb] text-[#b42318]", dot: "bg-[#b42318]" },
+  rentable: { pill: "bg-admin-tint-green text-admin-tint-green-ink", dot: "bg-admin-green" },
+  prometteuse: { pill: "bg-[#effae6] text-[#2f6b14] [[data-admin-theme=dark]_&]:bg-admin-subtle [[data-admin-theme=dark]_&]:text-admin-tint-green-ink", dot: "bg-[#6bd63b]" },
+  surveiller: { pill: "bg-admin-tint-amber text-admin-warning", dot: "bg-[#e08a2c]" },
+  trop_tot: { pill: "bg-admin-tint-gray text-admin-muted", dot: "bg-[#9aa79d]" },
+  couper: { pill: "bg-admin-tint-red text-admin-danger", dot: "bg-admin-danger" },
 };
 
 export default function VerdictPill({

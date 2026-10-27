@@ -40,18 +40,18 @@ export default function CalculatriceOverlay() {
       role="dialog"
       aria-modal="true"
       aria-label="Calculatrice de lot"
-      className="fixed inset-0 z-[100] flex flex-col bg-[#f4f7f2]"
+      className="fixed inset-0 z-[100] flex flex-col bg-admin-page"
     >
-      <div className="flex items-center justify-between border-b border-[#e3eadf] bg-white px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-[#0a0a0a]">
-          <Calculator className="h-4 w-4 text-[#257a10]" aria-hidden />
+      <div className="flex items-center justify-between border-b border-admin-line bg-admin-card px-4 py-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-admin-ink">
+          <Calculator className="h-4 w-4 text-admin-green" aria-hidden />
           Calculatrice de lot
         </div>
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Fermer la calculatrice"
-          className="rounded-full border border-[#c9d6c3] bg-white p-2 text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+          className="rounded-full border border-admin-line-strong bg-admin-card p-2 text-admin-ink transition-colors hover:bg-admin-page"
         >
           <X className="h-4 w-4" aria-hidden />
         </button>

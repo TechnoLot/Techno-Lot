@@ -11,7 +11,7 @@ export const META_URL_PARAMS =
 
 const ENV_EXAMPLE = "META_ACCESS_TOKEN=votre_jeton\nMETA_AD_ACCOUNT_ID=1234567890";
 
-const code = "rounded-md bg-[#f4f7f2] px-1.5 py-0.5 font-mono text-[12px] text-[#0a0a0a]";
+const code = "rounded-md bg-admin-page px-1.5 py-0.5 font-mono text-[12px] text-admin-ink";
 
 function CopyBlock({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -25,16 +25,16 @@ function CopyBlock({ value, label }: { value: string; label: string }) {
     }
   }
   return (
-    <div className="mt-2.5 overflow-hidden rounded-xl border border-[#e3eadf] bg-[#f7faf5]">
-      <div className="flex items-center justify-between gap-2 border-b border-[#edf2ea] px-3 py-1.5">
-        <span className="text-[12px] font-medium text-[#4f5a52]">{label}</span>
+    <div className="mt-2.5 overflow-hidden rounded-xl border border-admin-line bg-admin-subtle">
+      <div className="flex items-center justify-between gap-2 border-b border-admin-line-soft px-3 py-1.5">
+        <span className="text-[12px] font-medium text-admin-muted">{label}</span>
         <button
           type="button"
           onClick={copy}
           className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold transition-colors ${focusRing} ${
             copied
-              ? "border-[#cfe9c2] bg-[#e5f4dc] text-[#1f6a0d]"
-              : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#257a10] hover:text-[#257a10]"
+              ? "border-admin-tint-green-line bg-admin-tint-green text-admin-tint-green-ink"
+              : "border-admin-line-strong bg-admin-card text-admin-ink hover:border-admin-green hover:text-admin-green"
           }`}
           aria-label={`Copier : ${label}`}
         >
@@ -42,7 +42,7 @@ function CopyBlock({ value, label }: { value: string; label: string }) {
           {copied ? "Copié" : "Copier"}
         </button>
       </div>
-      <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-all px-3 py-2.5 font-mono text-[12px] leading-relaxed text-[#0a0a0a]">
+      <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-all px-3 py-2.5 font-mono text-[12px] leading-relaxed text-admin-ink">
         {value}
       </pre>
       <span className="sr-only" aria-live="polite">
@@ -54,14 +54,14 @@ function CopyBlock({ value, label }: { value: string; label: string }) {
 
 function EnvStatus({ ok, name }: { ok: boolean; name: string }) {
   return (
-    <li className="flex items-center justify-between gap-3 rounded-xl border border-[#e3eadf] bg-white px-3 py-2">
-      <code className="truncate font-mono text-[12px] text-[#0a0a0a]">{name}</code>
+    <li className="flex items-center justify-between gap-3 rounded-xl border border-admin-line bg-admin-card px-3 py-2">
+      <code className="truncate font-mono text-[12px] text-admin-ink">{name}</code>
       {ok ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[#257a10]">
+        <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-admin-green">
           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden /> Présente
         </span>
       ) : (
-        <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-medium text-[#b54708]">
+        <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-medium text-admin-warning">
           <CircleDashed className="h-3.5 w-3.5" aria-hidden /> Manquante
         </span>
       )}
@@ -79,10 +79,10 @@ export default function MetaConnect({ env }: { env: { token: boolean; account: b
       title: "Créer le jeton d'accès",
       body: (
         <>
-          Sur <strong className="font-semibold text-[#0a0a0a]">business.facebook.com</strong> : Paramètres de
-          l&apos;entreprise → Utilisateurs → <strong className="font-semibold text-[#0a0a0a]">Utilisateurs système</strong>{" "}
+          Sur <strong className="font-semibold text-admin-ink">business.facebook.com</strong> : Paramètres de
+          l&apos;entreprise → Utilisateurs → <strong className="font-semibold text-admin-ink">Utilisateurs système</strong>{" "}
           → Ajouter (rôle Admin). Avec « Attribuer des éléments », donnez-lui accès au compte publicitaire. Puis{" "}
-          <strong className="font-semibold text-[#0a0a0a]">Générer un jeton</strong> : cochez la permission{" "}
+          <strong className="font-semibold text-admin-ink">Générer un jeton</strong> : cochez la permission{" "}
           <code className={code}>ads_read</code>, expiration « Jamais ». Copiez-le tout de suite, il ne s&apos;affiche
           qu&apos;une fois.
         </>
@@ -116,7 +116,7 @@ export default function MetaConnect({ env }: { env: { token: boolean; account: b
       title: "Coller les paramètres d'URL dans chaque pub",
       body: (
         <>
-          Gestionnaire de publicités → la pub → Destination → <strong className="font-semibold text-[#0a0a0a]">Paramètres
+          Gestionnaire de publicités → la pub → Destination → <strong className="font-semibold text-admin-ink">Paramètres
           d&apos;URL</strong>. C&apos;est ce qui relie chaque lead à sa pub, même avant la connexion.
           <CopyBlock label="Paramètres d'URL Meta" value={META_URL_PARAMS} />
         </>
@@ -133,14 +133,14 @@ export default function MetaConnect({ env }: { env: { token: boolean; account: b
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#6bd63b] text-[#0a0a0a]">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#6bd63b] text-admin-ink">
               <PlatformIcon platform="meta" className="h-[18px] w-[18px]" />
             </span>
-            <h2 id="meta-connect-title" className="font-display text-xl font-semibold text-[#0a0a0a]">
+            <h2 id="meta-connect-title" className="font-display text-xl font-semibold text-admin-ink">
               Connecter Meta Ads
             </h2>
           </div>
-          <p className="mt-2 text-sm leading-relaxed text-[#4f5a52] [text-wrap:pretty]">
+          <p className="mt-2 text-sm leading-relaxed text-admin-muted [text-wrap:pretty]">
             Les leads venus du site s&apos;affichent déjà. Une fois Meta connecté, on voit aussi ce que chaque pub coûte,
             donc son coût par lead et son verdict. Environ 10 minutes.
           </p>
@@ -154,22 +154,22 @@ export default function MetaConnect({ env }: { env: { token: boolean; account: b
         </ul>
       </div>
 
-      <ol className="mt-5 grid gap-x-8 gap-y-5 border-t border-[#edf2ea] pt-5 lg:grid-cols-2">
+      <ol className="mt-5 grid gap-x-8 gap-y-5 border-t border-admin-line-soft pt-5 lg:grid-cols-2">
         {steps.map((s, i) => (
           <li key={s.title} className="flex min-w-0 gap-3">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[#c9d6c3] font-display text-[13px] font-semibold text-[#0a0a0a]">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-admin-line-strong font-display text-[13px] font-semibold text-admin-ink">
               {i + 1}
             </span>
             <div className="min-w-0 pt-0.5">
-              <h3 className="text-sm font-semibold text-[#0a0a0a]">{s.title}</h3>
-              <div className="mt-1 text-[13px] leading-relaxed text-[#4f5a52] [text-wrap:pretty]">{s.body}</div>
+              <h3 className="text-sm font-semibold text-admin-ink">{s.title}</h3>
+              <div className="mt-1 text-[13px] leading-relaxed text-admin-muted [text-wrap:pretty]">{s.body}</div>
             </div>
           </li>
         ))}
       </ol>
 
-      <p className="mt-5 inline-flex items-center gap-1.5 text-[13px] text-[#4f5a52]">
-        <FileText className="h-4 w-4 text-[#257a10]" aria-hidden />
+      <p className="mt-5 inline-flex items-center gap-1.5 text-[13px] text-admin-muted">
+        <FileText className="h-4 w-4 text-admin-green" aria-hidden />
         Guide complet : <code className={code}>docs/PUBLICITES-SETUP.md</code>
       </p>
     </section>
@@ -181,7 +181,7 @@ export function UrlParamsCard() {
   return (
     <section className={`${card} p-5 sm:p-6`} aria-labelledby="url-params-title">
       <div className="flex items-center gap-2">
-        <Link2 className="h-4 w-4 text-[#257a10]" aria-hidden />
+        <Link2 className="h-4 w-4 text-admin-green" aria-hidden />
         <h2 id="url-params-title" className={cardTitle}>
           Paramètres d&apos;URL des pubs
         </h2>

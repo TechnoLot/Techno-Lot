@@ -169,27 +169,27 @@ export default async function CrmPage({
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
             CRM
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
+          <p className="mt-2 max-w-lg text-sm text-admin-muted">
             Meilleurs prospects du jour, triés par pertinence. Clique une
             compagnie pour voir ses contacts TI et envoyer l&apos;info Techno Lot.
           </p>
         </div>
         <div
-          className="shrink-0 rounded-2xl border border-[#e3eadf] bg-white px-4 py-3 sm:max-w-xs sm:text-right"
+          className="shrink-0 rounded-2xl border border-admin-line bg-admin-card px-4 py-3 sm:max-w-xs sm:text-right"
           role="note"
           aria-label="Rappel motivation"
         >
-          <p className="flex items-center justify-center gap-2 font-display text-sm font-bold text-[#0a0a0a] sm:justify-end sm:text-base">
-            <DollarSign className="h-4 w-4 text-[#257a10]" aria-hidden />
+          <p className="flex items-center justify-center gap-2 font-display text-sm font-bold text-admin-ink sm:justify-end sm:text-base">
+            <DollarSign className="h-4 w-4 text-admin-green" aria-hidden />
             <span>
               Pick up the phone
               <br />
               and start dialing
             </span>
-            <PhoneCall className="h-4 w-4 text-[#257a10]" aria-hidden />
+            <PhoneCall className="h-4 w-4 text-admin-green" aria-hidden />
           </p>
         </div>
       </header>
@@ -197,7 +197,7 @@ export default async function CrmPage({
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           Impossible de charger les données : {error.message}
         </div>
@@ -209,12 +209,12 @@ export default async function CrmPage({
             <>
               <p
                 className={`text-[13px] font-medium leading-snug ${
-                  k.accent ? "text-[#0a0a0a]" : "text-[#4f5a52]"
+                  k.accent ? "text-admin-ink" : "text-admin-muted"
                 }`}
               >
                 {k.label}
               </p>
-              <p className="mt-2 font-display text-3xl font-bold tabular-nums text-[#0a0a0a] sm:text-4xl">
+              <p className="mt-2 font-display text-3xl font-bold tabular-nums text-admin-ink sm:text-4xl">
                 {k.value}
               </p>
             </>
@@ -226,7 +226,7 @@ export default async function CrmPage({
               className={`rounded-2xl border p-4 transition-colors sm:p-5 ${
                 k.accent
                   ? "border-[#6bd63b] bg-[#6bd63b] hover:bg-[#62c936]"
-                  : "border-[#e3eadf] bg-white hover:border-[#a9d896]"
+                  : "border-admin-line bg-admin-card hover:border-admin-tint-green-line"
               }`}
             >
               {inner}
@@ -235,7 +235,7 @@ export default async function CrmPage({
             <div
               key={k.label}
               className={`rounded-2xl border p-4 sm:p-5 ${
-                k.accent ? "border-[#6bd63b] bg-[#6bd63b]" : "border-[#e3eadf] bg-white"
+                k.accent ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
               }`}
             >
               {inner}
@@ -251,7 +251,7 @@ export default async function CrmPage({
         <AddCompanyButton />
       </div>
 
-      <p className="mb-3 text-[13px] text-[#4f5a52]">
+      <p className="mb-3 text-[13px] text-admin-muted">
         {companies.length} compagnie{companies.length > 1 ? "s" : ""}
         {!includePartners && " (partenaires masqués)"}
       </p>

@@ -59,10 +59,10 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
   if (lots.length === 0) {
     return (
       <div className="glass p-12 text-center">
-        <p className="text-sm text-[#4f5a52]">
+        <p className="text-sm text-admin-muted">
           Aucun lot enregistré pour l&apos;instant.
         </p>
-        <p className="mt-1 text-xs text-[#4f5a52]">
+        <p className="mt-1 text-xs text-admin-muted">
           Dans la calculatrice, clique « Enregistrer le lot » pour le retrouver
           ici (et sur les autres appareils).
         </p>
@@ -75,7 +75,7 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
       {error && (
         <p
           role="alert"
-          className="rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           {error}
         </p>
@@ -86,10 +86,10 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
           className="glass flex flex-wrap items-center justify-between gap-3 p-4"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-base font-semibold text-[#0a0a0a]">
+            <p className="truncate font-display text-base font-semibold text-admin-ink">
               {l.name}
             </p>
-            <p className="mt-0.5 text-xs text-[#4f5a52]">
+            <p className="mt-0.5 text-xs text-admin-muted">
               {l.itemCount} item{l.itemCount > 1 ? "s" : ""}
               {" · "}enregistré {formatDate(l.savedDate ?? l.updatedAt)}
               {l.createdByEmail && ` · par ${l.createdByEmail}`}
@@ -111,8 +111,8 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
               onClick={() => deleteLot(l.id, l.name)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-50 ${
                 confirmingId === l.id
-                  ? "border-[#d9776c] bg-[#fde8e6] text-[#b42318]"
-                  : "border-[#c9d6c3] bg-white text-[#0a0a0a] hover:border-[#eaa9a2] hover:text-[#b42318]"
+                  ? "border-admin-tint-red-line bg-admin-tint-red-strong text-admin-danger"
+                  : "border-admin-line-strong bg-admin-card text-admin-ink hover:border-admin-tint-red-line hover:text-admin-danger"
               }`}
             >
               {busy === l.id ? (

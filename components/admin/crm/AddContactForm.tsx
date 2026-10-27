@@ -46,7 +46,7 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-5 py-2.5 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2"
+        className="inline-flex items-center justify-center gap-2 rounded-full border border-admin-line-strong bg-admin-card px-5 py-2.5 text-sm font-semibold text-admin-ink transition-colors hover:bg-admin-page focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card"
       >
         <Plus className="h-4 w-4" aria-hidden />
         Ajouter un contact
@@ -57,14 +57,14 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
   return (
     <form onSubmit={submit} className="glass w-full p-5">
       <div className="mb-4 flex items-center justify-between">
-        <p className="font-display text-base font-semibold text-[#0a0a0a]">
+        <p className="font-display text-base font-semibold text-admin-ink">
           Nouveau contact
         </p>
         <button
           type="button"
           onClick={() => setOpen(false)}
           aria-label="Fermer"
-          className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
+          className="rounded-full border border-admin-line-strong bg-admin-card p-1.5 text-admin-muted hover:bg-admin-page hover:text-admin-ink"
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>
@@ -102,7 +102,7 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
+          className="mt-3 rounded-lg border border-admin-tint-red-line bg-admin-tint-red px-3 py-2 text-xs text-admin-danger"
         >
           {error}
         </p>
@@ -112,7 +112,7 @@ export default function AddContactForm({ companyId }: { companyId: string }) {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+          className="rounded-full border border-admin-line-strong bg-admin-card px-5 py-2 text-sm font-semibold text-admin-ink transition-colors hover:bg-admin-page"
         >
           Annuler
         </button>

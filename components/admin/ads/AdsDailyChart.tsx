@@ -5,9 +5,11 @@ import type { DailyPoint } from "@/lib/ads/types";
 import { card, cardSub, cardTitle } from "./ui";
 import { formatCount, formatMoney, longDay, shortDay, tooltipStyle } from "./format";
 
-const SPEND = "#cfe5c2";
-const LEADS = "#257a10";
-const AXIS = "#4f5a52";
+// Couleurs liées au thème admin (variables --a-* de globals.css).
+// Dépenses : vert à 25 % sur la carte (≈ #c8dec3 en clair, #2e4b36 en sombre).
+const SPEND = "color-mix(in srgb, rgb(var(--a-green)) 25%, rgb(var(--a-card)))";
+const LEADS = "rgb(var(--a-green))";
+const AXIS = "rgb(var(--a-muted))";
 
 /** Jour par jour : dépenses (barres, axe gauche) et leads (ligne, axe droit). */
 export default function AdsDailyChart({ data }: { data: DailyPoint[] }) {
@@ -22,22 +24,22 @@ export default function AdsDailyChart({ data }: { data: DailyPoint[] }) {
       <p className={`${cardSub} flex flex-wrap items-center gap-x-4 gap-y-1`}>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: SPEND }} aria-hidden />
-          Dépenses <strong className="font-semibold text-[#0a0a0a]">{formatMoney(totalSpend)}</strong>
+          Dépenses <strong className="font-semibold text-admin-ink">{formatMoney(totalSpend)}</strong>
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-0.5 w-3 rounded-full" style={{ background: LEADS }} aria-hidden />
-          Leads <strong className="font-semibold text-[#0a0a0a]">{formatCount(totalLeads)}</strong>
+          Leads <strong className="font-semibold text-admin-ink">{formatCount(totalLeads)}</strong>
         </span>
       </p>
 
       <div className="mt-4 h-60 sm:h-72" role="img" aria-label="Graphique quotidien des dépenses et des leads">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 0, left: -6, bottom: 0 }}>
-            <CartesianGrid stroke="#edf2ea" vertical={false} />
+            <CartesianGrid stroke="rgb(var(--a-line-soft))" vertical={false} />
             <XAxis
               dataKey="day"
               tick={{ fill: AXIS, fontSize: 11 }}
-              axisLine={{ stroke: "#e3eadf" }}
+              axisLine={{ stroke: "rgb(var(--a-line))" }}
               tickLine={false}
               tickFormatter={shortDay}
               minTickGap={24}
@@ -61,7 +63,7 @@ export default function AdsDailyChart({ data }: { data: DailyPoint[] }) {
             />
             <Tooltip
               {...tooltipStyle}
-              cursor={{ fill: "rgba(37,122,16,0.05)" }}
+              cursor={{ fill: "rgb(var(--a-hover))" }}
               labelFormatter={(d: string) => longDay(d)}
               formatter={(value: number, name: string) =>
                 name === "spend" ? [formatMoney(value, true), "Dépenses"] : [formatCount(value), "Leads"]

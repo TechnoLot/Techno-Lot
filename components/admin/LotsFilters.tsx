@@ -49,7 +49,7 @@ export default function LotsFilters() {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="relative sm:w-80">
         <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted"
           aria-hidden
         />
         <input
@@ -62,20 +62,20 @@ export default function LotsFilters() {
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2">
           {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#4f5a52]" aria-hidden />
+            <Loader2 className="h-4 w-4 animate-spin text-admin-muted" aria-hidden />
           ) : q ? (
             <button
               type="button"
               onClick={() => setQ("")}
               aria-label="Effacer la recherche"
-              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 flex h-6 w-6 items-center justify-center rounded-md text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
+              className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card flex h-6 w-6 items-center justify-center rounded-md text-admin-muted hover:bg-admin-page hover:text-admin-ink"
             >
               <X className="h-3.5 w-3.5" aria-hidden />
             </button>
           ) : null}
         </span>
       </div>
-      <div role="tablist" aria-label="Filtrer par statut" className="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-[#e3eadf] bg-white p-1 [scrollbar-width:none]">
+      <div role="tablist" aria-label="Filtrer par statut" className="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-admin-line bg-admin-card p-1 [scrollbar-width:none]">
         {STATUS_TABS.map(({ key, label }) => {
           const active = status === key;
           return (
@@ -85,8 +85,8 @@ export default function LotsFilters() {
               role="tab"
               aria-selected={active}
               onClick={() => pickStatus(key)}
-              className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 relative shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                active ? "text-[#0a0a0a]" : "text-[#4f5a52] hover:text-[#0a0a0a]"
+              className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card relative shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                active ? "text-admin-ink" : "text-admin-muted hover:text-admin-ink"
               }`}
             >
               {active && (

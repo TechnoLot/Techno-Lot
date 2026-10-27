@@ -93,7 +93,7 @@ export default async function CompanyPage({
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
@@ -103,29 +103,29 @@ export default async function CompanyPage({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <FitScoreBadge score={company.fit_score} />
-            <h1 className="font-display text-2xl font-bold text-[#0a0a0a] sm:text-3xl">
+            <h1 className="font-display text-2xl font-bold text-admin-ink sm:text-3xl">
               {company.name}
             </h1>
             {company.is_partner_not_client && (
-              <span className="inline-flex items-center rounded-full bg-[#f4f1fe] px-2.5 py-1 text-xs font-medium text-[#5b3fb8]">
+              <span className="inline-flex items-center rounded-full bg-admin-tint-violet px-2.5 py-1 text-xs font-medium text-admin-tint-violet-ink">
                 Partenaire potentiel
               </span>
             )}
-            <span className="inline-flex items-center rounded-full bg-[#eef1ec] px-2.5 py-1 text-xs font-medium text-[#4f5a52]">
+            <span className="inline-flex items-center rounded-full bg-admin-tint-gray px-2.5 py-1 text-xs font-medium text-admin-muted">
               {RESEARCH_STATUS_LABELS[company.research_status]}
             </span>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-[#4f5a52]">
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-admin-muted">
             {facts.map(({ icon: Icon, value, href }, i) => (
               <span key={i} className="inline-flex items-center gap-1.5">
-                <Icon className="h-3.5 w-3.5 text-[#4f5a52]" aria-hidden />
+                <Icon className="h-3.5 w-3.5 text-admin-muted" aria-hidden />
                 {href ? (
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline-offset-4 hover:text-[#257a10] hover:underline"
+                    className="underline-offset-4 hover:text-admin-green hover:underline"
                   >
                     {value}
                   </a>
@@ -139,20 +139,20 @@ export default async function CompanyPage({
           {(company.buying_signal || company.next_action) && (
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               {company.buying_signal && (
-                <div className="inline-flex items-start gap-2 rounded-xl bg-[#fff6ed] px-3.5 py-2.5">
-                  <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#b54708]" aria-hidden />
+                <div className="inline-flex items-start gap-2 rounded-xl bg-admin-tint-amber px-3.5 py-2.5">
+                  <Zap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-admin-warning" aria-hidden />
                   <div>
-                    <p className="text-xs font-semibold text-[#b54708]">
+                    <p className="text-xs font-semibold text-admin-warning">
                       Signal d&apos;achat
                     </p>
-                    <p className="text-sm text-[#93370d]">{company.buying_signal}</p>
+                    <p className="text-sm text-admin-tint-amber-ink">{company.buying_signal}</p>
                   </div>
                 </div>
               )}
               {company.next_action && (
-                <div className="inline-flex items-start gap-2 rounded-xl bg-[#eaf6e3] px-3.5 py-2.5">
-                  <p className="text-sm text-[#0a0a0a]">
-                    <span className="block text-xs font-semibold text-[#257a10]">
+                <div className="inline-flex items-start gap-2 rounded-xl bg-admin-tint-green px-3.5 py-2.5">
+                  <p className="text-sm text-admin-ink">
+                    <span className="block text-xs font-semibold text-admin-green">
                       Prochaine action
                     </span>
                     {company.next_action}
@@ -184,9 +184,9 @@ export default async function CompanyPage({
         {/* Contacts */}
         <section className="min-w-0 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-[#0a0a0a]">
+            <h2 className="font-display text-lg font-semibold text-admin-ink">
               Contacts TI{" "}
-              <span className="text-sm font-normal text-[#4f5a52]">
+              <span className="text-sm font-normal text-admin-muted">
                 ({contacts.length})
               </span>
             </h2>
@@ -195,7 +195,7 @@ export default async function CompanyPage({
           <div className="flex flex-col gap-4">
             {contacts.length === 0 && (
               <div className="glass p-8 text-center">
-                <p className="text-sm text-[#4f5a52]">
+                <p className="text-sm text-admin-muted">
                   Aucun contact pour cette compagnie. Ajoute le responsable TI
                   trouvé (LinkedIn, site web, appel à la réception).
                 </p>
@@ -210,7 +210,7 @@ export default async function CompanyPage({
 
         {/* Historique */}
         <section className="min-w-0">
-          <h2 className="mb-4 font-display text-lg font-semibold text-[#0a0a0a]">
+          <h2 className="mb-4 font-display text-lg font-semibold text-admin-ink">
             Historique
           </h2>
           <div className="glass p-5">

@@ -45,26 +45,26 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
     <div className="glass p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <p className="font-display text-base font-semibold text-[#0a0a0a]">
+          <p className="font-display text-base font-semibold text-admin-ink">
             {TYPE_LABELS[template.template_type]}
           </p>
-          <span className="rounded-full bg-[#eef1ec] px-2.5 py-0.5 text-xs font-medium text-[#4f5a52]">
+          <span className="rounded-full bg-admin-tint-gray px-2.5 py-0.5 text-xs font-medium text-admin-muted">
             {template.template_type}
           </span>
         </div>
-        <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-[#4f5a52]">
+        <label className="inline-flex cursor-pointer items-center gap-2 text-[13px] text-admin-muted">
           <input
             type="checkbox"
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
-            className="h-3.5 w-3.5 accent-[#257a10]"
+            className="h-3.5 w-3.5 accent-admin-green"
           />
           Actif
         </label>
       </div>
 
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-[#0a0a0a]">
+        <span className="mb-1.5 block text-sm font-medium text-admin-ink">
           Sujet
         </span>
         <input
@@ -76,7 +76,7 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
       </label>
 
       <label className="mt-3 block">
-        <span className="mb-1.5 block text-sm font-medium text-[#0a0a0a]">
+        <span className="mb-1.5 block text-sm font-medium text-admin-ink">
           Corps
         </span>
         <textarea
@@ -88,7 +88,7 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
       </label>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-[#4f5a52]">
+        <p className="text-xs text-admin-muted">
           Variables : <Code>{"{{prenom}}"}</Code> <Code>{"{{nom}}"}</Code>{" "}
           <Code>{"{{compagnie}}"}</Code> <Code>{"{{titre}}"}</Code> — la
           signature Techno Lot est ajoutée automatiquement à l&apos;envoi.
@@ -113,7 +113,7 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
+          className="mt-3 rounded-lg border border-admin-tint-red-line bg-admin-tint-red px-3 py-2 text-xs text-admin-danger"
         >
           {error}
         </p>
@@ -124,7 +124,7 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded bg-[#eef1ec] px-1 py-0.5 text-xs text-[#0a0a0a]">
+    <code className="rounded bg-admin-tint-gray px-1 py-0.5 text-xs text-admin-ink">
       {children}
     </code>
   );

@@ -63,13 +63,13 @@ export function longDay(day: string): string {
 
 export const tooltipStyle = {
   contentStyle: {
-    background: "#ffffff",
-    border: "1px solid #e3eadf",
+    background: "rgb(var(--a-card))",
+    border: "1px solid rgb(var(--a-line))",
     borderRadius: "12px",
     fontSize: "12px",
     padding: "8px 12px",
     boxShadow: "0 8px 24px -12px rgba(10,10,10,0.2)",
   },
-  labelStyle: { color: "#4f5a52", marginBottom: "4px" },
-  itemStyle: { color: "#0a0a0a", padding: "2px 0" },
+  labelStyle: { color: "rgb(var(--a-muted))", marginBottom: "4px" },
+  itemStyle: { color: "rgb(var(--a-ink))", padding: "2px 0" },
 } as const;

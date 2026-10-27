@@ -25,7 +25,7 @@ const dateFmt = new Intl.DateTimeFormat("fr-CA", {
   year: "numeric",
 });
 
-const card = "rounded-2xl border border-[#e3eadf] bg-white";
+const card = "rounded-2xl border border-admin-line bg-admin-card";
 
 /** Vue de la page Ventes eBay (données passées en props, sans accès réseau). */
 export default function EbaySalesView({
@@ -51,19 +51,19 @@ export default function EbaySalesView({
   const hasData = Boolean(status.lastSync) || orders.length > 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-7 text-[#0a0a0a] sm:px-8 sm:py-9 lg:px-10">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-7 text-admin-ink sm:px-8 sm:py-9 lg:px-10">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-[#0a0a0a] sm:text-[32px]">
+          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-admin-ink sm:text-[32px]">
             Ventes eBay
           </h1>
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-[#4f5a52]">
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-admin-muted">
             Total payé par les acheteurs (articles, livraison et taxes). Les commandes annulées ou entièrement
             remboursées ne comptent pas.
           </p>
-          <p className="mt-2 text-xs text-[#4f5a52]">
+          <p className="mt-2 text-xs text-admin-muted">
             Dernière synchronisation :{" "}
-            <span className="font-medium text-[#0a0a0a]">
+            <span className="font-medium text-admin-ink">
               {status.lastSync ? dateTimeFmt.format(new Date(status.lastSync)) : "jamais"}
             </span>
           </p>
@@ -73,7 +73,7 @@ export default function EbaySalesView({
             href={SELLER_HUB}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-4 py-2 text-sm font-medium text-[#0a0a0a] transition-colors hover:border-[#257a10]"
+            className="inline-flex items-center gap-2 rounded-full border border-admin-line-strong bg-admin-card px-4 py-2 text-sm font-medium text-admin-ink transition-colors hover:border-admin-green"
           >
             Seller Hub <ExternalLink className="h-4 w-4" aria-hidden />
           </a>
@@ -108,13 +108,13 @@ export default function EbaySalesView({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className={`${card} min-w-0 p-5 lg:p-6 ${live ? "lg:col-span-2" : "lg:col-span-3"}`}>
-          <h2 className="font-display text-sm font-semibold text-[#0a0a0a]">Ventes par jour · 30 jours</h2>
+          <h2 className="font-display text-sm font-semibold text-admin-ink">Ventes par jour · 30 jours</h2>
           <EbaySalesChart data={daily} />
         </section>
 
         {live && (
           <section className={`${card} p-5 lg:p-6`}>
-            <h2 className="font-display text-sm font-semibold text-[#0a0a0a]">
+            <h2 className="font-display text-sm font-semibold text-admin-ink">
               Boutique en direct
             </h2>
             {live}
@@ -123,18 +123,18 @@ export default function EbaySalesView({
       </div>
 
       <section className={`${card} p-5 lg:p-6`}>
-        <h2 className="font-display text-sm font-semibold text-[#0a0a0a]">
-          Dernières commandes <span className="font-normal text-[#4f5a52]">· {orders.length}</span>
+        <h2 className="font-display text-sm font-semibold text-admin-ink">
+          Dernières commandes <span className="font-normal text-admin-muted">· {orders.length}</span>
         </h2>
         {orders.length === 0 ? (
-          <p className="mt-4 text-sm text-[#4f5a52]">
+          <p className="mt-4 text-sm text-admin-muted">
             {configured ? "Aucune commande enregistrée pour l’instant." : "Les commandes apparaîtront ici une fois eBay connecté."}
           </p>
         ) : (
           <div className="-mx-5 mt-4 overflow-x-auto px-5 lg:-mx-6 lg:px-6">
             <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="text-xs text-[#4f5a52]">
-                <tr className="border-b border-[#edf2ea]">
+              <thead className="text-xs text-admin-muted">
+                <tr className="border-b border-admin-line-soft">
                   <th className="py-2 pr-4 font-medium">Date</th>
                   <th className="py-2 pr-4 font-medium">Article</th>
                   <th className="py-2 pr-4 font-medium">Acheteur</th>
@@ -143,7 +143,7 @@ export default function EbaySalesView({
                   <th className="py-2 font-medium">Statut</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#edf2ea]">
+              <tbody className="divide-y divide-admin-line-soft">
                 {orders.map((o) => (
                   <OrderRow key={o.order_id} order={o} />
                 ))}
@@ -160,13 +160,13 @@ export default function EbaySalesView({
 
 function Tile({ tile }: { tile: EbayTile }) {
   const { sums, highlight } = tile;
-  const sub = highlight ? "text-[#0a0a0a]/75" : "text-[#4f5a52]";
+  const sub = highlight ? "text-admin-ink/75" : "text-admin-muted";
   const fees =
     sums.orders === 0 ? null : sums.fees == null ? "frais inconnus" : `frais ${formatMoney(sums.fees)}`;
   return (
     <div
       className={`flex min-w-0 flex-col rounded-2xl p-4 lg:p-5 ${
-        highlight ? "bg-[#6bd63b] text-[#0a0a0a]" : "border border-[#e3eadf] bg-white"
+        highlight ? "bg-[#6bd63b] text-admin-ink" : "border border-admin-line bg-admin-card"
       }`}
     >
       <p className={`text-xs font-medium ${sub}`}>{tile.label}</p>
@@ -182,10 +182,10 @@ function Tile({ tile }: { tile: EbayTile }) {
 }
 
 const PILL: Record<"ok" | "warn" | "bad" | "neutral", string> = {
-  ok: "bg-[#e6f4de] text-[#257a10]",
-  warn: "bg-[#fdf1d8] text-[#8a5300]",
-  bad: "bg-[#fde8e6] text-[#b42318]",
-  neutral: "bg-[#eef2ec] text-[#4f5a52]",
+  ok: "bg-admin-tint-green text-admin-green",
+  warn: "bg-admin-tint-amber text-admin-tint-amber-ink",
+  bad: "bg-admin-tint-red-strong text-admin-danger",
+  neutral: "bg-admin-tint-gray text-admin-muted",
 };
 
 function OrderRow({ order: o }: { order: EbayOrderRow }) {
@@ -196,15 +196,15 @@ function OrderRow({ order: o }: { order: EbayOrderRow }) {
   const excluded = status.tone === "bad";
   return (
     <tr className="align-top">
-      <td className="whitespace-nowrap py-2.5 pr-4 tabular-nums text-[#4f5a52]">{dateFmt.format(new Date(o.created_at))}</td>
+      <td className="whitespace-nowrap py-2.5 pr-4 tabular-nums text-admin-muted">{dateFmt.format(new Date(o.created_at))}</td>
       <td className="max-w-[22rem] py-2.5 pr-4">
-        <span className="block truncate font-medium text-[#0a0a0a]">
+        <span className="block truncate font-medium text-admin-ink">
           {item?.itemId ? (
             <a
               href={`https://www.ebay.ca/itm/${item.itemId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#257a10] hover:underline"
+              className="hover:text-admin-green hover:underline"
             >
               {title}
             </a>
@@ -212,14 +212,14 @@ function OrderRow({ order: o }: { order: EbayOrderRow }) {
             title
           )}
         </span>
-        {extra && <span className="text-xs text-[#4f5a52]">{extra}</span>}
+        {extra && <span className="text-xs text-admin-muted">{extra}</span>}
       </td>
-      <td className="max-w-[10rem] truncate py-2.5 pr-4 text-[#4f5a52]">{o.buyer ?? "—"}</td>
-      <td className={`whitespace-nowrap py-2.5 pr-4 text-right tabular-nums ${excluded ? "text-[#4f5a52] line-through" : "font-medium"}`}>
+      <td className="max-w-[10rem] truncate py-2.5 pr-4 text-admin-muted">{o.buyer ?? "—"}</td>
+      <td className={`whitespace-nowrap py-2.5 pr-4 text-right tabular-nums ${excluded ? "text-admin-muted line-through" : "font-medium"}`}>
         {formatMoney(o.total, true)}
-        {o.currency && o.currency !== "CAD" ? <span className="ml-1 text-xs text-[#4f5a52]">{o.currency}</span> : null}
+        {o.currency && o.currency !== "CAD" ? <span className="ml-1 text-xs text-admin-muted">{o.currency}</span> : null}
       </td>
-      <td className="whitespace-nowrap py-2.5 pr-4 text-right tabular-nums text-[#4f5a52]">
+      <td className="whitespace-nowrap py-2.5 pr-4 text-right tabular-nums text-admin-muted">
         {o.fees == null ? "—" : formatMoney(o.fees, true)}
       </td>
       <td className="py-2.5">
@@ -233,12 +233,12 @@ function OrderRow({ order: o }: { order: EbayOrderRow }) {
 
 function Notice({ tone, children }: { tone: "info" | "warn" | "bad"; children: React.ReactNode }) {
   const styles = {
-    info: "border-[#e3eadf] bg-white text-[#0a0a0a]",
-    warn: "border-[#f3dfb0] bg-[#fdf8ec] text-[#0a0a0a]",
-    bad: "border-[#f5c6c0] bg-[#fdf3f2] text-[#0a0a0a]",
+    info: "border-admin-line bg-admin-card text-admin-ink",
+    warn: "border-admin-tint-amber-line bg-admin-tint-amber text-admin-ink",
+    bad: "border-admin-tint-red-line bg-admin-tint-red text-admin-ink",
   }[tone];
   const Icon = tone === "info" ? Info : TriangleAlert;
-  const iconColor = { info: "text-[#257a10]", warn: "text-[#8a5300]", bad: "text-[#b42318]" }[tone];
+  const iconColor = { info: "text-admin-green", warn: "text-admin-tint-amber-ink", bad: "text-admin-danger" }[tone];
   return (
     <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm leading-relaxed ${styles}`} role="status">
       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconColor}`} aria-hidden />

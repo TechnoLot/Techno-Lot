@@ -30,32 +30,32 @@ export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }
     <section
       id="soumissions"
       aria-labelledby="soumissions-titre"
-      className="scroll-mt-20 rounded-2xl border border-[#e3eadf] bg-white"
+      className="scroll-mt-20 rounded-2xl border border-admin-line bg-admin-card"
     >
       <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
         <h2
           id="soumissions-titre"
-          className="font-display text-lg font-semibold tracking-tight text-[#0a0a0a]"
+          className="font-display text-lg font-semibold tracking-tight text-admin-ink"
         >
           Dernières soumissions
         </h2>
-        <span className="text-[13px] text-[#4f5a52]">30 derniers jours</span>
+        <span className="text-[13px] text-admin-muted">30 derniers jours</span>
       </div>
       <ul className="pb-2">
         {rows.map((s) => (
           <li
             key={s.id}
-            className="flex flex-col gap-2 border-t border-[#edf2ea] px-4 py-3 first:border-t-0 sm:flex-row sm:items-center sm:gap-4 sm:px-5"
+            className="flex flex-col gap-2 border-t border-admin-line-soft px-4 py-3 first:border-t-0 sm:flex-row sm:items-center sm:gap-4 sm:px-5"
           >
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold text-[#0a0a0a]">
+              <p className="truncate text-[15px] font-semibold text-admin-ink">
                 {s.nom || "Sans nom"}
-                <span className="ml-2 text-[13px] font-normal text-[#4f5a52]">
+                <span className="ml-2 text-[13px] font-normal text-admin-muted">
                   {formatDateHeure(s.date)}
                 </span>
               </p>
               {s.message && (
-                <p className="line-clamp-2 text-[13px] text-[#4f5a52]">{s.message}</p>
+                <p className="line-clamp-2 text-[13px] text-admin-muted">{s.message}</p>
               )}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">

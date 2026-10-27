@@ -41,17 +41,17 @@ export default async function ClientsPage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
       </Link>
 
       <header className="mb-8 mt-4">
-        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
           Clients
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
+        <p className="mt-2 max-w-lg text-sm text-admin-muted">
           Les prospects convertis en clients, avec leur compagnie et le lot
           lié.
         </p>
@@ -60,7 +60,7 @@ export default async function ClientsPage() {
       {error && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           Impossible de charger les données : {error.message}
         </div>
@@ -68,11 +68,11 @@ export default async function ClientsPage() {
 
       {rows.length === 0 ? (
         <div className="glass p-12 text-center">
-          <Trophy className="mx-auto h-8 w-8 text-[#5f6b62]" aria-hidden />
-          <p className="mt-3 font-display text-lg font-semibold text-[#0a0a0a]">
+          <Trophy className="mx-auto h-8 w-8 text-admin-faint" aria-hidden />
+          <p className="mt-3 font-display text-lg font-semibold text-admin-ink">
             Aucun client converti pour l&apos;instant
           </p>
-          <p className="mt-2 text-sm text-[#4f5a52]">
+          <p className="mt-2 text-sm text-admin-muted">
             Utilise « Marquer comme client » sur un contact pour qu&apos;il
             apparaisse ici.
           </p>
@@ -82,7 +82,7 @@ export default async function ClientsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#edf2ea]">
+                <tr className="border-b border-admin-line-soft">
                   <Th>Client</Th>
                   <Th>Compagnie</Th>
                   <Th>Coordonnées</Th>
@@ -94,29 +94,29 @@ export default async function ClientsPage() {
                 {rows.map((r) => (
                   <tr
                     key={r.id}
-                    className="group border-b border-[#edf2ea] transition-colors last:border-b-0 hover:bg-[#f8faf6]"
+                    className="group border-b border-admin-line-soft transition-colors last:border-b-0 hover:bg-admin-subtle"
                   >
                     <td className="px-4 py-3">
-                      <p className="text-sm font-medium text-[#0a0a0a]">
+                      <p className="text-sm font-medium text-admin-ink">
                         {contactName(r)}
                       </p>
                       {r.title && (
-                        <p className="text-xs text-[#4f5a52]">{r.title}</p>
+                        <p className="text-xs text-admin-muted">{r.title}</p>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       {r.companies ? (
                         <Link
                           href={`/admin/crm/${r.companies.id}`}
-                          className="text-sm text-[#0a0a0a] hover:text-[#257a10]"
+                          className="text-sm text-admin-ink hover:text-admin-green"
                         >
                           {r.companies.name}
                         </Link>
                       ) : (
-                        <span className="text-sm text-[#5f6b62]">—</span>
+                        <span className="text-sm text-admin-faint">—</span>
                       )}
                       {r.companies?.region && (
-                        <p className="text-xs text-[#4f5a52]">
+                        <p className="text-xs text-admin-muted">
                           {r.companies.region}
                         </p>
                       )}
@@ -125,7 +125,7 @@ export default async function ClientsPage() {
                       {r.email && (
                         <a
                           href={`mailto:${r.email}`}
-                          className="block text-xs text-[#0a0a0a] hover:text-[#257a10]"
+                          className="block text-xs text-admin-ink hover:text-admin-green"
                         >
                           {r.email}
                         </a>
@@ -133,13 +133,13 @@ export default async function ClientsPage() {
                       {(r.phone ?? r.companies?.main_phone) && (
                         <a
                           href={`tel:${r.phone ?? r.companies?.main_phone}`}
-                          className="block text-xs text-[#4f5a52] hover:text-[#257a10]"
+                          className="block text-xs text-admin-muted hover:text-admin-green"
                         >
                           {r.phone ?? r.companies?.main_phone}
                         </a>
                       )}
                       {!r.email && !r.phone && !r.companies?.main_phone && (
-                        <span className="text-sm text-[#5f6b62]">—</span>
+                        <span className="text-sm text-admin-faint">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -147,16 +147,16 @@ export default async function ClientsPage() {
                         <Link href={`/admin/lots/${r.lots.id}`} className="block">
                           <div className="flex items-center gap-2">
                             <StatusPill status={r.lots.status} />
-                            <span className="font-display text-sm tabular-nums text-[#0a0a0a]">
+                            <span className="font-display text-sm tabular-nums text-admin-ink">
                               {formatMoney(r.lots.purchase_price)}
                             </span>
                           </div>
-                          <p className="mt-0.5 text-xs text-[#4f5a52]">
+                          <p className="mt-0.5 text-xs text-admin-muted">
                             {formatDate(r.lots.purchased_at)}
                           </p>
                         </Link>
                       ) : (
-                        <span className="text-sm text-[#5f6b62]">—</span>
+                        <span className="text-sm text-admin-faint">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -167,7 +167,7 @@ export default async function ClientsPage() {
                           className="block"
                         >
                           <ChevronRight
-                            className="h-4 w-4 text-[#4f5a52] transition-colors group-hover:text-[#257a10]"
+                            className="h-4 w-4 text-admin-muted transition-colors group-hover:text-admin-green"
                             aria-hidden
                           />
                         </Link>
@@ -186,7 +186,7 @@ export default async function ClientsPage() {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="whitespace-nowrap px-4 py-3 text-left text-[13px] font-medium text-[#4f5a52]">
+    <th className="whitespace-nowrap px-4 py-3 text-left text-[13px] font-medium text-admin-muted">
       {children}
     </th>
   );

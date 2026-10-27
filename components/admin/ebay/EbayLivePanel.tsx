@@ -86,14 +86,14 @@ export function EbayLiveList({ data }: { data: EbayLiveData }) {
             rel="noopener noreferrer"
             className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
               r.hot
-                ? "border-[#6bd63b] bg-[#f0fae9] text-[#0a0a0a]"
-                : "border-[#e3eadf] bg-white text-[#0a0a0a] hover:border-[#c9d6c3]"
+                ? "border-[#6bd63b] bg-admin-tint-green text-admin-ink"
+                : "border-admin-line bg-admin-card text-admin-ink hover:border-admin-line-strong"
             }`}
           >
-            <r.icon className={`h-4 w-4 shrink-0 ${r.hot ? "text-[#257a10]" : "text-[#4f5a52]"}`} aria-hidden />
+            <r.icon className={`h-4 w-4 shrink-0 ${r.hot ? "text-admin-green" : "text-admin-muted"}`} aria-hidden />
             <span className="min-w-0 flex-1 truncate">{r.label}</span>
-            <span className="shrink-0 tabular-nums text-[#4f5a52]">{r.value}</span>
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" aria-hidden />
+            <span className="shrink-0 tabular-nums text-admin-muted">{r.value}</span>
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-admin-muted" aria-hidden />
           </a>
         </li>
       ))}
@@ -105,7 +105,7 @@ export function EbayLiveSkeleton() {
   return (
     <ul className="mt-4 flex flex-col gap-2" aria-hidden>
       {Array.from({ length: 5 }).map((_, i) => (
-        <li key={i} className="h-[42px] animate-pulse rounded-xl border border-[#e3eadf] bg-[#f4f7f2]" />
+        <li key={i} className="h-[42px] animate-pulse rounded-xl border border-admin-line bg-admin-page" />
       ))}
     </ul>
   );

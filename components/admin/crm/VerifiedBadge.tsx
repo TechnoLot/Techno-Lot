@@ -8,7 +8,7 @@ import { BadgeCheck, CircleDashed } from "lucide-react";
 export default function VerifiedBadge({ verified }: { verified: boolean }) {
   if (verified) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-[#eaf6e3] px-2 py-0.5 text-xs font-medium text-[#257a10]">
+      <span className="inline-flex items-center gap-1 rounded-full bg-admin-tint-green px-2 py-0.5 text-xs font-medium text-admin-green">
         <BadgeCheck className="h-3 w-3" aria-hidden />
         Vérifié
       </span>
@@ -16,7 +16,7 @@ export default function VerifiedBadge({ verified }: { verified: boolean }) {
   }
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-[#eef1ec] px-2 py-0.5 text-xs font-medium text-[#4f5a52]"
+      className="inline-flex items-center gap-1 rounded-full bg-admin-tint-gray px-2 py-0.5 text-xs font-medium text-admin-muted"
       title="Donnée devinée (pattern courriel, recherche web) — à confirmer manuellement"
     >
       <CircleDashed className="h-3 w-3" aria-hidden />

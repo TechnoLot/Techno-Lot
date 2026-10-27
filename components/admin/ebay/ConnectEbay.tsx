@@ -27,52 +27,52 @@ const SCOPES = [
 export default function ConnectEbay({ env, compact = false }: { env: EbayEnvStatus; compact?: boolean }) {
   const body = (
     <div className="grid gap-6 lg:grid-cols-2">
-      <ol className="flex flex-col gap-4 text-sm leading-relaxed text-[#4f5a52]">
+      <ol className="flex flex-col gap-4 text-sm leading-relaxed text-admin-muted">
         <Step n={1}>
           Dans le{" "}
           <ExtLink href="https://developer.ebay.com/my/keys">portail développeur eBay</ExtLink>, ouvre{" "}
-          <strong className="font-semibold text-[#0a0a0a]">Application Keysets</strong> et copie l’
-          <strong className="font-semibold text-[#0a0a0a]">App ID</strong> et le{" "}
-          <strong className="font-semibold text-[#0a0a0a]">Cert ID</strong> du jeu de clés{" "}
-          <strong className="font-semibold text-[#0a0a0a]">Production</strong>.
+          <strong className="font-semibold text-admin-ink">Application Keysets</strong> et copie l’
+          <strong className="font-semibold text-admin-ink">App ID</strong> et le{" "}
+          <strong className="font-semibold text-admin-ink">Cert ID</strong> du jeu de clés{" "}
+          <strong className="font-semibold text-admin-ink">Production</strong>.
         </Step>
         <Step n={2}>
           Ouvre{" "}
           <ExtLink href="https://developer.ebay.com/my/auth/?env=production&index=0">User Tokens</ExtLink>, choisis
           « OAuth », connecte-toi avec le compte vendeur Techno Lot et accepte les droits. Copie le{" "}
-          <strong className="font-semibold text-[#0a0a0a]">refresh token</strong> (valide 18 mois).
+          <strong className="font-semibold text-admin-ink">refresh token</strong> (valide 18 mois).
         </Step>
         <Step n={3}>
           Ajoute les variables dans <Code>.env.local</Code> (ordinateur) et chez l’hébergeur (variables
           d’environnement de Hostinger), puis redémarre le site.
         </Step>
         <Step n={4}>
-          Reviens ici et clique sur <strong className="font-semibold text-[#0a0a0a]">Synchroniser avec eBay</strong>.
+          Reviens ici et clique sur <strong className="font-semibold text-admin-ink">Synchroniser avec eBay</strong>.
           Le premier passage importe les 12 derniers mois.
         </Step>
       </ol>
 
       <div className="flex flex-col gap-5">
         <div>
-          <h3 className="font-display text-sm font-semibold text-[#0a0a0a]">Variables côté serveur</h3>
-          <ul className="mt-2 divide-y divide-[#edf2ea] rounded-xl border border-[#e3eadf]">
+          <h3 className="font-display text-sm font-semibold text-admin-ink">Variables côté serveur</h3>
+          <ul className="mt-2 divide-y divide-admin-line-soft rounded-xl border border-admin-line">
             {VARS.map((v) => {
               const ok = env[v.key];
               return (
                 <li key={v.name} className="flex items-start gap-3 px-3 py-2.5">
                   <span
                     className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                      ok ? "bg-[#e6f4de] text-[#257a10]" : v.optional ? "bg-[#eef2ec] text-[#4f5a52]" : "bg-[#fde8e6] text-[#b42318]"
+                      ok ? "bg-admin-tint-green text-admin-green" : v.optional ? "bg-admin-tint-gray text-admin-muted" : "bg-admin-tint-red-strong text-admin-danger"
                     }`}
                     aria-hidden
                   >
                     {ok ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <code className="break-all font-mono text-[13px] font-medium text-[#0a0a0a]">{v.name}</code>
-                    <span className="block text-xs text-[#4f5a52]">{v.hint}</span>
+                    <code className="break-all font-mono text-[13px] font-medium text-admin-ink">{v.name}</code>
+                    <span className="block text-xs text-admin-muted">{v.hint}</span>
                   </span>
-                  <span className={`shrink-0 text-xs font-medium ${ok ? "text-[#257a10]" : v.optional ? "text-[#4f5a52]" : "text-[#b42318]"}`}>
+                  <span className={`shrink-0 text-xs font-medium ${ok ? "text-admin-green" : v.optional ? "text-admin-muted" : "text-admin-danger"}`}>
                     {ok ? "présente" : v.optional ? "par défaut" : "manquante"}
                   </span>
                 </li>
@@ -81,8 +81,8 @@ export default function ConnectEbay({ env, compact = false }: { env: EbayEnvStat
           </ul>
         </div>
         <div>
-          <h3 className="font-display text-sm font-semibold text-[#0a0a0a]">Droits à accorder au jeton</h3>
-          <ul className="mt-2 flex flex-col gap-1.5 text-sm text-[#4f5a52]">
+          <h3 className="font-display text-sm font-semibold text-admin-ink">Droits à accorder au jeton</h3>
+          <ul className="mt-2 flex flex-col gap-1.5 text-sm text-admin-muted">
             {SCOPES.map((s) => (
               <li key={s.name}>
                 <Code>{s.name}</Code> : {s.why}
@@ -96,11 +96,11 @@ export default function ConnectEbay({ env, compact = false }: { env: EbayEnvStat
 
   if (compact) {
     return (
-      <details className="group rounded-2xl border border-[#e3eadf] bg-white p-5 lg:p-6">
-        <summary className="cursor-pointer list-none font-display text-sm font-semibold text-[#0a0a0a] [&::-webkit-details-marker]:hidden">
+      <details className="group rounded-2xl border border-admin-line bg-admin-card p-5 lg:p-6">
+        <summary className="cursor-pointer list-none font-display text-sm font-semibold text-admin-ink [&::-webkit-details-marker]:hidden">
           <span className="inline-flex items-center gap-2">
             Connexion eBay
-            <span className="text-xs font-normal text-[#4f5a52] group-open:hidden">· afficher les réglages</span>
+            <span className="text-xs font-normal text-admin-muted group-open:hidden">· afficher les réglages</span>
           </span>
         </summary>
         <div className="mt-5">{body}</div>
@@ -109,11 +109,11 @@ export default function ConnectEbay({ env, compact = false }: { env: EbayEnvStat
   }
 
   return (
-    <section className="rounded-2xl border border-[#e3eadf] bg-white p-5 lg:p-6" aria-labelledby="connect-ebay">
-      <h2 id="connect-ebay" className="font-display text-lg font-semibold text-[#0a0a0a]">
+    <section className="rounded-2xl border border-admin-line bg-admin-card p-5 lg:p-6" aria-labelledby="connect-ebay">
+      <h2 id="connect-ebay" className="font-display text-lg font-semibold text-admin-ink">
         Connecter eBay
       </h2>
-      <p className="mt-1 max-w-2xl text-sm text-[#4f5a52]">
+      <p className="mt-1 max-w-2xl text-sm text-admin-muted">
         Une fois le compte relié, les ventes eBay s’ajoutent aux ventes et au profit du tableau de bord. Aucune clé
         n’est affichée ici : seulement si elle est présente ou non.
       </p>
@@ -125,7 +125,7 @@ export default function ConnectEbay({ env, compact = false }: { env: EbayEnvStat
 function Step({ n, children }: { n: number; children: React.ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef2ec] font-display text-xs font-semibold text-[#0a0a0a]">
+      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-admin-tint-gray font-display text-xs font-semibold text-admin-ink">
         {n}
       </span>
       <span className="min-w-0">{children}</span>
@@ -135,7 +135,7 @@ function Step({ n, children }: { n: number; children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md bg-[#f4f7f2] px-1.5 py-0.5 font-mono text-[12.5px] text-[#0a0a0a]">{children}</code>
+    <code className="rounded-md bg-admin-page px-1.5 py-0.5 font-mono text-[12.5px] text-admin-ink">{children}</code>
   );
 }
 
@@ -145,7 +145,7 @@ function ExtLink({ href, children }: { href: string; children: React.ReactNode }
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 font-medium text-[#257a10] underline decoration-[#c9d6c3] underline-offset-2 hover:decoration-[#257a10]"
+      className="inline-flex items-center gap-1 font-medium text-admin-green underline decoration-admin-line-strong underline-offset-2 hover:decoration-admin-green"
     >
       {children}
       <ExternalLink className="h-3 w-3" aria-hidden />

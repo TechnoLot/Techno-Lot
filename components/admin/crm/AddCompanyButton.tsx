@@ -57,7 +57,7 @@ export default function AddCompanyButton() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0a0f1c]/40 p-4 sm:items-center"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[#0a0f1c]/40 [[data-admin-theme=dark]_&]:bg-[#02040a]/70 p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-company-title"
@@ -72,7 +72,7 @@ export default function AddCompanyButton() {
             <div className="mb-4 flex items-center justify-between">
               <p
                 id="add-company-title"
-                className="font-display text-lg font-semibold text-[#0a0a0a]"
+                className="font-display text-lg font-semibold text-admin-ink"
               >
                 Nouveau prospect
               </p>
@@ -80,7 +80,7 @@ export default function AddCompanyButton() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer"
-                className="rounded-full border border-[#c9d6c3] bg-white p-1.5 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
+                className="rounded-full border border-admin-line-strong bg-admin-card p-1.5 text-admin-muted hover:bg-admin-page hover:text-admin-ink"
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
               </button>
@@ -145,7 +145,7 @@ export default function AddCompanyButton() {
             {error && (
               <p
                 role="alert"
-                className="mt-3 rounded-lg border border-[#f4c7c3] bg-[#fef3f2] px-3 py-2 text-xs text-[#b42318]"
+                className="mt-3 rounded-lg border border-admin-tint-red-line bg-admin-tint-red px-3 py-2 text-xs text-admin-danger"
               >
                 {error}
               </p>
@@ -155,7 +155,7 @@ export default function AddCompanyButton() {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-[#c9d6c3] bg-white px-5 py-2 text-sm font-semibold text-[#0a0a0a] transition-colors hover:bg-[#f4f7f2]"
+                className="rounded-full border border-admin-line-strong bg-admin-card px-5 py-2 text-sm font-semibold text-admin-ink transition-colors hover:bg-admin-page"
               >
                 Annuler
               </button>

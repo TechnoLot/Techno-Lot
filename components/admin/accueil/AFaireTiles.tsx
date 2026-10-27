@@ -20,7 +20,7 @@ export default function AFaireTiles({ tiles }: { tiles: AFaireTile[] }) {
     <section aria-labelledby="a-faire-titre">
       <h2
         id="a-faire-titre"
-        className="mb-3 font-display text-lg font-semibold tracking-tight text-[#0a0a0a]"
+        className="mb-3 font-display text-lg font-semibold tracking-tight text-admin-ink"
       >
         À faire aujourd&apos;hui
       </h2>
@@ -31,25 +31,25 @@ export default function AFaireTiles({ tiles }: { tiles: AFaireTile[] }) {
             <li key={t.label}>
               <TileWrapper href={t.href} featured={featured}>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="font-display text-[40px] font-semibold leading-none tracking-tight tabular-nums text-[#0a0a0a] sm:text-[44px]">
+                  <span className="font-display text-[40px] font-semibold leading-none tracking-tight tabular-nums text-admin-ink sm:text-[44px]">
                     {t.count === null ? "—" : formatCount(t.count)}
                   </span>
                   {t.href && (
                   <ArrowUpRight
                     className={`h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 ${
-                      featured ? "text-[#0a0a0a]" : "text-[#4f5a52]"
+                      featured ? "text-admin-ink" : "text-admin-muted"
                     }`}
                     aria-hidden
                   />
                   )}
                 </div>
                 <div>
-                  <p className="text-[15px] font-semibold leading-snug text-[#0a0a0a]">
+                  <p className="text-[15px] font-semibold leading-snug text-admin-ink">
                     {t.label}
                   </p>
                   <p
                     className={`mt-0.5 text-[13px] leading-snug ${
-                      featured ? "text-[#0a0a0a]" : "text-[#4f5a52]"
+                      featured ? "text-admin-ink" : "text-admin-muted"
                     }`}
                   >
                     {t.hint}
@@ -74,14 +74,14 @@ function TileWrapper({
   children: React.ReactNode;
 }) {
   const base = `flex h-full min-h-[140px] flex-col justify-between gap-4 rounded-2xl border p-4 sm:p-5 ${
-    featured ? "border-[#6bd63b] bg-[#6bd63b]" : "border-[#e3eadf] bg-white"
+    featured ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
   }`;
   if (!href) return <div className={base}>{children}</div>;
   return (
     <Link
       href={href}
       className={`admin-focus group transition-colors ${base} ${
-        featured ? "hover:border-[#5ec22f] hover:bg-[#62cc33]" : "hover:border-[#c9d6c3]"
+        featured ? "hover:border-[#5ec22f] hover:bg-[#62cc33]" : "hover:border-admin-line-strong"
       }`}
     >
       {children}

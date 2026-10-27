@@ -6,6 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { CornerDownLeft, LogOut, Menu, Search, UserRound, X } from "lucide-react";
 import AdminNav, { ADMIN_ROUTES } from "@/components/admin/AdminNav";
+import ThemeToggle, { writeAdminThemeCookie, type AdminTheme } from "@/components/admin/ThemeToggle";
+import { getAdminPrenom } from "@/app/admin/(dashboard)/compte/actions";
+import { ADMIN_PRENOM_EVENT, resolvePrenom } from "@/lib/admin/config";
 import CalculatriceOverlay, {
   OPEN_CALCULATRICE_EVENT,
 } from "@/components/admin/CalculatriceOverlay";
@@ -14,19 +17,53 @@ import { Logo } from "@/components/site/Logo";
 const EASE = [0.21, 0.47, 0.32, 0.98] as const;
 
 /**
- * Coque du tableau de bord (version B claire) : barre latérale bleu nuit,
- * contenu sur fond #f4f7f2, tiroir mobile et recherche rapide (Ctrl K).
+ * Coque du tableau de bord : barre latérale bleu nuit (dans les deux thèmes),
+ * contenu en couleurs par rôle (clair ou sombre selon data-admin-theme),
+ * tiroir mobile et recherche rapide (Ctrl K).
  */
 export default function AdminShell({
   email,
+  theme = "light",
   children,
 }: {
   email: string;
+  /** Thème lu côté serveur dans le témoin tl_admin_theme (pas de flash au chargement) */
+  theme?: "light" | "dark";
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const pathname = usePathname();
+
+  // Thème : valeur serveur (témoin) au chargement, puis bascule instantanée
+  // côté client — data-admin-theme change sur la racine, sans rechargement.
+  const [currentTheme, setCurrentTheme] = useState<AdminTheme>(theme);
+  useEffect(() => setCurrentTheme(theme), [theme]);
+  const changeTheme = useCallback((next: AdminTheme) => {
+    setCurrentTheme(next);
+    writeAdminThemeCookie(next);
+  }, []);
+
+  // Prénom : table par défaut tout de suite, puis user_metadata.prenom s'il existe.
+  const [prenom, setPrenom] = useState<string | null>(() => resolvePrenom(email));
+  useEffect(() => {
+    let alive = true;
+    setPrenom(resolvePrenom(email));
+    getAdminPrenom()
+      .then((p) => {
+        if (alive && p) setPrenom(p);
+      })
+      .catch(() => {});
+    const onUpdate = (e: Event) => {
+      const p = (e as CustomEvent<string>).detail;
+      if (typeof p === "string" && p.trim()) setPrenom(p.trim());
+    };
+    window.addEventListener(ADMIN_PRENOM_EVENT, onUpdate);
+    return () => {
+      alive = false;
+      window.removeEventListener(ADMIN_PRENOM_EVENT, onUpdate);
+    };
+  }, [email]);
 
   // Ferme le tiroir à chaque changement de page.
   useEffect(() => {
@@ -68,11 +105,17 @@ export default function AdminShell({
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-[#f4f7f2] text-[#0a0a0a]">
+      <div data-admin-theme={currentTheme} className="min-h-screen bg-admin-page text-admin-ink">
         <div className="relative flex">
           {/* Barre latérale (ordinateur) */}
-          <aside className="hidden w-[248px] shrink-0 bg-[#0a0f1c] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
-            <SidebarContent email={email} onSearch={openPalette} />
+          <aside className="relative hidden w-[264px] shrink-0 overflow-hidden bg-[#0a0f1c] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+            <SidebarContent
+              email={email}
+              prenom={prenom}
+              theme={currentTheme}
+              onThemeChange={changeTheme}
+              onSearch={openPalette}
+            />
           </aside>
 
           {/* Contenu principal */}
@@ -128,7 +171,7 @@ export default function AdminShell({
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
                 transition={{ duration: 0.28, ease: EASE }}
-                className="relative flex h-full w-[min(300px,86vw)] flex-col bg-[#0a0f1c]"
+                className="relative flex h-full w-[min(304px,86vw)] flex-col overflow-hidden bg-[#0a0f1c]"
               >
                 <button
                   type="button"
@@ -140,6 +183,9 @@ export default function AdminShell({
                 </button>
                 <SidebarContent
                   email={email}
+                  prenom={prenom}
+                  theme={currentTheme}
+                  onThemeChange={changeTheme}
                   onNavigate={() => setDrawerOpen(false)}
                   onSearch={openPalette}
                 />
@@ -163,33 +209,47 @@ export default function AdminShell({
 
 function SidebarContent({
   email,
+  prenom,
+  theme,
+  onThemeChange,
   onNavigate,
   onSearch,
 }: {
   email: string;
+  prenom: string | null;
+  theme: AdminTheme;
+  onThemeChange: (theme: AdminTheme) => void;
   onNavigate?: () => void;
   onSearch: () => void;
 }) {
   const pathname = usePathname() ?? "";
   const compteActive = pathname === "/admin/compte" || pathname.startsWith("/admin/compte/");
+  const displayName = prenom ?? (email.split("@")[0] || "Admin");
+  const initial = displayName.charAt(0).toLocaleUpperCase("fr-CA");
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="px-5 pb-5 pt-6">
+    <div className="relative flex h-full min-h-0 flex-col">
+      {/* Lueur verte de la marque, très douce, dans le coin supérieur */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(107,214,59,0.22),rgba(107,214,59,0.06)_55%,transparent)]"
+      />
+
+      <div className="relative px-5 pb-5 pt-7">
         <Link
           href="/admin"
           onClick={onNavigate}
           className="nav-focus inline-flex items-center rounded-lg"
         >
-          <Logo variant="fonce" layout="horizontal" height={30} />
+          <Logo variant="fonce" layout="horizontal" height={38} priority />
         </Link>
       </div>
 
-      <div className="px-3 pb-4">
+      <div className="relative px-3 pb-4">
         <button
           type="button"
           onClick={onSearch}
-          className="nav-focus flex w-full items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left text-[13.5px] text-[#94a3b8] transition-colors hover:border-white/20 hover:text-[#cbd5e1]"
+          className="nav-focus flex h-11 w-full items-center gap-2.5 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 text-left text-[14px] text-[#94a3b8] transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-[#cbd5e1]"
         >
           <Search className="h-4 w-4" aria-hidden />
           <span className="flex-1">Aller à…</span>
@@ -200,46 +260,58 @@ function SidebarContent({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pb-4 [scrollbar-color:#1f2c4d_transparent] [scrollbar-width:thin]">
+      <div className="relative min-h-0 flex-1 overflow-y-auto pb-4 [scrollbar-color:#1f2c4d_transparent] [scrollbar-width:thin]">
         <AdminNav onNavigate={onNavigate} />
       </div>
 
-      <div className="flex flex-col gap-1 border-t border-white/10 px-3 py-3">
-        <Link
-          href="/admin/compte"
-          onClick={onNavigate}
-          aria-current={compteActive ? "page" : undefined}
-          title={email}
-          className={`nav-focus flex items-center gap-3 rounded-[10px] px-3 py-2 text-[14px] font-medium transition-colors ${
-            compteActive
-              ? "bg-[#6bd63b] text-[#0a0a0a]"
-              : "text-[#cbd5e1] hover:bg-white/[0.06] hover:text-white"
-          }`}
-        >
-          <UserRound
-            className={`h-[18px] w-[18px] shrink-0 ${compteActive ? "text-[#0a0a0a]" : "text-[#94a3b8]"}`}
+      <div className="relative flex flex-col gap-2.5 border-t border-white/10 px-3 pb-4 pt-3">
+        {/* Carte utilisateur */}
+        <div className="flex items-center gap-3 rounded-[12px] px-1.5 py-1">
+          <span
             aria-hidden
-          />
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6bd63b] font-display text-[16px] font-semibold text-[#0a0a0a] shadow-[0_0_0_3px_rgba(107,214,59,0.18)]"
+          >
+            {initial}
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block">Mon compte</span>
-            <span
-              className={`block truncate text-[11.5px] font-normal ${
-                compteActive ? "text-[#0a0a0a]" : "text-[#94a3b8]"
-              }`}
-            >
+            <span className="block truncate text-[15px] font-semibold text-white">
+              {displayName}
+            </span>
+            <span className="block truncate text-[12px] text-[#94a3b8]" title={email}>
               {email}
             </span>
           </span>
-        </Link>
-        <form action="/admin/auth/signout" method="POST">
-          <button
-            type="submit"
-            className="nav-focus flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[14px] font-medium text-[#cbd5e1] transition-colors hover:bg-white/[0.06] hover:text-white"
+        </div>
+
+        <ThemeToggle theme={theme} onChange={onThemeChange} />
+
+        <div className="grid grid-cols-2 gap-1.5">
+          <Link
+            href="/admin/compte"
+            onClick={onNavigate}
+            aria-current={compteActive ? "page" : undefined}
+            className={`nav-focus flex h-10 items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-medium transition-colors ${
+              compteActive
+                ? "bg-[#6bd63b] text-[#0a0a0a]"
+                : "text-[#cbd5e1] hover:bg-white/[0.06] hover:text-white"
+            }`}
           >
-            <LogOut className="h-[18px] w-[18px] shrink-0 text-[#94a3b8]" aria-hidden />
-            Déconnexion
-          </button>
-        </form>
+            <UserRound
+              className={`h-4 w-4 shrink-0 ${compteActive ? "text-[#0a0a0a]" : "text-[#94a3b8]"}`}
+              aria-hidden
+            />
+            Mon compte
+          </Link>
+          <form action="/admin/auth/signout" method="POST">
+            <button
+              type="submit"
+              className="nav-focus flex h-10 w-full items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-medium text-[#cbd5e1] transition-colors hover:bg-white/[0.06] hover:text-white"
+            >
+              <LogOut className="h-4 w-4 shrink-0 text-[#94a3b8]" aria-hidden />
+              Déconnexion
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
@@ -333,11 +405,11 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.18, ease: EASE }}
-            className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-[#e3eadf] bg-white shadow-[0_24px_64px_-24px_rgba(10,15,28,0.35)]"
+            className="relative w-full max-w-lg overflow-hidden rounded-2xl border border-admin-line bg-admin-card shadow-[0_24px_64px_-24px_rgba(10,15,28,0.35)]"
             onKeyDown={onKeyDown}
           >
-            <div className="flex items-center gap-3 border-b border-[#edf2ea] px-4">
-              <Search className="h-4 w-4 shrink-0 text-[#4f5a52]" aria-hidden />
+            <div className="flex items-center gap-3 border-b border-admin-line-soft px-4">
+              <Search className="h-4 w-4 shrink-0 text-admin-muted" aria-hidden />
               <input
                 ref={inputRef}
                 value={query}
@@ -348,9 +420,9 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
                 aria-activedescendant={results[index] ? `palette-opt-${index}` : undefined}
                 role="combobox"
                 aria-expanded="true"
-                className="h-12 w-full bg-transparent text-sm text-[#0a0a0a] placeholder:text-[#6b766d] focus:outline-none"
+                className="h-12 w-full bg-transparent text-sm text-admin-ink placeholder:text-admin-faint focus:outline-none"
               />
-              <kbd className="inline-flex h-5 items-center rounded-md border border-[#c9d6c3] bg-[#f4f7f2] px-1.5 font-sans text-[10px] font-medium text-[#4f5a52]">
+              <kbd className="inline-flex h-5 items-center rounded-md border border-admin-line-strong bg-admin-page px-1.5 font-sans text-[10px] font-medium text-admin-muted">
                 Échap
               </kbd>
             </div>
@@ -361,7 +433,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
               className="max-h-[50vh] overflow-y-auto p-2"
             >
               {results.length === 0 && (
-                <li className="px-3 py-8 text-center text-sm text-[#4f5a52]">
+                <li className="px-3 py-8 text-center text-sm text-admin-muted">
                   Aucune page ne correspond à « {query} ».
                 </li>
               )}
@@ -376,18 +448,18 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
                     aria-selected={active}
                     onMouseMove={() => setIndex(i)}
                     onClick={() => go(i)}
-                    className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm text-[#0a0a0a] transition-colors ${
-                      active ? "bg-[#eef6e8]" : ""
+                    className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm text-admin-ink transition-colors ${
+                      active ? "bg-admin-tint-green" : ""
                     }`}
                   >
                     <r.icon
-                      className={`h-4 w-4 shrink-0 ${active ? "text-[#257a10]" : "text-[#4f5a52]"}`}
+                      className={`h-4 w-4 shrink-0 ${active ? "text-admin-green" : "text-admin-muted"}`}
                       aria-hidden
                     />
                     <span className="flex-1 truncate">{r.label}</span>
-                    <span className="text-[11px] text-[#4f5a52]">{r.section}</span>
+                    <span className="text-[11px] text-admin-muted">{r.section}</span>
                     {active && (
-                      <CornerDownLeft className="h-3.5 w-3.5 text-[#4f5a52]" aria-hidden />
+                      <CornerDownLeft className="h-3.5 w-3.5 text-admin-muted" aria-hidden />
                     )}
                   </li>
                 );

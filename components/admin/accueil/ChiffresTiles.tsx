@@ -38,7 +38,7 @@ export default function ChiffresTiles({
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2
           id="chiffres-titre"
-          className="font-display text-lg font-semibold tracking-tight text-[#0a0a0a]"
+          className="font-display text-lg font-semibold tracking-tight text-admin-ink"
         >
           Chiffres
         </h2>
@@ -60,7 +60,7 @@ export default function ChiffresTiles({
         <Tile
           label="Profit"
           value={formatMoney(data.profit)}
-          valueClass={profitNegatif ? "text-[#b42318]" : "text-[#257a10]"}
+          valueClass={profitNegatif ? "text-admin-danger" : "text-admin-green"}
         >
           {data.fraisEbay
             ? `Ventes − achats − frais eBay (${formatMoney(data.fraisEbay)})`
@@ -72,14 +72,14 @@ export default function ChiffresTiles({
             Non retirées du profit
           </Tile>
         ) : (
-          <div className="flex min-h-[132px] flex-col justify-between gap-3 rounded-2xl border border-[#e3eadf] bg-white p-4 sm:p-5">
-            <p className="text-[13px] font-medium text-[#4f5a52]">Pubs</p>
-            <p className="text-[15px] font-semibold leading-snug text-[#0a0a0a]">
+          <div className="flex min-h-[132px] flex-col justify-between gap-3 rounded-2xl border border-admin-line bg-admin-card p-4 sm:p-5">
+            <p className="text-[13px] font-medium text-admin-muted">Pubs</p>
+            <p className="text-[15px] font-semibold leading-snug text-admin-ink">
               Meta pas encore connecté
             </p>
             <Link
               href="/admin/pubs"
-              className="admin-focus inline-flex items-center gap-1 self-start rounded-md text-[13px] font-semibold text-[#257a10] hover:underline"
+              className="admin-focus inline-flex items-center gap-1 self-start rounded-md text-[13px] font-semibold text-admin-green hover:underline"
             >
               Voir les publicités
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -94,7 +94,7 @@ export default function ChiffresTiles({
 function Tile({
   label,
   value,
-  valueClass = "text-[#0a0a0a]",
+  valueClass = "text-admin-ink",
   children,
 }: {
   label: string;
@@ -103,14 +103,14 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[132px] min-w-0 flex-col justify-between gap-3 rounded-2xl border border-[#e3eadf] bg-white p-4 sm:p-5">
-      <p className="text-[13px] font-medium text-[#4f5a52]">{label}</p>
+    <div className="flex min-h-[132px] min-w-0 flex-col justify-between gap-3 rounded-2xl border border-admin-line bg-admin-card p-4 sm:p-5">
+      <p className="text-[13px] font-medium text-admin-muted">{label}</p>
       <p
         className={`truncate font-display text-[26px] font-semibold leading-none tracking-tight tabular-nums sm:text-[34px] ${valueClass}`}
       >
         {value}
       </p>
-      <p className="text-[12.5px] leading-snug text-[#4f5a52]">{children}</p>
+      <p className="text-[12.5px] leading-snug text-admin-muted">{children}</p>
     </div>
   );
 }

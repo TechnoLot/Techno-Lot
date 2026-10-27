@@ -36,10 +36,10 @@ function FacebookGlyph({ className = "h-3.5 w-3.5" }: { className?: string }) {
 }
 
 const STYLES: Record<string, { label: string; cls: string; Icon: (p: { className?: string }) => JSX.Element }> = {
-  meta: { label: "Meta", cls: "border-[#e3eadf] bg-[#f4f7f2] text-[#0a0a0a]", Icon: MetaGlyph },
-  facebook: { label: "Facebook", cls: "border-[#e3eadf] bg-[#f4f7f2] text-[#0a0a0a]", Icon: FacebookGlyph },
-  instagram: { label: "Instagram", cls: "border-[#e3eadf] bg-[#f4f7f2] text-[#0a0a0a]", Icon: InstagramGlyph },
-  google: { label: "Google", cls: "border-[#e3eadf] bg-[#f4f7f2] text-[#0a0a0a]", Icon: GoogleGlyph },
+  meta: { label: "Meta", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: MetaGlyph },
+  facebook: { label: "Facebook", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: FacebookGlyph },
+  instagram: { label: "Instagram", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: InstagramGlyph },
+  google: { label: "Google", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: GoogleGlyph },
 };
 
 export function PlatformIcon({ platform, className }: { platform: string; className?: string }) {
@@ -68,7 +68,7 @@ export default function PlatformBadge({
   const s = STYLES[k];
   if (!s) {
     return (
-      <span className="inline-flex items-center rounded-full border border-[#e3eadf] bg-[#f4f7f2] px-2.5 py-0.5 text-[12px] font-medium text-[#4f5a52]">
+      <span className="inline-flex items-center rounded-full border border-admin-line bg-admin-page px-2.5 py-0.5 text-[12px] font-medium text-admin-muted">
         {platform}
       </span>
     );

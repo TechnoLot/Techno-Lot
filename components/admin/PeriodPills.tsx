@@ -52,7 +52,7 @@ export default function PeriodPills({
             aria-selected={active}
             onClick={() => pick(p.key)}
             className={`admin-focus relative shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-              active ? "text-[#0a0a0a]" : "text-[#4f5a52] hover:text-[#0a0a0a]"
+              active ? "text-admin-ink" : "text-admin-muted hover:text-admin-ink"
             }`}
           >
             {active && (

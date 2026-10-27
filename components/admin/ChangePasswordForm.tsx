@@ -46,7 +46,7 @@ export default function ChangePasswordForm() {
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
       <div>
-        <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-[#0a0a0a]">
+        <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-admin-ink">
           Nouveau mot de passe
         </label>
         <input
@@ -62,7 +62,7 @@ export default function ChangePasswordForm() {
         />
       </div>
       <div>
-        <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-[#0a0a0a]">
+        <label htmlFor="confirm-password" className="mb-1.5 block text-sm font-medium text-admin-ink">
           Confirmer le mot de passe
         </label>
         <input
@@ -81,7 +81,7 @@ export default function ChangePasswordForm() {
       {status === "error" && error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="flex items-start gap-2 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>{error}</span>
@@ -90,7 +90,7 @@ export default function ChangePasswordForm() {
       {status === "done" && (
         <div
           role="status"
-          className="flex items-start gap-2 rounded-xl border border-[#b7dca5] bg-[#eaf6e3] px-4 py-3 text-sm text-[#257a10]"
+          className="flex items-start gap-2 rounded-xl border border-admin-tint-green-line bg-admin-tint-green px-4 py-3 text-sm text-admin-green"
         >
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>Mot de passe enregistré. Utilise-le à ta prochaine connexion.</span>

@@ -55,7 +55,7 @@ function KpiCard({ spec, index }: { spec: KpiSpec; index: number }) {
   const highlight = variant === "gradient";
 
   // gradient = tuile mise en avant (lime, texte encre) ; green = chiffre vert.
-  const numberClass = variant === "green" ? "text-[#257a10]" : "text-[#0a0a0a]";
+  const numberClass = variant === "green" ? "text-admin-green" : "text-admin-ink";
 
   const up = delta !== null && delta > 1;
   const down = delta !== null && delta < -1;
@@ -68,17 +68,17 @@ function KpiCard({ spec, index }: { spec: KpiSpec; index: number }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.05, ease: [0.21, 0.47, 0.32, 0.98] }}
       className={`relative rounded-2xl border p-4 sm:p-5 ${
-        highlight ? "border-[#6bd63b] bg-[#6bd63b]" : "border-[#e3eadf] bg-white"
+        highlight ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
       }`}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className={`text-[13px] font-medium ${highlight ? "text-[#0a0a0a]" : "text-[#4f5a52]"}`}>
+        <p className={`text-[13px] font-medium ${highlight ? "text-admin-ink" : "text-admin-muted"}`}>
           {label}
         </p>
         {Icon && (
           <span
             className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-              highlight ? "bg-[#0a0a0a]/10 text-[#0a0a0a]" : "bg-[#f4f7f2] text-[#4f5a52]"
+              highlight ? "bg-[#0a0a0a]/10 text-admin-ink" : "bg-admin-page text-admin-muted"
             }`}
           >
             <Icon className="h-[15px] w-[15px]" aria-hidden />
@@ -92,7 +92,7 @@ function KpiCard({ spec, index }: { spec: KpiSpec; index: number }) {
       </p>
       <div className="mt-3 flex min-h-[20px] flex-wrap items-center gap-1.5 text-xs">
         {delta === null ? (
-          <span className={highlight ? "text-[#0a0a0a]" : "text-[#4f5a52]"}>
+          <span className={highlight ? "text-admin-ink" : "text-admin-muted"}>
             {prev === null ? "Toute la période" : "Pas de référence"}
           </span>
         ) : (
@@ -100,10 +100,10 @@ function KpiCard({ spec, index }: { spec: KpiSpec; index: number }) {
             <span
               className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold tabular-nums ${
                 good
-                  ? "bg-[#e6f4de] text-[#1f5f0c]"
+                  ? "bg-admin-tint-green text-admin-tint-green-ink"
                   : bad
-                    ? "bg-[#fdecea] text-[#b42318]"
-                    : "bg-[#eef2ec] text-[#4f5a52]"
+                    ? "bg-admin-tint-red text-admin-danger"
+                    : "bg-admin-tint-gray text-admin-muted"
               }`}
             >
               {up ? (
@@ -115,7 +115,7 @@ function KpiCard({ spec, index }: { spec: KpiSpec; index: number }) {
               )}
               {Math.abs(delta).toFixed(0)} %
             </span>
-            <span className={`hidden sm:inline ${highlight ? "text-[#0a0a0a]" : "text-[#4f5a52]"}`}>
+            <span className={`hidden sm:inline ${highlight ? "text-admin-ink" : "text-admin-muted"}`}>
               vs période préc.
             </span>
           </>

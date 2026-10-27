@@ -32,7 +32,7 @@ function adTitle(a: RankedAd): { name: string; sub: string | null } {
 }
 
 function profitClass(v: number): string {
-  return v > 0 ? "text-[#257a10]" : v < 0 ? "text-[#b42318]" : "text-[#4f5a52]";
+  return v > 0 ? "text-admin-green" : v < 0 ? "text-admin-danger" : "text-admin-muted";
 }
 
 /**
@@ -91,7 +91,7 @@ export default function AdsTable({
       <div className="hidden overflow-x-auto lg:block">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-[#edf2ea]">
+            <tr className="border-b border-admin-line-soft">
               <th scope="col" className={`${th} w-[34%] pl-5`}>
                 Pub
               </th>
@@ -107,8 +107,8 @@ export default function AdsTable({
                     <button
                       type="button"
                       onClick={() => toggle(c.key)}
-                      className={`inline-flex items-center gap-1 rounded-md hover:text-[#0a0a0a] ${focusRing} ${
-                        active ? "text-[#0a0a0a]" : ""
+                      className={`inline-flex items-center gap-1 rounded-md hover:text-admin-ink ${focusRing} ${
+                        active ? "text-admin-ink" : ""
                       }`}
                     >
                       {c.label}
@@ -131,12 +131,12 @@ export default function AdsTable({
                 <tr
                   key={a.key}
                   onClick={() => router.push(hrefOf(a))}
-                  className="cursor-pointer border-b border-[#edf2ea] transition-colors last:border-b-0 hover:bg-[#f7faf5]"
+                  className="cursor-pointer border-b border-admin-line-soft transition-colors last:border-b-0 hover:bg-admin-subtle"
                 >
                   <td className="py-3.5 pl-5 pr-4 align-middle">
                     <div className="flex min-w-0 items-center gap-2.5">
                       {showPlatform && (
-                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#f4f7f2] text-[#4f5a52]">
+                        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-admin-page text-admin-muted">
                           <PlatformIcon platform={a.platform} className="h-3.5 w-3.5" />
                         </span>
                       )}
@@ -144,18 +144,18 @@ export default function AdsTable({
                         <Link
                           href={hrefOf(a)}
                           onClick={(e) => e.stopPropagation()}
-                          className={`line-clamp-2 break-words font-semibold text-[#0a0a0a] hover:text-[#257a10] ${focusRing}`}
+                          className={`line-clamp-2 break-words font-semibold text-admin-ink hover:text-admin-green ${focusRing}`}
                         >
                           {t.name}
                         </Link>
-                        {t.sub && <p className="mt-0.5 truncate text-[12px] text-[#4f5a52]">{t.sub}</p>}
+                        {t.sub && <p className="mt-0.5 truncate text-[12px] text-admin-muted">{t.sub}</p>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 text-right tabular-nums text-[#0a0a0a]">{spendKnown ? formatMoney(a.spend) : "—"}</td>
-                  <td className="px-4 py-3.5 text-right tabular-nums text-[#0a0a0a]">{formatCount(a.leads)}</td>
-                  <td className="px-4 py-3.5 text-right tabular-nums text-[#0a0a0a]">{formatCost(a.cpl)}</td>
-                  <td className="px-4 py-3.5 text-right tabular-nums font-semibold text-[#0a0a0a]">
+                  <td className="px-4 py-3.5 text-right tabular-nums text-admin-ink">{spendKnown ? formatMoney(a.spend) : "—"}</td>
+                  <td className="px-4 py-3.5 text-right tabular-nums text-admin-ink">{formatCount(a.leads)}</td>
+                  <td className="px-4 py-3.5 text-right tabular-nums text-admin-ink">{formatCost(a.cpl)}</td>
+                  <td className="px-4 py-3.5 text-right tabular-nums font-semibold text-admin-ink">
                     {formatCount(a.clients)}
                   </td>
                   <td className={`px-4 py-3.5 text-right tabular-nums font-semibold ${profitClass(a.profit)}`}>
@@ -169,14 +169,14 @@ export default function AdsTable({
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t border-[#e3eadf] bg-[#f7faf5] text-[13px]">
-              <th scope="row" className="py-3 pl-5 pr-4 text-left font-semibold text-[#0a0a0a]">
+            <tr className="border-t border-admin-line bg-admin-subtle text-[13px]">
+              <th scope="row" className="py-3 pl-5 pr-4 text-left font-semibold text-admin-ink">
                 Total · {formatCount(ads.length)} pub{ads.length > 1 ? "s" : ""}
               </th>
-              <td className="px-4 py-3 text-right font-semibold tabular-nums text-[#0a0a0a]">{spendKnown ? formatMoney(totals.spend) : "—"}</td>
-              <td className="px-4 py-3 text-right font-semibold tabular-nums text-[#0a0a0a]">{formatCount(totals.leads)}</td>
-              <td className="px-4 py-3 text-right font-semibold tabular-nums text-[#0a0a0a]">{formatCost(totals.cpl)}</td>
-              <td className="px-4 py-3 text-right font-semibold tabular-nums text-[#0a0a0a]">{formatCount(totals.clients)}</td>
+              <td className="px-4 py-3 text-right font-semibold tabular-nums text-admin-ink">{spendKnown ? formatMoney(totals.spend) : "—"}</td>
+              <td className="px-4 py-3 text-right font-semibold tabular-nums text-admin-ink">{formatCount(totals.leads)}</td>
+              <td className="px-4 py-3 text-right font-semibold tabular-nums text-admin-ink">{formatCost(totals.cpl)}</td>
+              <td className="px-4 py-3 text-right font-semibold tabular-nums text-admin-ink">{formatCount(totals.clients)}</td>
               <td className={`px-4 py-3 text-right font-semibold tabular-nums ${profitClass(totals.profit)}`}>
                 {formatMoney(totals.profit)}
               </td>
@@ -187,7 +187,7 @@ export default function AdsTable({
       </div>
 
       {/* Mobile / tablette : cartes */}
-      <ul className="divide-y divide-[#edf2ea] lg:hidden">
+      <ul className="divide-y divide-admin-line-soft lg:hidden">
         {rows.map((a) => {
           const t = adTitle(a);
           const figures: { label: string; value: string; cls?: string }[] = [
@@ -201,30 +201,30 @@ export default function AdsTable({
             <li key={a.key}>
               <Link
                 href={hrefOf(a)}
-                className={`block px-4 py-4 transition-colors hover:bg-[#f7faf5] sm:px-5 ${focusRing} focus-visible:-outline-offset-2`}
+                className={`block px-4 py-4 transition-colors hover:bg-admin-subtle sm:px-5 ${focusRing} focus-visible:-outline-offset-2`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="flex items-center gap-1.5 break-words font-semibold leading-snug text-[#0a0a0a]">
-                      {showPlatform && <PlatformIcon platform={a.platform} className="h-3.5 w-3.5 shrink-0 text-[#4f5a52]" />}
+                    <p className="flex items-center gap-1.5 break-words font-semibold leading-snug text-admin-ink">
+                      {showPlatform && <PlatformIcon platform={a.platform} className="h-3.5 w-3.5 shrink-0 text-admin-muted" />}
                       {t.name}
                     </p>
-                    {t.sub && <p className="mt-0.5 truncate text-[12px] text-[#4f5a52]">{t.sub}</p>}
+                    {t.sub && <p className="mt-0.5 truncate text-[12px] text-admin-muted">{t.sub}</p>}
                   </div>
                   <VerdictPill verdict={a.verdict} />
                 </div>
                 <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2.5">
                   {figures.map((f) => (
                     <div key={f.label} className="min-w-0">
-                      <dt className="text-[12px] text-[#4f5a52]">{f.label}</dt>
-                      <dd className={`truncate text-[15px] tabular-nums text-[#0a0a0a] ${f.cls ?? ""}`}>{f.value}</dd>
+                      <dt className="text-[12px] text-admin-muted">{f.label}</dt>
+                      <dd className={`truncate text-[15px] tabular-nums text-admin-ink ${f.cls ?? ""}`}>{f.value}</dd>
                     </div>
                   ))}
                   <div className="flex items-end justify-end">
-                    <ChevronRight className="h-4 w-4 text-[#9aa79d]" aria-hidden />
+                    <ChevronRight className="h-4 w-4 text-admin-faint/60" aria-hidden />
                   </div>
                 </dl>
-                <p className="mt-2.5 text-[12px] leading-relaxed text-[#4f5a52] [text-wrap:pretty]">{a.reason}</p>
+                <p className="mt-2.5 text-[12px] leading-relaxed text-admin-muted [text-wrap:pretty]">{a.reason}</p>
               </Link>
             </li>
           );

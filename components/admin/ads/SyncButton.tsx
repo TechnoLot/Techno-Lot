@@ -76,12 +76,12 @@ export default function SyncButton({
         <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden />
         {loading ? "Mise à jour…" : label}
       </button>
-      <p className="max-w-[16rem] text-[12px] leading-snug text-[#4f5a52]">
+      <p className="max-w-[16rem] text-[12px] leading-snug text-admin-muted">
         Dernière mise à jour
         <br />
         {lastSync ? (
           <span
-            className={`font-medium ${lastSync.ok ? "text-[#0a0a0a]" : "text-[#b54708]"}`}
+            className={`font-medium ${lastSync.ok ? "text-admin-ink" : "text-admin-warning"}`}
             title={lastSync.ok ? undefined : lastSync.message ?? undefined}
             suppressHydrationWarning
           >
@@ -89,7 +89,7 @@ export default function SyncButton({
             {!lastSync.ok && " · échec"}
           </span>
         ) : (
-          <span className="font-medium text-[#0a0a0a]">jamais</span>
+          <span className="font-medium text-admin-ink">jamais</span>
         )}
       </p>
 
@@ -97,23 +97,23 @@ export default function SyncButton({
         {toast && (
           <div
             role="status"
-            className={`pointer-events-auto w-80 max-w-full rounded-2xl border bg-white p-4 shadow-[0_12px_32px_-12px_rgba(10,10,10,0.25)] ${
-              toast.tone === "ok" ? "border-[#cfe9c2]" : toast.tone === "warn" ? "border-[#f6d7b0]" : "border-[#f4c7c3]"
+            className={`pointer-events-auto w-80 max-w-full rounded-2xl border bg-admin-card p-4 shadow-[0_12px_32px_-12px_rgba(10,10,10,0.25)] ${
+              toast.tone === "ok" ? "border-admin-tint-green-line" : toast.tone === "warn" ? "border-admin-tint-amber-line" : "border-admin-tint-red-line"
             }`}
           >
             <div className="flex items-start gap-3">
               {toast.tone === "ok" ? (
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#257a10]" aria-hidden />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-admin-green" aria-hidden />
               ) : (
                 <AlertTriangle
-                  className={`mt-0.5 h-5 w-5 shrink-0 ${toast.tone === "warn" ? "text-[#b54708]" : "text-[#b42318]"}`}
+                  className={`mt-0.5 h-5 w-5 shrink-0 ${toast.tone === "warn" ? "text-admin-warning" : "text-admin-danger"}`}
                   aria-hidden
                 />
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[#0a0a0a]">{toast.title}</p>
+                <p className="text-sm font-semibold text-admin-ink">{toast.title}</p>
                 {toast.lines.map((l, i) => (
-                  <p key={i} className="mt-1 break-words text-[13px] text-[#4f5a52]">
+                  <p key={i} className="mt-1 break-words text-[13px] text-admin-muted">
                     {l}
                   </p>
                 ))}
@@ -121,7 +121,7 @@ export default function SyncButton({
               <button
                 type="button"
                 onClick={() => setToast(null)}
-                className="rounded-full p-1 text-[#4f5a52] hover:bg-[#f4f7f2] hover:text-[#0a0a0a]"
+                className="rounded-full p-1 text-admin-muted hover:bg-admin-page hover:text-admin-ink"
                 aria-label="Fermer"
               >
                 <X className="h-4 w-4" aria-hidden />

@@ -56,8 +56,8 @@ export default function FollowupActions({
               }
               className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 sent
-                  ? "border-[#b7dca5] bg-[#f3faef] text-[#257a10]"
-                  : "border-[#b4e3f0] bg-[#ecfbff] text-[#0e7090] hover:border-[#6fc3db]"
+                  ? "border-admin-tint-green-line bg-admin-tint-green text-admin-green"
+                  : "border-[#b4e3f0] [[data-admin-theme=dark]_&]:border-admin-tint-cyan-ink/30 bg-admin-tint-cyan text-admin-tint-cyan-ink hover:border-[#6fc3db] [[data-admin-theme=dark]_&]:hover:border-admin-tint-cyan-ink/60"
               }`}
             >
               {busy === step ? (
@@ -73,7 +73,7 @@ export default function FollowupActions({
         })}
       </div>
       {error && (
-        <p role="alert" className="text-right text-xs text-[#b42318]">
+        <p role="alert" className="text-right text-xs text-admin-danger">
           {error}
         </p>
       )}

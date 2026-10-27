@@ -88,17 +88,17 @@ export default async function SequencePage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <Link
         href="/admin/crm"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-[#4f5a52] transition-colors hover:text-[#0a0a0a]"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
         Prospection
       </Link>
 
       <header className="mb-8 mt-4">
-        <h1 className="font-display text-3xl font-bold text-[#0a0a0a] sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
           En séquence
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-[#4f5a52]">
+        <p className="mt-2 max-w-lg text-sm text-admin-muted">
           Contacts qui ont reçu au moins un courriel de prospection. Trié du
           plus vieux envoi au plus récent — remonte en haut pour repérer
           qui attend une relance.
@@ -108,7 +108,7 @@ export default async function SequencePage() {
       {contactsError && (
         <div
           role="alert"
-          className="mb-6 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           Impossible de charger les données : {contactsError.message}
         </div>
@@ -116,11 +116,11 @@ export default async function SequencePage() {
 
       {rows.length === 0 ? (
         <div className="glass p-12 text-center">
-          <Mail className="mx-auto h-8 w-8 text-[#5f6b62]" aria-hidden />
-          <p className="mt-3 text-sm text-[#4f5a52]">
+          <Mail className="mx-auto h-8 w-8 text-admin-faint" aria-hidden />
+          <p className="mt-3 text-sm text-admin-muted">
             Aucun contact en séquence pour l&apos;instant.
           </p>
-          <p className="mt-1 text-xs text-[#4f5a52]">
+          <p className="mt-1 text-xs text-admin-muted">
             Envoie un courriel « info Techno Lot » ou « cold outreach » à un
             contact pour le voir apparaître ici.
           </p>
@@ -141,37 +141,37 @@ export default async function SequencePage() {
                             ? `/admin/crm/${contact.company_id}`
                             : "/admin/crm"
                         }
-                        className="font-display text-base font-semibold text-[#0a0a0a] hover:text-[#257a10]"
+                        className="font-display text-base font-semibold text-admin-ink hover:text-admin-green"
                       >
                         {contactName(contact)}
                       </Link>
                       {contact.companies?.name && (
-                        <span className="text-sm text-[#4f5a52]">
+                        <span className="text-sm text-admin-muted">
                           — {contact.companies.name}
                         </span>
                       )}
                     </div>
                     {contact.title && (
-                      <p className="mt-0.5 text-xs text-[#4f5a52]">
+                      <p className="mt-0.5 text-xs text-admin-muted">
                         {contact.title}
                       </p>
                     )}
                     {contact.email && (
                       <a
                         href={`mailto:${contact.email}`}
-                        className="mt-0.5 inline-block text-xs text-[#4f5a52] hover:text-[#257a10]"
+                        className="mt-0.5 inline-block text-xs text-admin-muted hover:text-admin-green"
                       >
                         {contact.email}
                       </a>
                     )}
                   </div>
                   <div className="text-right text-xs">
-                    <p className="text-[13px] text-[#4f5a52]">
+                    <p className="text-[13px] text-admin-muted">
                       Dernier envoi
                     </p>
                     <p
                       className={`mt-0.5 font-display text-base font-semibold ${
-                        isStale ? "text-[#b54708]" : "text-[#0a0a0a]"
+                        isStale ? "text-admin-warning" : "text-admin-ink"
                       }`}
                     >
                       {days !== null
@@ -184,12 +184,12 @@ export default async function SequencePage() {
                 </div>
 
                 {sends.length === 0 ? (
-                  <p className="mt-3 rounded-lg border border-[#edf2ea] bg-[#f8faf6] px-3 py-2 text-xs text-[#4f5a52]">
+                  <p className="mt-3 rounded-lg border border-admin-line-soft bg-admin-subtle px-3 py-2 text-xs text-admin-muted">
                     Aucun envoi journalisé. Le contact est marqué « en
                     séquence » mais aucune activité n&apos;a été enregistrée.
                   </p>
                 ) : (
-                  <ol className="mt-4 flex flex-col gap-2 border-t border-[#edf2ea] pt-3">
+                  <ol className="mt-4 flex flex-col gap-2 border-t border-admin-line-soft pt-3">
                     {sends.map((s) => {
                       const label =
                         s.activity_type === "followup_sent" && s.sequence_step
@@ -204,19 +204,19 @@ export default async function SequencePage() {
                         >
                           <div className="flex min-w-0 items-baseline gap-2">
                             <Send
-                              className="h-3 w-3 shrink-0 text-[#257a10]"
+                              className="h-3 w-3 shrink-0 text-admin-green"
                               aria-hidden
                             />
-                            <span className="font-medium text-[#0a0a0a]">
+                            <span className="font-medium text-admin-ink">
                               {label}
                             </span>
                             {s.subject && (
-                              <span className="truncate text-xs text-[#4f5a52]">
+                              <span className="truncate text-xs text-admin-muted">
                                 — {s.subject}
                               </span>
                             )}
                           </div>
-                          <span className="shrink-0 text-xs tabular-nums text-[#4f5a52]">
+                          <span className="shrink-0 text-xs tabular-nums text-admin-muted">
                             {formatDateTime(s.occurred_at)}
                           </span>
                         </li>

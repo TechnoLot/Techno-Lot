@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import AdminShell from "@/components/admin/AdminShell";
 import { createClient } from "@/lib/supabase/server";
@@ -13,12 +14,14 @@ export const metadata: Metadata = {
  * Layout partagé pour toutes les pages du tableau de bord.
  * Le middleware a déjà refusé l'accès aux visiteurs non connectés ;
  * on ajoute ici le check du whitelist ADMIN_EMAILS et l'habillage sidebar.
+ * Le thème (clair ou sombre) vient du témoin tl_admin_theme.
  */
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const theme = cookies().get("tl_admin_theme")?.value === "dark" ? "dark" : "light";
   const supabase = createClient();
   const {
     data: { user },
@@ -35,5 +38,9 @@ export default async function DashboardLayout({
     redirect(`/admin/login?error=${reason}`);
   }
 
-  return <AdminShell email={user.email ?? ""}>{children}</AdminShell>;
+  return (
+    <AdminShell email={user.email ?? ""} theme={theme}>
+      {children}
+    </AdminShell>
+  );
 }

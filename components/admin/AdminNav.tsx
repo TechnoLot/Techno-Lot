@@ -115,7 +115,7 @@ const allLinkHrefs = items.flatMap((it) =>
     : [...(it.href ? [it.href] : []), ...(it.children?.map((c) => c.href) ?? [])],
 );
 
-const spring = { type: "spring", stiffness: 480, damping: 38 } as const;
+const spring = { type: "spring", stiffness: 420, damping: 36 } as const;
 
 export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname() ?? "";
@@ -147,8 +147,7 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                   }}
                   className={rowClass(false)}
                 >
-                  <item.icon className={iconClass(false)} aria-hidden />
-                  <span className="relative">{item.label}</span>
+                  <RowInner icon={item.icon} label={item.label} active={false} />
                 </button>
               </li>
             );
@@ -186,17 +185,63 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function rowClass(active: boolean, nested = false) {
-  return `nav-focus group relative flex w-full items-center gap-3 rounded-[10px] ${
-    nested ? "px-3 py-2 text-[13.5px]" : "px-3 py-2.5 text-[14.5px]"
-  } text-left font-medium transition-colors duration-150 ${
-    active ? "text-[#0a0a0a]" : "text-[#cbd5e1] hover:bg-white/[0.06] hover:text-white"
-  }`;
+  return `nav-focus group relative flex w-full items-center rounded-[12px] text-left font-medium transition-colors duration-150 ${
+    nested ? "h-9 gap-2.5 px-2.5 text-[14px]" : "h-11 gap-3 px-1.5 text-[15px]"
+  } ${active ? "text-[#0a0a0a]" : "text-[#cbd5e1] hover:bg-white/[0.05] hover:text-white"}`;
 }
 
-function iconClass(active: boolean, nested = false) {
-  return `relative ${nested ? "h-4 w-4" : "h-[18px] w-[18px]"} shrink-0 transition-colors duration-150 ${
-    active ? "text-[#0a0a0a]" : "text-[#94a3b8] group-hover:text-white"
-  }`;
+/**
+ * Icône dans sa pastille + libellé. Au survol, la pastille s'éclaire et
+ * l'ensemble glisse légèrement vers la droite (désactivé si mouvement réduit).
+ * `tone` « lit » : un enfant du groupe est la page active.
+ */
+function RowInner({
+  icon: Icon,
+  label,
+  active,
+  nested = false,
+  tone = "default",
+  trailing,
+}: {
+  icon: LucideIcon;
+  label: string;
+  active: boolean;
+  nested?: boolean;
+  tone?: "default" | "lit";
+  trailing?: React.ReactNode;
+}) {
+  const shift = active
+    ? ""
+    : "motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-[3px]";
+  if (nested) {
+    return (
+      <span className={`relative flex min-w-0 flex-1 items-center gap-2.5 ${shift}`}>
+        <Icon
+          className={`h-4 w-4 shrink-0 transition-colors duration-150 ${
+            active ? "text-[#0a0a0a]" : "text-[#7c8aa3] group-hover:text-[#6bd63b]"
+          }`}
+          aria-hidden
+        />
+        <span className="truncate">{label}</span>
+      </span>
+    );
+  }
+  const chip = active
+    ? "bg-[#0a0a0a]/[0.12] text-[#0a0a0a]"
+    : tone === "lit"
+      ? "bg-[#6bd63b]/15 text-[#6bd63b] ring-1 ring-inset ring-[#6bd63b]/25"
+      : "bg-white/[0.06] text-[#94a3b8] ring-1 ring-inset ring-white/[0.06] group-hover:bg-[#6bd63b]/15 group-hover:text-[#6bd63b] group-hover:ring-[#6bd63b]/30";
+  return (
+    <span className={`relative flex min-w-0 flex-1 items-center gap-3 ${shift}`}>
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] transition-colors duration-150 ${chip}`}
+      >
+        <Icon className="h-[17px] w-[17px]" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {trailing}
+    </span>
+  );
 }
 
 function ActiveIndicator({ id }: { id: string }) {
@@ -205,7 +250,7 @@ function ActiveIndicator({ id }: { id: string }) {
       layoutId={id}
       transition={spring}
       aria-hidden
-      className="absolute inset-0 rounded-[10px] bg-[#6bd63b]"
+      className="absolute inset-0 rounded-[12px] bg-[#6bd63b] shadow-[0_6px_20px_-8px_rgba(107,214,59,0.6)]"
     />
   );
 }
@@ -216,6 +261,7 @@ function NavLink({
   nested = false,
   onNavigate,
   indicatorId,
+  tone = "default",
   className = "",
 }: {
   item: LeafItem;
@@ -223,6 +269,7 @@ function NavLink({
   nested?: boolean;
   onNavigate?: () => void;
   indicatorId: string;
+  tone?: "default" | "lit";
   className?: string;
 }) {
   return (
@@ -233,16 +280,21 @@ function NavLink({
       className={`${rowClass(active, nested)} ${className}`}
     >
       {active && <ActiveIndicator id={indicatorId} />}
-      <item.icon className={iconClass(active, nested)} aria-hidden />
-      <span className="relative truncate">{item.label}</span>
+      <RowInner
+        icon={item.icon}
+        label={item.label}
+        active={active}
+        nested={nested}
+        tone={tone}
+      />
     </Link>
   );
 }
 
 /**
  * Entrée pliable : parent (lien ou simple bouton) avec chevron, enfants
- * indentés. Se déplie automatiquement quand un enfant (ou le parent) est
- * la page active.
+ * indentés le long d'un fil vertical discret. Se déplie automatiquement
+ * quand un enfant (ou le parent) est la page active.
  */
 function NavGroup({
   item,
@@ -280,13 +332,14 @@ function NavGroup({
   return (
     <div>
       {item.href !== null ? (
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <NavLink
             item={{ ...item, href: item.href }}
             active={parentActive}
             onNavigate={onNavigate}
             indicatorId={indicatorId}
-            className="flex-1"
+            tone={childActive ? "lit" : "default"}
+            className="min-w-0 flex-1"
           />
           <button
             type="button"
@@ -294,7 +347,7 @@ function NavGroup({
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen((v) => !v)}
-            className={`nav-focus inline-flex h-10 w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-white/[0.06] ${
+            className={`nav-focus inline-flex h-11 w-9 shrink-0 items-center justify-center rounded-[12px] transition-colors hover:bg-white/[0.06] ${
               childActive ? "text-[#6bd63b]" : "text-[#94a3b8] hover:text-white"
             }`}
           >
@@ -309,40 +362,45 @@ function NavGroup({
           onClick={() => setOpen((v) => !v)}
           className={rowClass(false)}
         >
-          <item.icon
-            className={`relative h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${
-              childActive ? "text-[#6bd63b]" : "text-[#94a3b8] group-hover:text-white"
-            }`}
-            aria-hidden
+          <RowInner
+            icon={item.icon}
+            label={item.label}
+            active={false}
+            tone={childActive ? "lit" : "default"}
+            trailing={
+              <span className={`pr-1.5 ${childActive ? "text-[#6bd63b]" : "text-[#94a3b8]"}`}>
+                {chevron}
+              </span>
+            }
           />
-          <span className="relative flex-1 truncate">{item.label}</span>
-          <span className={childActive ? "text-[#6bd63b]" : "text-[#94a3b8]"}>{chevron}</span>
         </button>
       )}
 
       <AnimatePresence initial={false}>
         {open && (
-          <motion.ul
+          <motion.div
             id={panelId}
             key="children"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="ml-[21px] flex flex-col gap-0.5 overflow-hidden border-l border-white/10 pl-2"
+            transition={{ duration: 0.24, ease: [0.21, 0.47, 0.32, 0.98] }}
+            className="overflow-hidden"
           >
-            {children.map((child, i) => (
-              <li key={child.href} className={i === 0 ? "pt-1" : ""}>
-                <NavLink
-                  item={child}
-                  nested
-                  active={bestMatch === child.href}
-                  onNavigate={onNavigate}
-                  indicatorId={indicatorId}
-                />
-              </li>
-            ))}
-          </motion.ul>
+            <ul className="relative ml-[21px] flex flex-col gap-0.5 py-1 pl-3 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:rounded-full before:bg-gradient-to-b before:from-white/15 before:via-white/10 before:to-transparent">
+              {children.map((child) => (
+                <li key={child.href}>
+                  <NavLink
+                    item={child}
+                    nested
+                    active={bestMatch === child.href}
+                    onNavigate={onNavigate}
+                    indicatorId={indicatorId}
+                  />
+                </li>
+              ))}
+            </ul>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

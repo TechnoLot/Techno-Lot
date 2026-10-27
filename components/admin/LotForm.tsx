@@ -238,7 +238,7 @@ export default function LotForm({
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]"
+          className="flex items-start gap-2 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           {error}
@@ -275,7 +275,7 @@ function Section({
 }) {
   return (
     <div>
-      <h3 className="mb-4 font-display text-base font-semibold text-[#0a0a0a]">
+      <h3 className="mb-4 font-display text-base font-semibold text-admin-ink">
         {title}
       </h3>
       {children}
@@ -296,9 +296,9 @@ function Field({
 }) {
   return (
     <div className={className}>
-      <label className="mb-1.5 block text-sm font-medium text-[#0a0a0a]">
+      <label className="mb-1.5 block text-sm font-medium text-admin-ink">
         {label}
-        {required && <span className="ml-1 text-[#257a10]">*</span>}
+        {required && <span className="ml-1 text-admin-green">*</span>}
       </label>
       {children}
     </div>

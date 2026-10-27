@@ -46,13 +46,13 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
   }, [q]);
 
   const selectClass =
-    "rounded-[10px] border border-[#c9d6c3] bg-white px-3 py-2 text-[13px] text-[#0a0a0a] focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40";
+    "rounded-[10px] border border-admin-line-strong bg-admin-card px-3 py-2 text-[13px] text-admin-ink focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40";
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="relative sm:w-72">
         <Search
-          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4f5a52]"
+          className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted"
           aria-hidden
         />
         <input
@@ -68,7 +68,7 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
         <div
           role="tablist"
           aria-label="Score minimum"
-          className="inline-flex gap-1 rounded-full border border-[#e3eadf] bg-white p-1"
+          className="inline-flex gap-1 rounded-full border border-admin-line bg-admin-card p-1"
         >
           {SCORE_TABS.map(({ key, label }) => (
             <button
@@ -84,8 +84,8 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
               }
               className={`rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors ${
                 score === key
-                  ? "bg-[#6bd63b] text-[#0a0a0a]"
-                  : "text-[#4f5a52] hover:text-[#0a0a0a]"
+                  ? "bg-[#6bd63b] text-admin-ink"
+                  : "text-admin-muted hover:text-admin-ink"
               }`}
             >
               {label}
@@ -189,8 +189,8 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
             }
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-[13px] font-semibold transition-colors ${
               shuffled
-                ? "border-[#8fcb76] bg-[#e2f3d8] text-[#257a10]"
-                : "border-[#c9d6c3] bg-white text-[#4f5a52] hover:text-[#0a0a0a]"
+                ? "border-[#8fcb76] [[data-admin-theme=dark]_&]:border-admin-green/50 bg-admin-tint-green text-admin-green"
+                : "border-admin-line-strong bg-admin-card text-admin-muted hover:text-admin-ink"
             }`}
           >
             <Shuffle className="h-3.5 w-3.5" aria-hidden />
@@ -204,14 +204,14 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
               onClick={() =>
                 push((p) => p.set("seed", Date.now().toString(36)))
               }
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#c9d6c3] bg-white text-[#4f5a52] transition-colors hover:border-[#a9d896] hover:text-[#257a10]"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-admin-line-strong bg-admin-card text-admin-muted transition-colors hover:border-admin-tint-green-line hover:text-admin-green"
             >
               <RefreshCw className="h-3.5 w-3.5" aria-hidden />
             </button>
           )}
         </div>
 
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-[#c9d6c3] bg-white px-3 py-2 text-[13px] font-medium text-[#0a0a0a]">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-admin-line-strong bg-admin-card px-3 py-2 text-[13px] font-medium text-admin-ink">
           <input
             type="checkbox"
             checked={partners}
@@ -221,7 +221,7 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
                 else p.delete("partenaires");
               })
             }
-            className="h-3.5 w-3.5 accent-[#257a10]"
+            className="h-3.5 w-3.5 accent-admin-green"
           />
           Inclure partenaires
         </label>

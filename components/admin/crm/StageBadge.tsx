@@ -1,13 +1,13 @@
 import { STAGE_LABELS, type ContactStage } from "@/lib/crm/types";
 
 const STYLES: Record<ContactStage, string> = {
-  new: "border-transparent bg-[#eef1ec] text-[#3b453e]",
-  contacted: "border-transparent bg-[#eff6ff] text-[#175cd3]",
-  call_booked: "border-transparent bg-[#f4f1fe] text-[#5b3fb8]",
-  call_done: "border-transparent bg-[#fff6ed] text-[#b54708]",
-  sequence_active: "border-transparent bg-[#ecfbff] text-[#0e7090]",
-  converted: "border-transparent bg-[#eaf6e3] text-[#257a10]",
-  lost: "border-transparent bg-[#fef3f2] text-[#b42318]",
+  new: "border-transparent bg-admin-tint-gray text-admin-ink/80",
+  contacted: "border-transparent bg-admin-tint-blue text-admin-tint-blue-ink",
+  call_booked: "border-transparent bg-admin-tint-violet text-admin-tint-violet-ink",
+  call_done: "border-transparent bg-admin-tint-amber text-admin-warning",
+  sequence_active: "border-transparent bg-admin-tint-cyan text-admin-tint-cyan-ink",
+  converted: "border-transparent bg-admin-tint-green text-admin-green",
+  lost: "border-transparent bg-admin-tint-red text-admin-danger",
 };
 
 export default function StageBadge({ stage }: { stage: ContactStage }) {

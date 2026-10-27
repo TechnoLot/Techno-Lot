@@ -36,3 +36,31 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return getAdminEmails().includes(email.toLowerCase());
 }
+
+/**
+ * Prénom affiché par défaut (« Bonjour Anthony », carte du menu) quand le
+ * compte n'a pas encore de user_metadata.prenom (modifiable dans Mon compte).
+ * Fichier sans "use client" : importable côté serveur et côté client.
+ */
+export const DEFAULT_PRENOMS: Record<string, string> = {
+  [site.email.toLowerCase()]: "Anthony",
+};
+
+export const PRENOM_MAX_LENGTH = 40;
+
+/** Événement fenêtre émis après l'enregistrement du prénom (detail = prénom). */
+export const ADMIN_PRENOM_EVENT = "tl:admin-prenom";
+
+/**
+ * Prénom à afficher : user_metadata.prenom s'il existe, sinon la table par
+ * défaut, sinon null (on affiche alors « Bonjour » seul).
+ */
+export function resolvePrenom(
+  email: string | null | undefined,
+  metadata?: Record<string, unknown> | null,
+): string | null {
+  const meta = metadata?.prenom;
+  if (typeof meta === "string" && meta.trim()) return meta.trim();
+  if (!email) return null;
+  return DEFAULT_PRENOMS[email.toLowerCase()] ?? null;
+}

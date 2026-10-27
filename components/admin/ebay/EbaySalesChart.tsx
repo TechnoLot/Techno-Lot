@@ -15,32 +15,32 @@ export default function EbaySalesChart({ data }: { data: Point[] }) {
     <div className="mt-4 h-60 sm:h-64">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-          <CartesianGrid stroke="#edf2ea" vertical={false} />
+          <CartesianGrid stroke="rgb(var(--a-line-soft))" vertical={false} />
           <XAxis
             dataKey="day"
             tickFormatter={shortDate}
-            tick={{ fill: "#4f5a52", fontSize: 11 }}
-            axisLine={{ stroke: "#e3eadf" }}
+            tick={{ fill: "rgb(var(--a-muted))", fontSize: 11 }}
+            axisLine={{ stroke: "rgb(var(--a-line))" }}
             tickLine={false}
             minTickGap={24}
           />
           <YAxis
             tickFormatter={(v) => formatMoney(v)}
-            tick={{ fill: "#4f5a52", fontSize: 11 }}
+            tick={{ fill: "rgb(var(--a-muted))", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
             width={64}
           />
           <Tooltip
-            cursor={{ stroke: "#c9d6c3" }}
+            cursor={{ stroke: "rgb(var(--a-line-strong))" }}
             contentStyle={{
-              background: "#ffffff",
-              border: "1px solid #e3eadf",
+              background: "rgb(var(--a-card))",
+              border: "1px solid rgb(var(--a-line))",
               borderRadius: 12,
               fontSize: 12,
-              color: "#0a0a0a",
+              color: "rgb(var(--a-ink))",
             }}
-            labelStyle={{ color: "#4f5a52" }}
+            labelStyle={{ color: "rgb(var(--a-muted))" }}
             labelFormatter={(l) => shortDate(String(l))}
             formatter={(v, _name, item) => {
               const orders = (item?.payload as Point | undefined)?.orders;
@@ -51,11 +51,11 @@ export default function EbaySalesChart({ data }: { data: Point[] }) {
           <Area
             type="monotone"
             dataKey="total"
-            stroke="#257a10"
+            stroke="rgb(var(--a-green))"
             strokeWidth={2}
             fill="#6bd63b"
             fillOpacity={0.18}
-            activeDot={{ r: 4, fill: "#257a10", stroke: "#ffffff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: "rgb(var(--a-green))", stroke: "rgb(var(--a-card))", strokeWidth: 2 }}
           />
         </AreaChart>
       </ResponsiveContainer>

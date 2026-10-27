@@ -61,14 +61,14 @@ export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays
 
       <div className="space-y-6">
         {data.error && (
-          <p role="alert" className="flex gap-2 rounded-2xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]">
+          <p role="alert" className="flex gap-2 rounded-2xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             Erreur de chargement des données : {data.error}
           </p>
         )}
 
         {connected && lastSync && !lastSync.ok && (
-          <p role="alert" className="flex gap-2 rounded-2xl border border-[#f6d7b0] bg-[#fdf6ec] px-4 py-3 text-sm text-[#b54708]">
+          <p role="alert" className="flex gap-2 rounded-2xl border border-admin-tint-amber-line bg-admin-tint-amber px-4 py-3 text-sm text-admin-warning">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span className="min-w-0 break-words">
               La dernière mise à jour a échoué : {lastSync.message ?? "erreur inconnue"}
@@ -79,8 +79,8 @@ export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays
         {platform === "meta" && !config.meta && <MetaConnect env={metaEnv} />}
 
         {platform === "google" && !config.google && (
-          <p className="flex gap-2 rounded-2xl border border-[#e3eadf] bg-white px-4 py-3 text-sm text-[#4f5a52]">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#257a10]" aria-hidden />
+          <p className="flex gap-2 rounded-2xl border border-admin-line bg-admin-card px-4 py-3 text-sm text-admin-muted">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-admin-green" aria-hidden />
             Google Ads n&apos;est pas connecté : les dépenses n&apos;apparaissent pas. Étapes dans docs/PUBLICITES-SETUP.md.
           </p>
         )}
@@ -101,14 +101,14 @@ export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays
             </p>
           </div>
           {ranked.length === 0 ? (
-            <p className="border-t border-[#edf2ea] px-5 py-10 text-center text-sm text-[#4f5a52] sm:px-6">
+            <p className="border-t border-admin-line-soft px-5 py-10 text-center text-sm text-admin-muted sm:px-6">
               Aucune pub {platform === "all" ? "" : `${name} `}n&apos;a eu d&apos;activité sur la période.{" "}
               {connected
                 ? "Essayez une période plus longue ou mettez les chiffres à jour."
                 : "Les leads venus de vos pubs apparaîtront ici dès que les paramètres d'URL seront en place."}
             </p>
           ) : (
-            <div className="border-t border-[#edf2ea]">
+            <div className="border-t border-admin-line-soft">
               <AdsTable ads={ranked} totals={data.totals} query={query.toString()} showPlatform={platform === "all"}
                 spendKnown={spendKnown}
               />

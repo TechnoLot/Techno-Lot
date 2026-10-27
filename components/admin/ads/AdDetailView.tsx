@@ -54,7 +54,7 @@ export default function AdDetailView({ platform, adId, data, lastSync, connected
     <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href={backHref}
-        className="mb-4 inline-flex items-center gap-1.5 rounded-full text-[13px] font-medium text-[#4f5a52] transition-colors hover:text-[#257a10] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#257a10]"
+        className="mb-4 inline-flex items-center gap-1.5 rounded-full text-[13px] font-medium text-admin-muted transition-colors hover:text-admin-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-admin-green"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden />
         Toutes les pubs
@@ -86,15 +86,15 @@ export default function AdDetailView({ platform, adId, data, lastSync, connected
 
       <div className="space-y-6">
         {data.error && (
-          <p role="alert" className="flex gap-2 rounded-2xl border border-[#f4c7c3] bg-[#fef3f2] px-4 py-3 text-sm text-[#b42318]">
+          <p role="alert" className="flex gap-2 rounded-2xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             Erreur de chargement des données : {data.error}
           </p>
         )}
 
         {!ad && (
-          <p className="flex gap-2 rounded-2xl border border-[#e3eadf] bg-white px-4 py-3 text-sm text-[#4f5a52]">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#257a10]" aria-hidden />
+          <p className="flex gap-2 rounded-2xl border border-admin-line bg-admin-card px-4 py-3 text-sm text-admin-muted">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-admin-green" aria-hidden />
             Aucune activité pour cette pub sur la période choisie. Essayez une période plus longue.
           </p>
         )}
@@ -104,8 +104,8 @@ export default function AdDetailView({ platform, adId, data, lastSync, connected
             <VerdictPill verdict={judged.verdict} size="lg" />
           </div>
           <div className="min-w-0">
-            <p className="text-base font-medium leading-snug text-[#0a0a0a] [text-wrap:pretty]">{judged.reason}</p>
-            <p className="mt-1 text-[13px] text-[#4f5a52]">
+            <p className="text-base font-medium leading-snug text-admin-ink [text-wrap:pretty]">{judged.reason}</p>
+            <p className="mt-1 text-[13px] text-admin-muted">
               {data.avgCpl != null
                 ? `Coût par lead moyen ${platformName} sur la période : ${formatCost(data.avgCpl)}.`
                 : `Pas encore de coût par lead moyen ${platformName} sur la période.`}

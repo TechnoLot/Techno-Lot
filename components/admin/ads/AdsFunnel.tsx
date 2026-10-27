@@ -40,15 +40,15 @@ export default function AdsFunnel({ funnel, spendKnown = true }: { funnel: Funne
           return (
             <li key={s.key}>
               <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="min-w-0 truncate text-[#0a0a0a]">{s.label}</span>
+                <span className="min-w-0 truncate text-admin-ink">{s.label}</span>
                 <span className="flex shrink-0 items-baseline gap-2">
                   {rate != null && (
-                    <span className="text-[12px] tabular-nums text-[#4f5a52]">{formatPct(Math.min(rate, 9.99), rate < 0.1 ? 1 : 0)}</span>
+                    <span className="text-[12px] tabular-nums text-admin-muted">{formatPct(Math.min(rate, 9.99), rate < 0.1 ? 1 : 0)}</span>
                   )}
-                  <span className="font-display text-base font-semibold tabular-nums text-[#0a0a0a]">{formatCount(v)}</span>
+                  <span className="font-display text-base font-semibold tabular-nums text-admin-ink">{formatCount(v)}</span>
                 </span>
               </div>
-              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[#f0f4ee]">
+              <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-admin-hover">
                 <div
                   className={`h-full rounded-full ${last ? "bg-[#257a10]" : "bg-[#6bd63b]"}`}
                   style={{ width: `${widthPct(v, max)}%` }}

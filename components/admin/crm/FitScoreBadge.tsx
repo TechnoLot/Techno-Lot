@@ -5,19 +5,19 @@
 export default function FitScoreBadge({ score }: { score: number | null }) {
   if (score == null) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#e3eadf] bg-white font-display text-xs font-semibold text-[#4f5a52]">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-admin-line bg-admin-card font-display text-xs font-semibold text-admin-muted">
         —
       </span>
     );
   }
   const cls =
     score >= 9
-      ? "border-[#6bd63b] bg-[#6bd63b] text-[#0a0a0a]"
+      ? "border-[#6bd63b] bg-[#6bd63b] text-admin-ink"
       : score >= 7
-        ? "border-[#b7dca5] bg-[#eaf6e3] text-[#257a10]"
+        ? "border-admin-tint-green-line bg-admin-tint-green text-admin-green"
         : score >= 5
-          ? "border-[#f6cf96] bg-[#fff6ed] text-[#b54708]"
-          : "border-[#c9d6c3] bg-white text-[#4f5a52]";
+          ? "border-admin-tint-amber-line bg-admin-tint-amber text-admin-warning"
+          : "border-admin-line-strong bg-admin-card text-admin-muted";
   return (
     <span
       className={`inline-flex h-7 w-7 items-center justify-center rounded-full border font-display text-sm font-bold tabular-nums ${cls}`}

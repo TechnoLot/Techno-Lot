@@ -51,8 +51,8 @@ export default function NewLotTabs({
     <div>
       {calcLots.length > 0 && (
         <div className="mb-6">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#0a0a0a]">
-            <Calculator className="h-4 w-4 text-[#4f5a52]" aria-hidden />
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-admin-ink">
+            <Calculator className="h-4 w-4 text-admin-muted" aria-hidden />
             Pré-remplir depuis la calculatrice
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -63,14 +63,14 @@ export default function NewLotTabs({
                 onClick={() => onSelectCalcLot(lot)}
                 className={`group rounded-xl border px-4 py-3 text-left transition ${
                   selectedCalcLot === lot.id
-                    ? "border-[#6bd63b] bg-[#eaf6e3]"
-                    : "border-[#e3eadf] bg-white hover:border-[#a9d896]"
+                    ? "border-[#6bd63b] bg-admin-tint-green"
+                    : "border-admin-line bg-admin-card hover:border-admin-tint-green-line"
                 }`}
               >
-                <p className="text-sm font-semibold text-[#0a0a0a] group-hover:text-[#257a10]">
+                <p className="text-sm font-semibold text-admin-ink group-hover:text-admin-green">
                   {lot.name}
                 </p>
-                <p className="mt-0.5 text-xs text-[#4f5a52]">
+                <p className="mt-0.5 text-xs text-admin-muted">
                   {formatMoney(lot.offerPrice)} · {lot.unitCount} unité{lot.unitCount > 1 ? "s" : ""}
                 </p>
               </button>
@@ -82,7 +82,7 @@ export default function NewLotTabs({
       <div
         role="tablist"
         aria-label="Mode de saisie"
-        className="mb-5 inline-flex max-w-full overflow-x-auto rounded-full border border-[#e3eadf] bg-white p-1"
+        className="mb-5 inline-flex max-w-full overflow-x-auto rounded-full border border-admin-line bg-admin-card p-1"
       >
         <TabButton
           active={tab === "manual"}
@@ -101,17 +101,17 @@ export default function NewLotTabs({
       </div>
 
       {tab === "paste" ? (
-        <div className="rounded-2xl border border-[#e3eadf] bg-white p-5 sm:p-8">
+        <div className="rounded-2xl border border-admin-line bg-admin-card p-5 sm:p-8">
           <PasteEmailPanel onExtracted={onExtracted} />
         </div>
       ) : (
-        <div className="rounded-2xl border border-[#e3eadf] bg-white p-5 sm:p-8">
+        <div className="rounded-2xl border border-admin-line bg-admin-card p-5 sm:p-8">
           {confidence !== null && (
             <div
               className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
                 confidence >= 0.7
-                  ? "border-[#b7dca5] bg-[#eaf6e3] text-[#257a10]"
-                  : "border-[#f6cf96] bg-[#fff6ed] text-[#b54708]"
+                  ? "border-admin-tint-green-line bg-admin-tint-green text-admin-green"
+                  : "border-admin-tint-amber-line bg-admin-tint-amber text-admin-warning"
               }`}
             >
               L&apos;IA a extrait ces valeurs avec une confiance de{" "}
@@ -122,7 +122,7 @@ export default function NewLotTabs({
             </div>
           )}
           {selectedCalcLot && (
-            <div className="mb-6 rounded-xl border border-[#b7dca5] bg-[#eaf6e3] px-4 py-3 text-sm text-[#257a10]">
+            <div className="mb-6 rounded-xl border border-admin-tint-green-line bg-admin-tint-green px-4 py-3 text-sm text-admin-green">
               Pré-rempli depuis la calculatrice. Ajuste le client et les détails avant d&apos;enregistrer.
             </div>
           )}
@@ -152,8 +152,8 @@ function TabButton({
       onClick={onClick}
       className={`inline-flex items-center gap-2 shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
         active
-          ? "bg-[#6bd63b] text-[#0a0a0a]"
-          : "text-[#4f5a52] hover:text-[#0a0a0a]"
+          ? "bg-[#6bd63b] text-admin-ink"
+          : "text-admin-muted hover:text-admin-ink"
       }`}
     >
       {icon}

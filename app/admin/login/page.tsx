@@ -17,9 +17,9 @@ export default function LoginPage({
   const target = adminEmails[0] ?? "info@technolot.ca";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f7f2] px-4 py-10">
+    <div className="flex min-h-screen items-center justify-center bg-admin-page px-4 py-10">
       <div className="w-full max-w-[400px]">
-        <div className="rounded-2xl border border-[#e3eadf] bg-white p-7 shadow-[0_1px_2px_rgba(16,24,16,0.04)] sm:p-8">
+        <div className="rounded-2xl border border-admin-line bg-admin-card p-7 shadow-[0_1px_2px_rgba(16,24,16,0.04)] sm:p-8">
           <Image
             src="/logo-clair.png"
             alt="Techno Lot"
@@ -29,10 +29,10 @@ export default function LoginPage({
             className="mx-auto h-12 w-auto"
           />
           <div className="mt-6 text-center">
-            <h1 className="font-display text-2xl font-bold text-[#0a0a0a]">
+            <h1 className="font-display text-2xl font-bold text-admin-ink">
               Connexion
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-[#4f5a52]">
+            <p className="mt-2 text-sm leading-relaxed text-admin-muted">
               Tableau de bord Techno Lot
             </p>
           </div>
@@ -44,7 +44,7 @@ export default function LoginPage({
             />
           </div>
         </div>
-        <p className="mt-5 text-center text-[13px] text-[#4f5a52]">
+        <p className="mt-5 text-center text-[13px] text-admin-muted">
           Accès réservé à l&apos;équipe Techno Lot.
         </p>
       </div>
