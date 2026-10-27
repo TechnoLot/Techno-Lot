@@ -425,7 +425,8 @@ export async function sendTemplateEmail(
   });
   if (!sent.ok) return { ok: false, error: "L'envoi a échoué : " + sent.error };
 
-  const isIntro = templateType === "post_call_intro";
+  const isIntro =
+    templateType === "post_call_intro" || templateType === "cold_outreach";
   const step = isIntro ? null : Number(templateType.slice(-1));
 
   const { error: logError } = await supabase.from("outreach_activities").insert({

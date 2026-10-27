@@ -156,6 +156,12 @@ export default async function CrmPage({
       accent: false,
       href: "/admin/crm/sequence",
     },
+    {
+      label: "Relances",
+      value: inSequence,
+      accent: false,
+      href: "/admin/crm/relances",
+    },
     { label: "Convertis", value: converted, accent: false },
   ];
 
