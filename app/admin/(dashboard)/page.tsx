@@ -122,7 +122,7 @@ export default async function AccueilPage({
       .eq("status", "purchased")
       .is("sale_price", null),
     countSuivisAFaire(supabase, todayIso),
-    fetchSoumissions(user, {
+    fetchSoumissions(supabase, {
       since: new Date(now.getTime() - A_TRAITER_JOURS * 86_400_000).toISOString(),
       limit: 200,
     }),
@@ -168,7 +168,7 @@ export default async function AccueilPage({
   }).format(now);
 
   const soumissionsATraiter = soumissions.rows.filter((s) => estATraiter(s, now));
-  const soumissionsCount = soumissions.readable ? soumissionsATraiter.length : null;
+  const soumissionsCount = soumissions.error ? null : soumissionsATraiter.length;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -201,7 +201,7 @@ export default async function AccueilPage({
             {
               label: "Soumissions à traiter",
               count: soumissionsCount,
-              hint: soumissions.readable ? "Reçues ces 30 derniers jours" : "Lecture à activer",
+              hint: soumissions.error ? "Lecture impossible" : "Reçues ces 30 derniers jours",
               // Liste complète dans l'onglet Soumissions
               href:
                 soumissionsATraiter.length > 0

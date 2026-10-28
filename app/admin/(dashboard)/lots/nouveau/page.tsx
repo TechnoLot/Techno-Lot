@@ -54,22 +54,14 @@ export default async function NewLotPage({
   searchParams: { soumission?: string };
 }) {
   const supabase = createClient();
-  const [
-    { data: savedLotsRaw },
-    {
-      data: { user },
-    },
-  ] = await Promise.all([
-    supabase
-      .from("saved_lots")
-      .select("id, name, data, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(20),
-    supabase.auth.getUser(),
-  ]);
+  const { data: savedLotsRaw } = await supabase
+    .from("saved_lots")
+    .select("id, name, data, updated_at")
+    .order("updated_at", { ascending: false })
+    .limit(20);
   // « Créer le lot » depuis l'onglet Soumissions : formulaire pré-rempli et lot lié.
   const soumission = searchParams.soumission
-    ? await fetchSoumission(user, searchParams.soumission)
+    ? await fetchSoumission(supabase, searchParams.soumission)
     : null;
   const fromSoumission = soumission ? depuisSoumission(soumission) : undefined;
 

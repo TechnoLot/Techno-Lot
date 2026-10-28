@@ -11,7 +11,7 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 ## Structure
 
 - `app/(fr)` + `app/(en)/en` — site public bilingue (contenu dans `lib/i18n.ts`, `lib/site.ts`)
-- `app/admin/(dashboard)` — dashboard admin : lots, soumissions (`/admin/soumissions`, lues avec `SUPABASE_SERVICE_ROLE_KEY` via `lib/admin/soumissions.ts`), calculatrice, CRM (`/admin/crm`, `/admin/crm/[id]`, `clients`, `relances`, `modeles`)
+- `app/admin/(dashboard)` — dashboard admin : lots, soumissions (`/admin/soumissions`, `lib/admin/soumissions.ts`), calculatrice, CRM (`/admin/crm`, `/admin/crm/[id]`, `clients`, `relances`, `modeles`)
 - `components/admin/` + `components/admin/crm/` — composants admin
 - `lib/admin/` — types/actions/format des lots ; `lib/crm/` — types/actions/email/parse-followup-date du CRM
 - Auth : lien magique Supabase, whitelist `ADMIN_EMAILS` (.env.local), protégé par `middleware.ts` + layout. En local, impossible de se connecter (boîte info@technolot.ca) — pour vérifier visuellement, bypass temporaire dans middleware + layout marqué `TEMP-DEV-BYPASS`, à retirer avant commit.
@@ -21,6 +21,7 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - RLS : tables CRM = `authenticated` full access → les lectures anonymes renvoient vide (pages locales vides sans session : normal).
 - Tables à NE JAMAIS modifier (schéma) : `soumissions`, `lots`, `email_logs`, `sales`. Le CRM peut seulement les lire/lier (`contacts.lot_id → lots.id`).
 - Tables CRM modifiables : `companies` (fit_score 1-10, lead_status, next_followup_on, lead_status_changed_at), `contacts` (stage new→…→converted), `outreach_activities`, `email_templates`, `daily_prospect_batches`.
+- `soumissions` n'a aucune politique de lecture : l'admin la lit via la fonction `admin_soumissions` (security definer, réservée aux courriels listés dans la fonction, à garder alignés sur `ADMIN_EMAILS`).
 - Migrations DDL via l'outil MCP apply_migration.
 
 ## Règles CRM

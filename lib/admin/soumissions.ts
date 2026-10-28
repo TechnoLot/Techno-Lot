@@ -1,6 +1,4 @@
-import { createClient as createServiceClient } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
-import { isAdminEmail } from "@/lib/admin/config";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Une demande sans lot reste « à traiter » pendant ce nombre de jours (accueil et onglet Soumissions). */
 export const A_TRAITER_JOURS = 30;
@@ -28,11 +26,9 @@ export type Soumission = {
 };
 
 export type SoumissionsResult = {
-  /** false : clé de service absente, utilisateur non admin ou lecture en échec */
-  readable: boolean;
-  /** Message de Supabase quand la lecture a échoué malgré la clé */
-  error: string | null;
   rows: Soumission[];
+  /** Message de Supabase quand la lecture a échoué */
+  error: string | null;
 };
 
 type Raw = {
@@ -53,22 +49,6 @@ type LotRef = {
   client_phone: string | null;
   created_at: string;
 };
-
-const COLUMNS = 'id, "DATE", nom, courriel, telephone, message, locale, fichiers';
-
-/**
- * La table soumissions n'a pas de politique de lecture pour « authenticated »
- * (seulement l'insertion anonyme du formulaire) : on la lit avec la clé
- * service, côté serveur seulement et pour un admin vérifié. null : clé
- * SUPABASE_SERVICE_ROLE_KEY absente ou utilisateur non admin.
- */
-function serviceClient(user: User | null) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) return null;
-  if (!user || !isAdminEmail(user.email)) return null;
-  return createServiceClient(url, serviceKey, { auth: { persistSession: false } });
-}
 
 /** Les 10 derniers chiffres d'un téléphone (null si moins de 10 chiffres). */
 function phoneKey(v: string | null | undefined): string | null {
@@ -135,53 +115,45 @@ function lotsDesSoumissions(raw: Raw[], lots: LotRef[]): Map<string, string> {
 
 /**
  * Soumissions du formulaire public, plus récentes d'abord, chacune avec son
- * lot. `since` (ISO) : seulement les demandes reçues depuis cette date.
+ * lot. La table n'a pas de politique de lecture : on passe par la fonction
+ * admin_soumissions (réservée au compte admin connecté, migration
+ * 20261029000000), avec la session de l'admin. `since` (ISO) : seulement les
+ * demandes reçues depuis cette date.
  */
 export async function fetchSoumissions(
-  user: User | null,
+  supabase: SupabaseClient,
   { since, limit = 500 }: { since?: string; limit?: number } = {},
 ): Promise<SoumissionsResult> {
-  const service = serviceClient(user);
-  if (!service) return { readable: false, error: null, rows: [] };
+  const { data, error } = await supabase.rpc("admin_soumissions", {
+    p_since: since ?? null,
+    p_limit: limit,
+  });
+  if (error) return { rows: [], error: error.message };
 
-  let query = service
-    .from("soumissions")
-    .select(COLUMNS)
-    .order("DATE", { ascending: false })
-    .limit(limit);
-  if (since) query = query.gte("DATE", since);
-  const { data, error } = await query;
-  if (error) return { readable: false, error: error.message, rows: [] };
-
-  const raw = (data ?? []) as unknown as Raw[];
-  if (raw.length === 0) return { readable: true, error: null, rows: [] };
+  const raw = (data ?? []) as Raw[];
+  if (raw.length === 0) return { rows: [], error: null };
 
   const oldest = raw[raw.length - 1].DATE;
-  const { data: lotsRaw } = await service
+  const { data: lotsRaw } = await supabase
     .from("lots")
     .select("id, soumission_id, client_email, client_phone, created_at")
     .gte("created_at", oldest);
   const lots = lotsDesSoumissions(raw, (lotsRaw ?? []) as LotRef[]);
 
-  return {
-    readable: true,
-    error: null,
-    rows: raw.map((r) => toSoumission(r, lots.get(r.id) ?? null)),
-  };
+  return { rows: raw.map((r) => toSoumission(r, lots.get(r.id) ?? null)), error: null };
 }
 
 /** Une demande et le lot qui y est lié (pré-remplissage d'un lot) ; null si illisible ou introuvable. */
-export async function fetchSoumission(user: User | null, id: string): Promise<Soumission | null> {
+export async function fetchSoumission(supabase: SupabaseClient, id: string): Promise<Soumission | null> {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
-  const service = serviceClient(user);
-  if (!service) return null;
 
   const [{ data }, { data: lot }] = await Promise.all([
-    service.from("soumissions").select(COLUMNS).eq("id", id).maybeSingle(),
-    service.from("lots").select("id").eq("soumission_id", id).limit(1).maybeSingle(),
+    supabase.rpc("admin_soumissions", { p_id: id, p_limit: 1 }),
+    supabase.from("lots").select("id").eq("soumission_id", id).limit(1).maybeSingle(),
   ]);
-  if (!data) return null;
-  return toSoumission(data as unknown as Raw, (lot as { id: string } | null)?.id ?? null);
+  const raw = ((data ?? []) as Raw[])[0];
+  if (!raw) return null;
+  return toSoumission(raw, (lot as { id: string } | null)?.id ?? null);
 }
 
 /** À traiter : aucun lot et reçue depuis moins de A_TRAITER_JOURS jours. */

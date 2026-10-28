@@ -1,4 +1,4 @@
-import { Inbox, KeyRound } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/components/admin/PageHeader";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
@@ -39,11 +39,7 @@ export default async function SoumissionsPage({
 }: {
   searchParams: { q?: string; statut?: string };
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const { readable, error, rows } = await fetchSoumissions(user);
+  const { error, rows } = await fetchSoumissions(createClient());
 
   const now = new Date();
   const q = searchParams.q?.trim() ?? "";
@@ -64,7 +60,7 @@ export default async function SoumissionsPage({
         eyebrow="Formulaire du site"
         title="Soumissions"
         description={
-          readable ? (
+          !error ? (
             <>
               {formatCount(rows.length)} demande{rows.length !== 1 ? "s" : ""} reçue
               {rows.length !== 1 ? "s" : ""} · {formatCount(aTraiter.length)} à traiter. Chaque
@@ -85,25 +81,7 @@ export default async function SoumissionsPage({
         </div>
       )}
 
-      {!readable && !error && (
-        <div className="flex gap-3 rounded-2xl border border-admin-tint-amber-line bg-admin-tint-amber px-4 py-4 sm:px-5">
-          <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-admin-warning" aria-hidden />
-          <div className="text-sm text-admin-ink">
-            <p className="font-semibold">Lecture des soumissions à activer</p>
-            <p className="mt-1 leading-relaxed text-admin-muted">
-              Chaque demande du formulaire est bien enregistrée, mais le tableau de bord n&apos;a pas
-              encore la clé pour les lire. Ajoute la clé secrète Supabase dans la variable{" "}
-              <code className="rounded bg-admin-card px-1 py-0.5 text-[12px] text-admin-ink">
-                SUPABASE_SERVICE_ROLE_KEY
-              </code>{" "}
-              du serveur (Supabase → Project Settings → API Keys), puis redémarre le site. En
-              attendant, les demandes arrivent toujours dans ta boîte courriel.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {readable && (
+      {!error && (
         <>
           <div className="mb-6">
             <SoumissionsFilters
