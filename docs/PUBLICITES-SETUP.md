@@ -10,7 +10,7 @@ Les statistiques sont synchronisées dans Supabase (`ad_metrics_daily`) par `POS
 4. **Paramètres d'URL des pubs** (champ « Paramètres d'URL » de chaque annonce, sans « ? » au début : Meta l'ajoute) :
 
 ```
-utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}
+utm_source={{site_source_name}}&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}
 ```
 
 Tant que `META_ACCESS_TOKEN` et `META_AD_ACCOUNT_ID` manquent, `/admin/pubs` affiche l'encadré « Connecter Meta Ads » avec ces étapes (il indique seulement si chaque variable est présente, jamais sa valeur). Les leads venus du site s'affichent quand même.

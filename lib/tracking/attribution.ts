@@ -40,7 +40,7 @@ export type Attribution = {
 const STORAGE_KEY = "tl_attr";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-const META_SOURCES = ["facebook", "fb", "instagram", "ig", "meta"];
+const META_SOURCES = ["facebook", "fb", "instagram", "ig", "meta", "msg", "an"];
 const PAID_MEDIUMS = ["cpc", "ppc", "paid", "paidsearch", "paid_search"];
 const SEARCH_ENGINES =
   /(^|\.)(google|bing|duckduckgo|yahoo|ecosia|qwant|brave|baidu|yandex)\./i;

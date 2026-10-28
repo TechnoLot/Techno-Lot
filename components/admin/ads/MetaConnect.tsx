@@ -7,7 +7,7 @@ import { card, cardSub, cardTitle, focusRing } from "./ui";
 
 /** Paramètres d'URL à coller dans chaque pub Meta (relient le lead à sa pub). */
 export const META_URL_PARAMS =
-  "utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}";
+  "utm_source={{site_source_name}}&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&campaign_id={{campaign.id}}&adset_id={{adset.id}}&ad_id={{ad.id}}&placement={{placement}}";
 
 const ENV_EXAMPLE = "META_ACCESS_TOKEN=votre_jeton\nMETA_AD_ACCOUNT_ID=1234567890";
 

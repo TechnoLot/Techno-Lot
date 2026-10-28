@@ -213,8 +213,8 @@ export function publisherOf(
     return "google";
   }
   if (s.includes("instagram") || /\big\b/.test(s)) return "instagram";
-  if (s.includes("messenger")) return "messenger";
-  if (s.includes("audience")) return "audience_network";
+  if (s.includes("messenger") || /\bmsg\b/.test(s)) return "messenger";
+  if (s.includes("audience") || /\ban\b/.test(s)) return "audience_network";
   if (s.includes("facebook") || /\bfb\b/.test(s)) return "facebook";
   if (s.includes("threads")) return "threads";
   return platform === "meta" ? "meta_autre" : "autre";
