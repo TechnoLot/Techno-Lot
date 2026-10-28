@@ -126,14 +126,14 @@ function clean(value: string | null, max: number): string | undefined {
 
 function buildFromUrl(): Attribution {
   const p = new URLSearchParams(window.location.search);
+  // Référent : nom d'hôte seulement (ex. « www.google.com »), jamais le
+  // chemin ni les paramètres. Fixé à la première visite avec l'attribution.
   let referrerHost = "";
-  let referrer: string | undefined;
   try {
     if (document.referrer) {
       const u = new URL(document.referrer);
       if (u.hostname !== window.location.hostname) {
-        referrerHost = u.hostname;
-        referrer = (u.origin + u.pathname).slice(0, 500);
+        referrerHost = u.hostname.slice(0, 255);
       }
     }
   } catch {
@@ -157,8 +157,9 @@ function buildFromUrl(): Attribution {
     placement: clean(p.get("placement"), 100),
     fbclid: clean(p.get("fbclid"), 500),
     gclid: clean(p.get("gclid") ?? p.get("gbraid") ?? p.get("wbraid"), 500),
+    // Page d'arrivée : chemin seul, sans paramètres ni ancre.
     landing_path: window.location.pathname.slice(0, 500),
-    referrer,
+    referrer: referrerHost || undefined,
     device: detectDevice(),
     locale: detectLocale(),
   };
@@ -252,4 +253,26 @@ export function sendEvent(type: EventType, path?: string): void {
 /** Raccourci pour les composants : trackEvent("cta_click"). */
 export function trackEvent(type: EventType): void {
   sendEvent(type);
+}
+
+export type CtaLabel = "soumission" | "tel" | "mailto";
+
+/**
+ * Type d'appel à l'action d'un lien, ou null s'il n'en est pas un :
+ * lien interne vers /soumission ou /en/soumission, tel: ou mailto:.
+ */
+export function ctaLabelFor(link: HTMLAnchorElement): CtaLabel | null {
+  try {
+    const href = link.getAttribute("href") ?? "";
+    if (/^\s*tel:/i.test(href)) return "tel";
+    if (/^\s*mailto:/i.test(href)) return "mailto";
+    const u = new URL(link.href, window.location.href);
+    if (u.origin !== window.location.origin) return null;
+    const path = u.pathname.replace(/\/+$/, "");
+    return path === "/soumission" || path === "/en/soumission"
+      ? "soumission"
+      : null;
+  } catch {
+    return null;
+  }
 }

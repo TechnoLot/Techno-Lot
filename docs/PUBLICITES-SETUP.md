@@ -53,3 +53,14 @@ Réponse : `{"results":[{"platform":"meta","ok":true,"rows":123,"message":"..."}
   4. Trop tôt : dépenses < 25 $ et 0 lead ;
   5. À surveiller : le reste.
 - Vérification des cas limites : `node lib/ads/verdict.check.mjs` (Node ≥ 23.6).
+
+## SEO et mesure
+
+- **Variables** (côté serveur Hostinger, et `.env.local` pour tester ; jamais dans `.env.production`, qui est versionné) :
+  - `NEXT_PUBLIC_GSC_VERIFICATION` : code de la balise de vérification Google Search Console (méthode « Balise HTML », valeur de `content` seulement). La balise est gérée par les métadonnées SEO du site, pas par le suivi pub.
+  - `NEXT_PUBLIC_GA4_ID` : ID de mesure GA4 (`G-XXXXXXXXXX`). Désactivé tant qu'il est absent. S'il est présent, GA4 est configuré par le même gtag que Google Ads (`components/tracking/AdPixels.tsx`, chargement différé) et reçoit `generate_lead` à chaque soumission réussie. Les variables `NEXT_PUBLIC_*` sont intégrées au build : rebâtir après les avoir ajoutées.
+- **Ce que le site enregistre déjà, sans GA4** :
+  - Visite (`ad_sessions`) : `platform = organic` si le référent est un moteur de recherche, `referrer` = nom d'hôte seulement (ex. `www.google.com`), `landing_path` = page d'arrivée sans paramètres. Fixés à la première visite (30 jours), remplacés seulement par une nouvelle visite avec paramètres pub (UTM, gclid, fbclid).
+  - Clics sur les appels à l'action (`ad_events`, type `cta_click`) : liens vers `/soumission` ou `/en/soumission`, `tel:` et `mailto:`. Seul le chemin de la page du clic est stocké (pas le type de lien).
+  - Soumission (`ad_leads`) : `platform`, `landing_path`, UTM ; le référent se retrouve par `ad_leads.session_id → ad_sessions.referrer`.
+- **Loi 25 (Québec)** : avant d'activer GA4 ou les pixels Meta / Google Ads, vérifier quel consentement est exigé pour ces témoins et traceurs tiers (et mettre à jour la politique de confidentialité). Le site n'affiche actuellement aucune bannière de consentement.
