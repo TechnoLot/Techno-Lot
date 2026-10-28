@@ -52,8 +52,9 @@ const content: Record<
         body: (
           <>
             <p>
-              Techno Lot a désigné Eric Després comme responsable de la protection des renseignements personnels. Pour
-              toute question sur cette politique ou pour exercer vos droits, écrivez-lui à {mail} ou téléphonez au{" "}
+              Le responsable de la protection des renseignements personnels est {site.president.name}, président de
+              Techno Lot. Pour toute question sur cette politique ou pour exercer vos droits, écrivez-lui à {mail} ou
+              téléphonez au{" "}
               <a href={site.phoneHref} className="font-semibold text-[#3f9a1c] underline-offset-4 hover:underline">
                 {site.phone}
               </a>
@@ -241,8 +242,8 @@ const content: Record<
         body: (
           <>
             <p>
-              Techno Lot has designated Eric Després as the person in charge of the protection of personal information.
-              For any question about this policy or to exercise your rights, email {mail} or call{" "}
+              The person in charge of the protection of personal information is {site.president.name}, President of
+              Techno Lot. For any question about this policy or to exercise your rights, email {mail} or call{" "}
               <a href={site.phoneHref} className="font-semibold text-[#3f9a1c] underline-offset-4 hover:underline">
                 {site.phone}
               </a>
@@ -450,7 +451,7 @@ export default function PolitiqueConfidentialitePage({ locale }: { locale: Local
               </nav>
               <div className="mt-8 rounded-2xl border border-black/10 bg-black/[0.03] p-5">
                 <p className="font-display text-sm font-semibold text-mist">{t.officerTitle}</p>
-                <p className="mt-2 text-[15px] text-moss">Eric Després</p>
+                <p className="mt-2 text-[15px] text-moss">{site.president.name}</p>
                 <p className="mt-1 text-[15px]">{mail}</p>
               </div>
             </div>
