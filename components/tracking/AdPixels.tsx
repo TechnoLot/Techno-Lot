@@ -9,6 +9,8 @@ const GOOGLE_LEAD_LABEL = process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL;
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 // Identifiant utilisé pour charger gtag.js (Google Ads en priorité).
 const GTAG_ID = GOOGLE_ID || GA4_ID;
+// En local (npm run dev), pas de pixels : les visites de test iraient à Meta et Google.
+const EN_LOCAL = process.env.NODE_ENV === "development";
 
 type PixelWindow = Window & {
   fbq?: (...args: unknown[]) => void;
@@ -33,9 +35,12 @@ export function trackLeadConversion(): void {
   }
 }
 
-/** Charge Meta Pixel / Google tag (Ads, GA4) seulement si les variables d'env existent. */
+/**
+ * Charge Meta Pixel / Google tag (Ads, GA4) seulement si les variables d'env
+ * existent, et jamais en local.
+ */
 export default function AdPixels() {
-  if (!META_ID && !GTAG_ID) return null;
+  if (EN_LOCAL || (!META_ID && !GTAG_ID)) return null;
   return (
     <>
       {META_ID && (
