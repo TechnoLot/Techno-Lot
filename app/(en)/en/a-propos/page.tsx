@@ -7,7 +7,7 @@ export const metadata = pageMetadata({
   title:
     "About Techno Lot, Buyer of IT Equipment Lots",
   description:
-    "Based in Mascouche, Techno Lot buys IT equipment from businesses across Quebec: offer within 24 hours, free pickup, protected data.",
+    "Techno Lot buys IT equipment from businesses across Quebec and picks it up on site: offer within 24 hours, free pickup, protected data.",
   absoluteTitle: true,
 });
 

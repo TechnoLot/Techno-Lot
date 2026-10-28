@@ -50,13 +50,13 @@ Faits permis (et seulement ceux-ci) :
 - ramassage sans frais et sans minimum, partout au Québec ;
 - la moitié du paiement au ramassage, le solde après l'inspection (15 jours ouvrables au maximum) ;
 - effacement sécurisé et certificat de destruction des données, sans frais ;
-- tout matériel est accepté, même partiellement fonctionnel ; le prix dépend de l'évaluation.
+- tout matériel est évalué, même partiellement fonctionnel ; le prix dépend de l'évaluation (aucun achat garanti avant l'évaluation).
 
 Interdits :
 - tout prix ou fourchette de prix ;
 - toute certification ;
 - tout témoignage ou avis client inventé ;
-- un bureau ou une adresse dans une autre ville ;
+- un local, un bureau ou un comptoir, où que ce soit : le 3235, av. de la Gare (Mascouche) n'est qu'une adresse postale (coworking). Écrire « adresse postale » et « notre équipe se déplace chez vous », jamais « situés à » ni « voisins de » ;
 - un délai de ramassage ;
 - « destruction sur place » ;
 - « paiement avant notre départ » (dire « paiement rapide et garanti »).

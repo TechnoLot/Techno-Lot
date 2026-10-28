@@ -7,7 +7,7 @@ export const metadata = pageMetadata({
   title:
     "À propos de Techno Lot, acheteur de lots informatiques",
   description:
-    "Établie à Mascouche, Techno Lot rachète le matériel informatique des entreprises du Québec : offre en 24 h, ramassage sans frais, données protégées.",
+    "Techno Lot rachète le matériel informatique des entreprises partout au Québec et vient le chercher : offre en 24 h, ramassage sans frais, données protégées.",
   absoluteTitle: true,
 });
 

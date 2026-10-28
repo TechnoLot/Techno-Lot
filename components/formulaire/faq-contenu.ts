@@ -86,7 +86,8 @@ const fr: FaqGroupe[] = [
       },
       {
         question: "Où êtes-vous situés ?",
-        answer: "Nous sommes situés à Mascouche, Québec, Canada.",
+        answer:
+          "Notre adresse postale est à Mascouche (Québec), mais nous n'avons pas de comptoir ouvert au public : c'est notre équipe qui se déplace pour ramasser le matériel chez vous, partout au Québec.",
       },
       {
         question: "Comment puis-je vous contacter ?",
@@ -194,7 +195,8 @@ const en: FaqGroupe[] = [
       },
       {
         question: "Where are you located?",
-        answer: "We are located in Mascouche, Québec, Canada.",
+        answer:
+          "Our mailing address is in Mascouche, Quebec, but we have no walk-in location: our team comes to you to pick up the equipment, anywhere in Quebec.",
       },
       {
         question: "How can I reach you?",

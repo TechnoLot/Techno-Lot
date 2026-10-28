@@ -7,7 +7,7 @@ export const metadata = pageMetadata({
   title: "Rachat de matériel informatique à Terrebonne et Mascouche",
   absoluteTitle: true,
   description:
-    "Techno Lot est établie à Mascouche, à quelques minutes de Terrebonne. Nous rachetons les lots informatiques des entreprises de la MRC Les Moulins.",
+    "Votre entreprise de Terrebonne ou de Mascouche renouvelle son parc ? Techno Lot rachète vos lots informatiques : offre en 24 h, ramassage sans frais.",
 });
 
 export default function Page() {

@@ -434,7 +434,7 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       hero: {
         title: "Rachat de matériel informatique pour les entreprises de Laval",
         intro:
-          "Votre entreprise de Laval remplace ses ordinateurs, regroupe ses locaux ou ferme une succursale ? Techno Lot, votre voisine de Mascouche, rachète votre matériel informatique et électronique en lot. Notre offre vous parvient en 24 h et le ramassage est sans frais.",
+          "Votre entreprise de Laval remplace ses ordinateurs, regroupe ses locaux ou ferme une succursale ? Techno Lot rachète votre matériel informatique et électronique en lot. Notre offre vous parvient en 24 h et le ramassage est sans frais.",
         cta: "Obtenir une offre",
         call: "Appeler",
         imageAlt: "Pile d'ordinateurs portables d'entreprise",
@@ -444,7 +444,7 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       local: {
         title: "De Chomedey à Saint-François, partout à Laval",
         paragraphs: [
-          "Techno Lot est établie à Mascouche, juste de l'autre côté de la rivière des Mille Îles. Laval est donc notre voisine, et planifier un ramassage s'y fait simplement : quelques échanges suffisent pour convenir d'une date qui convient à votre équipe.",
+          "Notre équipe se déplace partout à Laval, d'une rive à l'autre de l'île Jésus, et planifier un ramassage s'y fait simplement : quelques échanges suffisent pour convenir d'une date qui convient à votre équipe.",
           "Le territoire lavallois compte de nombreux parcs d'affaires et industriels le long des autoroutes 15, 440 et 25. À cela s'ajoutent la Cité de la Biotech, les bureaux et les sièges sociaux du centre de Laval, les commerces et les centres de distribution. Dans tous ces milieux, les postes de travail, les écrans, les serveurs et les équipements réseau arrivent tôt ou tard en fin de cycle. Un renouvellement du parc, un regroupement de locaux ou la fermeture d'une succursale laisse alors derrière lui du matériel inutilisé qui occupe de l'espace.",
           "Plutôt que de l'entreposer ou de payer pour l'évacuer, vous pouvez le vendre en un seul lot. Nous évaluons votre matériel, qu'il soit neuf, usagé ou partiellement fonctionnel, et notre offre vous parvient en 24 h. Ce qui peut encore servir est remis en circulation ; le reste est dirigé vers le recyclage des composants.",
           "Les immeubles des parcs industriels ont souvent leurs particularités : quai de chargement, porte de garage, entrée réservée aux livraisons ou heures de réception précises. Indiquez-les dans votre demande et nous planifions le ramassage en conséquence. Le jour venu, notre équipe emballe, charge et transporte le matériel ; vous n'avez rien à déplacer.",
@@ -527,7 +527,7 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       hero: {
         title: "Rachat de matériel informatique à Terrebonne et Mascouche",
         intro:
-          "Techno Lot est établie à Mascouche, au cœur de la MRC Les Moulins. Votre entreprise de Terrebonne ou de Mascouche a des ordinateurs, des serveurs ou des équipements réseau dont elle n'a plus besoin ? Nous rachetons le lot : notre offre vous parvient en 24 h et le ramassage est sans frais.",
+          "Votre entreprise de Terrebonne ou de Mascouche a des ordinateurs, des serveurs ou des équipements réseau dont elle n'a plus besoin ? Nous rachetons le lot : notre offre vous parvient en 24 h et le ramassage est sans frais.",
         cta: "Obtenir une offre",
         call: "Appeler",
         imageAlt: "Pile d'ordinateurs portables d'entreprise",
@@ -535,11 +535,11 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       categories: FR_CATEGORIES,
       advantages: FR_ADVANTAGES,
       local: {
-        title: "Votre voisin dans la MRC Les Moulins",
+        title: "Partout dans la MRC Les Moulins",
         paragraphs: [
-          "Techno Lot est établie au 3235, avenue de la Gare, à Mascouche, au cœur de la MRC Les Moulins. Les entreprises de Terrebonne et de Mascouche sont donc nos voisines, du Vieux-Terrebonne à Terrebonne-Ouest, de Lachenaie à La Plaine, et tout au long des autoroutes 25 et 640.",
+          "Notre adresse postale est à Mascouche, mais nous n'avons pas de comptoir ouvert au public : c'est notre équipe qui se déplace. Nous ramassons le matériel chez vous, partout à Terrebonne et à Mascouche, du Vieux-Terrebonne à Terrebonne-Ouest, de Lachenaie à La Plaine, et tout au long des autoroutes 25 et 640.",
           "PME manufacturières, commerces, bureaux professionnels : chaque entreprise de la région finit par remplacer ses ordinateurs, ses écrans, ses serveurs ou ses équipements réseau. L'ancien matériel s'accumule alors dans un coin d'entrepôt ou une salle de rangement. Vendu en lot, il libère de l'espace et vous permet d'en récupérer une partie de la valeur, à réinvestir dans le nouveau matériel. Ce qui peut encore servir est remis en circulation ; le reste est dirigé vers le recyclage des composants.",
-          "Être voisins simplifie les échanges. Pour un gros lot, par exemple un parc complet de postes ou plusieurs baies de serveurs, appelez-nous au 514-944-3939 : nous en discutons directement et préparons la suite ensemble. Pour tout le reste, la demande de soumission suffit. Joignez-y la liste de votre matériel ou quelques photos, et notre offre vous parvient en 24 h. Notre équipe vient ensuite chercher le matériel chez vous ; elle l'emballe, le charge et le transporte.",
+          "Pour un gros lot, par exemple un parc complet de postes ou plusieurs baies de serveurs, appelez-nous au 514-944-3939 : nous en discutons directement et préparons la suite ensemble. Pour tout le reste, la demande de soumission suffit. Joignez-y la liste de votre matériel ou quelques photos, et notre offre vous parvient en 24 h. Notre équipe vient ensuite chercher le matériel chez vous ; elle l'emballe, le charge et le transporte.",
           "Nous rachetons aussi le matériel des entreprises des villes voisines : Bois-des-Filion, Lorraine, Sainte-Anne-des-Plaines, Repentigny, L'Assomption et Charlemagne. Pour ces secteurs, consultez également notre page consacrée à la Rive-Nord, accessible plus bas.",
         ],
         areasTitle: "Secteurs desservis",
@@ -565,7 +565,7 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
           {
             question: "Où êtes-vous situés ?",
             answer:
-              "Techno Lot est établie au 3235, avenue de la Gare, à Mascouche (QC) J7K 3C1. Pour vendre votre matériel, le plus simple est de remplir la demande de soumission : nous évaluons votre lot, notre offre vous parvient en 24 h, puis notre équipe vient chercher le matériel chez vous.",
+              "Notre adresse postale est le 3235, avenue de la Gare, à Mascouche (QC) J7K 3C1, mais nous n'avons pas de comptoir ouvert au public. Pour vendre votre matériel, le plus simple est de remplir la demande de soumission : nous évaluons votre lot, notre offre vous parvient en 24 h, puis notre équipe vient chercher le matériel chez vous.",
           },
           {
             question: "Couvrez-vous tous les secteurs de Terrebonne, dont Lachenaie et La Plaine ?",
@@ -609,7 +609,7 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       service: {
         name: "Rachat de matériel informatique à Terrebonne et Mascouche",
         description:
-          "Techno Lot est établie à Mascouche, à quelques minutes de Terrebonne. Nous rachetons les lots informatiques des entreprises de la MRC Les Moulins.",
+          "Techno Lot rachète les lots informatiques des entreprises de Terrebonne, de Mascouche et de la MRC Les Moulins, avec ramassage sans frais.",
       },
     },
   },

@@ -85,7 +85,7 @@ export const LOCAL_REWRITES: LocalRewrite[] = [
 <p>Chargeurs, stations d'accueil et accessoires : mettez-les avec le lot et indiquez leur nombre dans votre liste.</p>
 
 <h2>Comment se déroule le rachat avec Techno Lot</h2>
-<p>Techno Lot, établie à Mascouche, rachète le matériel informatique des entreprises, qu'il soit neuf, usagé ou partiellement fonctionnel. Le processus est simple :</p>
+<p>Techno Lot rachète le matériel informatique des entreprises, qu'il soit neuf, usagé ou partiellement fonctionnel. Le processus est simple :</p>
 <ul>
 <li><strong>Une offre dans les 24 heures</strong> après réception de la description de votre lot, établie selon l'évaluation du matériel.</li>
 <li><strong>Un ramassage sans frais et sans minimum</strong> partout au Québec : notre équipe emballe, charge et transporte les appareils.</li>
@@ -194,7 +194,7 @@ export const LOCAL_REWRITES: LocalRewrite[] = [
 <p>Une migration réseau, un déménagement ou la fermeture d'une salle de serveurs laisse souvent derrière elle des étagères de switchs, de routeurs, de pare-feu, de points d'accès et de téléphones IP. Ce matériel garde souvent de la valeur sur le marché de la revente, à condition d'être bien préparé. Voici ce qu'il faut savoir pour vendre vos équipements réseau en lot au Québec, et ce qui influence l'offre que vous recevrez.</p>
 
 <h2>Quels équipements réseau peuvent être revendus ?</h2>
-<p>Techno Lot, établie à Mascouche, rachète le matériel informatique et électronique des entreprises, qu'il soit neuf, usagé ou partiellement fonctionnel. Du côté du réseau, cela comprend généralement :</p>
+<p>Techno Lot rachète le matériel informatique et électronique des entreprises, qu'il soit neuf, usagé ou partiellement fonctionnel. Du côté du réseau, cela comprend généralement :</p>
 <ul>
 <li><strong>Les switchs</strong> : commutateurs d'accès, de distribution ou de cœur, administrables ou non, avec ou sans PoE ;</li>
 <li><strong>Les routeurs</strong> de succursale ou de périphérie ;</li>
