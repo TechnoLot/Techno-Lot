@@ -59,6 +59,7 @@ export default function FaqPage({ locale }: { locale: Locale }) {
         text={t.ctaText}
         buttonLabel={t.ctaButton}
         href="/contact"
+        current="/faq"
       />
     </>
   );

@@ -8,15 +8,15 @@ import { site } from "@/lib/site";
 import { B, Chapter, ChapterTitle } from "./services/Chapter";
 import { DrawLine, Parallax } from "./services/Parallax";
 import { PinnedSteps } from "./services/PinnedSteps";
-import { PhotoFrame, RadarFrame } from "./services/scenes";
+import { ObjectFrame, PhotoFrame } from "./services/scenes";
 import "./pages-services.css";
-
-const address = `${site.address.street}, ${site.address.city}`;
 
 const content = {
   fr: {
-    title: "À propos de Techno Lot",
+    /** Suivi du nom de l'entreprise, en vert. */
+    title: "À propos de",
     intro: "La référence en matière de rachat de lots au Québec.",
+    logoAlt: "Logo de Techno Lot",
     passion: {
       title: "Une passion qui nous démarque",
       lead: "Notre passion pour la technologie et notre engagement envers nos clients nous démarquent.",
@@ -54,16 +54,16 @@ const content = {
           ),
         },
         {
-          title: "De Mascouche à tout le Québec",
+          title: "Partout au Québec, on se déplace",
           text: (
             <>
-              Nous sommes situés au <B>{address}</B>. De là, notre équipe se déplace <B>partout au Québec</B> pour ramasser
-              votre matériel, gratuitement et sans minimum de quantité.
+              Notre équipe se déplace <B>partout au Québec</B> pour ramasser votre matériel, <B>gratuitement</B> et sans minimum
+              de quantité : vous n&apos;avez rien à transporter.
             </>
           ),
         },
       ],
-      radarEdge: "Partout au Québec",
+      truckTags: ["Ramassage gratuit", "Partout au Québec"],
     },
     pay: {
       title: "Notre engagement de paiement",
@@ -107,8 +107,9 @@ const content = {
     ctaButton: "Contactez-nous",
   },
   en: {
-    title: "About Techno Lot",
+    title: "About",
     intro: "The reference for equipment lot buyback in Québec.",
+    logoAlt: "Techno Lot logo",
     passion: {
       title: "A passion that sets us apart",
       lead: "Our passion for technology and our commitment to our clients set us apart.",
@@ -144,16 +145,16 @@ const content = {
           ),
         },
         {
-          title: "From Mascouche to all of Québec",
+          title: "Anywhere in Québec, we come to you",
           text: (
             <>
-              We are located at <B>{address}</B>. From there, our team travels <B>anywhere in Québec</B> to pick up your
-              equipment, free of charge and with no minimum quantity.
+              Our team travels <B>anywhere in Québec</B> to pick up your equipment, <B>free of charge</B> and with no minimum
+              quantity: you don&apos;t have to move a thing.
             </>
           ),
         },
       ],
-      radarEdge: "Anywhere in Québec",
+      truckTags: ["Free pickup", "Anywhere in Québec"],
     },
     pay: {
       title: "Our payment commitment",
@@ -211,9 +212,13 @@ export default function AProposPage({ locale }: { locale: Locale }) {
   return (
     <>
       <PageHero
-        title={t.title}
+        title={
+          <>
+            {t.title} <span className="text-emerald">{site.name}</span>
+          </>
+        }
         intro={t.intro}
-        image={{ kind: "object", src: "/images/palette/palette-pleine.webp", width: 64 }}
+        image={{ kind: "logo", alt: t.logoAlt }}
       />
 
       {/* 1. Menthe : la passion, grand énoncé + palette en parallaxe */}
@@ -243,7 +248,7 @@ export default function AProposPage({ locale }: { locale: Locale }) {
         </div>
       </Chapter>
 
-      {/* 2. Bleu nuit, épinglé : la mission, de la valeur jusqu'à Mascouche et tout le Québec */}
+      {/* 2. Bleu nuit, épinglé : la mission, de la valeur de votre matériel jusqu'au ramassage partout au Québec */}
       <PinnedSteps
         theme="night"
         glow="left"
@@ -252,8 +257,8 @@ export default function AProposPage({ locale }: { locale: Locale }) {
         steps={t.mission.steps}
         frames={[
           <PhotoFrame key="a" src="/accueil/rachat-postes.webp" />,
-          <PhotoFrame key="b" src="/accueil/rachat-serveurs.webp" position="50% 55%" />,
-          <RadarFrame key="c" center={site.address.city} edge={t.mission.radarEdge} address={site.address.street} />,
+          <PhotoFrame key="b" src="/accueil/rachat-investissement.webp" position="50% 52%" />,
+          <ObjectFrame key="c" src="/images/camion/camion-techno-lot.webp" w={1200} h={497} width="86%" tags={t.mission.truckTags} />,
         ]}
       />
 
@@ -287,8 +292,6 @@ export default function AProposPage({ locale }: { locale: Locale }) {
             <ChapterTitle id="apropos-engagements">{t.promises.title}</ChapterTitle>
             <Reveal delay={0.1}>
               <p className="mt-6 text-base leading-relaxed text-moss">
-                {address}
-                <br />
                 <a href={site.phoneHref} className="font-semibold text-mist underline-offset-4 hover:text-emerald hover:underline">
                   {site.phone}
                 </a>

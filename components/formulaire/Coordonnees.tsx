@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock, Mail, MapPin, Phone } from "lucide-react";
+import { Clock, Mail, Mailbox, Phone } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
 import "../formulaire.css";
@@ -9,34 +9,29 @@ const contenu = {
     text: "Un appel ou un courriel suffit pour démarrer. Nous répondons à chaque demande dans un délai de 24 heures.",
     phone: "Téléphone",
     email: "Courriel",
-    address: "Adresse",
-    directions: "Itinéraire",
+    address: "Adresse postale",
     response: "Délai de réponse",
     responseValue: "24 heures maximum",
     personRole: "Président",
-    personText:
-      "Je m'occupe personnellement de chaque demande. Appelez-moi ou écrivez-moi : je vous réponds en moins de 24 heures.",
-    newTab: "(nouvel onglet)",
+    personCall: (nom: string, tel: string) => `Appeler ${nom}, président, au ${tel}`,
   },
   en: {
     title: "Reach us",
     text: "A call or an email is all it takes to get started. We answer every request within 24 hours.",
     phone: "Phone",
     email: "Email",
-    address: "Address",
-    directions: "Directions",
+    address: "Mailing address",
     response: "Response time",
     responseValue: "24 hours maximum",
     personRole: "President",
-    personText:
-      "I personally handle every request. Call or email me and I'll get back to you within 24 hours.",
-    newTab: "(new tab)",
+    personCall: (nom: string, tel: string) => `Call ${nom}, President, at ${tel}`,
   },
 };
 
-/** Coordonnées de la page Contact : grand numéro, liste à filets, mot du président. */
+/** Coordonnées de la page Contact : grand numéro, liste à filets, carte verte du président. */
 export function Coordonnees({ locale }: { locale: Locale }) {
   const t = contenu[locale];
+  const p = site.president;
 
   return (
     <div className="tlf">
@@ -68,22 +63,14 @@ export function Coordonnees({ locale }: { locale: Locale }) {
         </div>
         <div className="flex gap-4 border-b border-line py-4">
           <dt className="sr-only">{t.address}</dt>
-          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-emerald" aria-hidden="true" />
+          <Mailbox className="mt-0.5 h-5 w-5 shrink-0 text-emerald" aria-hidden="true" />
           <dd>
-            <span className="block font-semibold text-mist">{site.address.street}</span>
-            <span className="block text-moss">
-              {site.address.city}, {site.address.province} {site.address.postalCode}
+            <span className="block text-sm text-moss" aria-hidden="true">
+              {t.address}
             </span>
-            <a
-              href={site.address.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="tlf-link mt-1"
-            >
-              {t.directions}
-              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-              <span className="sr-only">{t.newTab}</span>
-            </a>
+            <span className="block text-mist">
+              {site.address.street}, {site.address.city}, {site.address.province} {site.address.postalCode}
+            </span>
           </dd>
         </div>
         <div className="flex gap-4 border-b border-line py-4">
@@ -98,24 +85,29 @@ export function Coordonnees({ locale }: { locale: Locale }) {
         </div>
       </dl>
 
-      <figure className="mt-8 flex gap-4">
-        <span
-          className="inline-grid h-12 w-12 shrink-0 place-items-center rounded-full bg-deep font-display text-base font-bold text-vivid"
-          aria-hidden="true"
-        >
-          AD
-        </span>
-        <div>
-          <blockquote className="text-[0.95rem] leading-relaxed text-moss">{t.personText}</blockquote>
-          <figcaption className="mt-2 text-sm">
-            <span className="font-semibold text-mist">Anthony Després</span>
-            <span className="text-moss">
-              {" "}
-              · {t.personRole}, {site.name}
-            </span>
-          </figcaption>
+      {/* Carte verte du président : nom, titre et ligne directe */}
+      <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[20px] bg-vivid px-4 py-3.5 text-ink sm:inline-flex sm:pr-4">
+        <div className="flex items-center gap-3">
+          <span
+            className="inline-grid h-11 w-11 shrink-0 place-items-center rounded-full bg-deep font-display text-sm font-bold text-vivid"
+            aria-hidden="true"
+          >
+            {p.initials}
+          </span>
+          <p className="leading-tight">
+            <span className="block font-display text-base font-bold">{p.name}</span>
+            <span className="block text-sm text-ink/75">{t.personRole}</span>
+          </p>
         </div>
-      </figure>
+        <a
+          href={p.phoneHref}
+          aria-label={t.personCall(p.name, p.phone)}
+          className="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 font-display text-[15px] font-semibold tabular-nums text-white transition-colors hover:bg-deep"
+        >
+          <Phone className="h-4 w-4 text-vivid" aria-hidden="true" />
+          {p.phone}
+        </a>
+      </div>
     </div>
   );
 }

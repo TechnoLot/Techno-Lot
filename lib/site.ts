@@ -13,6 +13,13 @@ export const site = {
     mapsUrl: "https://maps.app.goo.gl/stDBgbHi1GQzjWdV6",
   },
   facebook: "https://facebook.com/people/Techno-Lot/61568955368416/",
+  /** Président (carte de la page Contact) : ligne directe. */
+  president: {
+    name: "Anthony Després",
+    initials: "AD",
+    phone: "514-404-7496",
+    phoneHref: "tel:+15144047496",
+  },
   slogan:
     "Le spécialiste de l'achat de lots informatiques et électroniques au Québec.",
   description:

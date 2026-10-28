@@ -251,7 +251,7 @@ export default function AchatPage({ locale }: { locale: Locale }) {
         </div>
       </Chapter>
 
-      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} />
+      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} current="/achat-de-lot-description" />
     </>
   );
 }

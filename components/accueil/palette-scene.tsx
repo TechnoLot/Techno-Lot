@@ -22,7 +22,8 @@ const pctY = (v: number) => `${(v / STAGE_H) * 100}%`;
 const finalTransform = (r?: number) => (r ? `rotate(${r}deg)` : "none");
 
 /**
- * Chapitre lime « on se déplace » : la section s'épingle et dix appareils tombent un à un
+ * Chapitre menthe « on se déplace » (fond dégradé doux, halo blanc derrière la palette) :
+ * la section s'épingle et dix appareils tombent un à un
  * sur la palette au défilement, avec un petit rebond ; une fois la palette pleine, l'invitation
  * à soumettre apparaît. Sans JS ou en mouvement réduit : palette déjà chargée, bouton visible.
  */
@@ -165,7 +166,7 @@ export function PaletteScene({ labels, href }: { labels: AccueilContenu["palette
   }, [full]);
 
   return (
-    <section data-theme="lime" aria-labelledby="palette-titre" className="relative text-mist">
+    <section data-theme="mint" aria-labelledby="palette-titre" className="palette-fond relative text-mist">
       <div ref={trackRef} className="relative h-[190vh] motion-reduce:h-auto lg:h-[210vh]">
         <div className="sticky top-0 flex h-[100svh] flex-col pb-6 pt-[calc(var(--site-header-h)+1.25rem)] motion-reduce:static motion-reduce:h-auto motion-reduce:py-20 lg:pb-10 lg:pt-[calc(var(--site-header-h)+2.25rem)]">
           <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 sm:px-8">
@@ -302,8 +303,8 @@ function PaletteItem({
   );
 }
 
-/** Couleurs de la marque, lisibles sur le lime. */
-const CONFETTI_COLORS = ["#0e3a20", "#ffffff", "#e8f5e0", "#0a0f1c", "#2e8b14"];
+/** Couleurs de la marque, lisibles sur le fond menthe. */
+const CONFETTI_COLORS = ["#0e3a20", "#6bd63b", "#34d399", "#0a0f1c", "#2e8b14"];
 
 /** Gerbe de confettis qui jaillit de la palette puis retombe en tournoyant. */
 function Confetti() {

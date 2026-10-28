@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 import { useMotionValueEvent, useReducedMotion, useScroll } from "framer-motion";
 import { CalendarCheck, ClipboardList, HandCoins, Truck } from "lucide-react";
 import { PrimaryButtonLink } from "@/components/site/Button";
@@ -22,7 +22,7 @@ const TEINTES = [
 ] as const;
 
 /**
- * « Comment ça marche ? » : accordéon horizontal de quatre panneaux collés (vertical sur mobile).
+ * « Comment ça marche ? » : accordéon vertical de quatre bandes empilées, qui se lit de haut en bas.
  * La section s'épingle et le défilement ouvre les étapes une à une ; un clic (ou un toucher) sur
  * une bande l'ouvre aussi. Mouvement réduit : pas d'épinglage, ouverture au clic, sans transition.
  */
@@ -59,25 +59,29 @@ export function EtapesAccordeon({ steps, href }: { steps: Steps; href: string })
   return (
     <>
       <div ref={trackRef} className="relative h-[300vh] motion-reduce:h-auto lg:h-[320vh]">
-        <div className="etapes-pin sticky top-0 flex h-[100svh] flex-col pb-5 pt-[calc(var(--site-header-h)+1.25rem)] motion-reduce:static motion-reduce:h-auto motion-reduce:pb-6 motion-reduce:pt-20 lg:justify-center lg:pb-6 lg:pt-[calc(var(--site-header-h)+1rem)]">
-          <div className="relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 sm:px-8 lg:flex-none">
-            {/* Introduction sur deux colonnes */}
-            <div className="grid gap-x-8 gap-y-2 lg:grid-cols-12 lg:items-end">
-              <h2
-                id={`${uid}-titre`}
-                className="font-display text-[clamp(2rem,3.9vw,3.25rem)] font-bold leading-[1.02] tracking-[-0.02em] text-mist lg:col-span-5"
-              >
-                {steps.title}
-              </h2>
-              <p className="max-w-md text-sm leading-relaxed text-moss sm:text-base lg:col-span-5 lg:col-start-7 lg:max-w-none lg:pb-1 lg:text-lg">
-                {steps.subtitle}
-              </p>
+        <div className="etapes-pin sticky top-0 flex h-[100svh] flex-col pb-5 pt-[calc(var(--site-header-h)+1.25rem)] motion-reduce:static motion-reduce:h-auto motion-reduce:pb-6 motion-reduce:pt-20 lg:pb-8">
+          <div className="relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-5 sm:px-8 lg:justify-center">
+            {/* Introduction : titre et sous-titre à gauche, bouton à droite (grand écran) */}
+            <div className="flex items-end justify-between gap-8">
+              <div>
+                <h2
+                  id={`${uid}-titre`}
+                  className="font-display text-[clamp(2rem,3.6vw,3rem)] font-bold leading-[1.02] tracking-[-0.02em] text-mist"
+                >
+                  {steps.title}
+                </h2>
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-moss sm:text-base lg:mt-3 lg:max-w-none">{steps.subtitle}</p>
+              </div>
+              <div className="hidden shrink-0 lg:block">
+                <PrimaryButtonLink href={href}>{steps.cta}</PrimaryButtonLink>
+              </div>
             </div>
 
-            {/* Accordéon */}
+            {/* Accordéon : une bande par étape, l'étape ouverte se déplie vers le bas */}
             <ol
               aria-labelledby={`${uid}-titre`}
-              className="etapes-acc mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] motion-reduce:h-[600px] motion-reduce:flex-none lg:mt-8 lg:h-[min(540px,calc(100svh-var(--site-header-h)-16.5rem))] lg:flex-none lg:flex-row lg:motion-reduce:h-[540px]"
+              style={{ "--etapes-n": n } as CSSProperties}
+              className="etapes-acc mt-5 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] motion-reduce:h-[620px] motion-reduce:flex-none lg:mt-7 lg:max-h-[640px]"
             >
               {items.map((step, i) => {
                 const t = TEINTES[i % TEINTES.length];
@@ -86,63 +90,48 @@ export function EtapesAccordeon({ steps, href }: { steps: Steps; href: string })
                 const panelId = `${uid}-p${i}`;
                 return (
                   <li key={step.title} data-open={on || undefined} className={`etapes-panel relative overflow-hidden ${t.bg} ${t.fg}`}>
-                    {/* Bande : nom de l'étape (tourné à 90° sur grand écran) */}
+                    {/* Bande : icône, nom de l'étape et son numéro, toujours à l'horizontale */}
                     <button
                       id={btnId}
                       type="button"
                       aria-expanded={on}
                       aria-controls={panelId}
                       onClick={() => select(i)}
-                      className={`absolute inset-x-0 top-0 z-10 h-16 text-left focus-visible:outline-offset-[-4px] lg:inset-y-0 lg:h-auto ${
+                      className={`etapes-band absolute inset-x-0 top-0 z-10 text-left focus-visible:outline-offset-[-4px] ${
                         on ? "cursor-default" : "cursor-pointer"
                       }`}
                     >
-                      <span
-                        className={`flex h-full items-center gap-3 px-5 transition-opacity lg:flex-col lg:items-start lg:justify-between lg:p-7 ${
-                          on ? "lg:opacity-0 lg:duration-150" : "lg:opacity-100 lg:delay-200 lg:duration-300"
-                        }`}
-                      >
-                        <span
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border lg:h-11 lg:w-11 ${t.rim}`}
-                        >
-                          <t.Icon className="h-[18px] w-[18px] lg:h-5 lg:w-5" aria-hidden="true" />
+                      <span className="flex h-full items-center gap-3 px-5 sm:gap-4 lg:px-8">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${t.rim}`}>
+                          <t.Icon className="h-[18px] w-[18px]" aria-hidden="true" />
                         </span>
-                        <span className="font-display text-base font-semibold leading-tight sm:text-lg lg:rotate-180 lg:whitespace-nowrap lg:text-xl lg:[writing-mode:vertical-rl]">
+                        <span className="min-w-0 font-display text-base font-semibold leading-tight sm:text-lg lg:text-xl">
                           {step.title}
+                        </span>
+                        <span aria-hidden="true" className={`ml-auto shrink-0 font-display text-sm font-semibold tabular-nums ${t.sub}`}>
+                          {String(i + 1).padStart(2, "0")}
                         </span>
                       </span>
                     </button>
 
-                    {/* Contenu du panneau ouvert : largeur fixe, il ne se recompose pas pendant l'ouverture */}
+                    {/* Contenu de l'étape ouverte : texte puis maquette (côte à côte dès 640 px) */}
                     <div
                       id={panelId}
                       role="region"
                       aria-labelledby={btnId}
-                      className={`etapes-content absolute left-0 top-16 flex flex-col px-5 pb-5 transition-[opacity,transform] ease-out lg:top-0 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-6 lg:p-10 ${
+                      className={`etapes-content absolute left-0 flex flex-col px-5 pb-5 transition-[opacity,transform] ease-out sm:flex-row sm:items-center sm:gap-6 lg:gap-10 lg:px-8 lg:pb-6 ${
                         on ? "translate-y-0 opacity-100 delay-150 duration-500" : "translate-y-3 opacity-0 duration-150"
                       }`}
                     >
-                      <div className="lg:flex lg:flex-col lg:justify-between">
-                        <span
-                          aria-hidden="true"
-                          className={`hidden h-11 w-11 items-center justify-center rounded-full border lg:flex ${t.rim}`}
-                        >
-                          <t.Icon className="h-5 w-5" />
-                        </span>
-                        <div>
-                          <p
-                            aria-hidden="true"
-                            className="hidden text-balance font-display text-[clamp(1.75rem,2.6vw,2.5rem)] font-bold leading-[1.04] tracking-[-0.02em] lg:block"
-                          >
-                            {step.title}
-                          </p>
-                          <p className={`max-w-[34ch] text-sm leading-relaxed sm:text-base lg:mt-4 ${t.sub}`}>{step.text}</p>
-                        </div>
-                      </div>
+                      <p
+                        className={`max-w-[34ch] text-sm leading-relaxed sm:w-[42%] sm:shrink-0 sm:text-base lg:text-xl lg:leading-relaxed ${t.sub}`}
+                      >
+                        {step.text}
+                      </p>
                       <div
                         data-stage
                         aria-hidden="true"
-                        className="etapes-stage relative mt-3 flex min-h-0 flex-1 items-center justify-center overflow-hidden lg:mt-0"
+                        className="etapes-stage relative mt-3 flex min-h-0 flex-1 items-center justify-center overflow-hidden sm:mt-0 sm:h-full"
                       >
                         <MaquetteEtape index={i} mock={steps.mock} play={on && !reduce} />
                       </div>
@@ -151,15 +140,10 @@ export function EtapesAccordeon({ steps, href }: { steps: Steps; href: string })
                 );
               })}
             </ol>
-
-            {/* Grand écran : bouton sous l'accordéon, dans la vue épinglée */}
-            <div className="mt-6 hidden lg:block">
-              <PrimaryButtonLink href={href}>{steps.cta}</PrimaryButtonLink>
-            </div>
           </div>
         </div>
       </div>
-      {/* Mobile : le bouton suit l'accordéon (toute la hauteur épinglée reste aux étapes) */}
+      {/* Mobile et tablette : le bouton suit l'accordéon (toute la hauteur épinglée reste aux étapes) */}
       <div className="mx-auto w-full max-w-6xl px-5 pb-16 pt-1 sm:px-8 lg:hidden">
         <PrimaryButtonLink href={href}>{steps.cta}</PrimaryButtonLink>
       </div>

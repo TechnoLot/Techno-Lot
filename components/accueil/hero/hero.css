@@ -169,6 +169,17 @@
   opacity: 0.05;
 }
 
+/* Fondu du bas : les traînées s'éteignent avant le bord, qui rejoint le dégradé
+   du chapitre « Nos engagements » (même bleu nuit) sans ligne visible. */
+.hero-tl-fondu {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 1;
+  height: 9rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(10, 15, 28, 0), rgba(10, 15, 28, 0.75) 60%, #0a0f1c);
+}
+
 /* ───────────── Composition centrée (sous l'en-tête fixe) ───────────── */
 
 .hero-tl-stage {
@@ -665,6 +676,16 @@
   animation-play-state: paused;
 }
 
+/* Appareil lent (data-lite posé par HeroFx) : on retire les couches les plus coûteuses
+   (grain en mode de fusion, balayage flou) et les lueurs ne respirent plus. */
+.hero-tl-root[data-lite] .hero-tl-grain,
+.hero-tl-root[data-lite] .hero-tl-sweep {
+  display: none;
+}
+.hero-tl-root[data-lite] .hero-tl-glow > span {
+  animation: none;
+}
+
 /* ───────────── Mobile et petits écrans ───────────── */
 
 @media (max-width: 767px) {
@@ -674,6 +695,10 @@
   }
   .hero-tl-sticky {
     min-height: 600px;
+  }
+  /* Téléphones : le grain (fusion de calques sur tout l'écran) coûte cher pour un effet invisible */
+  .hero-tl-grain {
+    display: none;
   }
 }
 @media (max-width: 639px) {

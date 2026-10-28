@@ -80,15 +80,28 @@ const fr = {
     footer: {
       slogan: "Le spécialiste de l'achat de lots informatiques et électroniques au Québec.",
       navTitle: "Navigation du pied de page",
-      contactTitle: "Coordonnées",
+      contactTitle: "Nous joindre",
       backToTop: "Haut de page",
-      city: "Mascouche, Québec",
+      postalLabel: "Adresse postale",
       callAria: "Appelez-nous au",
       emailAria: "Écrivez-nous à",
       response: "Réponse garantie en 24 h",
     },
     orCallUs: "ou appelez-nous au",
-    cta24: { value: "24 h", label: "Réponse garantie" },
+    /** Ruban de liens qui défile sous les appels à l'action (chemins non localisés) */
+    liensUtiles: {
+      label: "Liens utiles",
+      items: [
+        { href: "/soumission", label: "Faire une soumission" },
+        { href: "/consultation", label: "Estimation de votre lot" },
+        { href: "/achat-de-lot-description", label: "Ce que nous rachetons" },
+        { href: "/prise-en-charge-complete", label: "Prise en charge complète" },
+        { href: "/faq", label: "Questions fréquentes" },
+        { href: "/contact", label: "Nous joindre" },
+        { href: "/a-propos", label: "À propos" },
+        { href: "/blog", label: "Blog" },
+      ],
+    },
   },
   marquee: [
     "Ordinateurs et portables",
@@ -167,9 +180,6 @@ const fr = {
   },
   timeline: {
     step: "Étape",
-  },
-  map: {
-    titlePrefix: "Carte — Techno Lot,",
   },
   form: {
     honeypotLabel: "Ne pas remplir ce champ",
@@ -291,15 +301,27 @@ const en: Dict = {
     footer: {
       slogan: "The specialist in buying IT and electronic equipment lots in Québec.",
       navTitle: "Footer navigation",
-      contactTitle: "Contact information",
+      contactTitle: "Reach us",
       backToTop: "Back to top",
-      city: "Mascouche, Québec",
+      postalLabel: "Mailing address",
       callAria: "Call us at",
       emailAria: "Email us at",
       response: "Guaranteed response within 24 h",
     },
     orCallUs: "or call us at",
-    cta24: { value: "24 h", label: "Guaranteed response" },
+    liensUtiles: {
+      label: "Useful links",
+      items: [
+        { href: "/soumission", label: "Get a quote" },
+        { href: "/consultation", label: "Lot appraisal" },
+        { href: "/achat-de-lot-description", label: "What we buy" },
+        { href: "/prise-en-charge-complete", label: "Full-service pickup" },
+        { href: "/faq", label: "FAQ" },
+        { href: "/contact", label: "Contact us" },
+        { href: "/a-propos", label: "About" },
+        { href: "/blog", label: "Blog" },
+      ],
+    },
   },
   marquee: [
     "Computers and laptops",
@@ -376,9 +398,6 @@ const en: Dict = {
   },
   timeline: {
     step: "Step",
-  },
-  map: {
-    titlePrefix: "Map — Techno Lot,",
   },
   form: {
     honeypotLabel: "Do not fill in this field",

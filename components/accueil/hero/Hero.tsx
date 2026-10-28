@@ -63,6 +63,8 @@ export function Hero({ locale }: { locale: Locale }) {
         <HeroFx />
 
         <div aria-hidden="true" className="hero-tl-grain" />
+        {/* Bas du héros fondu dans le bleu nuit : raccord invisible avec le chapitre suivant */}
+        <div aria-hidden="true" className="hero-tl-fondu" />
 
         <div className="hero-tl-stage">
           <div className="hero-tl-content">

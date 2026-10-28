@@ -1,11 +1,10 @@
+import Image from "next/image";
 import { PageHero } from "@/components/site/PageHero";
 import { PrimaryButtonLink } from "@/components/site/Button";
 import { Reveal } from "@/components/site/Reveal";
 import SubmissionForm from "@/components/SubmissionForm";
-import MapEmbed from "@/components/MapEmbed";
 import { Coordonnees } from "@/components/formulaire/Coordonnees";
-import { site } from "@/lib/site";
-import type { Locale } from "@/lib/i18n";
+import { localePath, type Locale } from "@/lib/i18n";
 
 const content = {
   fr: {
@@ -13,20 +12,22 @@ const content = {
     intro:
       "Une question, un lot à faire évaluer ou un projet de prise en charge ? Appelez-nous ou décrivez votre matériel : nous vous répondons dans un délai de 24 heures.",
     contactLabel: "Coordonnées et formulaire",
-    mapTitle: "Où nous trouver",
-    mapText:
-      "Nous sommes situés à Mascouche, mais c'est nous qui nous déplaçons : le ramassage est gratuit partout au Québec. Notre équipe se rend sur place pour emballer, charger et transporter votre matériel.",
-    directions: "Itinéraire",
+    travelTitle: "On se déplace chez vous",
+    travelText:
+      "Pas besoin de vous déplacer : notre équipe se rend sur place, partout au Québec, pour emballer, charger et transporter votre matériel, gratuitement.",
+    travelCta: "Faire une soumission",
+    truckAlt: "Camion de ramassage Techno Lot",
   },
   en: {
     title: "Let's talk about your lot",
     intro:
       "A question, a lot to appraise or a full-service pickup project? Call us or describe your equipment: we get back to you within 24 hours.",
     contactLabel: "Contact details and form",
-    mapTitle: "Where to find us",
-    mapText:
-      "We're based in Mascouche, but we're the ones who travel: pickup is free anywhere in Québec. Our team comes on site to pack, load and transport your equipment.",
-    directions: "Directions",
+    travelTitle: "We come to you",
+    travelText:
+      "No need to travel: our team comes on site, anywhere in Québec, to pack, load and transport your equipment, free of charge.",
+    travelCta: "Get a quote",
+    truckAlt: "Techno Lot pickup truck",
   },
 };
 
@@ -51,25 +52,34 @@ export default function ContactPage({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      <section data-theme="deep" aria-labelledby="contact-carte" className="tlf relative isolate overflow-hidden py-14 sm:py-20">
+      {/* Vert profond : c'est nous qui nous déplaçons (aucun comptoir à visiter) */}
+      <section data-theme="deep" aria-labelledby="contact-deplacement" className="tlf relative isolate overflow-hidden py-14 sm:py-20">
         <div aria-hidden="true" className="tlf-glow" />
         <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 sm:px-8 lg:grid-cols-12">
           <Reveal className="lg:col-span-5">
-            <h2 id="contact-carte" className="font-display text-3xl font-bold leading-tight text-mist sm:text-4xl">
-              {t.mapTitle}
+            <h2 id="contact-deplacement" className="font-display text-3xl font-bold leading-tight text-mist sm:text-4xl">
+              {t.travelTitle}
             </h2>
-            <p className="mt-5 font-display text-xl font-semibold leading-snug text-mist">
-              {site.address.street}
-              <br />
-              {site.address.city}, {site.address.province} {site.address.postalCode}
-            </p>
-            <p className="mt-4 max-w-md text-base leading-relaxed text-moss">{t.mapText}</p>
-            <PrimaryButtonLink href={site.address.mapsUrl} className="mt-7">
-              {t.directions}
+            <p className="mt-4 max-w-md text-base leading-relaxed text-moss sm:text-lg">{t.travelText}</p>
+            <PrimaryButtonLink href={localePath(locale, "/soumission")} className="mt-7">
+              {t.travelCta}
             </PrimaryButtonLink>
           </Reveal>
           <Reveal className="lg:col-span-7" delay={0.08}>
-            <MapEmbed locale={locale} className="h-[320px] sm:h-[420px]" />
+            <div className="relative mx-auto w-full max-w-[560px]">
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-[6%] bottom-0 top-[8%] rounded-full bg-[radial-gradient(closest-side,rgba(107,214,59,0.24),transparent)]"
+              />
+              <Image
+                src="/images/camion/camion-techno-lot.webp"
+                alt={t.truckAlt}
+                width={1200}
+                height={497}
+                sizes="(max-width: 1024px) 90vw, 560px"
+                className="relative h-auto w-full drop-shadow-[0_24px_24px_rgba(0,0,0,0.4)]"
+              />
+            </div>
           </Reveal>
         </div>
       </section>

@@ -13,6 +13,7 @@ import { useEffect, useRef } from "react";
  *   --hp         progression de l'épinglage (0..1) → recul du logo et des titres
  *   --hero-logo-url, data-fx  image du logo pour les calques masqués (reflet, glitch)
  *   data-glitch (sur le logo), data-pointer, data-warp, data-paused
+ *   data-lite  ordinateur ou téléphone lent : moins de particules, décor allégé
  */
 
 type Particle = {
@@ -42,6 +43,11 @@ const TAU = Math.PI * 2;
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
+/** Mode allégé : en dessous d'environ 40 images/s en moyenne, l'effet se simplifie. */
+const SLOW_FRAME_MS = 25;
+const PERF_SAMPLE = 90;
+const LITE_SHARE = 0.55;
+
 export function HeroFx() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -54,7 +60,8 @@ export function HeroFx() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const coarse = window.matchMedia("(pointer: coarse)").matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let lite = false;
 
     let w = 0;
     let h = 0;
@@ -76,7 +83,8 @@ export function HeroFx() {
 
     function particleCount() {
       const area = w * h;
-      return Math.round(clamp(area / (small() ? 9500 : 10500), 26, small() ? 56 : 130));
+      const n = clamp(area / (small() ? 9500 : 10500), 26, small() ? 56 : 130);
+      return Math.round(lite ? Math.max(20, n * LITE_SHARE) : n);
     }
 
     function spawn(): Particle {
@@ -170,12 +178,12 @@ export function HeroFx() {
         p.x += p.vx * dt;
         p.y += p.vy * dt;
 
-        // hyperespace : fuite radiale depuis le centre, de plus en plus rapide
+        // hyperespace : fuite radiale depuis le centre, qui accélère doucement
         if (warp > 0.002) {
           const dx = p.x - cx;
           const dy = p.y - cy;
           const d = Math.sqrt(dx * dx + dy * dy) || 1;
-          const sp = warp * warp * (d * 0.06 + 1.5) * p.z;
+          const sp = warp * warp * (d * 0.04 + 1.1) * p.z;
           p.x += (dx / d) * sp * dt;
           p.y += (dy / d) * sp * dt;
           p.s = sp;
@@ -258,10 +266,10 @@ export function HeroFx() {
         }
       }
 
-      // traînées de l'hyperespace
+      // traînées de l'hyperespace : courtes et discrètes (le passage vers la suite reste doux)
       if (warp > 0.01) {
         ctx!.lineCap = "round";
-        ctx!.lineWidth = 1 + warp * 1.2;
+        ctx!.lineWidth = 1 + warp * 0.6;
         for (let c = 0; c < COLORS.length; c++) {
           ctx!.beginPath();
           for (const p of particles) {
@@ -269,11 +277,11 @@ export function HeroFx() {
             const dx = p.x - cx;
             const dy = p.y - cy;
             const d = Math.sqrt(dx * dx + dy * dy) || 1;
-            const len = Math.min(p.s * 7, 260);
+            const len = Math.min(p.s * 4.5, 140);
             ctx!.moveTo(p.x - (dx / d) * len, p.y - (dy / d) * len);
             ctx!.lineTo(p.x, p.y);
           }
-          ctx!.strokeStyle = `rgba(${COLORS[c]}, ${(0.18 + warp * 0.55).toFixed(3)})`;
+          ctx!.strokeStyle = `rgba(${COLORS[c]}, ${(0.12 + warp * 0.3).toFixed(3)})`;
           ctx!.stroke();
         }
       }
@@ -340,15 +348,36 @@ export function HeroFx() {
     let last = 0;
     let started = false;
     let inView = true;
+    let perfFrames = 0;
+    let perfSum = 0;
 
     const canRun = () => started && inView && !document.hidden;
 
     const writeVar = (name: string, value: number) => root.style.setProperty(name, value.toFixed(3));
 
+    /** Appareil lent : moins de particules, canevas en résolution 1x, décor CSS allégé (data-lite). */
+    const goLite = () => {
+      lite = true;
+      dpr = 1;
+      root.dataset.lite = "1";
+      w = 0;
+      h = 0;
+      resize();
+    };
+
     function loop(now: number) {
       raf = 0;
       if (!canRun()) return;
       const dt = last ? Math.min((now - last) / 16.667, 3) : 1;
+      // Mesure de la fluidité (images réellement enchaînées seulement)
+      if (!lite && last && now - last < 250) {
+        perfSum += now - last;
+        if (++perfFrames >= PERF_SAMPLE) {
+          if (perfSum / perfFrames > SLOW_FRAME_MS) goLite();
+          perfFrames = 0;
+          perfSum = 0;
+        }
+      }
       last = now;
 
       // pointeur lissé : rapide pour le logo, lent pour les lueurs

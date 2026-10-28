@@ -7,8 +7,9 @@ import { InkButtonLink, PrimaryButtonLink } from "@/components/site/Button";
 import { localePath, type Locale } from "@/lib/i18n";
 import { B, Chapter, ChapterTitle } from "./services/Chapter";
 import { Parallax } from "./services/Parallax";
+import { PaymentFrame } from "./services/PaymentFrame";
 import { PinnedSteps } from "./services/PinnedSteps";
-import { ObjectFrame, OfferFrame, PaymentFrame } from "./services/scenes";
+import { ObjectFrame, OfferFrame } from "./services/scenes";
 import "./pages-services.css";
 
 const content = {
@@ -28,7 +29,9 @@ const content = {
       offerLabel: "Votre offre",
       offerBig: "24 h",
       offerCaption: "Notre offre arrive dans votre boîte courriel.",
+      paySuffix: " %",
       payCaption: "au ramassage",
+      payCaptionEnd: "après l'inspection",
       payNote: "Inspection : 15 jours ouvrables max.",
       items: [
         {
@@ -85,7 +88,9 @@ const content = {
       offerLabel: "Your offer",
       offerBig: "24 h",
       offerCaption: "Our offer lands in your inbox.",
+      paySuffix: "%",
       payCaption: "at pickup",
+      payCaptionEnd: "after inspection",
       payNote: "Inspection: 15 business days max.",
       items: [
         {
@@ -179,7 +184,7 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
           <ObjectFrame key="a" src="/images/services/soumission.webp" w={827} h={408} width="66%" tags={s.tags} />,
           <OfferFrame key="b" label={s.offerLabel} big={s.offerBig} caption={s.offerCaption} />,
           <ObjectFrame key="c" src="/images/camion/camion-techno-lot.webp" w={1200} h={497} width="86%" />,
-          <PaymentFrame key="d" value={locale === "fr" ? "50 %" : "50%"} caption={s.payCaption} note={s.payNote} />,
+          <PaymentFrame key="d" suffix={s.paySuffix} captionStart={s.payCaption} captionEnd={s.payCaptionEnd} note={s.payNote} />,
         ]}
       />
 
@@ -208,7 +213,7 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
         </div>
       </Chapter>
 
-      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} />
+      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} current="/consultation" />
     </>
   );
 }

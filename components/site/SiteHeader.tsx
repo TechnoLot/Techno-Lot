@@ -13,16 +13,25 @@ import { site } from "@/lib/site";
 
 type NavItem = { label: string; href: string };
 
+/** En dessous de cette position (px), l'en-tête reste toujours affiché. */
+const TOUJOURS_VISIBLE = 140;
+/** Déplacement minimal (px) avant de cacher ou de réafficher l'en-tête. */
+const SEUIL = 6;
+
 /**
  * En-tête du site public : barre du haut noire (téléphone, phrase en lime,
  * FR/EN) + barre de navigation noire #0a0a0a (logo horizontal foncé, liens
  * blancs, menu Services déroulant bleu nuit, bouton « Faire une soumission »),
  * menu mobile sombre. Hauteur totale fixe : 112 px (40 + 72) — voir --site-header-h.
+ * Il glisse hors de l'écran quand on descend et revient dès qu'on remonte un peu ;
+ * il reste affiché en haut de page, menu ouvert ou focus clavier dedans.
  */
 export function SiteHeader({ locale }: { locale: Locale }) {
   const t = getDict(locale);
   const s = t.shell;
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [focusWithin, setFocusWithin] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,11 +40,34 @@ export function SiteHeader({ locale }: { locale: Locale }) {
   const reduce = useReducedMotion();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    onScroll();
+    let lastY = Math.max(0, window.scrollY);
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const y = Math.max(0, window.scrollY);
+      setScrolled(y > 24);
+      if (y < TOUJOURS_VISIBLE) {
+        setHidden(false);
+        lastY = y;
+        return;
+      }
+      // Les petits écarts s'accumulent jusqu'au seuil (défilement lissé, tremblements du tactile)
+      const dy = y - lastY;
+      if (Math.abs(dy) < SEUIL) return;
+      setHidden(dy > 0);
+      lastY = y;
+    };
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const hide = hidden && !mobileOpen && !servicesOpen && !focusWithin;
 
   // Ferme les menus à chaque navigation
   useEffect(() => {
@@ -104,7 +136,16 @@ export function SiteHeader({ locale }: { locale: Locale }) {
     }`;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50">
+    <div
+      data-hidden={hide || undefined}
+      onFocus={() => setFocusWithin(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false);
+      }}
+      className={`fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform motion-reduce:transition-none ${
+        hide ? "-translate-y-full" : "translate-y-0"
+      }`}
+    >
       {/* Barre du haut — noire */}
       <div className="bg-black">
         <div className="mx-auto flex h-10 w-full max-w-6xl items-center justify-between gap-4 px-5 text-xs sm:px-8">
@@ -125,7 +166,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
       {/* Barre de navigation — noire, un cran sous la barre du haut */}
       <header
         className={`bg-[#0a0a0a] transition-shadow duration-300 ${
-          scrolled || mobileOpen ? "shadow-[0_14px_30px_-18px_rgba(0,0,0,0.9)]" : ""
+          (scrolled && !hide) || mobileOpen ? "shadow-[0_14px_30px_-18px_rgba(0,0,0,0.9)]" : ""
         }`}
       >
         <div className="mx-auto flex h-[72px] w-full max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">

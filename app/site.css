@@ -673,6 +673,22 @@ html.lenis body {
   50% { transform: translate3d(0, -14px, 0) rotate(1deg); }
 }
 
+/* Logo qui bouge (héros d'À propos) : il flotte en pivotant doucement, le halo respire */
+.tl-logo-move {
+  animation: tlLogoMove 9s ease-in-out infinite;
+}
+.tl-logo-halo {
+  animation: tlLogoHalo 4.5s ease-in-out infinite;
+}
+@keyframes tlLogoMove {
+  0%, 100% { transform: translate3d(0, 0, 0) rotateY(-10deg) rotateX(3deg); }
+  50% { transform: translate3d(0, -14px, 0) rotateY(10deg) rotateX(-3deg); }
+}
+@keyframes tlLogoHalo {
+  0%, 100% { opacity: 0.7; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
 /* ------------------------------------------------------------------ */
 /* Mouvement réduit                                                    */
 /* (app/globals.css raccourcit déjà toutes les animations)             */
@@ -684,7 +700,9 @@ html.lenis body {
   .hero-digit,
   .tl-glow-a,
   .tl-glow-b,
-  .tl-float {
+  .tl-float,
+  .tl-logo-move,
+  .tl-logo-halo {
     animation: none !important;
   }
   .tl-reveal[data-armed]:not([data-in]) {

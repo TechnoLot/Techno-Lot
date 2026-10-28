@@ -14,6 +14,7 @@ import {
   composerMessage,
   formatTaille,
   getTextesFormulaire,
+  type Autre,
   type Quantites,
 } from "@/components/formulaire/textes";
 import "./formulaire.css";
@@ -59,6 +60,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   const [values, setValues] = useState<Valeurs>(VIDE);
   const [touched, setTouched] = useState<Partial<Record<ChampContact, boolean>>>({});
   const [quantites, setQuantites] = useState<Quantites>({});
+  const [autres, setAutres] = useState<Autre[]>([]);
   const [inventaire, setInventaire] = useState<FichierJoint[]>([]);
   const [photos, setPhotos] = useState<FichierJoint[]>([]);
   const [rejet, setRejet] = useState("");
@@ -223,6 +225,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     setPhotos([]);
     setValues(VIDE);
     setQuantites({});
+    setAutres([]);
     setTouched({});
     setRejet("");
   }
@@ -259,6 +262,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
       "message",
       composerMessage({
         quantites,
+        autres,
         entreprise: values.entreprise,
         ville: values.ville,
         description: values.message,
@@ -319,7 +323,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
 
   const visible = (i: number) => !enhanced || step === i;
   const loading = status === "loading";
-  const choisies = CATEGORIES.filter((c) => quantites[c] !== undefined);
+  const choisies = CATEGORIES.filter((c) => c !== "autre" && quantites[c] !== undefined);
   const fichiers = [...inventaire, ...photos];
   const taille = (n: number) => formatTaille(n, locale);
   const filesErrId = id("fichiers-err");
@@ -410,7 +414,14 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
           <p className="tlf-stage-hint">{t.materialHint}</p>
 
           <div className="mt-6">
-            <Categories t={t} quantites={quantites} onChange={setQuantites} onAnnounce={annoncer} />
+            <Categories
+              t={t}
+              quantites={quantites}
+              onChange={setQuantites}
+              autres={autres}
+              onAutresChange={setAutres}
+              onAnnounce={annoncer}
+            />
           </div>
 
           <div className="mt-7">
@@ -548,12 +559,18 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
                   <EditButton label={t.edit} section={t.reviewMaterial} onClick={() => allerA(0)} disabled={loading} />
                 </dt>
                 <dd>
-                  {choisies.length > 0 ? (
+                  {choisies.length > 0 || autres.length > 0 ? (
                     <ul className="space-y-0.5">
                       {choisies.map((c) => (
                         <li key={c}>
                           {t.categories[c]} <span className="text-moss">·</span>{" "}
                           <span className="font-semibold tabular-nums">{quantites[c] ?? t.qtyUnknown}</span>
+                        </li>
+                      ))}
+                      {autres.map((a) => (
+                        <li key={a.id}>
+                          {a.nom.trim() || t.otherUnnamed} <span className="text-moss">·</span>{" "}
+                          <span className="font-semibold tabular-nums">{a.qte ?? t.qtyUnknown}</span>
                         </li>
                       ))}
                     </ul>

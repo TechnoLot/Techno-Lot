@@ -1,7 +1,7 @@
 import { Phone } from "lucide-react";
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { PrimaryButtonLink } from "@/components/site/Button";
+import { LiensDefilants } from "@/components/site/LiensDefilants";
 import { Reveal } from "@/components/site/Reveal";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
@@ -14,17 +14,17 @@ type CtaBannerProps = {
   buttonLabel?: string;
   /** Chemin NON localisé du bouton (défaut : /soumission) */
   href?: string;
-  /** Thème du chapitre autour des tuiles (sand / cream = anciens noms, rendus en blanc) */
+  /** Chemin NON localisé de la page courante : retiré du ruban de liens utiles */
+  current?: string;
+  /** Thème du chapitre autour de la carte (sand / cream = anciens noms, rendus en blanc) */
   background?: "light" | "night" | "deep" | "mint" | "dark" | "sand" | "cream";
   className?: string;
 };
 
 /**
- * Appel à l'action de bas de page : rangée de trois tuiles pleine largeur.
- * Au centre, la grande tuile lime (titre, texte, bouton bleu nuit, téléphone) ;
- * de part et d'autre, deux tuiles étroites coupées par les bords de l'écran
- * (bleu nuit avec « 24 h » et lueur ; menthe avec la palette pleine).
- * Empilée sur mobile. Composant serveur ; tuiles révélées en cascade.
+ * Appel à l'action de bas de page, simple : une carte lime (titre, texte, bouton,
+ * téléphone discret), puis un ruban de liens utiles qui défile (services, FAQ,
+ * contact, téléphone). Composant serveur ; seul le ruban est animé.
  */
 export function CtaBanner({
   locale,
@@ -32,84 +32,42 @@ export function CtaBanner({
   text,
   buttonLabel,
   href = "/soumission",
+  current,
   background = "light",
   className,
 }: CtaBannerProps) {
   const t = getDict(locale);
   const theme = background === "sand" || background === "cream" ? "light" : background;
+  const exclude = current ? [href, current] : [href];
 
   return (
     <section data-theme={theme} className={`relative overflow-hidden py-14 sm:py-20 ${className ?? ""}`}>
-      <div className="grid grid-cols-2 gap-3 px-5 sm:px-8 lg:grid-cols-[minmax(4.5rem,1fr)_minmax(0,60rem)_minmax(4.5rem,1fr)] lg:px-0">
-        {/* Tuile bleu nuit — coupée par le bord gauche */}
-        <Reveal className="order-2 lg:order-1 lg:-ml-10" delay={0.08}>
-          <div
-            data-theme="night"
-            className="relative flex h-full min-h-[11rem] flex-col justify-end overflow-hidden rounded-[28px] p-6 lg:min-h-[26rem] lg:rounded-l-none lg:pl-16"
-          >
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-1/3 -left-1/3 h-[140%] w-[160%] bg-[radial-gradient(circle_at_center,rgba(94,203,51,0.22),transparent_60%)]"
-            />
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-[radial-gradient(rgba(139,233,95,0.22)_1px,transparent_1.5px)] [background-size:18px_18px] [mask-image:linear-gradient(to_top,black,transparent_85%)]"
-            />
-            <p className="relative lg:hidden xl:block">
-              <span className="block font-display text-5xl font-bold leading-none tracking-[-0.03em] text-[#8BE95F]">
-                {t.shell.cta24.value}
-              </span>
-              <span className="mt-2 block text-sm leading-snug text-moss">{t.shell.cta24.label}</span>
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Tuile centrale lime */}
-        <Reveal className="order-1 col-span-2 lg:order-2 lg:col-span-1">
+      <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+        <Reveal>
           <div
             data-theme="lime"
-            className="relative flex h-full flex-col justify-center overflow-hidden rounded-[28px] px-6 py-12 text-mist sm:px-12 sm:py-16 lg:min-h-[26rem] lg:px-16"
+            className="grid gap-8 rounded-[28px] px-6 py-10 text-mist sm:px-10 sm:py-12 lg:grid-cols-12 lg:items-center lg:gap-10 lg:px-14"
           >
-            <h2 className="max-w-2xl text-balance font-display text-[2.125rem] font-bold leading-[1.02] tracking-[-0.025em] sm:text-5xl lg:text-[3.25rem]">
-              {title}
-            </h2>
-            {text && <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-moss sm:text-lg">{text}</p>}
-            <div className="mt-9 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7">
-              <PrimaryButtonLink href={localePath(locale, href)}>
-                {buttonLabel ?? t.cta.defaultButton}
-              </PrimaryButtonLink>
-              <a
-                href={site.phoneHref}
-                className="group inline-flex items-center gap-2.5 font-display text-base font-semibold text-mist"
-              >
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-night-900 text-[#8BE95F] transition-transform duration-300 group-hover:scale-110">
-                  <Phone className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <span className="underline-offset-4 group-hover:underline">
+            <div className="lg:col-span-7">
+              <h2 className="text-balance font-display text-[2rem] font-bold leading-[1.04] tracking-[-0.02em] sm:text-[2.5rem] lg:text-[2.75rem]">
+                {title}
+              </h2>
+              {text && <p className="mt-4 max-w-xl text-base leading-relaxed text-moss sm:text-lg">{text}</p>}
+            </div>
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-7 lg:col-span-5 lg:flex-col lg:items-end lg:gap-4">
+              <PrimaryButtonLink href={localePath(locale, href)}>{buttonLabel ?? t.cta.defaultButton}</PrimaryButtonLink>
+              <a href={site.phoneHref} className="group inline-flex items-center gap-2 font-display text-[15px] font-semibold text-ink">
+                <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="underline decoration-ink/30 decoration-2 underline-offset-4 transition-colors group-hover:decoration-ink">
                   {t.shell.orCallUs} {site.phone}
                 </span>
               </a>
             </div>
           </div>
         </Reveal>
-
-        {/* Tuile menthe — palette pleine, coupée par le bord droit */}
-        <Reveal className="order-3 lg:-mr-10" delay={0.16}>
-          <div
-            data-theme="mint"
-            className="relative h-full min-h-[11rem] overflow-hidden rounded-[28px] lg:min-h-[26rem] lg:rounded-r-none"
-          >
-            <Image
-              src="/images/palette/palette-pleine.webp"
-              alt=""
-              width={1000}
-              height={1082}
-              sizes="(max-width: 1024px) 50vw, 320px"
-              className="absolute -bottom-[6%] left-[8%] h-auto w-[115%] max-w-none lg:left-[10%] lg:w-[150%]"
-            />
-          </div>
-        </Reveal>
       </div>
+
+      <LiensDefilants locale={locale} exclude={exclude} className="mt-8 sm:mt-10" />
     </section>
   );
 }

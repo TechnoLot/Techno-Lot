@@ -4,14 +4,15 @@ import { Constellation } from "@/components/site/Constellation";
 
 export type PageHeroImage =
   | { kind: "object"; src: string; alt?: string; width?: number }
-  | { kind: "photo"; src: string; alt?: string };
+  | { kind: "photo"; src: string; alt?: string }
+  | { kind: "logo"; alt?: string };
 
 type PageHeroProps = {
   /** Ignoré (pas de surtitre dans la direction artistique) ; gardé pour compatibilité. */
   eyebrow?: string;
   title: ReactNode;
   intro?: ReactNode;
-  /** object = objet détouré qui flotte à droite ; photo = image cadrée */
+  /** object = objet détouré qui flotte à droite ; photo = image cadrée ; logo = logo empilé qui bouge */
   image?: PageHeroImage;
   /** compact : titre et marges réduits (ex. Contact, Soumission) */
   size?: "default" | "compact";
@@ -113,6 +114,30 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
                     priority
                     sizes="(max-width: 1024px) 70vw, 420px"
                     className="h-auto w-full drop-shadow-[0_28px_30px_rgba(0,0,0,0.5)]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {image?.kind === "logo" && (
+          <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[360px] lg:col-span-5 lg:max-w-none">
+            <div className="relative aspect-square">
+              <div
+                aria-hidden="true"
+                className="tl-logo-halo absolute inset-[8%] rounded-full bg-[radial-gradient(circle_at_center,rgba(94,203,51,0.3),transparent_66%)]"
+              />
+              <div className="absolute inset-0 flex items-center justify-center [perspective:900px]">
+                <div className="tl-logo-move w-[84%]">
+                  <Image
+                    src="/logo.png"
+                    alt={image.alt ?? ""}
+                    width={1919}
+                    height={1158}
+                    priority
+                    sizes="(max-width: 640px) 240px, (max-width: 1024px) 300px, 400px"
+                    className="h-auto w-full drop-shadow-[0_24px_28px_rgba(0,0,0,0.45)]"
                   />
                 </div>
               </div>

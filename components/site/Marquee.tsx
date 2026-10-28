@@ -9,6 +9,10 @@ type MarqueeProps = {
   className?: string;
   /** Vitesse de base en px/s */
   speed?: number;
+  /** Accélération donnée par le défilement de la page (px/s par px défilé) */
+  scrollBoost?: number;
+  /** Vitesse ajoutée maximale (px/s) */
+  maxBoost?: number;
 };
 
 /**
@@ -16,7 +20,7 @@ type MarqueeProps = {
  * Pause au survol et au focus ; en mouvement réduit, il devient une rangée
  * qu'on fait défiler soi-même. Le contenu est dupliqué (copie aria-hidden + inert).
  */
-export function Marquee({ children, label, className, speed = 38 }: MarqueeProps) {
+export function Marquee({ children, label, className, speed = 38, scrollBoost = 6, maxBoost = 900 }: MarqueeProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const halfRef = useRef<HTMLDivElement>(null);
@@ -61,7 +65,7 @@ export function Marquee({ children, label, className, speed = 38 }: MarqueeProps
       const dy = y - lastY;
       lastY = y;
       if (Math.abs(dy) > 0.5) dir = dy > 0 ? -1 : 1;
-      boost = Math.min(900, boost + Math.abs(dy) * 6);
+      boost = Math.min(maxBoost, boost + Math.abs(dy) * scrollBoost);
     };
 
     const io = new IntersectionObserver(([entry]) => {
@@ -89,7 +93,7 @@ export function Marquee({ children, label, className, speed = 38 }: MarqueeProps
       root.removeEventListener("focusout", leave);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [speed]);
+  }, [speed, scrollBoost, maxBoost]);
 
   return (
     <div

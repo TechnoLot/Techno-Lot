@@ -256,7 +256,7 @@ export default function PriseEnChargePage({ locale }: { locale: Locale }) {
         </ul>
       </Chapter>
 
-      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} />
+      <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} current="/prise-en-charge-complete" />
     </>
   );
 }

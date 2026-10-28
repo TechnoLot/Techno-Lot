@@ -89,7 +89,6 @@ export type AccueilContenu = {
     eyebrow: string;
     title: string;
     text: string;
-    address: string;
     regions: string[];
     marqueeLabel: string;
     cities: string[];
@@ -109,7 +108,6 @@ export type AccueilContenu = {
     title: string;
     subtitle: string;
     button: string;
-    orCall: string;
   };
 };
 
@@ -243,7 +241,6 @@ const fr: AccueilContenu = {
     eyebrow: "Zones desservies",
     title: "Partout au Québec",
     text: `Où que vous soyez au Québec, notre équipe vient chercher votre matériel gratuitement. Aucun minimum${NBSP}: petit lot ou parc complet.`,
-    address: `Siège social${NBSP}: 3235 Av. de la Gare, Mascouche`,
     regions: ["Grand Montréal", "Rive-Nord et Rive-Sud", "Québec et environs", "Toutes les régions"],
     marqueeLabel: "Quelques villes où nous passons",
     cities: CITIES,
@@ -311,7 +308,6 @@ const fr: AccueilContenu = {
     title: `Prêt à vendre votre matériel${NBSP}?`,
     subtitle: "Ramassage gratuit partout au Québec",
     button: "Faire une soumission",
-    orCall: "ou appelez-nous au",
   },
 };
 
@@ -408,7 +404,6 @@ const en: AccueilContenu = {
     eyebrow: "Service area",
     title: "Anywhere in Québec",
     text: "Wherever you are in Québec, our team picks up your equipment free of charge. No minimum: small lot or full fleet.",
-    address: "Head office: 3235 Av. de la Gare, Mascouche",
     regions: ["Greater Montréal", "North and South Shores", "Québec City area", "Every region"],
     marqueeLabel: "Some of the cities we serve",
     cities: CITIES,
@@ -476,7 +471,6 @@ const en: AccueilContenu = {
     title: "Ready to sell your equipment?",
     subtitle: "Free pickup anywhere in Québec",
     button: "Get a quote",
-    orCall: "or call us at",
   },
 };
 

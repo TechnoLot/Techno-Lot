@@ -1,21 +1,14 @@
 import type { Locale } from "@/lib/i18n";
 
-/** Textes de la carte interactive « Partout au Québec » (FR + EN). */
+/** Textes de la carte « Partout au Québec » (FR + EN). */
 export type ContenuCarte = {
   /** Mention mise en évidence sous le paragraphe. */
   minimum: string;
-  /** Lien d'adresse : précision pour lecteurs d'écran. */
-  newTab: string;
-  /** Repère du siège social sur la carte. */
-  hqName: string;
-  hqCity: string;
   /** Titre et description de la carte (accessibilité). */
   mapTitle: string;
   mapDesc: (villes: string[]) => string;
-  /** Nom de la liste des villes (boutons de la carte). */
-  listLabel: string;
-  /** Libellé d'un bouton de ville. */
-  cityButton: (ville: string) => string;
+  /** Nom de la ville de départ des trajets, sur la carte. */
+  departLabel: string;
   /** Noms affichés différents du nom français (clé = id de ville). */
   names: Record<string, string>;
 };
@@ -29,27 +22,18 @@ const NBSP = " ";
 
 const fr: ContenuCarte = {
   minimum: "Aucun minimum",
-  newTab: "(s'ouvre dans un nouvel onglet)",
-  hqName: "Techno Lot",
-  hqCity: "Mascouche",
-  mapTitle: "Carte du Québec : nos trajets de ramassage depuis Mascouche",
+  mapTitle: "Carte du sud du Québec : les villes où nous passons",
   mapDesc: (villes) =>
-    `Depuis notre siège social de Mascouche, notre équipe se rend notamment à ${liste(villes, "et")}${NBSP}: tout le Québec est desservi, ramassage gratuit.`,
-  listLabel: "Quelques villes où nous passons",
-  cityButton: (ville) => `${ville}${NBSP}: voir le trajet depuis Mascouche`,
+    `Notre équipe se déplace partout au Québec, notamment à ${liste(villes, "et")}${NBSP}; le ramassage est gratuit.`,
+  departLabel: "Grand Montréal",
   names: {},
 };
 
 const en: ContenuCarte = {
   minimum: "No minimum",
-  newTab: "(opens in a new tab)",
-  hqName: "Techno Lot",
-  hqCity: "Mascouche",
-  mapTitle: "Map of Québec: our pickup routes from Mascouche",
-  mapDesc: (villes) =>
-    `From our head office in Mascouche, our team travels to ${liste(villes, "and")}, among others: all of Québec is covered, with free pickup.`,
-  listLabel: "Some of the cities we serve",
-  cityButton: (ville) => `${ville}: show the route from Mascouche`,
+  mapTitle: "Map of southern Québec: the cities we serve",
+  mapDesc: (villes) => `Our team travels anywhere in Québec, including ${liste(villes, "and")}; pickup is free.`,
+  departLabel: "Greater Montréal",
   names: { quebec: "Québec City" },
 };
 

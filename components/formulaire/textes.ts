@@ -58,7 +58,7 @@ const fr = {
   // Étape 1
   materialTitle: "Qu'avez-vous à vendre ?",
   materialHint:
-    "Touchez les catégories de votre lot, puis ajustez les quantités. Des quantités approximatives suffisent.",
+    "Touchez les catégories de votre lot, puis ajustez les quantités. Des quantités approximatives suffisent. Avec « Autre », écrivez vous-même le matériel : ajoutez-en autant qu'il faut.",
   categoriesLegend: "Catégories de matériel",
   quantitiesTitle: "Quantités",
   qtyUnknown: "quantité à préciser",
@@ -68,6 +68,14 @@ const fr = {
   removeCategory: (cat: string) => `Retirer la catégorie ${cat}`,
   categoryAdded: (cat: string) => `${cat} ajouté à votre lot.`,
   categoryRemoved: (cat: string) => `${cat} retiré de votre lot.`,
+  otherChip: "Autre",
+  otherPlaceholder: "Ex. processeurs, cartes graphiques…",
+  otherNameLabel: (n: number) => `Matériel « Autre » ${n} : de quoi s'agit-il ?`,
+  otherFallback: (n: number) => `Autre ${n}`,
+  otherUnnamed: "Autre (à préciser)",
+  otherAdd: "Ajouter un autre matériel",
+  otherAdded: "Ligne « Autre » ajoutée : écrivez le matériel.",
+  otherRemoved: "Ligne « Autre » retirée.",
   descriptionLabel: "Description du lot",
   descriptionOptional: "facultatif",
   descriptionPlaceholder:
@@ -142,7 +150,7 @@ const en: TextesFormulaire = {
 
   materialTitle: "What do you have to sell?",
   materialHint:
-    "Tap the categories in your lot, then adjust the quantities. Rough quantities are fine.",
+    "Tap the categories in your lot, then adjust the quantities. Rough quantities are fine. With “Other”, type the equipment yourself: add as many as you need.",
   categoriesLegend: "Equipment categories",
   quantitiesTitle: "Quantities",
   qtyUnknown: "quantity to confirm",
@@ -152,6 +160,14 @@ const en: TextesFormulaire = {
   removeCategory: (cat) => `Remove the ${cat} category`,
   categoryAdded: (cat) => `${cat} added to your lot.`,
   categoryRemoved: (cat) => `${cat} removed from your lot.`,
+  otherChip: "Other",
+  otherPlaceholder: "E.g. CPUs, graphics cards…",
+  otherNameLabel: (n) => `“Other” item ${n}: what is it?`,
+  otherFallback: (n) => `Other ${n}`,
+  otherUnnamed: "Other (to be specified)",
+  otherAdd: "Add another item",
+  otherAdded: "“Other” line added: type the equipment.",
+  otherRemoved: "“Other” line removed.",
   descriptionLabel: "Lot description",
   descriptionOptional: "optional",
   descriptionPlaceholder:
@@ -217,7 +233,14 @@ export function getTextesFormulaire(locale: Locale): TextesFormulaire {
 /** Catégorie présente = choisie ; null = quantité effacée (« à préciser »). */
 export type Quantites = Partial<Record<CategorieId, number | null>>;
 
+/** Ligne « Autre » : matériel écrit par le client, avec sa quantité (null = à préciser). */
+export type Autre = { id: string; nom: string; qte: number | null };
+
 export const QTE_MAX = 99999;
+/** Longueur maximale du nom d'un matériel « Autre ». */
+export const AUTRE_NOM_MAX = 80;
+/** Nombre maximal de lignes « Autre ». */
+export const AUTRES_MAX = 20;
 
 /**
  * Compose le champ `message` envoyé à /api/soumission : les nouvelles informations
@@ -227,22 +250,29 @@ export const QTE_MAX = 99999;
  */
 export function composerMessage({
   quantites,
+  autres = [],
   entreprise,
   ville,
   description,
 }: {
   quantites: Quantites;
+  /** Lignes « Autre » écrites par le client (ex. « Processeurs (autre) : 12 ») */
+  autres?: Autre[];
   entreprise: string;
   ville: string;
   description: string;
 }): string {
   const lignes: string[] = [];
-  const choisies = CATEGORIES.filter((id) => quantites[id] !== undefined);
-  if (choisies.length > 0) {
+  const choisies = CATEGORIES.filter((id) => id !== "autre" && quantites[id] !== undefined);
+  if (choisies.length > 0 || autres.length > 0) {
     lignes.push("Matériel :");
     for (const id of choisies) {
       const q = quantites[id];
       lignes.push(`- ${categoriesFr[id]} : ${q ? q : "quantité à préciser"}`);
+    }
+    for (const a of autres) {
+      const nom = a.nom.trim();
+      lignes.push(`- ${nom ? `${nom} (autre)` : "Autre (non précisé)"} : ${a.qte ? a.qte : "quantité à préciser"}`);
     }
   }
   if (entreprise.trim()) lignes.push(`Entreprise : ${entreprise.trim()}`);

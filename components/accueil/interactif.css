@@ -1,7 +1,7 @@
 /* Sections interactives de l'accueil (Etapes, Palette, Donnees). Classes préfixées. */
 
 /* ------------------------------------------------------------------ */
-/* Etapes : accordéon (vertical sur mobile, horizontal dès 1024 px)    */
+/* Etapes : accordéon vertical (bandes empilées, lecture de haut en bas) */
 /* ------------------------------------------------------------------ */
 
 /* Lueurs vertes discrètes du chapitre bleu nuit */
@@ -19,13 +19,20 @@
     radial-gradient(38% 40% at 6% 96%, rgba(52, 211, 153, 0.07), transparent 70%);
 }
 
+/* --etapes-band : hauteur d'une bande ; --etapes-n (posé sur la liste) : nombre d'étapes */
 .etapes-acc {
   container-type: size;
+  --etapes-band: 64px;
+}
+@media (min-width: 1024px) {
+  .etapes-acc {
+    --etapes-band: 56px;
+  }
 }
 
-/* Mobile : bandes de 64 px, le panneau ouvert prend la hauteur restante */
+/* Bandes empilées ; le panneau ouvert prend la hauteur restante */
 .etapes-panel {
-  flex: 0 0 64px;
+  flex: 0 0 var(--etapes-band);
   min-width: 0;
   min-height: 0;
   transition: flex-grow 450ms cubic-bezier(0.65, 0, 0.35, 1);
@@ -33,34 +40,18 @@
 .etapes-panel[data-open] {
   flex-grow: 1;
 }
+.etapes-band {
+  height: var(--etapes-band);
+}
 /* Le contenu garde la taille du panneau ouvert : rien ne se recompose pendant l'ouverture */
 .etapes-content {
+  top: var(--etapes-band);
   width: 100%;
-  height: calc(100% - 64px);
+  height: calc(100% - var(--etapes-band));
 }
 @supports (height: 1cqh) {
   .etapes-content {
-    height: calc(100cqh - 256px);
-  }
-}
-
-/* Grand écran : panneau ouvert ≈ 58 %, les trois autres en bandes verticales */
-@media (min-width: 1024px) {
-  .etapes-panel {
-    flex: 14 1 0;
-  }
-  .etapes-panel[data-open] {
-    flex-grow: 58;
-  }
-  .etapes-content {
-    width: 58%;
-    height: 100%;
-  }
-  @supports (width: 1cqw) {
-    .etapes-content {
-      width: 58cqw;
-      height: 100%;
-    }
+    height: calc(100cqh - var(--etapes-n, 4) * var(--etapes-band));
   }
 }
 
@@ -94,6 +85,23 @@
 /* Palette : la scène sert de conteneur ; la palette chargée            */
 /* (1400 × 900) tient dans sa largeur ET sa hauteur.                   */
 /* ------------------------------------------------------------------ */
+
+/* Fond doux (au lieu du lime plein) : menthe dégradée et halo blanc
+   derrière la palette, qui attire l'œil sans éblouir. */
+.site-root .palette-fond {
+  background-color: #e8f5e0;
+  background-image:
+    radial-gradient(46% 52% at 50% 74%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 72%),
+    linear-gradient(170deg, #f4fbf0 0%, #e6f5dc 52%, #d2edc3 100%);
+}
+@media (min-width: 1024px) {
+  .site-root .palette-fond {
+    background-image:
+      radial-gradient(40% 55% at 68% 60%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 72%),
+      linear-gradient(170deg, #f4fbf0 0%, #e6f5dc 52%, #d2edc3 100%);
+  }
+}
+
 .palette-scene {
   container-type: size;
 }

@@ -96,33 +96,6 @@ export function ObjectFrame({
   );
 }
 
-/** Radar : Mascouche au centre, les ondes couvrent tout le Québec. */
-export function RadarFrame({ center, edge, address }: { center: string; edge: string; address: string }) {
-  return (
-    <div className="absolute inset-0 overflow-hidden bg-[#070b14]">
-      <div className="absolute left-1/2 top-1/2 aspect-square w-[118%] -translate-x-1/2 -translate-y-1/2">
-        {[22, 44, 66, 88].map((s) => (
-          <span key={s} className="svc-radar-ring" style={{ width: `${s}%`, height: `${s}%` }} />
-        ))}
-        <span className="svc-radar-sweep" />
-        <span className="svc-radar-pulse" />
-        <span className="svc-radar-pulse svc-radar-pulse--2" />
-      </div>
-      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center">
-        <span className="relative flex h-4 w-4">
-          <span className="absolute inset-0 rounded-full bg-[#6bd63b]" />
-          <span className="absolute -inset-2 rounded-full border-2 border-[#6bd63b]/50" />
-        </span>
-        <span className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-white sm:text-3xl">{center}</span>
-        <span className="mt-1 text-sm text-slate-300">{address}</span>
-      </div>
-      <span className="absolute left-6 top-6 rounded-full border border-[#6bd63b]/40 px-3.5 py-1.5 font-display text-xs font-semibold uppercase tracking-[0.14em] text-[#8BE95F]">
-        {edge}
-      </span>
-    </div>
-  );
-}
-
 /** Courriel d'offre reçu (estimation, étape 2). */
 export function OfferFrame({ label, big, caption }: { label: string; big: string; caption: string }) {
   return (
@@ -146,27 +119,6 @@ export function OfferFrame({ label, big, caption }: { label: string; big: string
           <span className="block h-2 w-3/5 rounded-full bg-[#e8f5e0]" />
         </div>
       </div>
-    </div>
-  );
-}
-
-/** Anneau 50 % : moitié au ramassage, solde après l'inspection. */
-export function PaymentFrame({ value, caption, note }: { value: string; caption: string; note: string }) {
-  return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 p-6">
-      <div className="relative aspect-square w-[52%] max-w-[260px]">
-        <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90" aria-hidden="true">
-          <circle cx="18" cy="18" r="15.915" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="3" />
-          <circle className="svc-donut-arc" cx="18" cy="18" r="15.915" fill="none" stroke="#6bd63b" strokeWidth="3" strokeLinecap="round" pathLength={100} />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="font-display text-4xl font-bold text-white sm:text-5xl">{value}</span>
-          <span className="mt-1 max-w-[8rem] text-xs leading-snug text-slate-300 sm:text-sm">{caption}</span>
-        </div>
-      </div>
-      <span className="rounded-full border border-[#6bd63b]/40 px-4 py-1.5 text-center font-display text-xs font-semibold uppercase tracking-[0.12em] text-[#8BE95F]">
-        {note}
-      </span>
     </div>
   );
 }

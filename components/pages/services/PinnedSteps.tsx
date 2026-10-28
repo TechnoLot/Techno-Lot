@@ -1,11 +1,25 @@
 "use client";
 
-import { m, useMotionValueEvent, useReducedMotion, useScroll, useSpring } from "framer-motion";
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { m, useMotionValueEvent, useReducedMotion, useScroll, useSpring, type MotionValue } from "framer-motion";
+import { createContext, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Reveal } from "@/components/site/Reveal";
 import { Glows, type ChapterTheme } from "./Chapter";
 
 export type PinnedStep = { title: string; text: ReactNode };
+
+/**
+ * Ce qu'une image d'étape (frames) peut savoir de la séquence : progression du défilement
+ * (0 → 1 sur toute la section), épinglage actif, étape affichée, et sa propre fenêtre
+ * [start, end] dans la progression. Lu par les scènes animées (ex. PaymentFrame).
+ */
+export type EtapeScene = {
+  progress: MotionValue<number>;
+  pinned: boolean;
+  active: boolean;
+  start: number;
+  end: number;
+};
+export const EtapeSceneContext = createContext<EtapeScene | null>(null);
 
 type PinnedStepsProps = {
   theme: ChapterTheme;
@@ -146,7 +160,11 @@ export function PinnedSteps({
                         i === active ? "scale-100 opacity-100" : "pointer-events-none scale-[0.97] opacity-0"
                       }`}
                     >
-                      {frame}
+                      <EtapeSceneContext.Provider
+                        value={{ progress: scrollYProgress, pinned, active: i === active, start: i / n, end: (i + 1) / n }}
+                      >
+                        {frame}
+                      </EtapeSceneContext.Provider>
                     </div>
                   ))}
                   {scene}
