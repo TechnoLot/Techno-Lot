@@ -17,11 +17,17 @@ Tant que `META_ACCESS_TOKEN` et `META_AD_ACCOUNT_ID` manquent, `/admin/pubs` aff
 
 ## Google Ads
 
-1. **Developer token** : dans le compte **gestionnaire** (MCC), Outils, Centre API. Copie le jeton dans `GOOGLE_ADS_DEVELOPER_TOKEN` (le niveau « test » ne lit que les comptes de test : demande l'accès de base).
-2. **Client OAuth** : console Google Cloud, active l'API Google Ads, puis Identifiants, Créer un ID client OAuth (application Web, URI de redirection `https://developers.google.com/oauthplayground`). Note `GOOGLE_ADS_CLIENT_ID` et `GOOGLE_ADS_CLIENT_SECRET`.
-3. **Refresh token** : ouvre l'[OAuth Playground](https://developers.google.com/oauthplayground), roue dentée, coche « Use your own OAuth credentials » et entre ton client ID / secret. À l'étape 1, saisis le scope `https://www.googleapis.com/auth/adwords`, autorise avec le compte qui a accès à Google Ads, puis « Exchange authorization code for tokens ». Copie le **Refresh token** dans `GOOGLE_ADS_REFRESH_TOKEN`.
-4. **Customer ID** : numéro à 10 chiffres en haut à droite de Google Ads, sans les tirets, dans `GOOGLE_ADS_CUSTOMER_ID`. Si tu passes par un compte gestionnaire, mets son ID dans `GOOGLE_ADS_LOGIN_CUSTOMER_ID`.
-5. **Suivi** : active le **suivi automatique** (gclid) dans les paramètres du compte. Ajoute ce modèle de suivi au niveau du compte ou de la campagne :
+Depuis 2026, Google ne délivre plus de developer token pour l'API Google Ads (le Centre API ne sert plus qu'à l'API App Conversion Tracking) : l'accès passe par un projet Google Cloud et un **compte de service**.
+
+1. **Compte administrateur** (MCC) : obligatoire. Techno Lot Gestion `812-387-4127` chapeaute Techno Lot `707-274-0876`. Son ID va dans `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, celui du compte de pubs dans `GOOGLE_ADS_CUSTOMER_ID` (sans tirets).
+2. **Projet Google Cloud** : console.cloud.google.com, crée un projet, active l'**API Google Ads**, puis sur sa page Vue d'ensemble demande le niveau d'accès **Explorateur** (approuvé automatiquement la plupart du temps).
+3. **Compte de service** : IAM et administration, Comptes de service, Créer. Puis Clés, Ajouter une clé, JSON. Le fichier téléchargé est la seule copie.
+4. **Accès au compte Google Ads** : dans Techno Lot Gestion (ou Techno Lot), Admin, Accès et sécurité, Utilisateurs, ajoute l'adresse courriel du compte de service (niveau Lecture suffit).
+5. **Variable** : colle le contenu du fichier JSON (ou sa version base64, plus sûre chez Hostinger) dans `GOOGLE_ADS_SERVICE_ACCOUNT_JSON`. Le code signe lui-même le JWT (`lib/ads/google.ts`), API v26, sans developer token.
+
+L'ancienne méthode (developer token + client OAuth + refresh token) reste prise en charge si `GOOGLE_ADS_SERVICE_ACCOUNT_JSON` est vide.
+
+6. **Suivi** : active le **suivi automatique** (gclid) dans les paramètres du compte. Ajoute ce modèle de suivi au niveau du compte ou de la campagne :
 
 ```
 {lpurl}?utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&campaign_id={campaignid}&adset_id={adgroupid}&ad_id={creative}
