@@ -15,16 +15,28 @@ type MarqueeProps = {
   maxBoost?: number;
 };
 
+/** Éléments qu'on atteint avec Tab : retirés de l'ordre de tabulation dans la copie. */
+const FOCALISABLES = "a[href], button, input, select, textarea, [tabindex]";
+
 /**
  * Ruban infini dont la vitesse et le sens suivent le défilement de la page.
  * Pause au survol et au focus ; en mouvement réduit, il devient une rangée
- * qu'on fait défiler soi-même. Le contenu est dupliqué (copie aria-hidden + inert).
+ * qu'on fait défiler soi-même. Le contenu est dupliqué pour boucler sans fin :
+ * la copie est masquée aux lecteurs d'écran (aria-hidden) et sortie de l'ordre
+ * de tabulation (tabindex -1), mais reste cliquable à la souris et au doigt
+ * (pas d'`inert`, qui bloquait les clics sur la moitié des liens visibles).
  */
 export function Marquee({ children, label, className, speed = 38, scrollBoost = 6, maxBoost = 900 }: MarqueeProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const halfRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLDivElement>(null);
   const [still, setStill] = useState(false);
+
+  // Après chaque rendu : les liens de la copie restent cliquables mais hors tabulation
+  useEffect(() => {
+    copyRef.current?.querySelectorAll<HTMLElement>(FOCALISABLES).forEach((el) => el.setAttribute("tabindex", "-1"));
+  });
 
   useEffect(() => {
     const root = rootRef.current;
@@ -107,14 +119,8 @@ export function Marquee({ children, label, className, speed = 38, scrollBoost = 
           {children}
         </div>
         {!still && (
-          // `inert` (copie non focalisable) posé au DOM : React 18 ne gère pas cet attribut
-          <div
-            className="flex items-center gap-4"
-            aria-hidden="true"
-            ref={(el) => {
-              el?.setAttribute("inert", "");
-            }}
-          >
+          // Copie pour la boucle : cachée aux lecteurs d'écran, cliquable, hors tabulation (voir plus haut)
+          <div ref={copyRef} className="flex items-center gap-4" aria-hidden="true">
             {children}
           </div>
         )}
