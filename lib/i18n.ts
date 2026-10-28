@@ -1,3 +1,5 @@
+import { counterpartPath } from "@/lib/seo/routes";
+
 export type Locale = "fr" | "en";
 
 export const locales: Locale[] = ["fr", "en"];
@@ -8,10 +10,13 @@ export function localePath(locale: Locale, path: string): string {
   return path === "/" ? "/en" : `/en${path}`;
 }
 
-/** Donne l'URL équivalente dans l'autre langue à partir du chemin courant. */
+/**
+ * Donne l'URL équivalente dans l'autre langue à partir du chemin courant :
+ * slug traduit des pages du registre (lib/seo/routes.ts), sinon bascule du
+ * préfixe /en (ex. articles de blogue).
+ */
 export function switchLocalePath(pathname: string, to: Locale): string {
-  const bare = pathname.replace(/^\/en(?=\/|$)/, "") || "/";
-  return localePath(to, bare);
+  return counterpartPath(pathname, to);
 }
 
 /** Locale déduite d'un chemin ("/en/..." → en, sinon fr). */

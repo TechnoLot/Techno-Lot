@@ -23,6 +23,8 @@ type PageHeroProps = {
   theme?: "night" | "deep" | "green" | "light" | "sand";
   /** Sous le texte (boutons, puces…) */
   children?: ReactNode;
+  /** Optionnel : fil d'Ariane (components/seo/Breadcrumbs) rendu juste au-dessus du titre */
+  breadcrumbs?: ReactNode;
 };
 
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
@@ -35,7 +37,7 @@ const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
  * gère lui-même l'espace sous l'en-tête fixe (--site-header-h).
  * Entrées en CSS pur (.hero-item) : rien n'est caché en attendant le JavaScript (LCP).
  */
-export function PageHero({ title, intro, image, size = "default", theme = "night", children }: PageHeroProps) {
+export function PageHero({ title, intro, image, size = "default", theme = "night", children, breadcrumbs }: PageHeroProps) {
   const compact = size === "compact";
   const glowing = theme === "night" || theme === "deep";
   const legacyBg = theme === "sand" ? "bg-sand" : "";
@@ -66,6 +68,11 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
         }`}
       >
         <div className={image ? "lg:col-span-7" : "max-w-4xl"}>
+          {breadcrumbs && (
+            <div className="hero-item mb-6 sm:mb-8" style={d(0)}>
+              {breadcrumbs}
+            </div>
+          )}
           <h1
             className={`hero-item text-balance font-display font-bold leading-[0.98] tracking-[-0.03em] text-mist ${
               compact
