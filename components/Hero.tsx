@@ -139,7 +139,7 @@ export default function Hero({ locale }: { locale: Locale }) {
             )}
             <Magnetic>
               <Link
-                href={localePath(locale, "/contact")}
+                href={localePath(locale, "/soumission")}
                 className="btn-primary group"
               >
                 {t.hero.ctaPrimary}

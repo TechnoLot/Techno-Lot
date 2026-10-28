@@ -21,8 +21,8 @@ import { site } from "@/lib/site";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 
 const serviceExtras = [
-  { icon: Recycle, photo: "/photos/serveurs.jpg", href: "/consultation" },
-  { icon: FileText, photo: "/photos/bureau.jpg", href: "/achat-de-lot-description" },
+  { icon: Recycle, photo: "/photos/serveurs.jpg", href: "/soumission" },
+  { icon: FileText, photo: "/photos/bureau.jpg", href: "/soumission" },
   { icon: Truck, photo: "/photos/entrepot.jpg", href: "/prise-en-charge-complete" },
 ];
 
@@ -79,7 +79,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
             const { icon: Icon, photo, href } = serviceExtras[i];
             const target = localePath(locale, href);
             return (
-              <Reveal key={href} delay={i * 0.12} className="h-full">
+              <Reveal key={title} delay={i * 0.12} className="h-full">
                 <SpotlightCard className="h-full">
                   <div className="glass glass-hover flex h-full flex-col overflow-hidden">
                     <div className="relative h-44 overflow-hidden">
@@ -171,7 +171,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
               {t.home.missionText}
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href={localePath(locale, "/contact")} className="btn-primary">
+              <Link href={localePath(locale, "/soumission")} className="btn-primary">
                 {t.home.missionCta}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import ContactPage from "@/components/pages/ContactPage";
 
 export const metadata: Metadata = {
-  title: "Contact — Get a Quote",
+  title: "Contact — Anthony Després, President",
   description:
-    "For a customized estimate of your technology equipment buyback, fill out our quote form. Guaranteed response within 24 hours.",
+    "Contact Anthony Després, President of Techno Lot, about selling your IT equipment. Guaranteed response within 24 hours.",
   alternates: {
     canonical: "/en/contact",
     languages: { "fr-CA": "/contact", "en-CA": "/en/contact" },

@@ -2,7 +2,7 @@ import PageHero from "@/components/PageHero";
 import Reveal from "@/components/Reveal";
 import Accordion from "@/components/Accordion";
 import CtaBanner from "@/components/CtaBanner";
-import type { Locale } from "@/lib/i18n";
+import { localePath, type Locale } from "@/lib/i18n";
 
 const content = {
   fr: {
@@ -124,6 +124,7 @@ export default function FaqPage({ locale }: { locale: Locale }) {
         title={t.ctaTitle}
         text={t.ctaText}
         buttonLabel={t.ctaButton}
+        href={localePath(locale, "/contact")}
       />
     </>
   );

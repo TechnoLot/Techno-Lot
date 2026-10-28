@@ -21,7 +21,7 @@ export default function CtaBanner({
 }: CtaBannerProps) {
   const t = getDict(locale);
   const label = buttonLabel ?? t.cta.defaultButton;
-  const target = href ?? localePath(locale, "/contact");
+  const target = href ?? localePath(locale, "/soumission");
   return (
     <section className="container-site py-16">
       <Reveal>
