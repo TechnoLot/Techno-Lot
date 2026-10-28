@@ -24,12 +24,12 @@ export const LANG_OVERRIDES: Record<string, Locale> = {};
 /* ------------------------------------------------------------------ */
 
 /**
- * À passer à true quand le client aura approuvé la liste ci-dessous. Alors :
- * les articles « secondary » sont marqués noindex (follow), retirés du plan
- * du site et de la liste du blogue, et affichent un lien vers l'article de
- * référence (pillar) ou la page relatedPath. À false : tout reste indexé.
+ * Activé le 2026-10-28 avec l'accord du client. Les articles « secondary »
+ * sont marqués noindex (follow), retirés du plan du site et de la liste du
+ * blogue, et affichent un lien vers l'article de référence (pillar) ou la page
+ * relatedPath. À false : tout reste indexé.
  */
-export const APPLY_CONSOLIDATION = false;
+export const APPLY_CONSOLIDATION = true;
 
 export type BlogRole = "pillar" | "secondary" | "standalone";
 
