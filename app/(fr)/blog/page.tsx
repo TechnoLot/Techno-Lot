@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
 import BlogIndexPage from "@/components/pages/BlogIndexPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
 // Liste des articles Soro relue au plus toutes les heures
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: "Blog",
+export const metadata = pageMetadata({
+  locale: "fr",
+  frPath: "/blog",
+  title:
+    "Blogue : vendre et valoriser son matériel informatique",
   description:
-    "Conseils et actualités de Techno Lot sur le rachat de matériel informatique et électronique, l'économie circulaire et la gestion du cycle de vie TI.",
-  alternates: {
-    canonical: "/blog",
-    languages: { "fr-CA": "/blog", "en-CA": "/en/blog" },
-  },
-};
+    "Conseils pratiques pour vendre le matériel informatique de votre entreprise, effacer vos données en sécurité et donner une seconde vie à vos équipements.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <BlogIndexPage locale="fr" />;

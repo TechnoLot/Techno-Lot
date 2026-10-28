@@ -1,18 +1,15 @@
-import type { Metadata } from "next";
 import AchatPage from "@/components/pages/AchatPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Ce que nous rachetons",
+export const metadata = pageMetadata({
+  locale: "fr",
+  frPath: "/achat-de-lot-description",
+  title:
+    "Ce que nous rachetons : informatique et électronique en lot",
   description:
-    "Ordinateurs, serveurs, équipements réseau, stockage, télécommunication, bureautique, écrans… Techno Lot rachète TOUT type de matériel électronique au Québec.",
-  alternates: {
-    canonical: "/achat-de-lot-description",
-    languages: {
-      "fr-CA": "/achat-de-lot-description",
-      "en-CA": "/en/achat-de-lot-description",
-    },
-  },
-};
+    "Ordinateurs, serveurs, réseau, stockage, télécom, écrans : tout le matériel que Techno Lot rachète aux entreprises, même partiellement fonctionnel.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <AchatPage locale="fr" />;

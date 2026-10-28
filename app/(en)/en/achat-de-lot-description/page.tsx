@@ -1,18 +1,15 @@
-import type { Metadata } from "next";
 import AchatPage from "@/components/pages/AchatPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "What We Buy",
+export const metadata = pageMetadata({
+  locale: "en",
+  frPath: "/achat-de-lot-description",
+  title:
+    "What We Buy: Bulk IT and Electronic Equipment",
   description:
-    "Computers, servers, network equipment, storage, telecommunications, office equipment, monitors… Techno Lot buys ALL types of electronic equipment in Québec.",
-  alternates: {
-    canonical: "/en/achat-de-lot-description",
-    languages: {
-      "fr-CA": "/achat-de-lot-description",
-      "en-CA": "/en/achat-de-lot-description",
-    },
-  },
-};
+    "Computers, servers, networking, storage, telecom, monitors: all the equipment Techno Lot buys from businesses, even partially working.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <AchatPage locale="en" />;

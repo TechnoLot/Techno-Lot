@@ -1,16 +1,15 @@
-import type { Metadata } from "next";
 import HomePage from "@/components/pages/HomePage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
+  locale: "fr",
+  frPath: "/",
   title:
-    "Techno Lot — Le spécialiste de l'achat de lots informatiques et électroniques au Québec",
+    "Rachat de matériel informatique en lot au Québec | Techno Lot",
   description:
-    "Nous donnons une seconde vie à votre matériel high-tech usagé — et on vous paie pour ça. Réponse en 24 h, ramassage gratuit, paiement rapide et garanti. Unique au Québec.",
-  alternates: {
-    canonical: "/",
-    languages: { "fr-CA": "/", "en-CA": "/en" },
-  },
-};
+    "Techno Lot rachète les lots informatiques et électroniques des entreprises du Québec : offre en 24 h, ramassage gratuit, paiement rapide et garanti.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <HomePage locale="fr" />;

@@ -1,18 +1,14 @@
-import type { Metadata } from "next";
 import PriseEnChargePage from "@/components/pages/PriseEnChargePage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Prise en charge complète",
+export const metadata = pageMetadata({
+  locale: "fr",
+  frPath: "/prise-en-charge-complete",
+  title:
+    "Ramassage de matériel informatique sans frais",
   description:
-    "On s'occupe de tout ! De la validation de l'offre au transport sécurisé : emballage, chargement et acheminement de votre lot par l'équipe Techno Lot.",
-  alternates: {
-    canonical: "/prise-en-charge-complete",
-    languages: {
-      "fr-CA": "/prise-en-charge-complete",
-      "en-CA": "/en/prise-en-charge-complete",
-    },
-  },
-};
+    "Emballage, chargement et transport : notre équipe récupère votre matériel informatique sans frais et sans minimum, partout au Québec.",
+});
 
 export default function Page() {
   return <PriseEnChargePage locale="fr" />;

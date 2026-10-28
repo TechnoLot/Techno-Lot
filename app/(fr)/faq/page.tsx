@@ -1,15 +1,14 @@
-import type { Metadata } from "next";
 import FaqPage from "@/components/pages/FaqPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "FAQ — Questions fréquentes",
+export const metadata = pageMetadata({
+  locale: "fr",
+  frPath: "/faq",
+  title:
+    "FAQ sur le rachat de matériel informatique",
   description:
-    "Découvrez les réponses aux questions fréquemment posées sur les services de rachat de lots électroniques et informatiques de Techno Lot.",
-  alternates: {
-    canonical: "/faq",
-    languages: { "fr-CA": "/faq", "en-CA": "/en/faq" },
-  },
-};
+    "Offre en 24 h, ramassage gratuit, paiement en deux temps, effacement des données : vos questions sur le rachat de matériel informatique.",
+});
 
 export default function Page() {
   return <FaqPage locale="fr" />;

@@ -1,18 +1,14 @@
-import type { Metadata } from "next";
 import PriseEnChargePage from "@/components/pages/PriseEnChargePage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Full-Service Pickup",
+export const metadata = pageMetadata({
+  locale: "en",
+  frPath: "/prise-en-charge-complete",
+  title:
+    "Free IT Equipment Pickup",
   description:
-    "We take care of everything! From offer validation to secure transport: packing, loading and delivery of your lot by the Techno Lot team.",
-  alternates: {
-    canonical: "/en/prise-en-charge-complete",
-    languages: {
-      "fr-CA": "/prise-en-charge-complete",
-      "en-CA": "/en/prise-en-charge-complete",
-    },
-  },
-};
+    "Packing, loading and transport: our team picks up your IT equipment at no cost and with no minimum, anywhere in Quebec.",
+});
 
 export default function Page() {
   return <PriseEnChargePage locale="en" />;

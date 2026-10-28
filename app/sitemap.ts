@@ -2,33 +2,20 @@ import type { MetadataRoute } from "next";
 import { getBlogFeed, getPosts } from "@/lib/posts";
 import { site } from "@/lib/site";
 import { localePath, locales } from "@/lib/i18n";
+import { absoluteUrl, seoRoutes } from "@/lib/seo/routes";
 
 // Les articles Soro changent : le plan du site est régénéré au plus toutes les heures.
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const paths = [
-    "/",
-    "/a-propos",
-    "/contact",
-    "/blog",
-    "/faq",
-    "/soumission",
-    "/consultation",
-    "/achat-de-lot-description",
-    "/prise-en-charge-complete",
-  ];
-
-  const pages = locales.flatMap((locale) =>
-    paths.map((path) => {
-      const localized = localePath(locale, path);
-      return {
-        url: `${site.url}${localized === "/" ? "" : localized}`,
-        lastModified: new Date(),
-        changeFrequency: "monthly" as const,
-        priority: path === "/" ? 1 : 0.8,
-      };
-    }),
+  // Pages statiques : registre lib/seo/routes.ts, dans les deux langues.
+  // Pas de lastModified : aucune date de modification fiable pour ces pages.
+  const pages = seoRoutes.flatMap((route) =>
+    locales.map((locale) => ({
+      url: absoluteUrl(route[locale]),
+      changeFrequency: route.changeFrequency,
+      priority: route.priority,
+    })),
   );
 
   const blogPosts = locales.flatMap((locale) =>

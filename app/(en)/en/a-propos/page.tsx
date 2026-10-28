@@ -1,15 +1,15 @@
-import type { Metadata } from "next";
 import AProposPage from "@/components/pages/AProposPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "About",
+export const metadata = pageMetadata({
+  locale: "en",
+  frPath: "/a-propos",
+  title:
+    "About Techno Lot, Buyer of IT Equipment Lots",
   description:
-    "At Techno Lot, our passion for technology and our commitment to our clients set us apart. Discover the reference for equipment lot buyback in Québec.",
-  alternates: {
-    canonical: "/en/a-propos",
-    languages: { "fr-CA": "/a-propos", "en-CA": "/en/a-propos" },
-  },
-};
+    "Based in Mascouche, Techno Lot buys IT equipment from businesses across Quebec: offer within 24 hours, free pickup, protected data.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <AProposPage locale="en" />;

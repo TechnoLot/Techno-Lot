@@ -1,16 +1,15 @@
-import type { Metadata } from "next";
 import HomePage from "@/components/pages/HomePage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
+export const metadata = pageMetadata({
+  locale: "en",
+  frPath: "/",
   title:
-    "Techno Lot — The Specialist in Purchasing IT and Electronic Lots in Québec",
+    "Bulk IT Equipment Buyback in Quebec | Techno Lot",
   description:
-    "We give your used high-tech equipment a second life — and we pay you for it. Response within 24 hours, free pickup, fast and guaranteed payment. One of a kind in Québec.",
-  alternates: {
-    canonical: "/en",
-    languages: { "fr-CA": "/", "en-CA": "/en" },
-  },
-};
+    "Techno Lot buys IT and electronic equipment lots from Quebec businesses: offer within 24 hours, free pickup, fast and guaranteed payment.",
+  absoluteTitle: true,
+});
 
 export default function Page() {
   return <HomePage locale="en" />;

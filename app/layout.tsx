@@ -49,6 +49,10 @@ export const metadata: Metadata = {
     canonical: "/",
     languages: { "fr-CA": "/", "en-CA": "/en" },
   },
+  // Validation Google Search Console : seulement si la variable est définie.
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } }
+    : {}),
 };
 
 /**

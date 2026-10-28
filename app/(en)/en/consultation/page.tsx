@@ -1,15 +1,14 @@
-import type { Metadata } from "next";
 import ConsultationPage from "@/components/pages/ConsultationPage";
+import { pageMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = {
-  title: "Lot Appraisal",
+export const metadata = pageMetadata({
+  locale: "en",
+  frPath: "/consultation",
+  title:
+    "IT Lot Appraisal Within 24 Hours",
   description:
-    "How lot appraisal works at Techno Lot: quote with photos and inventory, offer by email within 24 hours, free pickup.",
-  alternates: {
-    canonical: "/en/consultation",
-    languages: { "fr-CA": "/consultation", "en-CA": "/en/consultation" },
-  },
-};
+    "Describe your lot with photos and an inventory: Techno Lot makes you an offer within 24 hours, then picks up the equipment at no cost, anywhere in Quebec.",
+});
 
 export default function Page() {
   return <ConsultationPage locale="en" />;
