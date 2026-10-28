@@ -180,6 +180,15 @@ export type ConfigStatus = { meta: boolean; google: boolean };
 
 export type LastSync = { at: string; ok: boolean; platform: string; message: string | null } | null;
 
+/** État de la synchro automatique d'une plateforme (pastille « Synchro auto »). */
+export type AdsSyncState = {
+  configured: boolean;
+  /** Dernière tentative (ISO), null : jamais */
+  at: string | null;
+  ok: boolean;
+  message: string | null;
+};
+
 export type AdsOverview = {
   range: DateRange;
   totals: Totals;

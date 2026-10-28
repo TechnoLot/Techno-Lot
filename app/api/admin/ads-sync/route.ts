@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
 import {
   adsSyncedRecently,
+  getLastAdsRunsByPlatform,
   isGoogleConfigured,
   isMetaConfigured,
   LIVE_DAYS,
@@ -39,7 +40,8 @@ export async function GET() {
  * `Authorization: Bearer $CRON_SECRET` (cron). Corps optionnel : { days }.
  * `{ auto: true }` (pages admin ouvertes) : aujourd'hui et hier seulement,
  * sauté si une synchro a eu lieu il y a moins de 50 s.
- * Réponse : { results: [{ platform, ok, rows, message }] } ou { skipped: true }
+ * Réponse : { results: [{ platform, ok, rows, message }], lastSync: { meta, google } }
+ * (dernière tentative par plateforme), ou { skipped: true, lastSync }
  */
 export async function POST(request: Request) {
   let body: { days?: unknown; auto?: unknown } = {};
@@ -85,9 +87,9 @@ export async function POST(request: Request) {
   }
 
   if (auto && (await adsSyncedRecently(supabase))) {
-    return NextResponse.json({ skipped: true, results: [] });
+    return NextResponse.json({ skipped: true, results: [], lastSync: await getLastAdsRunsByPlatform(supabase) });
   }
 
   const results = await syncAds({ days, supabase });
-  return NextResponse.json({ results });
+  return NextResponse.json({ results, lastSync: await getLastAdsRunsByPlatform(supabase) });
 }

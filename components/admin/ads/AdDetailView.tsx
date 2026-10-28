@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, Info } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
-import { NO_ID, type AdDetail, type AdPlatform, type LastSync } from "@/lib/ads/types";
+import { NO_ID, type AdDetail, type AdPlatform, type AdsSyncState, type LastSync } from "@/lib/ads/types";
 import { judgeAd } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
 import SyncButton from "./SyncButton";
-import AdsLiveSync from "./AdsLiveSync";
+import AdsAutoSync from "./AdsAutoSync";
 import AdsKpis from "./AdsKpis";
 import AdsFunnel from "./AdsFunnel";
 import AdsDailyChart from "./AdsDailyChart";
@@ -24,6 +24,8 @@ export type AdDetailViewProps = {
   syncDays: number;
   /** Lien de retour (garde la période et la plateforme) */
   backHref: string;
+  /** Synchro automatique par plateforme (absent dans les données de test) */
+  liveSync?: Record<AdPlatform, AdsSyncState>;
 };
 
 const ZERO = {
@@ -40,7 +42,16 @@ const ZERO = {
 };
 
 /** Contenu de /admin/pubs/[platform]/[adId] (séparé pour l'alimenter en données de test). */
-export default function AdDetailView({ platform, adId, data, lastSync, connected, syncDays, backHref }: AdDetailViewProps) {
+export default function AdDetailView({
+  platform,
+  adId,
+  data,
+  lastSync,
+  connected,
+  syncDays,
+  backHref,
+  liveSync,
+}: AdDetailViewProps) {
   const ad = data.ad;
   const totals = ad ?? ZERO;
   const judged = judgeAd(totals, data.avgCpl);
@@ -79,7 +90,7 @@ export default function AdDetailView({ platform, adId, data, lastSync, connected
             {connected && (
               <SyncButton lastSync={lastSync} days={syncDays} label={`Mettre à jour depuis ${platformName}`} />
             )}
-            <AdsLiveSync enabled={connected} lastSync={lastSync?.at ?? null} />
+            {liveSync && <AdsAutoSync platforms={[platform]} state={liveSync} />}
           </div>
         }
       />

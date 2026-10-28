@@ -1,7 +1,9 @@
 import { AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
 import type {
+  AdPlatform,
   AdsOverview,
+  AdsSyncState,
   ConfigStatus,
   LastSync,
   PlatformFilter,
@@ -11,7 +13,7 @@ import TrackingCoverage from "./TrackingCoverage";
 import { rankAds } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
 import SyncButton from "./SyncButton";
-import AdsLiveSync from "./AdsLiveSync";
+import AdsAutoSync from "./AdsAutoSync";
 import AdsKpis from "./AdsKpis";
 import AdsTable from "./AdsTable";
 import VerdictGuide from "./VerdictGuide";
@@ -29,10 +31,12 @@ export type PubsOverviewProps = {
   syncDays: number;
   /** Formulaires reçus vs rattachés (absent dans les données de test) */
   coverage?: TrackingCoverageData;
+  /** Synchro automatique par plateforme (absent dans les données de test) */
+  liveSync?: Record<AdPlatform, AdsSyncState>;
 };
 
 /** Contenu de /admin/pubs (séparé de la page pour l'alimenter en données de test). */
-export default function PubsOverview({ data, lastSync, config, syncDays, coverage }: PubsOverviewProps) {
+export default function PubsOverview({ data, lastSync, config, syncDays, coverage, liveSync }: PubsOverviewProps) {
   const { platform, range } = data;
   const connected =
     platform === "meta" ? config.meta : platform === "google" ? config.google : config.meta || config.google;
@@ -62,7 +66,9 @@ export default function PubsOverview({ data, lastSync, config, syncDays, coverag
                 label={platform === "google" ? "Mettre à jour depuis Google" : platform === "all" ? "Mettre à jour" : "Mettre à jour depuis Meta"}
               />
             )}
-            <AdsLiveSync enabled={config.meta || config.google} lastSync={lastSync?.at ?? null} />
+            {liveSync && (
+              <AdsAutoSync platforms={platform === "all" ? ["meta", "google"] : [platform]} state={liveSync} />
+            )}
           </div>
         }
       />

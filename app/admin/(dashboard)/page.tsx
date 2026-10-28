@@ -10,6 +10,7 @@ import { getEbayOrderRows, getEbayTotals } from "@/lib/ebay/ventes";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { addDays, inTorontoRange, sumEbayOrders, torontoDay } from "@/lib/ebay/totaux";
 import { getAdSpend } from "@/lib/ads/depenses";
+import { getAdsSyncState } from "@/lib/ads/queries";
 import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
 import AFaireTiles from "@/components/admin/accueil/AFaireTiles";
@@ -100,6 +101,7 @@ export default async function AccueilPage({
     ebay,
     pubs,
     ebayRecentRows,
+    pubsSync,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
@@ -134,6 +136,7 @@ export default async function AccueilPage({
       "cancelled",
       "payment_status",
     ]).catch(() => []),
+    getAdsSyncState(supabase).catch(() => undefined),
   ]);
 
   const ebayAujourdhui = sumEbayOrders(
@@ -247,6 +250,7 @@ export default async function AccueilPage({
             profit,
             pubsConfigured: pubs.configured,
             pubs: pubs.spend,
+            pubsSync,
           }}
         />
 

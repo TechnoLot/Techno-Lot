@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   daysBetween,
   getAdsOverview,
+  getAdsSyncState,
   getConfigStatus,
   getLastSync,
   getTrackingCoverage,
@@ -19,9 +20,10 @@ export default async function PubsPage({
   searchParams: { period?: string; from?: string; to?: string; platform?: string };
 }) {
   const platform = parsePlatformFilter(searchParams.platform);
-  const [data, lastSync] = await Promise.all([
+  const [data, lastSync, liveSync] = await Promise.all([
     getAdsOverview(searchParams),
     getLastSync(platform === "all" ? null : platform),
+    getAdsSyncState(),
   ]);
   const coverage = await getTrackingCoverage({
     range: data.range,
@@ -38,6 +40,7 @@ export default async function PubsPage({
       config={getConfigStatus()}
       syncDays={syncDays}
       coverage={coverage}
+      liveSync={liveSync}
     />
   );
 }

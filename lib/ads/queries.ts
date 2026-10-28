@@ -19,6 +19,7 @@ import {
   type MetricRow,
   type PlatformFilter,
   type RawAdsData,
+  type AdsSyncState,
   type TrackingCoverage,
   type SessionPlatform,
   type SessionRow,
@@ -727,6 +728,21 @@ export async function getLastSync(
   return row
     ? { at: row.created_at, ok: row.ok, platform: row.platform, message: row.message }
     : null;
+}
+
+/** État de la synchro automatique de Meta et de Google (pastilles « Synchro auto »). */
+export async function getAdsSyncState(
+  supabase: Supa = createClient(),
+): Promise<Record<AdPlatform, AdsSyncState>> {
+  const config = getConfigStatus();
+  const [meta, google] = await Promise.all([getLastSync("meta", supabase), getLastSync("google", supabase)]);
+  const state = (configured: boolean, last: LastSync): AdsSyncState => ({
+    configured,
+    at: last?.at ?? null,
+    ok: last?.ok ?? true,
+    message: last?.message ?? null,
+  });
+  return { meta: state(config.meta, meta), google: state(config.google, google) };
 }
 
 /** Statut de configuration des API (variables d'environnement serveur). */

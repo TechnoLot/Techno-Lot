@@ -112,3 +112,21 @@ export async function adsSyncedRecently(supabase: SupabaseClient): Promise<boole
   const at = await getLastAdsRunAt(supabase);
   return Boolean(at && Date.now() - new Date(at).getTime() < LIVE_MIN_INTERVAL_MS);
 }
+
+/** Dernière tentative de synchro par plateforme (ISO, null : jamais). */
+export async function getLastAdsRunsByPlatform(
+  supabase: SupabaseClient,
+): Promise<Record<"meta" | "google", string | null>> {
+  const one = async (platform: "meta" | "google") => {
+    const { data } = await supabase
+      .from("ad_sync_runs")
+      .select("created_at")
+      .eq("platform", platform)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return (data?.created_at as string | undefined) ?? null;
+  };
+  const [meta, google] = await Promise.all([one("meta"), one("google")]);
+  return { meta, google };
+}

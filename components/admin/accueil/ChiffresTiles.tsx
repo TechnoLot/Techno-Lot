@@ -3,6 +3,8 @@ import { ArrowRight } from "lucide-react";
 import PeriodPills from "@/components/admin/PeriodPills";
 import { formatCount, formatMoney } from "@/lib/admin/format";
 import type { PeriodKey } from "@/lib/admin/types";
+import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
+import AdsAutoSync from "@/components/admin/ads/AdsAutoSync";
 
 export type Chiffres = {
   /** Ventes totales = lots + ventes manuelles + eBay */
@@ -20,6 +22,8 @@ export type Chiffres = {
   profit: number;
   pubsConfigured: boolean;
   pubs: number;
+  /** Synchro automatique Meta / Google (pastilles sous la tuile « Pubs ») */
+  pubsSync?: Record<AdPlatform, AdsSyncState>;
 };
 
 export const CHIFFRES_PERIODES: PeriodKey[] = ["month", "lastmonth", "ytd", "all"];
@@ -68,7 +72,19 @@ export default function ChiffresTiles({
         </Tile>
 
         {data.pubsConfigured ? (
-          <Tile label="Pubs" value={formatMoney(data.pubs)}>
+          <Tile
+            label="Pubs"
+            value={formatMoney(data.pubs)}
+            footer={
+              data.pubsSync && (
+                <AdsAutoSync
+                  variant="badge"
+                  platforms={(["meta", "google"] as const).filter((p) => data.pubsSync?.[p].configured)}
+                  state={data.pubsSync}
+                />
+              )
+            }
+          >
             Non retirées du profit
           </Tile>
         ) : (
@@ -96,11 +112,14 @@ function Tile({
   value,
   valueClass = "text-admin-ink",
   children,
+  footer,
 }: {
   label: string;
   value: string;
   valueClass?: string;
   children: React.ReactNode;
+  /** Sous le texte (ex. pastilles de synchro) */
+  footer?: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-[132px] min-w-0 flex-col justify-between gap-3 rounded-2xl border border-admin-line bg-admin-card p-4 sm:p-5">
@@ -111,6 +130,7 @@ function Tile({
         {value}
       </p>
       <p className="text-[12.5px] leading-snug text-admin-muted">{children}</p>
+      {footer}
     </div>
   );
 }
