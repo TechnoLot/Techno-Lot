@@ -1,4 +1,4 @@
-import { AlertTriangle, Info } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
 import type {
   AdsOverview,
@@ -14,7 +14,7 @@ import SyncButton from "./SyncButton";
 import AdsKpis from "./AdsKpis";
 import AdsTable from "./AdsTable";
 import VerdictGuide from "./VerdictGuide";
-import MetaConnect, { UrlParamsCard } from "./MetaConnect";
+import { UrlParamsCard } from "./MetaConnect";
 import { periodText } from "./PeriodCaption";
 import { card, cardSub, cardTitle } from "./ui";
 
@@ -24,7 +24,6 @@ export type PubsOverviewProps = {
   data: AdsOverview & { periodKey: string; platform: PlatformFilter; error: string | null };
   lastSync: LastSync;
   config: ConfigStatus;
-  metaEnv: { token: boolean; account: boolean };
   /** Jours à resynchroniser (couvre la période affichée) */
   syncDays: number;
   /** Formulaires reçus vs rattachés (absent dans les données de test) */
@@ -32,7 +31,7 @@ export type PubsOverviewProps = {
 };
 
 /** Contenu de /admin/pubs (séparé de la page pour l'alimenter en données de test). */
-export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays, coverage }: PubsOverviewProps) {
+export default function PubsOverview({ data, lastSync, config, syncDays, coverage }: PubsOverviewProps) {
   const { platform, range } = data;
   const connected =
     platform === "meta" ? config.meta : platform === "google" ? config.google : config.meta || config.google;
@@ -82,15 +81,6 @@ export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays
             <span className="min-w-0 break-words">
               La dernière mise à jour a échoué : {lastSync.message ?? "erreur inconnue"}
             </span>
-          </p>
-        )}
-
-        {platform === "meta" && !config.meta && <MetaConnect env={metaEnv} />}
-
-        {platform === "google" && !config.google && (
-          <p className="flex gap-2 rounded-2xl border border-admin-line bg-admin-card px-4 py-3 text-sm text-admin-muted">
-            <Info className="mt-0.5 h-4 w-4 shrink-0 text-admin-green" aria-hidden />
-            Google Ads n&apos;est pas connecté : les dépenses n&apos;apparaissent pas. Étapes dans docs/PUBLICITES-SETUP.md.
           </p>
         )}
 

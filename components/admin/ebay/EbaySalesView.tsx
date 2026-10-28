@@ -152,8 +152,6 @@ export default function EbaySalesView({
           </div>
         )}
       </section>
-
-      {configured && <ConnectEbay env={env} compact />}
     </div>
   );
 }

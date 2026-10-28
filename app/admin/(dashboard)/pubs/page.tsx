@@ -8,7 +8,6 @@ import {
   parsePlatformFilter,
   torontoDay,
 } from "@/lib/ads/queries";
-import { getMetaEnvStatus } from "@/lib/ads/meta";
 import PubsOverview from "@/components/admin/ads/PubsOverview";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +36,6 @@ export default async function PubsPage({
       data={data}
       lastSync={lastSync}
       config={getConfigStatus()}
-      metaEnv={getMetaEnvStatus()}
       syncDays={syncDays}
       coverage={coverage}
     />
