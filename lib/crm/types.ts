@@ -121,6 +121,8 @@ export type Contact = {
   fallback_reason: string | null;
   contact_priority: number;
   priority_reason: string | null;
+  /** Désabonné des courriels (LCAP) : plus aucun envoi vers cette adresse. */
+  unsubscribed_at: string | null;
 };
 
 export type OutreachActivity = {

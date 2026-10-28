@@ -36,7 +36,7 @@ export function renderTemplate(
 }
 
 /**
- * Bloc signature HTML d'Eric Després — même rendu que l'envoi de devis
+ * Bloc signature HTML d'Anthony Després — même rendu que l'envoi de devis
  * (calculatrice) : largeurs fixes, styles inline, compatible iOS Mail.
  */
 function signatureHtml(): string {
@@ -88,8 +88,30 @@ function signatureHtml(): string {
   `.trim();
 }
 
-/** Enveloppe HTML complète (fond clair, iOS Mail friendly) autour du message. */
-function wrapHtml(message: string, subject: string): string {
+/** Le modèle contient déjà sa propre mention de désabonnement. */
+function mentionneDesabonnement(body: string): boolean {
+  return /d[ée]sabonn|unsubscribe/i.test(body);
+}
+
+/**
+ * Mention de désabonnement exigée par la LCAP dans tout courriel commercial :
+ * répondre « désabonner » (ou écrire via le lien) suffit. L'équipe marque
+ * alors le contact « Désabonné » dans sa fiche, ce qui bloque tout envoi.
+ */
+function desabonnementHtml(adresse: string): string {
+  const mailto = `mailto:${adresse}?subject=${encodeURIComponent("Désabonner")}`;
+  return `<p style="margin:20px 0 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;line-height:1.5;color:#8a8f98;-webkit-text-size-adjust:100%;">
+  Vous préférez ne plus recevoir nos courriels&nbsp;? Répondez simplement «&nbsp;désabonner&nbsp;» ou <a href="${mailto}" style="color:#8a8f98 !important;text-decoration:underline;">écrivez-nous ici</a>, et nous retirerons votre adresse.<br>
+  Prefer not to hear from us? Just reply “unsubscribe”.
+</p>`;
+}
+
+/**
+ * Enveloppe HTML complète (fond clair, iOS Mail friendly) autour du message.
+ * `desabonnement` = adresse des demandes de désabonnement (null : le modèle
+ * a déjà sa propre mention).
+ */
+function wrapHtml(message: string, subject: string, desabonnement: string | null): string {
   const messageHtml = escapeHtml(message).replace(/\n/g, "<br/>");
   return `<!doctype html>
 <html lang="fr" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml">
@@ -122,6 +144,7 @@ function wrapHtml(message: string, subject: string): string {
             <td style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#111111;font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%;">
               <div style="white-space:pre-wrap;">${messageHtml}</div>
               ${signatureHtml()}
+              ${desabonnement ? desabonnementHtml(desabonnement) : ""}
             </td>
           </tr>
         </table>
@@ -132,8 +155,11 @@ function wrapHtml(message: string, subject: string): string {
 </html>`;
 }
 
-/** Version texte brut avec signature. */
-function wrapText(message: string): string {
+/** Version texte brut avec signature (et mention de désabonnement, comme en HTML). */
+function wrapText(message: string, desabonnement: string | null): string {
+  const mention = desabonnement
+    ? `\nPour ne plus recevoir nos courriels, répondez « désabonner » (ou écrivez à ${desabonnement}).\nTo stop receiving our emails, reply "unsubscribe".\n`
+    : "";
   return `${message}
 
 —
@@ -147,13 +173,15 @@ ADR   3235 Av. de la Gare
       Mascouche, QC  J7K 3C1
 
 Demander une soumission : https://technolot.ca/soumission
-`;
+${mention}`;
 }
 
 /**
  * Envoie un courriel de prospection (modèle rendu) via Resend, avec la
- * signature Techno Lot ajoutée automatiquement. `replyTo` = courriel de
- * l'admin connecté pour que les réponses lui reviennent directement.
+ * signature Techno Lot et la mention de désabonnement (LCAP) ajoutées
+ * automatiquement. `replyTo` = courriel de l'admin connecté pour que les
+ * réponses lui reviennent directement. Vérifier les désabonnements avant
+ * d'appeler (lib/crm/desabonnement.ts).
  */
 export async function sendProspectEmail(opts: {
   to: string;
@@ -171,6 +199,10 @@ export async function sendProspectEmail(opts: {
 
   const fromAddress = process.env.FROM_EMAIL ?? "info@technolot.ca";
   const bccAddress = process.env.CONTACT_EMAIL ?? "info@technolot.ca";
+  // LCAP : les demandes de désabonnement arrivent dans la boîte générale
+  // (en-tête List-Unsubscribe, plus la mention sous la signature si le
+  // modèle n'a pas déjà la sienne).
+  const desabonnement = mentionneDesabonnement(opts.body) ? null : bccAddress;
 
   try {
     const resend = new Resend(apiKey);
@@ -180,8 +212,9 @@ export async function sendProspectEmail(opts: {
       bcc: bccAddress !== opts.to ? [bccAddress] : undefined,
       replyTo: opts.replyTo ? [opts.replyTo] : undefined,
       subject: opts.subject,
-      html: wrapHtml(opts.body, opts.subject),
-      text: wrapText(opts.body),
+      html: wrapHtml(opts.body, opts.subject, desabonnement),
+      text: wrapText(opts.body, desabonnement),
+      headers: { "List-Unsubscribe": `<mailto:${bccAddress}?subject=desabonner>` },
     });
     if (error) {
       console.error("[crm] Erreur Resend :", error);

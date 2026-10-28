@@ -43,7 +43,8 @@ export default async function SequencePage() {
   const { data: contactsRaw, error: contactsError } = await supabase
     .from("contacts")
     .select("*, companies(*)")
-    .eq("stage", "sequence_active");
+    .eq("stage", "sequence_active")
+    .is("unsubscribed_at", null);
 
   const contacts = (contactsRaw ?? []) as (Contact & { companies: Company | null })[];
 

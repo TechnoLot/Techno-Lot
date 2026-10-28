@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { renderTemplate, sendProspectEmail } from "@/lib/crm/email";
+import { courrielsDesabonnes } from "@/lib/crm/desabonnement";
 import type {
   Company,
   Contact,
@@ -21,7 +22,9 @@ const DELAY_DAYS = 7;
 /**
  * GET/POST : auto-envoi de la relance 1 aux contacts qui ont reçu un intro
  * (cold outreach ou post-appel) il y a >= 7 jours et qui n'ont pas encore
- * reçu de relance 1. Protégé par le header `Authorization: Bearer $CRON_SECRET`.
+ * reçu de relance 1. Les contacts désabonnés (LCAP) sont exclus, même quand
+ * l'adresse a été désabonnée sur une autre fiche.
+ * Protégé par le header `Authorization: Bearer $CRON_SECRET`.
  *
  * Réponse : { checked, sent, skipped, errors }
  */
@@ -70,6 +73,7 @@ export async function POST(request: Request) {
     .from("contacts")
     .select("*, companies(*)")
     .eq("stage", "sequence_active")
+    .is("unsubscribed_at", null)
     .not("email", "is", null);
   if (contactsError) {
     return NextResponse.json({ error: contactsError.message }, { status: 500 });
@@ -80,6 +84,12 @@ export async function POST(request: Request) {
 
   if (contacts.length === 0) {
     return NextResponse.json({ checked: 0, sent: 0, skipped: 0, errors: [] });
+  }
+
+  // LCAP : adresses désabonnées (lecture impossible : on n'envoie rien)
+  const desabonnes = await courrielsDesabonnes(supabase);
+  if (!desabonnes.ok) {
+    return NextResponse.json({ error: desabonnes.error }, { status: 500 });
   }
 
   // 3. Toutes les activités d'envoi pour ces contacts
@@ -112,6 +122,16 @@ export async function POST(request: Request) {
         email: "",
         status: "skipped",
         reason: "no-email",
+      });
+      continue;
+    }
+
+    if (desabonnes.emails.has(contact.email.trim().toLowerCase())) {
+      results.push({
+        contactId: contact.id,
+        email: contact.email,
+        status: "skipped",
+        reason: "unsubscribed",
       });
       continue;
     }

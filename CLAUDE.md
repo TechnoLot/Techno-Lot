@@ -25,7 +25,8 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 
 ## Règles CRM
 
-- Envoi email : `lib/crm/email.ts` (Resend, signature Eric Després, variables {{prenom}} {{nom}} {{compagnie}} {{titre}}, reply-to = admin connecté). Templates en base (`email_templates`), éditables via /admin/crm/modeles.
+- Envoi email : `lib/crm/email.ts` (Resend, signature Anthony Després, variables {{prenom}} {{nom}} {{compagnie}} {{titre}}, reply-to = admin connecté). Templates en base (`email_templates`), éditables via /admin/crm/modeles.
+- Désabonnement (LCAP) : chaque courriel du CRM porte la mention « répondez désabonner » et l'en-tête `List-Unsubscribe` (boîte `CONTACT_EMAIL`). Bouton « Désabonner » sur la fiche contact → `contacts.unsubscribed_at` ; tout envoi (manuel ou `auto-relances`) est refusé vers une adresse désabonnée, même notée sur une autre fiche (`lib/crm/desabonnement.ts`).
 - Rappels de suivi : date détectée dans la note (`parse-followup-date.ts`, fuseau America/Toronto) ou délai de statut (intéressé 3 j, contacté 7 j → `FOLLOWUP_DELAY_DAYS`).
 - Conversion client : lot `source=manual, status=negotiating, purchase_price=0`, lie `contacts.lot_id`, compagnie → `research_status=converted`.
 

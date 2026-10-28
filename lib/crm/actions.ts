@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
 import { renderTemplate, sendProspectEmail } from "@/lib/crm/email";
+import { courrielsDesabonnes } from "@/lib/crm/desabonnement";
 import { parseFollowupDate } from "@/lib/crm/parse-followup-date";
 import type {
   Company,
@@ -296,6 +297,55 @@ export async function updateContactStage(
   return { ok: true };
 }
 
+/**
+ * Désabonnement des courriels (LCAP), à noter dès qu'un contact le demande :
+ * plus aucun envoi vers son adresse (manuel ou relance automatique), et un
+ * contact en séquence en sort (stage « contacté »). `false` l'annule, à faire
+ * seulement si la personne a redemandé à recevoir nos courriels.
+ */
+export async function setContactUnsubscribed(
+  contactId: string,
+  unsubscribed: boolean,
+): Promise<Result> {
+  const { supabase } = await requireAdmin();
+  const now = new Date().toISOString();
+
+  const { data: current, error: readError } = await supabase
+    .from("contacts")
+    .select("stage")
+    .eq("id", contactId)
+    .single();
+  if (readError || !current) {
+    return { ok: false, error: readError?.message ?? "Contact introuvable." };
+  }
+
+  const patch: { unsubscribed_at: string | null; updated_at: string; stage?: ContactStage } = {
+    unsubscribed_at: unsubscribed ? now : null,
+    updated_at: now,
+  };
+  if (unsubscribed && current.stage === "sequence_active") patch.stage = "contacted";
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .update(patch)
+    .eq("id", contactId)
+    .select("company_id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  // Trace datée dans l'historique du contact (preuve que la demande a été traitée).
+  await supabase.from("outreach_activities").insert({
+    contact_id: contactId,
+    activity_type: "manual_note",
+    outcome: unsubscribed
+      ? "Désabonné des courriels à sa demande (LCAP) : plus aucun envoi."
+      : "Désabonnement annulé : la personne a redemandé à recevoir nos courriels.",
+  });
+
+  revalidateCrm(data?.company_id);
+  return { ok: true };
+}
+
 /** Marque un courriel ou téléphone comme vérifié manuellement. */
 export async function markVerified(
   contactId: string,
@@ -398,6 +448,21 @@ export async function sendTemplateEmail(
 
   if (!contact.email) {
     return { ok: false, error: "Ce contact n'a pas de courriel." };
+  }
+
+  // LCAP : jamais d'envoi vers une adresse désabonnée, même notée sur une autre fiche.
+  if (contact.unsubscribed_at) {
+    return { ok: false, error: "Ce contact s'est désabonné des courriels : aucun envoi possible." };
+  }
+  const desabonnes = await courrielsDesabonnes(supabase);
+  if (!desabonnes.ok) {
+    return { ok: false, error: "Vérification des désabonnements impossible : " + desabonnes.error };
+  }
+  if (desabonnes.emails.has(contact.email.trim().toLowerCase())) {
+    return {
+      ok: false,
+      error: "Cette adresse s'est désabonnée (sur une autre fiche) : aucun envoi possible.",
+    };
   }
 
   const template = await loadActiveTemplate(supabase, templateType);

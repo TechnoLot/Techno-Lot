@@ -91,7 +91,8 @@ export default function TemplateEditor({ template }: { template: EmailTemplate }
         <p className="text-xs text-admin-muted">
           Variables : <Code>{"{{prenom}}"}</Code> <Code>{"{{nom}}"}</Code>{" "}
           <Code>{"{{compagnie}}"}</Code> <Code>{"{{titre}}"}</Code> — la
-          signature Techno Lot est ajoutée automatiquement à l&apos;envoi.
+          signature Techno Lot et la mention de désabonnement (LCAP) sont
+          ajoutées automatiquement à l&apos;envoi.
         </p>
         <button
           type="button"

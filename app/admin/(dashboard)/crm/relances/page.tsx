@@ -35,7 +35,8 @@ export default async function RelancesPage() {
   const { data: contactsRaw } = await supabase
     .from("contacts")
     .select("*, companies(id, name)")
-    .eq("stage", "sequence_active");
+    .eq("stage", "sequence_active")
+    .is("unsubscribed_at", null);
   const contacts = (contactsRaw ?? []) as (Contact & {
     companies: Pick<Company, "id" | "name"> | null;
   })[];

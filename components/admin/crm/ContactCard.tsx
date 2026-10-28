@@ -7,6 +7,7 @@ import {
   Linkedin,
   Loader2,
   Mail,
+  MailX,
   Pencil,
   Phone,
   PhoneCall,
@@ -26,6 +27,7 @@ import {
   logActivity,
   markVerified,
   sendTemplateEmail,
+  setContactUnsubscribed,
   updateContact,
   updateContactStage,
 } from "@/lib/crm/actions";
@@ -39,6 +41,7 @@ import {
   type ContactStage,
   type TemplateType,
 } from "@/lib/crm/types";
+import { formatDate } from "@/lib/admin/format";
 
 export default function ContactCard({ contact }: { contact: Contact }) {
   const router = useRouter();
@@ -49,6 +52,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingResub, setConfirmingResub] = useState(false);
   const [introTemplate, setIntroTemplate] = useState<TemplateType>(
     contact.stage === "call_done" ? "post_call_intro" : "cold_outreach",
   );
@@ -84,6 +88,13 @@ export default function ContactCard({ contact }: { contact: Contact }) {
     return () => clearTimeout(timeout);
   }, [confirmingDelete]);
 
+  // Idem pour l'annulation d'un désabonnement
+  useEffect(() => {
+    if (!confirmingResub) return;
+    const timeout = setTimeout(() => setConfirmingResub(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [confirmingResub]);
+
   return (
     <div className="glass p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -99,6 +110,14 @@ export default function ContactCard({ contact }: { contact: Contact }) {
               />
             )}
             <StageBadge stage={contact.stage} />
+            {contact.unsubscribed_at && (
+              <span
+                className="inline-flex items-center rounded-full bg-admin-tint-red px-2 py-0.5 text-xs font-medium text-admin-danger"
+                title="A demandé à ne plus recevoir de courriels (LCAP) : aucun envoi possible"
+              >
+                Désabonné
+              </span>
+            )}
             {contact.is_fallback_contact && (
               <span
                 className="inline-flex items-center rounded-full bg-admin-tint-amber px-2 py-0.5 text-xs font-medium text-admin-tint-amber-ink"
@@ -236,7 +255,35 @@ export default function ContactCard({ contact }: { contact: Contact }) {
 
       {/* Actions */}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-admin-line-soft pt-4">
-        {contact.stage !== "converted" &&
+        {contact.unsubscribed_at && (
+          <p className="flex w-full flex-wrap items-center gap-x-2 gap-y-1 text-xs text-admin-muted">
+            <MailX className="h-3.5 w-3.5 shrink-0 text-admin-danger" aria-hidden />
+            Désabonné le {formatDate(contact.unsubscribed_at)} : aucun courriel de prospection.
+            <button
+              type="button"
+              disabled={isWorking}
+              onClick={() => {
+                if (!confirmingResub) {
+                  setConfirmingResub(true);
+                  return;
+                }
+                setConfirmingResub(false);
+                run(
+                  "resubscribe",
+                  () => setContactUnsubscribed(contact.id, false),
+                  "Désabonnement annulé.",
+                );
+              }}
+              title="Seulement si la personne a redemandé à recevoir vos courriels"
+              className="font-semibold text-admin-ink underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              {confirmingResub ? "Confirmer l'annulation" : "Annuler le désabonnement"}
+            </button>
+          </p>
+        )}
+
+        {!contact.unsubscribed_at &&
+          contact.stage !== "converted" &&
           contact.stage !== "lost" &&
           contact.stage !== "sequence_active" && (
             <div className="flex w-full items-stretch overflow-hidden rounded-full border border-admin-line-strong bg-admin-card sm:inline-flex sm:w-auto">
@@ -282,6 +329,7 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           )}
 
         {contact.stage === "sequence_active" &&
+          !contact.unsubscribed_at &&
           (["followup_1", "followup_2", "followup_3"] as TemplateType[]).map(
             (t, i) => (
               <button
@@ -372,6 +420,29 @@ export default function ContactCard({ contact }: { contact: Contact }) {
           <Pencil className="h-3 w-3" aria-hidden />
           Modifier
         </button>
+
+        {contact.email && !contact.unsubscribed_at && (
+          <button
+            type="button"
+            disabled={isWorking}
+            onClick={() =>
+              run(
+                "unsubscribe",
+                () => setContactUnsubscribed(contact.id, true),
+                "Contact désabonné : plus aucun courriel ne lui sera envoyé.",
+              )
+            }
+            className="inline-flex items-center gap-1.5 rounded-full border border-admin-line-strong bg-admin-card px-3.5 py-2 text-[13px] font-semibold text-admin-ink transition-colors hover:border-admin-tint-red-line hover:text-admin-danger disabled:opacity-50"
+            title="La personne a demandé à ne plus recevoir de courriels (LCAP) : bloque tout envoi vers son adresse"
+          >
+            {busy === "unsubscribe" ? (
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+            ) : (
+              <MailX className="h-3 w-3" aria-hidden />
+            )}
+            Désabonner
+          </button>
+        )}
 
         {contact.stage !== "converted" && (
           <button
