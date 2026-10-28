@@ -27,10 +27,7 @@ export const metadata: Metadata = {
     url: `${site.url}/en`,
     images: [{ url: "/logo.png", width: 1024, height: 614, alt: "Techno Lot" }],
   },
-  alternates: {
-    canonical: "/en",
-    languages: { "fr-CA": "/", "en-CA": "/en" },
-  },
+  // Pas d'alternates par défaut (voir app/layout.tsx).
 };
 
 export default function EnLayout({

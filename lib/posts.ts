@@ -1,4 +1,5 @@
 import { localePath, type Locale } from "@/lib/i18n";
+import { LANG_OVERRIDES, isIndexable } from "@/lib/blog-seo";
 
 export type PostSection = {
   heading?: string;
@@ -256,6 +257,9 @@ type SoroRaw = {
   excerpt: string;
   isoDate: string;
   image: string | null;
+  /** Date de mise à jour, si Soro la fournit un jour (nom de champ incertain). */
+  updatedIsoDate?: unknown;
+  updatedAt?: unknown;
 };
 
 /** Article tel qu'affiché dans les listes du blog (local ou Soro). */
@@ -270,8 +274,10 @@ export type PostSummary = {
   /** Temps de lecture (connu seulement pour les articles locaux dans les listes) */
   readingTime?: string;
   source: "local" | "soro";
-  /** Langue du contenu (les articles Soro sont rédigés en français) */
+  /** Langue du contenu (articles Soro : détectée sur le corps, voir detectLang) */
   lang: Locale;
+  /** Date de mise à jour (ISO) quand la source la donne */
+  updatedIsoDate?: string;
   soroId?: string;
 };
 
@@ -332,34 +338,199 @@ function localSummary(post: Post, locale: Locale): PostSummary {
   };
 }
 
+/* ---------- Langue réelle des articles Soro ---------- */
+
+/*
+ * Soro ne donne pas la langue : on la déduit du corps de l'article, en
+ * comptant des mots-outils propres à chaque langue (les articles français
+ * donnent environ 97 % de mots-outils français, les anglais environ 3 %).
+ */
+const FR_FUNCTION_WORDS = new Set([
+  "le", "la", "les", "des", "du", "de", "et", "est", "une", "un", "pour",
+  "dans", "que", "qui", "avec", "sur", "pas", "vos", "votre", "nous", "ce",
+  "cette", "au", "aux", "sont", "par", "leur", "leurs", "être", "peut",
+]);
+const EN_FUNCTION_WORDS = new Set([
+  "the", "and", "of", "to", "is", "are", "for", "with", "that", "this",
+  "your", "you", "it", "be", "can", "an", "from", "by", "not", "our", "we",
+  "their", "they", "when", "which", "into",
+]);
+
+/** Texte brut d'un fragment HTML (balises retirées, entités décodées). */
+function htmlToText(html: string): string {
+  return decodeEntities(html.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
 /**
- * Tous les articles du blog, du plus récent au plus ancien :
- * articles locaux (ci-dessus) + articles publiés sur Soro.
+ * "fr" ou "en" selon les mots-outils ; null si moins de `minWords` mots-outils
+ * (texte trop court pour trancher).
+ */
+export function detectLang(text: string, minWords = 8): Locale | null {
+  let fr = 0;
+  let en = 0;
+  for (const raw of text.toLowerCase().split(/[^a-zà-öø-ÿœæ]+/)) {
+    if (FR_FUNCTION_WORDS.has(raw)) fr++;
+    else if (EN_FUNCTION_WORDS.has(raw)) en++;
+  }
+  if (fr + en < minWords) return null;
+  return fr / (fr + en) >= 0.5 ? "fr" : "en";
+}
+
+/** Corps HTML brut d'un article Soro (cache d'une heure), ou null. */
+async function fetchSoroContent(id: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `${SORO_BASE}/api/embed/${SORO_TOKEN}/article/${encodeURIComponent(id)}`,
+      { next: { revalidate: SORO_REVALIDATE } },
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { content?: unknown };
+    return typeof data.content === "string" && data.content.trim() ? data.content : null;
+  } catch {
+    return null;
+  }
+}
+
+/** map asynchrone avec au plus `limit` appels simultanés. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+type SoroEntry = { raw: SoroRaw; lang: Locale; content: string | null };
+
+function isoOrUndefined(v: unknown): string | undefined {
+  return typeof v === "string" && !Number.isNaN(new Date(v).getTime()) ? v : undefined;
+}
+
+/*
+ * Liste Soro + corps de chaque article (pour la langue). Les fetch sont en
+ * cache d'une heure ; la promesse est en plus gardée 30 s pour qu'une même
+ * page (métadonnées, corps, article suivant) ne relise pas 80 entrées du cache.
+ */
+let soroMemo: { at: number; promise: Promise<SoroEntry[] | null> } | null = null;
+
+async function loadSoroEntries(): Promise<SoroEntry[] | null> {
+  const list = await fetchSoroList();
+  if (!list) return null;
+  const contents = await mapLimit(list, 8, (a) => fetchSoroContent(a.id));
+  return list.map((raw, i) => {
+    const content = contents[i];
+    const lang =
+      LANG_OVERRIDES[raw.slug] ??
+      (content ? detectLang(htmlToText(content)) : null) ??
+      // Repli si le corps est indisponible : titre + extrait (moins fiable)
+      detectLang(`${raw.title} ${typeof raw.excerpt === "string" ? raw.excerpt : ""}`, 3) ??
+      "fr";
+    return { raw, lang, content };
+  });
+}
+
+function getSoroEntries(): Promise<SoroEntry[] | null> {
+  const now = Date.now();
+  if (!soroMemo || now - soroMemo.at > 30_000) {
+    const promise = loadSoroEntries();
+    soroMemo = { at: now, promise };
+    // Échec (Soro indisponible) : ne pas garder le résultat
+    promise.then((r) => {
+      if (r === null && soroMemo?.promise === promise) soroMemo = null;
+    });
+  }
+  return soroMemo.promise;
+}
+
+/** Slugs des articles locaux (toutes langues) : prioritaires sur Soro. */
+const localSlugs = new Set(Object.values(postsByLocale).flatMap((ps) => ps.map((p) => p.slug)));
+
+function soroSummary(entry: SoroEntry, locale: Locale): PostSummary {
+  const a = entry.raw;
+  const updated = isoOrUndefined(a.updatedIsoDate) ?? isoOrUndefined(a.updatedAt);
+  return {
+    slug: a.slug,
+    title: a.title,
+    excerpt: typeof a.excerpt === "string" ? a.excerpt : "",
+    isoDate: a.isoDate,
+    dateLabel: formatPostDate(locale, a.isoDate),
+    image: typeof a.image === "string" && a.image.startsWith("https://") ? a.image : null,
+    imageAlt: "",
+    source: "soro",
+    lang: entry.lang,
+    ...(updated ? { updatedIsoDate: updated } : {}),
+    soroId: a.id,
+  };
+}
+
+/**
+ * Articles du blog dans une langue, du plus récent au plus ancien :
+ * articles locaux de cette langue + articles Soro dont le corps est dans
+ * cette langue. Comprend les articles consolidés (voir getListedBlogFeed).
  */
 export async function getBlogFeed(
   locale: Locale,
 ): Promise<{ posts: PostSummary[]; soroOk: boolean }> {
   const local = postsByLocale[locale].map((p) => localSummary(p, locale));
-  const soro = await fetchSoroList();
-  const localSlugs = new Set(local.map((p) => p.slug));
-  const fromSoro: PostSummary[] = (soro ?? [])
-    .filter((a) => !localSlugs.has(a.slug))
-    .map((a) => ({
-      slug: a.slug,
-      title: a.title,
-      excerpt: typeof a.excerpt === "string" ? a.excerpt : "",
-      isoDate: a.isoDate,
-      dateLabel: formatPostDate(locale, a.isoDate),
-      image: typeof a.image === "string" && a.image.startsWith("https://") ? a.image : null,
-      imageAlt: "",
-      source: "soro" as const,
-      lang: "fr" as const,
-      soroId: a.id,
-    }));
+  const soro = await getSoroEntries();
+  const fromSoro = (soro ?? [])
+    .filter((e) => e.lang === locale && !localSlugs.has(e.raw.slug))
+    .map((e) => soroSummary(e, locale));
   const posts = [...local, ...fromSoro].sort(
     (a, b) => new Date(b.isoDate).getTime() - new Date(a.isoDate).getTime(),
   );
   return { posts, soroOk: soro !== null };
+}
+
+/** Articles affichés dans la liste du blogue et le plan du site (sans les articles consolidés). */
+export async function getListedBlogFeed(
+  locale: Locale,
+): Promise<{ posts: PostSummary[]; soroOk: boolean }> {
+  const { posts, soroOk } = await getBlogFeed(locale);
+  return { posts: posts.filter((p) => isIndexable(p.slug)), soroOk };
+}
+
+/**
+ * Langue dans laquelle un article existe, quand il n'existe pas dans
+ * `locale` (pour rediriger /blog/<slug> ↔ /en/blog/<slug>) ; null sinon.
+ */
+export async function findOtherLocale(locale: Locale, slug: string): Promise<Locale | null> {
+  const other: Locale = locale === "fr" ? "en" : "fr";
+  if (postsByLocale[locale].some((p) => p.slug === slug)) return null;
+  if (postsByLocale[other].some((p) => p.slug === slug)) return other;
+  const soro = await getSoroEntries();
+  const entry = soro?.find((e) => e.raw.slug === slug && !localSlugs.has(slug));
+  return entry && entry.lang !== locale ? entry.lang : null;
+}
+
+/**
+ * Langue d'un article, ou null s'il est inconnu. Un article local traduit
+ * est rendu dans `prefer` s'il y existe.
+ */
+export async function findPostLocale(slug: string, prefer: Locale = "fr"): Promise<Locale | null> {
+  if (postsByLocale[prefer].some((p) => p.slug === slug)) return prefer;
+  if (postsByLocale.fr.some((p) => p.slug === slug)) return "fr";
+  if (postsByLocale.en.some((p) => p.slug === slug)) return "en";
+  const soro = await getSoroEntries();
+  return soro?.find((e) => e.raw.slug === slug)?.lang ?? null;
+}
+
+/**
+ * Cible d'un ancien lien du widget Soro (/blog?post=<slug> ou
+ * /en/blog?post=<slug>) : l'article dans sa langue, sinon l'index du blogue
+ * d'origine.
+ */
+export async function legacyPostTarget(from: Locale, slug: string | null): Promise<string> {
+  if (slug && /^[a-z0-9-]+$/.test(slug)) {
+    const lang = await findPostLocale(slug, from);
+    if (lang) return localePath(lang, `/blog/${slug}`);
+  }
+  return localePath(from, "/blog");
 }
 
 export type ArticleHeading = { id: string; text: string };
@@ -371,27 +542,19 @@ export type SoroArticle = {
   minutes: number;
 };
 
-/** Article Soro complet (HTML assaini), ou null s'il n'existe pas ou si Soro est indisponible. */
+/** Article Soro complet (HTML assaini) dans cette langue, ou null s'il n'existe pas ou si Soro est indisponible. */
 export async function getSoroArticle(
   locale: Locale,
   slug: string,
 ): Promise<SoroArticle | null> {
-  const { posts } = await getBlogFeed(locale);
-  const summary = posts.find((p) => p.source === "soro" && p.slug === slug);
-  if (!summary?.soroId) return null;
-  try {
-    const res = await fetch(
-      `${SORO_BASE}/api/embed/${SORO_TOKEN}/article/${encodeURIComponent(summary.soroId)}`,
-      { next: { revalidate: SORO_REVALIDATE } },
-    );
-    if (!res.ok) return null;
-    const data = (await res.json()) as { content?: unknown };
-    if (typeof data.content !== "string" || !data.content.trim()) return null;
-    const { html, headings, words } = sanitizeArticleHtml(data.content, locale);
-    return { summary, html, headings, minutes: words / 220 };
-  } catch {
-    return null;
-  }
+  if (localSlugs.has(slug)) return null;
+  const soro = await getSoroEntries();
+  const entry = soro?.find((e) => e.raw.slug === slug && e.lang === locale);
+  if (!entry) return null;
+  const content = entry.content ?? (await fetchSoroContent(entry.raw.id));
+  if (!content) return null;
+  const { html, headings, words } = sanitizeArticleHtml(content, locale);
+  return { summary: soroSummary(entry, locale), html, headings, minutes: words / 220 };
 }
 
 export function slugifyHeading(text: string): string {

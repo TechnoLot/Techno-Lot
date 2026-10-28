@@ -9,7 +9,7 @@ import { PrimaryButtonLink } from "@/components/site/Button";
 import SoroBlogEmbed from "@/components/SoroBlogEmbed";
 import PostImage from "@/components/blog/PostImage";
 import LegacyPostRedirect from "@/components/blog/LegacyPostRedirect";
-import { getBlogFeed, type PostSummary } from "@/lib/posts";
+import { getListedBlogFeed, type PostSummary } from "@/lib/posts";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import "./blog.css";
 
@@ -46,7 +46,7 @@ const content = {
     widgetTitle: "Recent posts",
     ctaTitle: "Have a lot of IT equipment to sell?",
     ctaText: "Describe your lot: we'll get back to you with a free estimate within 24 hours.",
-    inFrench: "Most of our articles are written in French.",
+    inFrench: "",
   },
 };
 
@@ -159,7 +159,8 @@ function monthKey(locale: Locale, iso: string) {
 export default async function BlogIndexPage({ locale, page = 1 }: { locale: Locale; page?: number }) {
   const t = content[locale];
   const dict = getDict(locale);
-  const { posts, soroOk } = await getBlogFeed(locale);
+  // Articles de cette langue seulement, sans les articles consolidés
+  const { posts, soroOk } = await getListedBlogFeed(locale);
   const href = (p: PostSummary) => localePath(locale, `/blog/${p.slug}`);
   const lang = (p: PostSummary) => (p.lang !== locale ? p.lang : undefined);
 

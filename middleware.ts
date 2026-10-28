@@ -28,8 +28,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(callbackUrl);
   }
 
-  // Hors /admin, on laisse tout passer (le matcher couvre "/" pour le
-  // filet ci-dessus, mais rien d'autre à vérifier ici).
+  // — Anciens liens du widget Soro : /blog?post=<slug> et /en/blog?post=<slug>.
+  // Réécriture (paramètre ?post= conservé) vers un gestionnaire de route qui
+  // connaît la langue de l'article et répond par une redirection permanente
+  // (308) vers son URL, ou vers l'index du blogue si le slug est inconnu.
+  if ((pathname === "/blog" || pathname === "/en/blog") && searchParams.has("post")) {
+    const target = request.nextUrl.clone();
+    target.pathname = `${pathname}/ancien-lien`;
+    return NextResponse.rewrite(target);
+  }
+
+  // Hors /admin, on laisse tout passer (le matcher couvre "/", "/blog" et
+  // "/en/blog" pour les filets ci-dessus, mais rien d'autre à vérifier ici).
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
@@ -80,6 +90,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // "/" est ajouté pour attraper les redirections d'auth qui atterrissent
-  // par erreur sur la racine (fallback Supabase Site URL).
-  matcher: ["/", "/admin/:path*"],
+  // par erreur sur la racine (fallback Supabase Site URL) ; "/blog" et
+  // "/en/blog" pour les anciens liens ?post=<slug>.
+  matcher: ["/", "/blog", "/en/blog", "/admin/:path*"],
 };

@@ -45,10 +45,9 @@ export const metadata: Metadata = {
     url: site.url,
     images: [{ url: "/logo.png", width: 1024, height: 614, alt: "Techno Lot" }],
   },
-  alternates: {
-    canonical: "/",
-    languages: { "fr-CA": "/", "en-CA": "/en" },
-  },
+  // Pas d'alternates par défaut : chaque page publique déclare sa propre
+  // canonical (pageMetadata, articles, pagination). Une page sans balise ne
+  // doit pas déclarer l'accueil comme canonical.
   // Validation Google Search Console : seulement si la variable est définie.
   ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
     ? { verification: { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } }

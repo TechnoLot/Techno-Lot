@@ -1,16 +1,21 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { notFound, permanentRedirect } from "next/navigation";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
+import { PrimaryButtonLink } from "@/components/site/Button";
+import JsonLd from "@/components/seo/JsonLd";
 import PostImage from "@/components/blog/PostImage";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import ShareButtons from "@/components/blog/ShareButtons";
 import {
+  findOtherLocale,
   getBlogFeed,
+  getListedBlogFeed,
   getPost,
+  getPosts,
   getSoroArticle,
   readingTimeLabel,
   slugifyHeading,
@@ -18,7 +23,17 @@ import {
   type Post,
   type PostSummary,
 } from "@/lib/posts";
+import {
+  blogSeoEntry,
+  blogSeoText,
+  isConsolidated,
+  relatedPageLink,
+  relatedServices,
+  type RelatedLink,
+} from "@/lib/blog-seo";
 import { site } from "@/lib/site";
+import { absoluteUrl } from "@/lib/seo/routes";
+import { ORG_ID, breadcrumbJsonLd } from "@/lib/seo/schema";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import "./blog.css";
 
@@ -93,29 +108,133 @@ export async function loadArticle(locale: Locale, slug: string): Promise<BlogArt
   };
 }
 
+/**
+ * Article demandé dans `locale`. S'il n'existe que dans l'autre langue
+ * (ex. article à corps anglais sous /blog/<slug>), redirection permanente
+ * (308) vers l'URL de sa langue ; null s'il n'existe nulle part.
+ */
+async function resolveArticle(locale: Locale, slug: string): Promise<BlogArticle | null> {
+  const article = await loadArticle(locale, slug);
+  if (article) return article;
+  const other = await findOtherLocale(locale, slug);
+  if (other) permanentRedirect(localePath(other, `/blog/${slug}`));
+  return null;
+}
+
+/** Chemin de l'article dans sa langue (= canonical). */
+const articlePath = (locale: Locale, slug: string) => localePath(locale, `/blog/${slug}`);
+
+/** Une vraie traduction existe-t-elle ? (aujourd'hui : articles locaux seulement) */
+function hasTranslation(locale: Locale, slug: string): boolean {
+  const other: Locale = locale === "fr" ? "en" : "fr";
+  return getPosts(locale).some((p) => p.slug === slug) && getPosts(other).some((p) => p.slug === slug);
+}
+
 /** Métadonnées d'un article (routes /blog/[slug] et /en/blog/[slug]). */
 export async function blogPostMetadata(locale: Locale, slug: string): Promise<Metadata> {
-  const article = await loadArticle(locale, slug);
+  const article = await resolveArticle(locale, slug);
   if (!article) return {};
   const { summary } = article;
-  const fr = `/blog/${summary.slug}`;
-  const en = `/en/blog/${summary.slug}`;
-  // Articles Soro : rédigés en français seulement → la version /en pointe vers l'URL française
-  const frenchOnly = summary.source === "soro";
+  const canonical = absoluteUrl(articlePath(locale, summary.slug));
+  // hreflang seulement quand l'article existe vraiment dans les deux langues
+  const alternates = hasTranslation(locale, summary.slug)
+    ? {
+        canonical,
+        languages: {
+          "fr-CA": absoluteUrl(articlePath("fr", summary.slug)),
+          "en-CA": absoluteUrl(articlePath("en", summary.slug)),
+          "x-default": absoluteUrl(articlePath("fr", summary.slug)),
+        },
+      }
+    : { canonical };
   return {
     title: summary.title,
     description: summary.excerpt,
-    alternates: frenchOnly
-      ? { canonical: fr, languages: { "fr-CA": fr } }
-      : { canonical: locale === "fr" ? fr : en, languages: { "fr-CA": fr, "en-CA": en } },
+    alternates,
+    ...(isConsolidated(summary.slug) ? { robots: { index: false, follow: true } } : {}),
     openGraph: {
       type: "article",
+      url: canonical,
       title: summary.title,
       description: summary.excerpt,
+      locale: locale === "fr" ? "fr_CA" : "en_CA",
       publishedTime: summary.isoDate,
+      modifiedTime: summary.updatedIsoDate ?? summary.isoDate,
       ...(summary.image ? { images: [summary.image] } : {}),
     },
   };
+}
+
+/**
+ * Renvoi d'un article consolidé vers sa référence : l'article « pillar » de
+ * la même langue, ou la page relatedPath ; null si aucun (ou consolidation inactive).
+ */
+async function consolidationTarget(
+  locale: Locale,
+  slug: string,
+): Promise<{ kind: "article" | "page"; link: RelatedLink } | null> {
+  if (!isConsolidated(slug)) return null;
+  const entry = blogSeoEntry(slug);
+  if (entry?.relatedPath) {
+    const link = relatedPageLink(locale, entry.relatedPath);
+    if (link) return { kind: "page", link };
+  }
+  if (entry?.pillar) {
+    const { posts } = await getBlogFeed(locale);
+    const pillar = posts.find((p) => p.slug === entry.pillar);
+    if (pillar) return { kind: "article", link: { href: articlePath(locale, pillar.slug), label: pillar.title } };
+  }
+  return null;
+}
+
+/** Fin d'article : rappel des engagements de Techno Lot (corrige les articles qui disent autre chose). */
+function KeyFacts({ locale }: { locale: Locale }) {
+  const t = blogSeoText[locale];
+  return (
+    <section aria-labelledby="tl-a-retenir" className="mt-14 rounded-3xl border border-line bg-surface p-6 sm:p-8">
+      <h2 id="tl-a-retenir" className="font-display text-2xl font-bold leading-tight text-mist">
+        {t.keyFactsTitle}
+      </h2>
+      <ul className="mt-5 space-y-3">
+        {t.keyFacts.map((fact) => (
+          <li key={fact} className="flex gap-3 leading-relaxed text-mist">
+            <Check className="mt-1 h-4 w-4 shrink-0 text-emerald" aria-hidden="true" />
+            <span>{fact}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-7">
+        <PrimaryButtonLink href={localePath(locale, "/soumission")} className="uppercase">
+          {t.keyFactsButton}
+        </PrimaryButtonLink>
+      </div>
+    </section>
+  );
+}
+
+/** Fin d'article : liens vers les pages de services liées au sujet. */
+function RelatedServices({ locale, links }: { locale: Locale; links: RelatedLink[] }) {
+  if (links.length === 0) return null;
+  return (
+    <nav aria-labelledby="tl-services-lies" className="mt-10">
+      <h2 id="tl-services-lies" className="font-display text-xs font-semibold uppercase tracking-[0.16em] text-moss">
+        {blogSeoText[locale].relatedTitle}
+      </h2>
+      <ul className="mt-4 border-t border-line">
+        {links.map((l) => (
+          <li key={l.href} className="border-b border-line">
+            <Link
+              href={l.href}
+              className="group flex items-center justify-between gap-4 py-4 font-display text-base font-semibold text-mist transition-colors hover:text-emerald"
+            >
+              {l.label}
+              <ArrowRight className="h-4 w-4 shrink-0 text-emerald transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
 }
 
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
@@ -148,20 +267,26 @@ function LocalBody({ post }: { post: Post }) {
 }
 
 export default async function BlogPostPage({ locale, slug }: { locale: Locale; slug: string }) {
-  const article = await loadArticle(locale, slug);
+  const article = await resolveArticle(locale, slug);
   if (!article) notFound();
 
   const t = content[locale];
+  const seoT = blogSeoText[locale];
   const dict = getDict(locale);
   const { summary } = article;
   const contentLang = summary.lang !== locale ? summary.lang : undefined;
-  const path = localePath(locale, `/blog/${summary.slug}`);
-  const url = `${site.url}${path}`;
+  const path = articlePath(locale, summary.slug);
+  // URL canonique (l'article est toujours servi dans sa langue)
+  const url = absoluteUrl(path);
 
-  const { posts } = await getBlogFeed(locale);
+  // Article suivant : parmi les articles listés (sans les articles consolidés)
+  const { posts } = await getListedBlogFeed(locale);
   const idx = posts.findIndex((p) => p.slug === summary.slug);
   const candidate = idx >= 0 ? posts[idx + 1] ?? posts[0] : posts[0];
   const next = candidate && candidate.slug !== summary.slug ? candidate : null;
+
+  const reference = await consolidationTarget(locale, summary.slug);
+  const related = relatedServices(locale, summary.slug, summary.title);
 
   const shareLabels = { title: t.share, copy: t.copy, copied: t.copied, email: t.email };
 
@@ -170,17 +295,24 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
     "@type": "BlogPosting",
     headline: summary.title,
     description: summary.excerpt,
-    datePublished: summary.isoDate,
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
     inLanguage: summary.lang === "fr" ? "fr-CA" : "en-CA",
+    datePublished: summary.isoDate,
+    dateModified: summary.updatedIsoDate ?? summary.isoDate,
     ...(summary.image ? { image: summary.image.startsWith("/") ? `${site.url}${summary.image}` : summary.image } : {}),
-    author: { "@type": "Organization", name: site.name, url: site.url },
-    publisher: { "@type": "Organization", name: site.name, url: site.url },
-    mainEntityOfPage: url,
+    author: { "@id": ORG_ID },
+    publisher: { "@id": ORG_ID },
   };
+  const breadcrumb = breadcrumbJsonLd([
+    { name: seoT.breadcrumbHome, path: localePath(locale, "/") },
+    { name: seoT.breadcrumbBlog, path: localePath(locale, "/blog") },
+    { name: summary.title, path },
+  ]);
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      <JsonLd data={[articleJsonLd, breadcrumb]} />
       <ReadingProgress targetId="article-body" label={t.progress} />
 
       {/* En-tête : chapitre bleu nuit (lueurs vertes) */}
@@ -255,6 +387,14 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
             </aside>
 
             <div className="lg:col-span-8 lg:col-start-5">
+              {reference && (
+                <p className="mb-10 rounded-2xl border border-line bg-surface px-5 py-4 text-sm leading-relaxed text-moss sm:text-base">
+                  {reference.kind === "article" ? seoT.referenceArticle : seoT.referencePage}{" "}
+                  <Link href={reference.link.href} className="font-semibold text-emerald hover:underline">
+                    {reference.link.label}
+                  </Link>
+                </p>
+              )}
               <article id="article-body" lang={contentLang} className="blog-prose">
                 {article.local ? (
                   <LocalBody post={article.local} />
@@ -262,6 +402,9 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
                   <div dangerouslySetInnerHTML={{ __html: article.html ?? "" }} />
                 )}
               </article>
+
+              <KeyFacts locale={locale} />
+              <RelatedServices locale={locale} links={related} />
 
               <div className="mt-14 flex flex-wrap items-end justify-between gap-6 border-t border-line pt-8">
                 <ShareButtons url={url} title={summary.title} labels={shareLabels} />

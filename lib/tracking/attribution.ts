@@ -265,6 +265,8 @@ export function ctaLabelFor(link: HTMLAnchorElement): CtaLabel | null {
   try {
     const href = link.getAttribute("href") ?? "";
     if (/^\s*tel:/i.test(href)) return "tel";
+    // Partage par courriel (mailto: sans destinataire) : pas un contact.
+    if (/^\s*mailto:\s*(\?|$)/i.test(href)) return null;
     if (/^\s*mailto:/i.test(href)) return "mailto";
     const u = new URL(link.href, window.location.href);
     if (u.origin !== window.location.origin) return null;
