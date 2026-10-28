@@ -27,13 +27,13 @@ Depuis 2026, Google ne délivre plus de developer token pour l'API Google Ads (l
 
 L'ancienne méthode (developer token + client OAuth + refresh token) reste prise en charge si `GOOGLE_ADS_SERVICE_ACCOUNT_JSON` est vide.
 
-6. **Suivi** : active le **suivi automatique** (gclid) dans les paramètres du compte. Ajoute ce modèle de suivi au niveau du compte ou de la campagne :
+6. **Suivi** : taggage automatique (gclid) actif, et ce **suffixe de l'URL finale** au niveau du compte (Admin, Paramètres du compte, Suivi), en place depuis le 2026-10-28 :
 
 ```
-{lpurl}?utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&campaign_id={campaignid}&adset_id={adgroupid}&ad_id={creative}
+utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}&campaign_id={campaignid}&adset_id={adgroupid}&ad_id={creative}
 ```
 
-Pour la balise de conversion, renseigne `NEXT_PUBLIC_GOOGLE_ADS_ID` (AW-XXXXXXXXX) et `NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL`.
+Pour la balise de conversion, renseigne `NEXT_PUBLIC_GOOGLE_ADS_ID` (AW-XXXXXXXXX) et `NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL` : conversion « Submit lead form », `AW-11559926688` / `i3VGCNbl34QaEKD3mYgr`.
 
 ## Synchronisation
 
