@@ -1,5 +1,6 @@
 import { localePath, type Locale } from "@/lib/i18n";
 import { LANG_OVERRIDES, isIndexable } from "@/lib/blog-seo";
+import { LOCAL_REWRITES, getLocalRewrite, type LocalRewrite } from "@/lib/blog-articles/rewrites";
 
 export type PostSection = {
   heading?: string;
@@ -425,6 +426,7 @@ async function loadSoroEntries(): Promise<SoroEntry[] | null> {
   return list.map((raw, i) => {
     const content = contents[i];
     const lang =
+      getLocalRewrite(raw.slug)?.lang ??
       LANG_OVERRIDES[raw.slug] ??
       (content ? detectLang(htmlToText(content)) : null) ??
       // Repli si le corps est indisponible : titre + extrait (moins fiable)
@@ -468,6 +470,34 @@ function soroSummary(entry: SoroEntry, locale: Locale): PostSummary {
   };
 }
 
+/* ---------- Articles réécrits localement (lib/blog-articles/rewrites.ts) ---------- */
+
+/*
+ * Une réécriture locale porte le slug d'un article Soro et le remplace partout :
+ * la version Soro est écartée des listes, de la détection de langue et des
+ * pages ; la réécriture est servie dans sa langue, avec sa date de mise à jour.
+ */
+
+function rewriteBody(r: LocalRewrite) {
+  return sanitizeArticleHtml(r.html, r.lang);
+}
+
+function rewriteSummary(r: LocalRewrite, locale: Locale): PostSummary {
+  return {
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt,
+    isoDate: r.isoDate,
+    dateLabel: formatPostDate(locale, r.isoDate),
+    image: r.image,
+    imageAlt: r.imageAlt,
+    readingTime: readingTimeLabel(locale, rewriteBody(r).words / 220),
+    source: "local",
+    lang: r.lang,
+    updatedIsoDate: r.updatedIsoDate,
+  };
+}
+
 /**
  * Articles du blog dans une langue, du plus récent au plus ancien :
  * articles locaux de cette langue + articles Soro dont le corps est dans
@@ -479,9 +509,10 @@ export async function getBlogFeed(
   const local = postsByLocale[locale].map((p) => localSummary(p, locale));
   const soro = await getSoroEntries();
   const fromSoro = (soro ?? [])
-    .filter((e) => e.lang === locale && !localSlugs.has(e.raw.slug))
+    .filter((e) => e.lang === locale && !localSlugs.has(e.raw.slug) && !getLocalRewrite(e.raw.slug))
     .map((e) => soroSummary(e, locale));
-  const posts = [...local, ...fromSoro].sort(
+  const rewrites = LOCAL_REWRITES.filter((r) => r.lang === locale).map((r) => rewriteSummary(r, locale));
+  const posts = [...local, ...rewrites, ...fromSoro].sort(
     (a, b) => new Date(b.isoDate).getTime() - new Date(a.isoDate).getTime(),
   );
   return { posts, soroOk: soro !== null };
@@ -503,6 +534,8 @@ export async function findOtherLocale(locale: Locale, slug: string): Promise<Loc
   const other: Locale = locale === "fr" ? "en" : "fr";
   if (postsByLocale[locale].some((p) => p.slug === slug)) return null;
   if (postsByLocale[other].some((p) => p.slug === slug)) return other;
+  const rewrite = getLocalRewrite(slug);
+  if (rewrite) return rewrite.lang !== locale ? rewrite.lang : null;
   const soro = await getSoroEntries();
   const entry = soro?.find((e) => e.raw.slug === slug && !localSlugs.has(slug));
   return entry && entry.lang !== locale ? entry.lang : null;
@@ -516,6 +549,8 @@ export async function findPostLocale(slug: string, prefer: Locale = "fr"): Promi
   if (postsByLocale[prefer].some((p) => p.slug === slug)) return prefer;
   if (postsByLocale.fr.some((p) => p.slug === slug)) return "fr";
   if (postsByLocale.en.some((p) => p.slug === slug)) return "en";
+  const rewrite = getLocalRewrite(slug);
+  if (rewrite) return rewrite.lang;
   const soro = await getSoroEntries();
   return soro?.find((e) => e.raw.slug === slug)?.lang ?? null;
 }
@@ -542,12 +577,22 @@ export type SoroArticle = {
   minutes: number;
 };
 
-/** Article Soro complet (HTML assaini) dans cette langue, ou null s'il n'existe pas ou si Soro est indisponible. */
+/**
+ * Article Soro complet (HTML assaini) dans cette langue, ou null s'il n'existe
+ * pas ou si Soro est indisponible. Une réécriture locale du même slug est
+ * servie à la place de la version Soro (sans appel à Soro).
+ */
 export async function getSoroArticle(
   locale: Locale,
   slug: string,
 ): Promise<SoroArticle | null> {
   if (localSlugs.has(slug)) return null;
+  const rewrite = getLocalRewrite(slug);
+  if (rewrite) {
+    if (rewrite.lang !== locale) return null;
+    const { html, headings, words } = rewriteBody(rewrite);
+    return { summary: rewriteSummary(rewrite, locale), html, headings, minutes: words / 220 };
+  }
   const soro = await getSoroEntries();
   const entry = soro?.find((e) => e.raw.slug === slug && e.lang === locale);
   if (!entry) return null;

@@ -48,6 +48,10 @@ export type BlogSeoEntry = {
  *   vers /prise-en-charge-complete ;
  * - how-to-buy-electronic-equipment-for-your-business (achat d'équipement
  *   neuf, hors sujet) → secondary sans article de référence.
+ * - qui-rachete-equipements-reseau-quebec, rachat-de-portable-equipements-en-lot
+ *   et preparer-appareils-ramassage-en-lot sont réécrits en français
+ *   (lib/blog-articles/rewrites.ts) ; le premier devient la référence FR du
+ *   groupe Réseau.
  * Un slug absent de la liste (nouvel article) est traité comme standalone.
  */
 export const BLOG_CONSOLIDATION: Record<string, BlogSeoEntry> = {
@@ -100,7 +104,7 @@ export const BLOG_CONSOLIDATION: Record<string, BlogSeoEntry> = {
   "recyclage-reconditionnement-informatique-it-assets": { role: "secondary", pillar: "it-asset-disposition-versus-resale" }, // en · rachat-vs-recyclage
   "equipment-buyback-payment-reliability": { role: "standalone" }, // en · paiement
   "optimizing-technology-assets-better-returns-montreal": { role: "pillar" }, // en · montreal
-  "qui-rachete-equipements-reseau-quebec": { role: "secondary", pillar: "sell-networking-equipment-bulk" }, // en · reseau
+  "qui-rachete-equipements-reseau-quebec": { role: "pillar" }, // fr · reseau (réécrit localement le 2026-10-28)
   "guide-revente-serveurs-entreprise": { role: "secondary", pillar: "improve-server-resale-value" }, // en · serveurs
   "combien-vaut-un-serveur": { role: "secondary", pillar: "reprise-serveurs-entreprise" }, // fr · serveurs
   "buy-it-equipment-montreal-area": { role: "secondary", pillar: "optimizing-technology-assets-better-returns-montreal" }, // en · montreal
