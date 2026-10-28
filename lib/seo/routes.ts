@@ -54,6 +54,12 @@ export const allSeoRoutes: readonly SeoRoute[] = [
   sameSlug("/consultation"),
   sameSlug("/achat-de-lot-description"),
   sameSlug("/prise-en-charge-complete"),
+  {
+    fr: "/politique-de-confidentialite",
+    en: "/en/privacy-policy",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
   // Pages locales (contenu : lib/seo/local-pages.ts)
   {
     fr: "/rachat-materiel-informatique-montreal",

@@ -133,7 +133,12 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
         {/* Mentions */}
         <div className="mt-12 flex flex-col gap-4 border-t border-line pt-6 text-xs text-moss sm:flex-row sm:items-center sm:justify-between">
-          <p>{t.footer.copyright}</p>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <p>{t.footer.copyright}</p>
+            <Link href={t.footer.privacyHref} className={`underline-offset-4 hover:underline ${smallLink}`}>
+              {t.footer.privacy}
+            </Link>
+          </div>
           <a href="#top" className={`group inline-flex items-center gap-2 font-display font-semibold uppercase tracking-[0.1em] text-mist ${smallLink}`}>
             {f.backToTop}
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line-strong transition-transform duration-300 group-hover:-translate-y-0.5">

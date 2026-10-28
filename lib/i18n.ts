@@ -57,6 +57,8 @@ const fr = {
     reachUs: "Nous joindre",
     headOffice: "Siège social :",
     copyright: "© 2024 - 2026 Techno Lot",
+    privacy: "Politique de confidentialité",
+    privacyHref: "/politique-de-confidentialite",
   },
   floatingCall: {
     label: "Appelez-nous",
@@ -293,6 +295,8 @@ const en: Dict = {
     reachUs: "Reach us",
     headOffice: "Head office:",
     copyright: "© 2024 - 2026 Techno Lot",
+    privacy: "Privacy policy",
+    privacyHref: "/en/privacy-policy",
   },
   floatingCall: {
     label: "Call us",
