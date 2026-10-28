@@ -58,12 +58,27 @@ Ne jamais mettre ces valeurs dans `.env.production` (versionné).
 
 ## 4. Synchroniser
 
-- Bouton **Synchroniser avec eBay** sur `/admin/ventes-ebay`.
-  Premier passage : 365 derniers jours. Ensuite : commandes modifiées depuis la
+- Indicateur **Synchro auto** sur `/admin/ventes-ebay` et sur l'accueil
+  (cliquer dessus force une synchronisation). Premier passage : 365 derniers jours. Ensuite : commandes modifiées depuis la
   dernière synchronisation réussie (48 h de chevauchement, pour capter les
   annulations et remboursements).
 - Automatique (cron) :
   `POST /api/admin/ebay-sync` avec l'en-tête `Authorization: Bearer $CRON_SECRET`.
+  Exige `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
+
+## Synchronisation automatique
+
+- Les pages admin ouvertes (accueil et Ventes eBay) synchronisent toutes les
+  2 minutes tant que l'onglet est visible, et au retour sur l'onglet. Le serveur
+  saute la synchro si la dernière tentative date de moins de 90 secondes, et
+  une seule synchro tourne à la fois.
+- Pour que ça tourne même sans page ouverte, ajouter une tâche cron chez
+  Hostinger toutes les 5 à 15 minutes :
+
+  ```
+  curl -s -X POST https://technolot.ca/api/admin/ebay-sync -H "Authorization: Bearer VOTRE_CRON_SECRET"
+  ```
+
   Exige `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
 
 ## Règles de calcul

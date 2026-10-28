@@ -1,6 +1,6 @@
 import { ExternalLink, Info, TriangleAlert } from "lucide-react";
 import EbaySalesChart from "@/components/admin/ebay/EbaySalesChart";
-import EbaySyncButton from "@/components/admin/ebay/EbaySyncButton";
+import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import ConnectEbay, { type EbayEnvStatus } from "@/components/admin/ebay/ConnectEbay";
 import { formatMoney } from "@/lib/admin/format";
 import { ebayOrderStatus, type EbayOrderRow, type EbaySums } from "@/lib/ebay/totaux";
@@ -77,7 +77,7 @@ export default function EbaySalesView({
           >
             Seller Hub <ExternalLink className="h-4 w-4" aria-hidden />
           </a>
-          <EbaySyncButton configured={configured} />
+          <EbayAutoSync configured={configured} lastSync={status.lastSync} />
         </div>
       </header>
 
@@ -97,7 +97,7 @@ export default function EbaySalesView({
         </Notice>
       )}
       {configured && !hasData && (
-        <Notice tone="info">eBay est connecté. Clique sur « Synchroniser avec eBay » pour importer les 12 derniers mois.</Notice>
+        <Notice tone="info">eBay est connecté. La première synchronisation importe les 12 derniers mois ; elle démarre automatiquement.</Notice>
       )}
 
       <section aria-label="Ventes par période" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">

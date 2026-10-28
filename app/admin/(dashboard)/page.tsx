@@ -8,11 +8,14 @@ import { site } from "@/lib/site";
 import { endOfPeriod, startOfPeriod } from "@/lib/admin/dates";
 import type { Lot, PeriodKey } from "@/lib/admin/types";
 import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
-import { getEbayTotals } from "@/lib/ebay/ventes";
+import { getEbayOrderRows, getEbayTotals } from "@/lib/ebay/ventes";
+import { isEbayConfigured } from "@/lib/ebay/client";
+import { addDays, inTorontoRange, sumEbayOrders, torontoDay } from "@/lib/ebay/totaux";
 import { getAdSpend } from "@/lib/ads/depenses";
 import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
 import AFaireTiles from "@/components/admin/accueil/AFaireTiles";
+import EbayAujourdhui from "@/components/admin/accueil/EbayAujourdhui";
 import ChiffresTiles, { CHIFFRES_PERIODES } from "@/components/admin/accueil/ChiffresTiles";
 import DerniersLots from "@/components/admin/accueil/DerniersLots";
 import DernieresSoumissions, {
@@ -172,6 +175,10 @@ export default async function AccueilPage({
   if (start) salesQuery = salesQuery.gte("sold_at", start);
   if (end) salesQuery = salesQuery.lte("sold_at", end);
 
+  // eBay aujourd'hui / hier (jours à l'heure de Toronto)
+  const ebayToday = torontoDay(now);
+  const ebayYesterday = addDays(ebayToday, -1);
+
   const [
     { data: lotsRaw, error },
     { data: salesRaw },
@@ -182,6 +189,7 @@ export default async function AccueilPage({
     soumissions,
     ebay,
     pubs,
+    ebayRecentRows,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
@@ -205,7 +213,22 @@ export default async function AccueilPage({
     fetchSoumissionsATraiter(user, now),
     getEbayTotals(start, end),
     getAdSpend(start, end),
+    getEbayOrderRows(ebayYesterday, ebayToday, [
+      "created_at",
+      "total",
+      "refunded",
+      "fees",
+      "cancelled",
+      "payment_status",
+    ]).catch(() => []),
   ]);
+
+  const ebayAujourdhui = sumEbayOrders(
+    ebayRecentRows.filter((r) => inTorontoRange(r.created_at, ebayToday, ebayToday)),
+  );
+  const ebayHier = sumEbayOrders(
+    ebayRecentRows.filter((r) => inTorontoRange(r.created_at, ebayYesterday, ebayYesterday)),
+  );
 
   let achats = 0;
   let ventesLots = 0;
@@ -284,6 +307,13 @@ export default async function AccueilPage({
               href: "/admin/lots?status=purchased",
             },
           ]}
+        />
+
+        <EbayAujourdhui
+          configured={isEbayConfigured()}
+          lastSync={ebay.lastSync}
+          today={ebayAujourdhui}
+          yesterday={ebayHier}
         />
 
         <ChiffresTiles
