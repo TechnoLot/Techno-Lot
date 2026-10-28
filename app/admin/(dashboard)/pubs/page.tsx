@@ -4,6 +4,7 @@ import {
   getAdsOverview,
   getConfigStatus,
   getLastSync,
+  getTrackingCoverage,
   parsePlatformFilter,
   torontoDay,
 } from "@/lib/ads/queries";
@@ -23,6 +24,11 @@ export default async function PubsPage({
     getAdsOverview(searchParams),
     getLastSync(platform === "all" ? null : platform),
   ]);
+  const coverage = await getTrackingCoverage({
+    range: data.range,
+    platform: data.platform,
+    attributedLeads: data.totals.leads,
+  });
   // Resynchronise au moins 30 jours, et toute la période affichée (max. 1 an)
   const syncDays = Math.min(Math.max(daysBetween(data.range.from, torontoDay(new Date())), 30), 365);
 
@@ -33,6 +39,7 @@ export default async function PubsPage({
       config={getConfigStatus()}
       metaEnv={getMetaEnvStatus()}
       syncDays={syncDays}
+      coverage={coverage}
     />
   );
 }

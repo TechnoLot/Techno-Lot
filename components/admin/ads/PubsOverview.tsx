@@ -1,6 +1,13 @@
 import { AlertTriangle, Info } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
-import type { AdsOverview, ConfigStatus, LastSync, PlatformFilter } from "@/lib/ads/types";
+import type {
+  AdsOverview,
+  ConfigStatus,
+  LastSync,
+  PlatformFilter,
+  TrackingCoverage as TrackingCoverageData,
+} from "@/lib/ads/types";
+import TrackingCoverage from "./TrackingCoverage";
 import { rankAds } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
 import SyncButton from "./SyncButton";
@@ -20,10 +27,12 @@ export type PubsOverviewProps = {
   metaEnv: { token: boolean; account: boolean };
   /** Jours à resynchroniser (couvre la période affichée) */
   syncDays: number;
+  /** Formulaires reçus vs rattachés (absent dans les données de test) */
+  coverage?: TrackingCoverageData;
 };
 
 /** Contenu de /admin/pubs (séparé de la page pour l'alimenter en données de test). */
-export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays }: PubsOverviewProps) {
+export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays, coverage }: PubsOverviewProps) {
   const { platform, range } = data;
   const connected =
     platform === "meta" ? config.meta : platform === "google" ? config.google : config.meta || config.google;
@@ -90,6 +99,8 @@ export default function PubsOverview({ data, lastSync, config, metaEnv, syncDays
           spendKnown={spendKnown}
           spendHint={spendKnown ? "sur la période" : `${platform === "google" ? "Google" : "Meta"} non connecté`}
         />
+
+        {coverage && <TrackingCoverage coverage={coverage} platform={platform} />}
 
         <section className={card} aria-labelledby="ads-table-title">
           <div className="px-5 pb-4 pt-5 sm:px-6">

@@ -164,6 +164,18 @@ export type LeadItem = {
   profit: number | null;
 };
 
+/** Ce que le suivi voit vraiment, pour ne pas confondre « 0 lead » et « suivi absent ». */
+export type TrackingCoverage = {
+  /** Formulaires reçus sur le site pendant la période (null si la table n'est pas lisible) */
+  siteForms: number | null;
+  /** Formulaires rattachés à une pub (filtre de plateforme appliqué) */
+  attributedLeads: number;
+  /** Premier jour où le site a enregistré une visite suivie (null : jamais) */
+  trackingSince: string | null;
+  /** Conversions comptées par Google / Meta sur la période (null si illisible) */
+  platformConversions: number | null;
+};
+
 export type ConfigStatus = { meta: boolean; google: boolean };
 
 export type LastSync = { at: string; ok: boolean; platform: string; message: string | null } | null;

@@ -19,6 +19,7 @@ import {
   type MetricRow,
   type PlatformFilter,
   type RawAdsData,
+  type TrackingCoverage,
   type SessionPlatform,
   type SessionRow,
   type SyncRunRow,
@@ -797,4 +798,41 @@ export async function getAdDetail(params: {
     daily: one.daily,
     leads: one.leads,
   };
+}
+
+/**
+ * Couverture du suivi sur la période : formulaires reçus sur le site (table
+ * soumissions, sans politique pour « authenticated » : compte lu par la
+ * fonction SQL soumissions_count), formulaires rattachés à une pub, début du suivi des
+ * sources, et conversions comptées par les plateformes elles-mêmes.
+ */
+export async function getTrackingCoverage(params: {
+  range: DateRange;
+  platform: PlatformFilter;
+  attributedLeads: number;
+}): Promise<TrackingCoverage> {
+  const { range, platform } = params;
+  const supabase = createClient();
+  const startIso = torontoStartUtc(range.from);
+  const endIso = torontoStartUtc(addDays(range.to, 1));
+
+  // Fonction SQL qui ne renvoie que le compte (admin connecté) : null si illisible
+  const forms = await supabase.rpc("soumissions_count", { p_from: startIso, p_to: endIso });
+  const siteForms = !forms.error && typeof forms.data === "number" ? forms.data : null;
+
+  const [first, conv] = await Promise.all([
+    supabase.from("ad_sessions").select("created_at").order("created_at", { ascending: true }).limit(1),
+    (() => {
+      let q = supabase.from("ad_metrics_daily").select("platform_leads").gte("date", range.from).lte("date", range.to);
+      if (platform !== "all") q = q.eq("platform", platform);
+      return q.limit(10000);
+    })(),
+  ]);
+
+  const trackingSince = first.data?.[0]?.created_at ? torontoDay(first.data[0].created_at as string) : null;
+  const platformConversions = conv.error
+    ? null
+    : (conv.data ?? []).reduce((s, r) => s + num((r as { platform_leads: number | string | null }).platform_leads), 0);
+
+  return { siteForms, attributedLeads: params.attributedLeads, trackingSince, platformConversions };
 }

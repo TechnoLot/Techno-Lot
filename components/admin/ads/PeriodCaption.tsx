@@ -9,6 +9,11 @@ function fmt(day: string, withYear = false): string {
   });
 }
 
+/** « 26 oct. 2026 » */
+export function formatDayLong(day: string): string {
+  return fmt(day, true);
+}
+
 /** « du 28 sept. au 27 oct. 2026 » */
 export function periodText(range: DateRange): string {
   return `du ${fmt(range.from)} au ${fmt(range.to, true)}`;
