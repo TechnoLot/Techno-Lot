@@ -61,6 +61,14 @@ export const allSeoRoutes: readonly SeoRoute[] = [
     changeFrequency: "monthly",
     priority: 0.9,
   },
+  // Pages locales en français seulement (pas de `en`)
+  { fr: "/rachat-materiel-informatique-laval", changeFrequency: "monthly", priority: 0.8 },
+  { fr: "/rachat-materiel-informatique-terrebonne-mascouche", changeFrequency: "monthly", priority: 0.8 },
+  { fr: "/rachat-materiel-informatique-rive-nord", changeFrequency: "monthly", priority: 0.8 },
+  // Pages catégories, en français seulement (contenu : lib/seo/category-pages.ts)
+  { fr: "/rachat-ordinateurs-portables-en-lot", changeFrequency: "monthly", priority: 0.8 },
+  { fr: "/rachat-serveurs-et-stockage", changeFrequency: "monthly", priority: 0.8 },
+  { fr: "/rachat-equipements-reseau-telecom", changeFrequency: "monthly", priority: 0.8 },
 ];
 
 function isBilingual(route: SeoRoute): route is BilingualSeoRoute {

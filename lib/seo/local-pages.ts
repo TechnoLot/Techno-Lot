@@ -75,9 +75,101 @@ export type LocalPageContent = {
   service: { name: string; description: string };
 };
 
-export type LocalPageId = "montreal";
+/** Blocs communs des pages locales en français (identiques d'une ville à l'autre). */
+const FR_CATEGORIES: LocalPageContent["categories"] = {
+  title: "Ce que nous rachetons",
+  intro:
+    "Tout le matériel informatique et électronique de votre entreprise, quelle que soit la taille du lot.",
+  items: [
+    {
+      key: "ordinateurs",
+      title: "Ordinateurs et portables",
+      text: "Postes fixes et portables, même plus anciens : ils peuvent être valorisés par le reconditionnement ou le recyclage des composants.",
+    },
+    {
+      key: "serveurs",
+      title: "Serveurs",
+      text: "Lorsqu'ils deviennent obsolètes ou que l'entreprise passe au nuage, leur revente permet de libérer de la place.",
+    },
+    {
+      key: "reseau",
+      title: "Équipements réseau",
+      text: "Routeurs, commutateurs (switchs), pare-feu et autres équipements réseau font aussi partie du rachat.",
+    },
+    {
+      key: "stockage",
+      title: "Stockage",
+      text: "Disques durs, baies de stockage ou SSD, surtout s'ils contiennent des données sensibles à effacer de manière sécurisée.",
+    },
+    {
+      key: "telecom",
+      title: "Télécommunication",
+      text: "Téléphones d'entreprise, systèmes de visioconférence et autres outils de communication.",
+    },
+    {
+      key: "bureautique",
+      title: "Bureautique",
+      text: "Imprimantes, numériseurs, photocopieurs et autres équipements de bureau.",
+    },
+    {
+      key: "ecrans",
+      title: "Écrans et moniteurs",
+      text: "Moniteurs de postes de travail ou de configurations multi-écrans, en particulier ceux de grande qualité ou à haute résolution.",
+    },
+  ],
+};
 
-export const localPages: Record<LocalPageId, Record<Locale, LocalPageContent>> = {
+const FR_ADVANTAGES: LocalPageContent["advantages"] = {
+  title: "Pourquoi vendre votre lot à Techno Lot",
+  items: [
+    {
+      title: "Une offre en 24 h",
+      text: "Envoyez-nous la liste de votre matériel ou quelques photos : notre offre vous parvient en 24 h.",
+    },
+    {
+      title: "Ramassage sans frais et sans minimum",
+      text: "Petit ou gros lot, notre équipe se déplace : elle emballe, charge et transporte le matériel. Vous n'avez rien à déplacer.",
+    },
+    {
+      title: "Données effacées en toute sécurité",
+      text: "Les supports de stockage sont effacés de manière sécurisée et nous vous remettons un certificat de destruction des données, sans frais.",
+    },
+    {
+      title: "Paiement rapide et garanti",
+      text: "La moitié du paiement est versée au ramassage et le solde après l'inspection, qui prend 15 jours ouvrables au maximum.",
+    },
+  ],
+};
+
+const FR_STEPS: LocalPageContent["steps"] = {
+  title: "Comment ça fonctionne",
+  items: [
+    {
+      title: "Demandez une soumission",
+      text: "Remplissez le formulaire en joignant la liste de votre matériel ou quelques photos.",
+    },
+    {
+      title: "Recevez notre offre",
+      text: "Nous évaluons votre lot et notre offre vous parvient en 24 h.",
+    },
+    {
+      title: "Ramassage sans frais",
+      text: "Notre équipe vient chercher le matériel à la date convenue. La moitié du paiement est versée au ramassage.",
+    },
+    {
+      title: "Inspection et solde",
+      text: "Nous inspectons le matériel en 15 jours ouvrables au maximum, puis le solde vous est versé.",
+    },
+  ],
+};
+
+export type LocalPageId = "montreal" | "laval" | "terrebonne-mascouche" | "rive-nord";
+
+/**
+ * Le français est obligatoire ; l'anglais est facultatif. Une page sans `en`
+ * doit aussi être inscrite sans `en` au registre (page en français seulement).
+ */
+export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalPageContent }> = {
   montreal: {
     fr: {
       frPath: "/rachat-materiel-informatique-montreal",
@@ -91,69 +183,8 @@ export const localPages: Record<LocalPageId, Record<Locale, LocalPageContent>> =
         call: "Appeler",
         imageAlt: "Pile d'ordinateurs portables d'entreprise",
       },
-      categories: {
-        title: "Ce que nous rachetons",
-        intro:
-          "Tout le matériel informatique et électronique de votre entreprise, quelle que soit la taille du lot.",
-        items: [
-          {
-            key: "ordinateurs",
-            title: "Ordinateurs et portables",
-            text: "Postes fixes et portables, même plus anciens : ils peuvent être valorisés par le reconditionnement ou le recyclage des composants.",
-          },
-          {
-            key: "serveurs",
-            title: "Serveurs",
-            text: "Lorsqu'ils deviennent obsolètes ou que l'entreprise passe au nuage, leur revente permet de libérer de la place.",
-          },
-          {
-            key: "reseau",
-            title: "Équipements réseau",
-            text: "Routeurs, commutateurs (switchs), pare-feu et autres équipements réseau font aussi partie du rachat.",
-          },
-          {
-            key: "stockage",
-            title: "Stockage",
-            text: "Disques durs, baies de stockage ou SSD, surtout s'ils contiennent des données sensibles à effacer de manière sécurisée.",
-          },
-          {
-            key: "telecom",
-            title: "Télécommunication",
-            text: "Téléphones d'entreprise, systèmes de visioconférence et autres outils de communication.",
-          },
-          {
-            key: "bureautique",
-            title: "Bureautique",
-            text: "Imprimantes, numériseurs, photocopieurs et autres équipements de bureau.",
-          },
-          {
-            key: "ecrans",
-            title: "Écrans et moniteurs",
-            text: "Moniteurs de postes de travail ou de configurations multi-écrans, en particulier ceux de grande qualité ou à haute résolution.",
-          },
-        ],
-      },
-      advantages: {
-        title: "Pourquoi vendre votre lot à Techno Lot",
-        items: [
-          {
-            title: "Une offre en 24 h",
-            text: "Envoyez-nous la liste de votre matériel ou quelques photos : notre offre vous parvient en 24 h.",
-          },
-          {
-            title: "Ramassage sans frais et sans minimum",
-            text: "Petit ou gros lot, notre équipe se déplace : elle emballe, charge et transporte le matériel. Vous n'avez rien à déplacer.",
-          },
-          {
-            title: "Données effacées en toute sécurité",
-            text: "Les supports de stockage sont effacés de manière sécurisée et nous vous remettons un certificat de destruction des données, sans frais.",
-          },
-          {
-            title: "Paiement rapide et garanti",
-            text: "La moitié du paiement est versée au ramassage et le solde après l'inspection, qui prend 15 jours ouvrables au maximum.",
-          },
-        ],
-      },
+      categories: FR_CATEGORIES,
+      advantages: FR_ADVANTAGES,
       local: {
         title: "Partout sur l'île de Montréal",
         paragraphs: [
@@ -173,27 +204,7 @@ export const localPages: Record<LocalPageId, Record<Locale, LocalPageContent>> =
           },
         ],
       },
-      steps: {
-        title: "Comment ça fonctionne",
-        items: [
-          {
-            title: "Demandez une soumission",
-            text: "Remplissez le formulaire en joignant la liste de votre matériel ou quelques photos.",
-          },
-          {
-            title: "Recevez notre offre",
-            text: "Nous évaluons votre lot et notre offre vous parvient en 24 h.",
-          },
-          {
-            title: "Ramassage sans frais",
-            text: "Notre équipe vient chercher le matériel à la date convenue. La moitié du paiement est versée au ramassage.",
-          },
-          {
-            title: "Inspection et solde",
-            text: "Nous inspectons le matériel en 15 jours ouvrables au maximum, puis le solde vous est versé.",
-          },
-        ],
-      },
+      steps: FR_STEPS,
       faq: {
         title: "Questions fréquentes sur le rachat à Montréal",
         items: [
@@ -413,8 +424,307 @@ export const localPages: Record<LocalPageId, Record<Locale, LocalPageContent>> =
       },
     },
   },
+
+  // Laval : page en français seulement
+  laval: {
+    fr: {
+      frPath: "/rachat-materiel-informatique-laval",
+      city: "Laval",
+      breadcrumbHome: "Accueil",
+      hero: {
+        title: "Rachat de matériel informatique pour les entreprises de Laval",
+        intro:
+          "Votre entreprise de Laval remplace ses ordinateurs, regroupe ses locaux ou ferme une succursale ? Techno Lot, votre voisine de Mascouche, rachète votre matériel informatique et électronique en lot. Notre offre vous parvient en 24 h et le ramassage est sans frais.",
+        cta: "Obtenir une offre",
+        call: "Appeler",
+        imageAlt: "Pile d'ordinateurs portables d'entreprise",
+      },
+      categories: FR_CATEGORIES,
+      advantages: FR_ADVANTAGES,
+      local: {
+        title: "De Chomedey à Saint-François, partout à Laval",
+        paragraphs: [
+          "Techno Lot est établie à Mascouche, juste de l'autre côté de la rivière des Mille Îles. Laval est donc notre voisine, et planifier un ramassage s'y fait simplement : quelques échanges suffisent pour convenir d'une date qui convient à votre équipe.",
+          "Le territoire lavallois compte de nombreux parcs d'affaires et industriels le long des autoroutes 15, 440 et 25. À cela s'ajoutent la Cité de la Biotech, les bureaux et les sièges sociaux du centre de Laval, les commerces et les centres de distribution. Dans tous ces milieux, les postes de travail, les écrans, les serveurs et les équipements réseau arrivent tôt ou tard en fin de cycle. Un renouvellement du parc, un regroupement de locaux ou la fermeture d'une succursale laisse alors derrière lui du matériel inutilisé qui occupe de l'espace.",
+          "Plutôt que de l'entreposer ou de payer pour l'évacuer, vous pouvez le vendre en un seul lot. Nous évaluons votre matériel, qu'il soit neuf, usagé ou partiellement fonctionnel, et notre offre vous parvient en 24 h. Ce qui peut encore servir est remis en circulation ; le reste est dirigé vers le recyclage des composants.",
+          "Les immeubles des parcs industriels ont souvent leurs particularités : quai de chargement, porte de garage, entrée réservée aux livraisons ou heures de réception précises. Indiquez-les dans votre demande et nous planifions le ramassage en conséquence. Le jour venu, notre équipe emballe, charge et transporte le matériel ; vous n'avez rien à déplacer.",
+        ],
+        areasTitle: "Secteurs desservis",
+        areas: [
+          {
+            label: "Secteurs de Laval",
+            list: "Chomedey, Laval-des-Rapides, Pont-Viau, Vimont, Auteuil, Duvernay, Saint-François, Saint-Vincent-de-Paul, Sainte-Rose, Fabreville, Laval-Ouest, Sainte-Dorothée, Laval-sur-le-Lac et Îles-Laval.",
+          },
+          {
+            label: "Milieux d'affaires",
+            list: "Parcs d'affaires et industriels le long des autoroutes 15, 440 et 25, Cité de la Biotech, bureaux et sièges sociaux du centre de Laval, commerces et centres de distribution.",
+          },
+        ],
+      },
+      steps: FR_STEPS,
+      faq: {
+        title: "Questions fréquentes sur le rachat à Laval",
+        items: [
+          {
+            question: "Vous déplacez-vous dans tous les secteurs de Laval ?",
+            answer:
+              "Oui. De Chomedey à Saint-François et de Sainte-Rose à Pont-Viau, nous ramassons le matériel dans tous les secteurs de Laval. Le ramassage est sans frais et sans minimum de quantité, partout au Québec.",
+          },
+          {
+            question:
+              "Notre immeuble est dans un parc industriel, avec un quai ou un accès particulier. Est-ce que ça pose problème ?",
+            answer:
+              "Non. Indiquez dans votre demande les particularités de l'immeuble, comme le quai de chargement, la porte de garage, l'entrée à utiliser ou les heures de réception, et nous planifions le ramassage en conséquence. Notre équipe emballe, charge et transporte le matériel.",
+          },
+          {
+            question: "Pouvons-nous vendre un bureau complet en un seul lot ?",
+            answer:
+              "Oui. Postes de travail, portables, écrans, stations d'accueil, claviers, souris, imprimantes et téléphones peuvent être regroupés dans un même lot. Joignez la liste du matériel ou quelques photos à votre demande : nous évaluons l'ensemble et vous faisons une seule offre.",
+          },
+          {
+            question: "En combien de temps recevrons-nous une offre ?",
+            answer:
+              "Notre offre vous parvient en 24 h. Une liste de votre matériel ou quelques photos suffisent pour évaluer votre lot.",
+          },
+          {
+            question: "Que deviennent les données de nos postes et de nos serveurs ?",
+            answer:
+              "Les disques durs, les SSD et les autres supports de stockage sont effacés de manière sécurisée. Nous vous remettons ensuite un certificat de destruction des données, sans frais.",
+          },
+          {
+            question: "Comment serons-nous payés ?",
+            answer:
+              "La moitié du paiement est versée au ramassage. Le solde suit l'inspection du matériel, qui prend 15 jours ouvrables au maximum. Si l'état du matériel diffère de la description, l'offre est ajustée en conséquence.",
+          },
+        ],
+      },
+      nearby: {
+        title: "Ailleurs dans la région",
+        items: [
+          { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
+          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
+          { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+        ],
+      },
+      cta: {
+        title: "Prêt à vendre votre lot à Laval ?",
+        text: "Envoyez-nous la liste de votre matériel ou quelques photos : notre offre vous parvient en 24 h.",
+      },
+      service: {
+        name: "Rachat de matériel informatique à Laval",
+        description:
+          "Votre entreprise de Laval remplace ses ordinateurs ou ferme un local ? Techno Lot rachète vos lots informatiques et électroniques. Offre en 24 h.",
+      },
+    },
+  },
+
+  // Terrebonne et Mascouche : page en français seulement
+  "terrebonne-mascouche": {
+    fr: {
+      frPath: "/rachat-materiel-informatique-terrebonne-mascouche",
+      city: "Terrebonne et Mascouche",
+      breadcrumbHome: "Accueil",
+      hero: {
+        title: "Rachat de matériel informatique à Terrebonne et Mascouche",
+        intro:
+          "Techno Lot est établie à Mascouche, au cœur de la MRC Les Moulins. Votre entreprise de Terrebonne ou de Mascouche a des ordinateurs, des serveurs ou des équipements réseau dont elle n'a plus besoin ? Nous rachetons le lot : notre offre vous parvient en 24 h et le ramassage est sans frais.",
+        cta: "Obtenir une offre",
+        call: "Appeler",
+        imageAlt: "Pile d'ordinateurs portables d'entreprise",
+      },
+      categories: FR_CATEGORIES,
+      advantages: FR_ADVANTAGES,
+      local: {
+        title: "Votre voisin dans la MRC Les Moulins",
+        paragraphs: [
+          "Techno Lot est établie au 3235, avenue de la Gare, à Mascouche, au cœur de la MRC Les Moulins. Les entreprises de Terrebonne et de Mascouche sont donc nos voisines, du Vieux-Terrebonne à Terrebonne-Ouest, de Lachenaie à La Plaine, et tout au long des autoroutes 25 et 640.",
+          "PME manufacturières, commerces, bureaux professionnels : chaque entreprise de la région finit par remplacer ses ordinateurs, ses écrans, ses serveurs ou ses équipements réseau. L'ancien matériel s'accumule alors dans un coin d'entrepôt ou une salle de rangement. Vendu en lot, il libère de l'espace et vous permet d'en récupérer une partie de la valeur, à réinvestir dans le nouveau matériel. Ce qui peut encore servir est remis en circulation ; le reste est dirigé vers le recyclage des composants.",
+          "Être voisins simplifie les échanges. Pour un gros lot, par exemple un parc complet de postes ou plusieurs baies de serveurs, appelez-nous au 514-944-3939 : nous en discutons directement et préparons la suite ensemble. Pour tout le reste, la demande de soumission suffit. Joignez-y la liste de votre matériel ou quelques photos, et notre offre vous parvient en 24 h. Notre équipe vient ensuite chercher le matériel chez vous ; elle l'emballe, le charge et le transporte.",
+          "Nous rachetons aussi le matériel des entreprises des villes voisines : Bois-des-Filion, Lorraine, Sainte-Anne-des-Plaines, Repentigny, L'Assomption et Charlemagne. Pour ces secteurs, consultez également notre page consacrée à la Rive-Nord, accessible plus bas.",
+        ],
+        areasTitle: "Secteurs desservis",
+        areas: [
+          {
+            label: "Terrebonne",
+            list: "Vieux-Terrebonne, Terrebonne-Ouest, Lachenaie et La Plaine.",
+          },
+          {
+            label: "Mascouche",
+            list: "Tous les secteurs de Mascouche, dont les zones d'affaires le long des autoroutes 25 et 640.",
+          },
+          {
+            label: "Villes voisines",
+            list: "Bois-des-Filion, Lorraine, Sainte-Anne-des-Plaines, Repentigny, L'Assomption et Charlemagne.",
+          },
+        ],
+      },
+      steps: FR_STEPS,
+      faq: {
+        title: "Questions fréquentes sur le rachat à Terrebonne et à Mascouche",
+        items: [
+          {
+            question: "Où êtes-vous situés ?",
+            answer:
+              "Techno Lot est établie au 3235, avenue de la Gare, à Mascouche (QC) J7K 3C1. Pour vendre votre matériel, le plus simple est de remplir la demande de soumission : nous évaluons votre lot, notre offre vous parvient en 24 h, puis notre équipe vient chercher le matériel chez vous.",
+          },
+          {
+            question: "Couvrez-vous tous les secteurs de Terrebonne, dont Lachenaie et La Plaine ?",
+            answer:
+              "Oui : le Vieux-Terrebonne, Terrebonne-Ouest, Lachenaie et La Plaine, ainsi que tout Mascouche. Le ramassage est sans frais, comme partout au Québec.",
+          },
+          {
+            question: "Nous n'avons que quelques ordinateurs à vendre. Est-ce possible ?",
+            answer:
+              "Oui, il n'y a aucun minimum de quantité. Quelques portables ou un parc complet : envoyez-nous la liste ou des photos et nous vous faisons une offre. Le ramassage reste sans frais.",
+          },
+          {
+            question: "Rachetez-vous le matériel qui ne fonctionne plus ?",
+            answer:
+              "Nous évaluons tout le matériel, qu'il soit neuf, usagé ou partiellement fonctionnel, et le prix dépend de cette évaluation. Les appareils qui ne peuvent pas être réemployés sont dirigés vers le recyclage des composants.",
+          },
+          {
+            question: "Comment protégez-vous les données de nos appareils ?",
+            answer:
+              "Tous les supports de stockage sont effacés de manière sécurisée, et nous vous remettons un certificat de destruction des données, sans frais.",
+          },
+          {
+            question: "Comment le paiement se fait-il ?",
+            answer:
+              "Nous versons la moitié du paiement au ramassage. Après l'inspection du matériel, en 15 jours ouvrables au maximum, nous versons le solde. Si l'état du matériel diffère de la description, l'offre est ajustée en conséquence.",
+          },
+        ],
+      },
+      nearby: {
+        title: "Ailleurs dans la région",
+        items: [
+          { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
+          { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
+          { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+        ],
+      },
+      cta: {
+        title: "Prêt à vendre votre lot dans Les Moulins ?",
+        text: "Décrivez votre matériel ou appelez-nous au 514-944-3939 : notre offre vous parvient en 24 h.",
+      },
+      service: {
+        name: "Rachat de matériel informatique à Terrebonne et Mascouche",
+        description:
+          "Techno Lot est établie à Mascouche, à quelques minutes de Terrebonne. Nous rachetons les lots informatiques des entreprises de la MRC Les Moulins.",
+      },
+    },
+  },
+
+  // Rive-Nord : page en français seulement
+  "rive-nord": {
+    fr: {
+      frPath: "/rachat-materiel-informatique-rive-nord",
+      city: "Rive-Nord",
+      breadcrumbHome: "Accueil",
+      hero: {
+        title: "Rachat de matériel informatique pour les entreprises de la Rive-Nord",
+        intro:
+          "De Saint-Eustache à Repentigny, en passant par Blainville, Mirabel et Saint-Jérôme, Techno Lot rachète les ordinateurs, les serveurs et les équipements réseau des entreprises de la Rive-Nord. Notre offre vous parvient en 24 h, et le ramassage est sans frais et sans minimum de quantité.",
+        cta: "Obtenir une offre",
+        call: "Appeler",
+        imageAlt: "Pile d'ordinateurs portables d'entreprise",
+      },
+      categories: FR_CATEGORIES,
+      advantages: FR_ADVANTAGES,
+      local: {
+        title: "Des Basses-Laurentides à Lanaudière",
+        paragraphs: [
+          "La Rive-Nord s'étend des Basses-Laurentides jusqu'à Lanaudière. Thérèse-De Blainville, Mirabel, Deux-Montagnes, Saint-Jérôme, Repentigny : chaque secteur a ses parcs industriels, ses zones commerciales et ses bureaux, dont bon nombre se trouvent le long des autoroutes 15, 640 et 50.",
+          "Fabricants, distributeurs, entreprises de services ou cabinets professionnels, tous finissent par renouveler leurs postes de travail, leurs écrans, leurs serveurs ou leurs équipements réseau. À Mirabel, autour du secteur de l'aéroport, comme dans les parcs industriels de Blainville et de Boisbriand, l'ancien matériel finit souvent par encombrer un entrepôt ou une salle technique. Plutôt que de payer pour vous en débarrasser, vendez-le en lot : nous l'évaluons, qu'il soit neuf, usagé ou partiellement fonctionnel, et notre offre vous parvient en 24 h.",
+          "Votre entreprise a plusieurs sites, par exemple une usine à Saint-Jérôme et des bureaux à Sainte-Thérèse ? Indiquez toutes les adresses dans une même demande. Nous évaluons l'ensemble, et le ramassage est planifié avec vous. À chaque adresse, notre équipe emballe, charge et transporte le matériel ; vous n'avez rien à déplacer.",
+          "Le matériel qui peut encore servir est remis en circulation, et le reste est dirigé vers le recyclage des composants. Les entreprises de Terrebonne et de Mascouche, dans la MRC Les Moulins, ont aussi leur propre page, accessible plus bas.",
+        ],
+        areasTitle: "Secteurs desservis",
+        areas: [
+          {
+            label: "Thérèse-De Blainville",
+            list: "Blainville, Boisbriand, Sainte-Thérèse, Rosemère, Lorraine et Bois-des-Filion.",
+          },
+          {
+            label: "Mirabel",
+            list: "Tous les secteurs de Mirabel, dont celui de l'aéroport.",
+          },
+          {
+            label: "Deux-Montagnes",
+            list: "Saint-Eustache, Deux-Montagnes et Sainte-Marthe-sur-le-Lac.",
+          },
+          {
+            label: "Saint-Jérôme",
+            list: "Tous les secteurs de Saint-Jérôme.",
+          },
+          {
+            label: "Lanaudière",
+            list: "Repentigny, L'Assomption et Charlemagne.",
+          },
+          {
+            label: "MRC Les Moulins",
+            list: "Terrebonne et Mascouche, qui ont leur propre page.",
+          },
+        ],
+      },
+      steps: FR_STEPS,
+      faq: {
+        title: "Questions fréquentes sur le rachat sur la Rive-Nord",
+        items: [
+          {
+            question: "Quelles villes de la Rive-Nord desservez-vous ?",
+            answer:
+              "Entre autres Blainville, Boisbriand, Sainte-Thérèse, Rosemère, Lorraine, Bois-des-Filion, Mirabel, Saint-Eustache, Deux-Montagnes, Sainte-Marthe-sur-le-Lac, Saint-Jérôme, Repentigny, L'Assomption et Charlemagne, ainsi que Terrebonne et Mascouche. Le ramassage est sans frais et sans minimum, partout au Québec.",
+          },
+          {
+            question: "Notre entreprise a plusieurs sites. Faut-il faire une demande par adresse ?",
+            answer:
+              "Non. Indiquez toutes vos adresses dans une même demande, avec la liste du matériel à chaque endroit ou quelques photos. Nous évaluons l'ensemble et le ramassage est planifié avec vous.",
+          },
+          {
+            question: "En combien de temps recevrons-nous une offre ?",
+            answer:
+              "Notre offre vous parvient en 24 h, que votre matériel se trouve à un seul endroit ou à plusieurs. Une liste ou quelques photos suffisent pour l'évaluer.",
+          },
+          {
+            question: "Rachetez-vous le matériel endommagé ou qui ne fonctionne plus ?",
+            answer:
+              "Nous évaluons tout : matériel neuf, usagé ou partiellement fonctionnel. Le prix dépend de cette évaluation. Ce qui ne peut pas être réemployé est dirigé vers le recyclage des composants.",
+          },
+          {
+            question: "Comment le paiement fonctionne-t-il ?",
+            answer:
+              "La moitié du paiement est versée au ramassage, et le solde après l'inspection, qui prend 15 jours ouvrables au maximum. Si l'état du matériel diffère de la description, l'offre est ajustée en conséquence.",
+          },
+          {
+            question: "Qu'advient-il des données stockées sur notre matériel ?",
+            answer:
+              "Les supports de stockage sont effacés de manière sécurisée, et nous vous remettons un certificat de destruction des données, sans frais.",
+          },
+        ],
+      },
+      nearby: {
+        title: "Ailleurs dans la région",
+        items: [
+          { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
+          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
+          { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
+        ],
+      },
+      cta: {
+        title: "Prêt à vendre votre lot sur la Rive-Nord ?",
+        text: "Un site ou plusieurs : décrivez votre matériel, et notre offre vous parvient en 24 h.",
+      },
+      service: {
+        name: "Rachat de matériel informatique sur la Rive-Nord",
+        description:
+          "Blainville, Boisbriand, Sainte-Thérèse, Mirabel, Saint-Eustache, Saint-Jérôme, Repentigny : Techno Lot rachète les lots informatiques des entreprises.",
+      },
+    },
+  },
 };
 
 export function getLocalPage(id: LocalPageId, locale: Locale): LocalPageContent {
-  return localPages[id][locale];
+  const content = localPages[id][locale];
+  if (!content) throw new Error(`Page locale « ${id} » sans version « ${locale} ».`);
+  return content;
 }

@@ -95,12 +95,16 @@ export function serviceJsonLd({
   description,
   path,
   areaServed,
+  regions = [],
   locale,
 }: {
   name: string;
   description: string;
   path: string;
+  /** Villes desservies (schema.org City). */
   areaServed: string[];
+  /** Régions desservies (schema.org AdministrativeArea), ex. « Québec ». */
+  regions?: string[];
   locale: Locale;
 }) {
   return {
@@ -110,7 +114,10 @@ export function serviceJsonLd({
     description,
     url: absoluteUrl(counterpartPath(path, locale)),
     provider: { "@id": ORG_ID },
-    areaServed: areaServed.map(city),
+    areaServed: [
+      ...areaServed.map(city),
+      ...regions.map((name) => ({ "@type": "AdministrativeArea", name })),
+    ],
   };
 }
 
