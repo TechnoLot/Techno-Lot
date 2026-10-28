@@ -5,6 +5,7 @@ import { NO_ID, type AdDetail, type AdPlatform, type LastSync } from "@/lib/ads/
 import { judgeAd } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
 import SyncButton from "./SyncButton";
+import AdsLiveSync from "./AdsLiveSync";
 import AdsKpis from "./AdsKpis";
 import AdsFunnel from "./AdsFunnel";
 import AdsDailyChart from "./AdsDailyChart";
@@ -74,9 +75,12 @@ export default function AdDetailView({ platform, adId, data, lastSync, connected
           </>
         }
         actions={
-          connected ? (
-            <SyncButton lastSync={lastSync} days={syncDays} label={`Mettre à jour depuis ${platformName}`} />
-          ) : undefined
+          <div className="flex flex-col items-start gap-2">
+            {connected && (
+              <SyncButton lastSync={lastSync} days={syncDays} label={`Mettre à jour depuis ${platformName}`} />
+            )}
+            <AdsLiveSync enabled={connected} lastSync={lastSync?.at ?? null} />
+          </div>
         }
       />
 

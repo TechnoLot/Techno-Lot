@@ -12,7 +12,7 @@ type SyncResponse = {
 };
 
 /** Intervalle de la synchro de fond quand l'onglet est visible. */
-const AUTO_INTERVAL_MS = 2 * 60_000;
+const AUTO_INTERVAL_MS = 60_000;
 /** Recalcul du libellé « il y a X min ». */
 const TICK_MS = 30_000;
 
@@ -28,9 +28,9 @@ function ago(iso: string | null, now: number): string {
 }
 
 /**
- * Synchro eBay automatique : au montage, toutes les 2 min (onglet visible) et
+ * Synchro eBay automatique : au montage, chaque minute (onglet visible) et
  * au retour sur l'onglet, POST /api/admin/ebay-sync `{ auto: true }` (le
- * serveur saute si la dernière tentative a moins de 90 s). Un clic force une
+ * serveur saute si la dernière tentative a moins de 50 s). Un clic force une
  * synchro manuelle. Rafraîchit la page quand une nouvelle synchro a réussi.
  */
 export default function EbayAutoSync({

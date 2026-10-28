@@ -90,3 +90,25 @@ export async function syncAds({
   }
   return results;
 }
+
+/** Synchro « en direct » : pas plus d'une toutes les 50 s, toutes sources confondues. */
+export const LIVE_MIN_INTERVAL_MS = 50_000;
+/** Jours resynchronisés à chaque passage en direct (aujourd'hui et hier). */
+export const LIVE_DAYS = 2;
+
+/** Date ISO de la dernière tentative de synchro pub (null : jamais). */
+export async function getLastAdsRunAt(supabase: SupabaseClient): Promise<string | null> {
+  const { data } = await supabase
+    .from("ad_sync_runs")
+    .select("created_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.created_at as string | undefined) ?? null;
+}
+
+/** Vrai si la dernière synchro pub a moins de LIVE_MIN_INTERVAL_MS. */
+export async function adsSyncedRecently(supabase: SupabaseClient): Promise<boolean> {
+  const at = await getLastAdsRunAt(supabase);
+  return Boolean(at && Date.now() - new Date(at).getTime() < LIVE_MIN_INTERVAL_MS);
+}

@@ -11,6 +11,7 @@ import TrackingCoverage from "./TrackingCoverage";
 import { rankAds } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
 import SyncButton from "./SyncButton";
+import AdsLiveSync from "./AdsLiveSync";
 import AdsKpis from "./AdsKpis";
 import AdsTable from "./AdsTable";
 import VerdictGuide from "./VerdictGuide";
@@ -53,13 +54,16 @@ export default function PubsOverview({ data, lastSync, config, syncDays, coverag
         title={platform === "all" ? "Vos pubs" : `Vos pubs ${name}`}
         description={`Ce que chaque pub coûte, combien de leads et de clients elle amène, ${periodText(range)}.`}
         actions={
-          connected ? (
-            <SyncButton
-              lastSync={lastSync}
-              days={syncDays}
-              label={platform === "google" ? "Mettre à jour depuis Google" : platform === "all" ? "Mettre à jour" : "Mettre à jour depuis Meta"}
-            />
-          ) : undefined
+          <div className="flex flex-col items-start gap-2">
+            {connected && (
+              <SyncButton
+                lastSync={lastSync}
+                days={syncDays}
+                label={platform === "google" ? "Mettre à jour depuis Google" : platform === "all" ? "Mettre à jour" : "Mettre à jour depuis Meta"}
+              />
+            )}
+            <AdsLiveSync enabled={config.meta || config.google} lastSync={lastSync?.at ?? null} />
+          </div>
         }
       />
 

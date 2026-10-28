@@ -10,8 +10,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-/** Mode auto (pages admin ouvertes) : pas de nouvelle synchro si la dernière tentative a moins de 90 s. */
-const AUTO_MIN_INTERVAL_MS = 90_000;
+/** Mode auto (pages admin ouvertes) : pas de nouvelle synchro si la dernière tentative a moins de 50 s. */
+const AUTO_MIN_INTERVAL_MS = 50_000;
 
 type SyncOutcome = { result: EbaySyncResult; lastSync: string | null };
 
@@ -89,7 +89,7 @@ export async function GET() {
  * connecté, ou `Authorization: Bearer $CRON_SECRET` (cron, écrit avec
  * SUPABASE_SERVICE_ROLE_KEY).
  * Corps facultatif `{ auto: true }` (admin connecté) : synchro de fond,
- * sautée si la dernière tentative a moins de 90 s.
+ * sautée si la dernière tentative a moins de 50 s.
  * Réponse : { ok, configured, mode, orders, feesAvailable, feesUpdated, message, lastSync }
  * ou, en mode auto sauté : { ok: true, configured: true, skipped: true, lastSync }
  */

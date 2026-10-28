@@ -3,7 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
-import { isGoogleConfigured, isMetaConfigured, syncAds } from "@/lib/ads/sync";
+import {
+  adsSyncedRecently,
+  isGoogleConfigured,
+  isMetaConfigured,
+  LIVE_DAYS,
+  syncAds,
+} from "@/lib/ads/sync";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,16 +37,19 @@ export async function GET() {
 /**
  * POST : synchronise les stats pub. Auth : admin connecté, ou
  * `Authorization: Bearer $CRON_SECRET` (cron). Corps optionnel : { days }.
- * Réponse : { results: [{ platform, ok, rows, message }] }
+ * `{ auto: true }` (pages admin ouvertes) : aujourd'hui et hier seulement,
+ * sauté si une synchro a eu lieu il y a moins de 50 s.
+ * Réponse : { results: [{ platform, ok, rows, message }] } ou { skipped: true }
  */
 export async function POST(request: Request) {
-  let body: { days?: unknown } = {};
+  let body: { days?: unknown; auto?: unknown } = {};
   try {
-    body = (await request.json()) as { days?: unknown };
+    body = (await request.json()) as { days?: unknown; auto?: unknown };
   } catch {
     // corps absent ou invalide : valeurs par défaut
   }
-  const days = typeof body?.days === "number" ? body.days : 30;
+  const auto = body?.auto === true;
+  const days = auto ? LIVE_DAYS : typeof body?.days === "number" ? body.days : 30;
 
   const cronSecret = process.env.CRON_SECRET;
   const bearer = request.headers.get("authorization");
@@ -73,6 +82,10 @@ export async function POST(request: Request) {
       { error: "Aucune plateforme publicitaire n'est configurée.", results: [] },
       { status: 400 },
     );
+  }
+
+  if (auto && (await adsSyncedRecently(supabase))) {
+    return NextResponse.json({ skipped: true, results: [] });
   }
 
   const results = await syncAds({ days, supabase });

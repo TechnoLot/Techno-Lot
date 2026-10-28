@@ -35,6 +35,11 @@ utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}&ca
 
 Pour la balise de conversion, renseigne `NEXT_PUBLIC_GOOGLE_ADS_ID` (AW-XXXXXXXXX) et `NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL` : conversion « Submit lead form », `AW-11559926688` / `i3VGCNbl34QaEKD3mYgr`.
 
+## Synchronisation en direct
+
+- **Pages ouvertes** : /admin/pubs (et le détail d'une pub) et /admin/ventes-eBay se mettent à jour chaque minute (pastille « En direct » / « Synchro auto »). Pubs : aujourd'hui et hier (`{ auto: true }` sur /api/admin/ads-sync), sauté si la dernière synchro a moins de 50 s.
+- **Sans personne sur le site** : pg_cron (Supabase) appelle `/api/cron/sync` chaque minute (eBay incrémental + pubs sur 2 jours) et chaque heure avec `?days=30` (plus le ménage des journaux de plus de 14 jours). Requiert `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY` côté serveur, puis le script `supabase/cron/sync-live.sql` (une fois, après la mise en ligne).
+
 ## Synchronisation
 
 - Manuelle : `POST /api/admin/ads-sync` en étant connecté comme admin (corps optionnel `{"days": 30}`).
