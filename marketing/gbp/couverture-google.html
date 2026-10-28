@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Couverture Google — Techno Lot</title>
+<!-- Photo de couverture Google Business Profile (1600 × 900, 16:9).
+     Contenu centré et tenant dans le carré central de 900 × 900 : Google recadre selon l'appareil.
+     Rendu en PNG (Chrome sans interface) :
+     chrome --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=1600,900
+            --virtual-time-budget=8000 --screenshot=couverture-google.png file:///…/couverture-google.html -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600&display=block" rel="stylesheet">
+<style>
+  :root {
+    --night: #060A14;
+    --vivid: #6BD63B;
+    --mint: #34D399;
+    --mist: #F5F7F5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1600px; height: 900px; overflow: hidden; background: var(--night); }
+
+  .cover {
+    position: relative;
+    width: 1600px;
+    height: 900px;
+    overflow: hidden;
+    color: var(--mist);
+    font-family: Inter, system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 46% 42% at 50% 52%, rgba(107, 214, 59, 0.22), transparent 72%),
+      radial-gradient(ellipse 38% 55% at 0% 100%, rgba(52, 211, 153, 0.16), transparent 70%),
+      radial-gradient(ellipse 38% 55% at 100% 0%, rgba(107, 214, 59, 0.14), transparent 70%),
+      linear-gradient(180deg, #08101C 0%, var(--night) 100%);
+  }
+
+  /* Quadrillage discret, effacé vers les bords */
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: center;
+    -webkit-mask-image: radial-gradient(ellipse 72% 78% at 50% 50%, #000 25%, transparent 85%);
+    mask-image: radial-gradient(ellipse 72% 78% at 50% 50%, #000 25%, transparent 85%);
+  }
+
+  /* Matériel en trait, dans le style de l'icône du logo */
+  .deco {
+    position: absolute;
+    color: var(--vivid);
+    opacity: 0.6;
+    filter: drop-shadow(0 0 16px rgba(107, 214, 59, 0.5));
+  }
+  .deco svg { display: block; overflow: visible; }
+  .deco .dim { stroke: rgba(245, 247, 245, 0.55); }
+  .deco .led { fill: var(--vivid); stroke: none; }
+
+  .laptop  { left: -46px;  top: 96px;  transform: rotate(-11deg); }
+  .server  { left: 36px;   top: 520px; transform: rotate(7deg); opacity: 0.5; }
+  .monitor { right: -40px; top: 92px;  transform: rotate(9deg); }
+  .switch  { right: -20px; top: 612px; transform: rotate(-7deg); opacity: 0.5; }
+  .tablet  { right: 250px; top: 730px; transform: rotate(14deg); opacity: 0.32; }
+  .phone   { left: 330px;  top: 92px;  transform: rotate(-16deg); opacity: 0.3; }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .logo { height: 86px; width: auto; }
+  .kicker {
+    margin-top: 42px;
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--vivid);
+  }
+  h1 {
+    margin-top: 18px;
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 84px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 6px 40px rgba(0, 0, 0, 0.6);
+  }
+  h1 .accent {
+    background: linear-gradient(105deg, #8BE95F 0%, var(--vivid) 45%, var(--mint) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .chips { display: flex; gap: 12px; margin-top: 42px; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px 12px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    font-weight: 600;
+    font-size: 23px;
+  }
+  .chip i {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--vivid);
+    display: grid;
+    place-items: center;
+  }
+  .chip i svg { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="grid"></div>
+
+  <!-- Portable -->
+  <div class="deco laptop">
+    <svg width="330" height="241" viewBox="0 0 200 146" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="26" y="8" width="148" height="98" rx="10"/>
+      <path class="dim" d="M44 28h60M44 44h88M44 60h40"/>
+      <path d="M8 118h184l-10 18H18z"/>
+    </svg>
+  </div>
+
+  <!-- Serveur -->
+  <div class="deco server">
+    <svg width="210" height="210" viewBox="0 0 160 160" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="10" y="10" width="140" height="40" rx="8"/>
+      <rect x="10" y="60" width="140" height="40" rx="8"/>
+      <rect x="10" y="110" width="140" height="40" rx="8"/>
+      <circle class="led" cx="32" cy="30" r="6"/>
+      <circle class="led" cx="32" cy="80" r="6"/>
+      <circle class="led" cx="32" cy="130" r="6"/>
+      <path class="dim" d="M62 30h66M62 80h66M62 130h66"/>
+    </svg>
+  </div>
+
+  <!-- Écran -->
+  <div class="deco monitor">
+    <svg width="320" height="272" viewBox="0 0 200 170" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="184" height="118" rx="10"/>
+      <path class="dim" d="M30 32h70M30 50h110M30 68h50"/>
+      <path d="M100 126v22M66 152h68"/>
+    </svg>
+  </div>
+
+  <!-- Commutateur réseau -->
+  <div class="deco switch">
+    <svg width="290" height="92" viewBox="0 0 220 70" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="6" width="208" height="58" rx="10"/>
+      <g class="dim">
+        <rect x="26" y="24" width="14" height="14" rx="3"/>
+        <rect x="48" y="24" width="14" height="14" rx="3"/>
+        <rect x="70" y="24" width="14" height="14" rx="3"/>
+        <rect x="92" y="24" width="14" height="14" rx="3"/>
+        <rect x="114" y="24" width="14" height="14" rx="3"/>
+        <rect x="136" y="24" width="14" height="14" rx="3"/>
+      </g>
+      <circle class="led" cx="176" cy="31" r="5"/>
+      <circle class="led" cx="194" cy="31" r="5"/>
+    </svg>
+  </div>
+
+  <!-- Tablette -->
+  <div class="deco tablet">
+    <svg width="120" height="170" viewBox="0 0 120 170" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="8" width="104" height="154" rx="16"/>
+      <path class="dim" d="M48 146h24"/>
+    </svg>
+  </div>
+
+  <!-- Téléphone -->
+  <div class="deco phone">
+    <svg width="78" height="140" viewBox="0 0 78 140" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="6" y="6" width="66" height="128" rx="14"/>
+      <path class="dim" d="M30 118h18"/>
+    </svg>
+  </div>
+
+  <div class="content">
+    <img class="logo" src="../../public/logo-horizontal-fonce.png" alt="Techno Lot">
+    <p class="kicker">Rachat de matériel informatique</p>
+    <h1>Vos lots informatiques<br><span class="accent">ont de la valeur</span></h1>
+    <div class="chips">
+      <span class="chip"><i><svg viewBox="0 0 20 20" fill="none" stroke="#060A14" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></i>Offre en 24 h</span>
+      <span class="chip"><i><svg viewBox="0 0 20 20" fill="none" stroke="#060A14" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></i>Ramassage sans frais</span>
+      <span class="chip"><i><svg viewBox="0 0 20 20" fill="none" stroke="#060A14" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg></i>Partout au Québec</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
