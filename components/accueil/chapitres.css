@@ -16,6 +16,351 @@
   );
 }
 
+/* ---- Stats : cartes « Nos engagements » (engagements-cartes.tsx) ----
+   Trois cartes de couleur cliquables. Variables par carte : --eng-accent (lien),
+   --eng-chiffre, --eng-unite, --eng-doux (texte secondaire), --eng-lueur (halo
+   qui suit le curseur). Inclinaison : --eng-rx / --eng-ry posées par le JS (souris). */
+.eng-carte {
+  --eng-rx: 0deg;
+  --eng-ry: 0deg;
+  --eng-lift: 0px;
+  --eng-mx: 50%;
+  --eng-my: 0%;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 1.375rem 1.375rem 1.5rem;
+  transform: perspective(1000px) rotateX(var(--eng-rx)) rotateY(var(--eng-ry)) translate3d(0, var(--eng-lift), 0);
+  transition:
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s ease;
+}
+@media (min-width: 768px) {
+  .eng-carte {
+    min-height: 19rem;
+    padding: 1.75rem;
+  }
+}
+@media (min-width: 1024px) {
+  .eng-carte {
+    min-height: 20.5rem;
+    padding: 2rem;
+  }
+}
+@media (hover: hover) {
+  .eng-carte:hover {
+    --eng-lift: -6px;
+    box-shadow: 0 34px 60px -34px rgba(10, 15, 28, 0.65);
+  }
+}
+
+.eng-carte--nuit {
+  --eng-accent: #6bd63b;
+  --eng-chiffre: #6bd63b;
+  --eng-unite: #6bd63b;
+  --eng-doux: #cbd5e1;
+  --eng-lueur: rgba(139, 233, 95, 0.18);
+  background-color: #0a0f1c;
+  background-image:
+    radial-gradient(120% 90% at 100% 0%, rgba(107, 214, 59, 0.2), transparent 55%),
+    radial-gradient(90% 70% at 0% 100%, rgba(52, 211, 153, 0.1), transparent 60%);
+  color: #ffffff;
+}
+.eng-carte--lime {
+  --eng-accent: #0a0a0a;
+  --eng-chiffre: #0a0a0a;
+  --eng-unite: #0e3a20;
+  --eng-doux: rgba(10, 10, 10, 0.74);
+  --eng-lueur: rgba(255, 255, 255, 0.55);
+  background-color: #6bd63b;
+  color: #0a0a0a;
+}
+.eng-carte--vert {
+  --eng-accent: #8be95f;
+  --eng-chiffre: #ffffff;
+  --eng-unite: #8be95f;
+  --eng-doux: rgba(255, 255, 255, 0.8);
+  --eng-lueur: rgba(139, 233, 95, 0.16);
+  background-color: #0e3a20;
+  background-image: radial-gradient(110% 85% at 100% 0%, rgba(107, 214, 59, 0.2), transparent 58%);
+  color: #ffffff;
+}
+
+/* Halo qui suit le curseur (visible au survol) */
+.eng-lueur {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(280px circle at var(--eng-mx) var(--eng-my), var(--eng-lueur), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+@media (hover: hover) {
+  .eng-carte:hover .eng-lueur {
+    opacity: 1;
+  }
+}
+
+.eng-haut,
+.eng-bas {
+  position: relative;
+  z-index: 1;
+}
+.eng-haut {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.eng-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.eng-bas {
+  display: flex;
+  flex-direction: column;
+}
+
+.eng-chiffre {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(3.25rem, 6vw, 5.25rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--eng-chiffre);
+}
+.eng-unite {
+  font-size: 0.48em;
+  color: var(--eng-unite);
+}
+.eng-titre {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+@media (min-width: 1024px) {
+  .eng-titre {
+    font-size: 1.375rem;
+  }
+}
+.eng-texte {
+  margin-top: 0.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--eng-doux);
+}
+.eng-lien {
+  margin-top: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--eng-accent);
+}
+.eng-fleche {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.eng-carte:hover .eng-fleche,
+.eng-carte:focus-visible .eng-fleche {
+  transform: translateX(5px);
+}
+
+/* 24 h : cadran (l'arc fait le tour, l'aiguille aussi) */
+.eng-cadran {
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: none;
+  overflow: visible;
+}
+@media (min-width: 1024px) {
+  .eng-cadran {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+}
+.eng-cadran-piste {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 3.5;
+}
+.eng-cadran-arc {
+  fill: none;
+  stroke: #6bd63b;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100 100;
+  stroke-dashoffset: 0;
+  transform: rotate(-90deg);
+  transform-origin: 24px 24px;
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.25s;
+}
+.eng-aiguille {
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform-origin: 24px 24px;
+  transition: transform 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.25s;
+}
+.eng-cadran-centre {
+  fill: #6bd63b;
+}
+@media (hover: hover) {
+  .eng-carte:hover .eng-aiguille {
+    animation: eng-tour 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+}
+@keyframes eng-tour {
+  from {
+    transform: rotate(-360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+/* 0 $ : le camion traverse la carte jusque chez vous (et refait le trajet au survol) */
+.eng-route {
+  position: relative;
+  width: 100%;
+  height: 2.5rem;
+  overflow: hidden;
+}
+.eng-route-ligne {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.15rem;
+  height: 2px;
+  background-image: repeating-linear-gradient(90deg, currentColor 0 8px, transparent 8px 14px);
+  opacity: 0.4;
+}
+.eng-camion {
+  position: absolute;
+  right: 0.1rem;
+  bottom: 0.25rem;
+  display: grid;
+  place-items: center;
+  transition:
+    transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
+    opacity 0.5s ease 0.3s;
+}
+@media (hover: hover) {
+  .eng-carte:hover .eng-camion {
+    animation: eng-roule 1.5s cubic-bezier(0.45, 0, 0.2, 1);
+  }
+}
+@keyframes eng-roule {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  34% {
+    transform: translateX(160%);
+    opacity: 0;
+  }
+  35% {
+    transform: translateX(-14rem);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 50 % : moitié payée au ramassage ; le solde se dessine au survol */
+.eng-barre {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.35rem;
+}
+.eng-barre-piste {
+  position: relative;
+  height: 0.65rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+.eng-barre-moitie,
+.eng-barre-solde {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  transform-origin: left center;
+}
+.eng-barre-moitie {
+  left: 0;
+  background: #6bd63b;
+  transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1) 0.3s;
+}
+.eng-barre-solde {
+  left: 50%;
+  background: repeating-linear-gradient(135deg, rgba(139, 233, 95, 0.9) 0 4px, rgba(139, 233, 95, 0.4) 4px 8px);
+  transform: scaleX(0);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.eng-carte:focus-visible .eng-barre-solde {
+  transform: scaleX(1);
+}
+@media (hover: hover) {
+  .eng-carte:hover .eng-barre-solde {
+    transform: scaleX(1);
+  }
+}
+/* Un libellé sous chaque moitié de la barre */
+.eng-barre-libelles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--eng-doux);
+}
+
+/* Entrée (armée par le JS seulement si les cartes sont sous l'écran au chargement) :
+   chaque carte monte, puis son animation se joue. */
+.eng-item {
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--eng-i, 0) * 0.08s),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) calc(var(--eng-i, 0) * 0.08s);
+}
+.eng-liste[data-arme] .eng-item:not([data-vu]) {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+}
+.eng-liste[data-arme] .eng-item:not([data-vu]) .eng-cadran-arc {
+  stroke-dashoffset: 100;
+}
+.eng-liste[data-arme] .eng-item:not([data-vu]) .eng-aiguille {
+  transform: rotate(-360deg);
+}
+.eng-liste[data-arme] .eng-item:not([data-vu]) .eng-camion {
+  transform: translateX(-14rem);
+  opacity: 0;
+}
+.eng-liste[data-arme] .eng-item:not([data-vu]) .eng-barre-moitie {
+  transform: scaleX(0);
+}
+
 /* ---- Rachetons : carte de catégorie, légère montée au survol ---- */
 .tl-ch-carte {
   transition:
@@ -53,11 +398,22 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tl-ch-carte,
-  .tl-ch-fleche > svg {
+  .tl-ch-fleche > svg,
+  .eng-carte,
+  .eng-item,
+  .eng-lueur,
+  .eng-fleche,
+  .eng-cadran-arc,
+  .eng-aiguille,
+  .eng-camion,
+  .eng-barre-moitie,
+  .eng-barre-solde {
     transition: none;
+    animation: none !important;
   }
   .tl-ch-carte:hover,
-  .tl-ch-carte:focus-visible {
+  .tl-ch-carte:focus-visible,
+  .eng-carte {
     transform: none;
   }
 }

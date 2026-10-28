@@ -29,6 +29,9 @@ export type Engagement = {
   spoken: string;
   title: string;
   caption: string;
+  /** Page qui détaille l'engagement (chemin non localisé) et libellé du lien. */
+  href: string;
+  lien: string;
 };
 
 export type CategorieKey = "serveurs" | "portables" | "ecrans" | "reseau" | "stockage" | "postes";
@@ -36,7 +39,13 @@ export type CategorieKey = "serveurs" | "portables" | "ecrans" | "reseau" | "sto
 export type Categorie = { key: CategorieKey; name: string; desc: string; image: string };
 
 export type ChapitresContenu = {
-  stats: { title: string; items: Engagement[] };
+  stats: {
+    title: string;
+    subtitle: string;
+    items: Engagement[];
+    /** Libellés de la barre de paiement (première moitié, solde). */
+    barre: { debut: string; fin: string };
+  };
   secondeVie: { lead: string; accent: string; text: string; imageAlt: string };
   rachetons: {
     titleStart: string;
@@ -70,6 +79,7 @@ const textes: Record<
   fr: {
     stats: {
       title: "Nos engagements",
+      subtitle: "Trois promesses tenues à chaque lot, petit ou grand.",
       items: [
         {
           key: "reponse",
@@ -78,6 +88,8 @@ const textes: Record<
           spoken: `24${NBSP}h`,
           title: "Réponse garantie",
           caption: "Votre lot est évalué en 24 heures, partout au Québec.",
+          href: "/soumission",
+          lien: "Faire une soumission",
         },
         {
           key: "ramassage",
@@ -86,6 +98,8 @@ const textes: Record<
           spoken: `0${NBSP}$`,
           title: "Ramassage gratuit",
           caption: "Aucuns frais de ramassage ni de transport.",
+          href: "/prise-en-charge-complete",
+          lien: "Notre prise en charge",
         },
         {
           key: "paiement",
@@ -94,8 +108,11 @@ const textes: Record<
           spoken: `50${NBSP}%`,
           title: "Payé au ramassage",
           caption: "Le solde sans délai après l'inspection.",
+          href: "/consultation",
+          lien: "Les étapes du paiement",
         },
       ],
+      barre: { debut: "Ramassage", fin: "Inspection" },
     },
     secondeVie: {
       lead: "Chaque appareil mérite",
@@ -108,6 +125,7 @@ const textes: Record<
   en: {
     stats: {
       title: "Our commitments",
+      subtitle: "Three promises we keep on every lot, big or small.",
       items: [
         {
           key: "reponse",
@@ -116,6 +134,8 @@ const textes: Record<
           spoken: `24${NBSP}h`,
           title: "Guaranteed response",
           caption: "Your lot is appraised within 24 hours, anywhere in Québec.",
+          href: "/soumission",
+          lien: "Get a quote",
         },
         {
           key: "ramassage",
@@ -125,6 +145,8 @@ const textes: Record<
           spoken: "$0",
           title: "Free pickup",
           caption: "No pickup or transport fees.",
+          href: "/prise-en-charge-complete",
+          lien: "How pickup works",
         },
         {
           key: "paiement",
@@ -133,8 +155,11 @@ const textes: Record<
           spoken: "50%",
           title: "Paid at pickup",
           caption: "The balance right after inspection.",
+          href: "/consultation",
+          lien: "Payment steps",
         },
       ],
+      barre: { debut: "Pickup", fin: "Inspection" },
     },
     secondeVie: {
       lead: "Every device deserves",
@@ -157,7 +182,7 @@ export function getChapitres(locale: Locale): ChapitresContenu {
   });
 
   return {
-    stats: { title: t.stats.title, items: [...t.stats.items] },
+    stats: { ...t.stats, items: [...t.stats.items] },
     secondeVie: { ...t.secondeVie },
     rachetons: {
       titleStart: range.titleStart,
