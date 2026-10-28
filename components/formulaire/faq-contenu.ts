@@ -94,6 +94,32 @@ const fr: FaqGroupe[] = [
       },
     ],
   },
+  {
+    id: "revendre-recycler",
+    title: "Revendre ou recycler",
+    items: [
+      {
+        question: "Où revendre le matériel informatique d'une entreprise au Québec ?",
+        answer:
+          "Techno Lot rachète le matériel informatique et électronique des entreprises, qu'il soit neuf, usagé ou partiellement fonctionnel. Vous recevez une offre dans les 24 heures, et le ramassage est sans frais et sans minimum partout au Québec.",
+      },
+      {
+        question: "Comment se débarrasser du matériel informatique de façon responsable ?",
+        answer:
+          "En le confiant à une entreprise qui le remet en circulation. Chez Techno Lot, le matériel est réemployé, et les composants de ce qui ne peut pas resservir sont recyclés. Les données sont effacées de façon sécurisée et nous remettons un certificat de destruction des données, sans frais.",
+      },
+      {
+        question: "Combien coûte le recyclage du matériel informatique ?",
+        answer:
+          "Chez Techno Lot, le ramassage, l'effacement sécurisé des données et le certificat de destruction sont sans frais. Plutôt que de payer pour recycler, vous pouvez vendre : nous évaluons le matériel et le prix offert dépend de cette évaluation. Ce qui ne peut pas resservir est dirigé vers le recyclage des composants.",
+      },
+      {
+        question: "Rachat ou recyclage : quelle option choisir ?",
+        answer:
+          "Le rachat vous permet d'être payé pour votre matériel, qu'il soit neuf, usagé ou partiellement fonctionnel, le prix dépendant de l'évaluation. Ce qui peut resservir est réemployé, et les composants du reste sont recyclés. Demandez une offre : vous la recevrez dans les 24 heures.",
+      },
+    ],
+  },
 ];
 
 const en: FaqGroupe[] = [
@@ -173,6 +199,32 @@ const en: FaqGroupe[] = [
       {
         question: "How can I reach you?",
         answer: "By phone at 514-944-3939 or by email at info@technolot.ca.",
+      },
+    ],
+  },
+  {
+    id: "revendre-recycler",
+    title: "Resell or recycle",
+    items: [
+      {
+        question: "Where can a business sell its IT equipment in Québec?",
+        answer:
+          "Techno Lot buys IT and electronic equipment from businesses, whether new, used or partially functional. You get an offer within 24 hours, and pickup is free, with no minimum, anywhere in Québec.",
+      },
+      {
+        question: "How do you dispose of IT equipment responsibly?",
+        answer:
+          "By handing it to a company that puts it back into use. At Techno Lot, equipment is reused, and the components of anything that can't be reused are recycled. Data is securely erased and we provide a data destruction certificate at no charge.",
+      },
+      {
+        question: "How much does IT equipment recycling cost?",
+        answer:
+          "At Techno Lot, pickup, secure data erasure and the destruction certificate are free. Rather than paying to recycle, you can sell: we appraise the equipment and the price offered depends on that appraisal. Whatever cannot be reused is sent to component recycling.",
+      },
+      {
+        question: "Buyback or recycling: which option should you choose?",
+        answer:
+          "Buyback gets you paid for your equipment, whether new, used or partially functional, with the price depending on the appraisal. What can be reused is reused, and the components of the rest are recycled. Ask for an offer: you'll receive it within 24 hours.",
       },
     ],
   },

@@ -1,4 +1,5 @@
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { Counter } from "@/components/site/Counter";
@@ -18,6 +19,7 @@ const content = {
     intro:
       "Dès que notre offre est acceptée, notre équipe se rend sur place pour emballer, charger et transporter votre matériel. Vous n'avez rien à déplacer. Voici comment ça se passe.",
     heroCta: "Faire une soumission",
+    heroAlt: "Camion de ramassage Techno Lot",
     heroCall: "Appeler",
     before: {
       title: "Avant le ramassage",
@@ -75,6 +77,7 @@ const content = {
     intro:
       "Once our offer is accepted, our team comes on site to pack, load and transport your equipment. You don't have to move a thing. Here's how it works.",
     heroCta: "Get a quote",
+    heroAlt: "Techno Lot pickup truck",
     heroCall: "Call",
     before: {
       title: "Before pickup",
@@ -140,7 +143,8 @@ export default function PriseEnChargePage({ locale }: { locale: Locale }) {
           </>
         }
         intro={t.intro}
-        image={{ kind: "object", src: "/images/camion/camion-techno-lot.webp", width: 100 }}
+        image={{ kind: "object", src: "/images/camion/camion-techno-lot.webp", alt: t.heroAlt, width: 100 }}
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Full-service pickup" : "Prise en charge"} frPath="/prise-en-charge-complete" />}
       >
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <PrimaryButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</PrimaryButtonLink>

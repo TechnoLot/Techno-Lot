@@ -91,6 +91,20 @@ const fr = {
       callAria: "Appelez-nous au",
       emailAria: "Écrivez-nous à",
       response: "Réponse garantie en 24 h",
+      /** Chemins complets (langue comprise) ; le pied de page n'affiche que ceux du registre lib/seo/routes.ts */
+      zonesTitle: "Zones desservies",
+      zones: [
+        { href: "/rachat-materiel-informatique-montreal", label: "Montréal" },
+        { href: "/rachat-materiel-informatique-laval", label: "Laval" },
+        { href: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
+        { href: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+      ],
+      categoriesTitle: "Ce que nous rachetons",
+      categories: [
+        { href: "/rachat-ordinateurs-portables-en-lot", label: "Ordinateurs et postes" },
+        { href: "/rachat-serveurs-et-stockage", label: "Serveurs et stockage" },
+        { href: "/rachat-equipements-reseau-telecom", label: "Réseau et télécom" },
+      ],
     },
     orCallUs: "ou appelez-nous au",
     /** Ruban de liens qui défile sous les appels à l'action (chemins non localisés) */
@@ -312,6 +326,11 @@ const en: Dict = {
       callAria: "Call us at",
       emailAria: "Email us at",
       response: "Guaranteed response within 24 h",
+      zonesTitle: "Areas served",
+      zones: [{ href: "/en/it-equipment-buyback-montreal", label: "Montreal" }],
+      categoriesTitle: "What we buy",
+      /** Pages catégories en français seulement : rien en anglais */
+      categories: [] as { href: string; label: string }[],
     },
     orCallUs: "or call us at",
     liensUtiles: {

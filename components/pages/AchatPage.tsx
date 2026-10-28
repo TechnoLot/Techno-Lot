@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { Marquee } from "@/components/site/Marquee";
 import { InkButtonLink, PrimaryButtonLink } from "@/components/site/Button";
 import { localePath, type Locale } from "@/lib/i18n";
+import { findRoute } from "@/lib/seo/routes";
 import { Chapter } from "./services/Chapter";
 import { CategoryRail, type RailItem } from "./services/CategoryRail";
 import { Parallax } from "./services/Parallax";
@@ -20,12 +22,28 @@ const images = [
   "/accueil/rachat-ecrans.webp",
 ];
 
+/**
+ * Page dédiée de chaque catégorie (même ordre que `images`), en français
+ * seulement : ordinateurs et écrans → portables, serveurs et stockage →
+ * serveurs, réseau et télécom → réseau ; rien pour la bureautique.
+ */
+const categoryPages: (string | null)[] = [
+  "/rachat-ordinateurs-portables-en-lot",
+  "/rachat-serveurs-et-stockage",
+  "/rachat-equipements-reseau-telecom",
+  "/rachat-serveurs-et-stockage",
+  "/rachat-equipements-reseau-telecom",
+  null,
+  "/rachat-ordinateurs-portables-en-lot",
+];
+
 const content = {
   fr: {
     title: "Ce que nous rachetons",
     intro:
       "Du poste de travail au centre de données : Techno Lot valorise tout votre matériel informatique et électronique, quelle que soit la taille du lot.",
     heroCta: "Faire une soumission",
+    heroAlt: "Pile d'ordinateurs portables usagés",
     ribbon: "Matériel que nous rachetons",
     railTitle: "Nos catégories de matériel",
     railIntro: "Faites défiler pour parcourir chaque famille d'équipements.",
@@ -98,6 +116,7 @@ const content = {
     intro:
       "From workstations to data centres: Techno Lot puts a value on all your IT and electronic equipment, whatever the size of the lot.",
     heroCta: "Get a quote",
+    heroAlt: "Stack of used laptops",
     ribbon: "Equipment we buy",
     railTitle: "Equipment categories",
     railIntro: "Keep scrolling to browse each family of equipment.",
@@ -169,14 +188,19 @@ const content = {
 
 export default function AchatPage({ locale }: { locale: Locale }) {
   const t = content[locale];
-  const items: RailItem[] = t.categories.map((c, i) => ({ ...c, image: images[i] }));
+  const items: RailItem[] = t.categories.map((c, i) => {
+    const href = locale === "fr" ? categoryPages[i] : null;
+    const link = href && findRoute(href)?.fr === href ? { href, label: "En savoir plus" } : undefined;
+    return { ...c, image: images[i], link };
+  });
 
   return (
     <>
       <PageHero
         title={t.title}
         intro={t.intro}
-        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", width: 86 }}
+        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", alt: t.heroAlt, width: 86 }}
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "What we buy" : "Ce que nous rachetons"} frPath="/achat-de-lot-description" />}
       >
         <div className="mt-8">
           <PrimaryButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</PrimaryButtonLink>

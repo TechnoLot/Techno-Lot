@@ -7,6 +7,7 @@ import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { PrimaryButtonLink } from "@/components/site/Button";
 import JsonLd from "@/components/seo/JsonLd";
+import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import PostImage from "@/components/blog/PostImage";
 import ReadingProgress from "@/components/blog/ReadingProgress";
 import ShareButtons from "@/components/blog/ShareButtons";
@@ -33,7 +34,7 @@ import {
 } from "@/lib/blog-seo";
 import { site } from "@/lib/site";
 import { absoluteUrl } from "@/lib/seo/routes";
-import { ORG_ID, breadcrumbJsonLd } from "@/lib/seo/schema";
+import { ORG_ID } from "@/lib/seo/schema";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import "./blog.css";
 
@@ -304,15 +305,16 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
     author: { "@id": ORG_ID },
     publisher: { "@id": ORG_ID },
   };
-  const breadcrumb = breadcrumbJsonLd([
+  // Fil d'Ariane visible ; son JSON-LD BreadcrumbList (titre complet) est le seul de la page.
+  const breadcrumbItems = [
     { name: seoT.breadcrumbHome, path: localePath(locale, "/") },
     { name: seoT.breadcrumbBlog, path: localePath(locale, "/blog") },
     { name: summary.title, path },
-  ]);
+  ];
 
   return (
     <>
-      <JsonLd data={[articleJsonLd, breadcrumb]} />
+      <JsonLd data={articleJsonLd} />
       <ReadingProgress targetId="article-body" label={t.progress} />
 
       {/* En-tête : chapitre bleu nuit (lueurs vertes) */}
@@ -324,14 +326,9 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
         <div aria-hidden="true" className="blog-glow blog-glow--tl" />
         <div aria-hidden="true" className="blog-glow blog-glow--br" />
         <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-          <Link
-            href={localePath(locale, "/blog")}
-            className="hero-item inline-flex items-center gap-2 text-sm font-medium text-moss transition-colors hover:text-emerald"
-            style={d(0)}
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {dict.blog.backToBlog}
-          </Link>
+          <div className="hero-item" style={d(0)}>
+            <Breadcrumbs locale={locale} items={breadcrumbItems} />
+          </div>
           <h1
             lang={contentLang}
             className="hero-item mt-8 max-w-4xl font-display text-4xl font-extrabold leading-[1.05] tracking-[-0.03em] text-mist sm:text-5xl lg:text-6xl"

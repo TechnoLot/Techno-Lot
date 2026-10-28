@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { PrimaryButtonLink } from "@/components/site/Button";
@@ -189,6 +190,7 @@ export default async function BlogIndexPage({ locale, page = 1 }: { locale: Loca
       <PageHero
         title={t.title}
         size={premiere ? "default" : "compact"}
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Blog" : "Blogue"} frPath="/blog" />}
         intro={
           <>
             {t.intro}

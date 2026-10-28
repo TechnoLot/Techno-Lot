@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { Counter } from "@/components/site/Counter";
@@ -17,6 +18,7 @@ const content = {
     title: "Estimation de votre lot",
     intro: "Un processus simple, rapide et sans engagement.",
     heroCta: "Faire une soumission",
+    heroAlt: "Planchette d'inventaire posée sur un ordinateur portable",
     figures: [
       { value: 24, suffix: " h", label: "pour recevoir notre offre par courriel" },
       { word: "0 $", label: "de frais pour la récupération du lot" },
@@ -76,6 +78,7 @@ const content = {
     title: "Get your lot appraised",
     intro: "A simple, fast, no-obligation process.",
     heroCta: "Get a quote",
+    heroAlt: "Inventory clipboard on a laptop",
     figures: [
       { value: 24, suffix: " h", label: "to receive our offer by email" },
       { word: "$0", label: "in fees to pick up the lot" },
@@ -138,7 +141,8 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
       <PageHero
         title={t.title}
         intro={t.intro}
-        image={{ kind: "object", src: "/images/services/soumission.webp", width: 88 }}
+        image={{ kind: "object", src: "/images/services/soumission.webp", alt: t.heroAlt, width: 88 }}
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Appraisal" : "Estimation"} frPath="/consultation" />}
       >
         <div className="mt-8">
           <PrimaryButtonLink href={localePath(locale, "/soumission")}>{t.heroCta}</PrimaryButtonLink>

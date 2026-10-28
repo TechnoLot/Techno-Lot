@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { PrimaryButtonLink } from "@/components/site/Button";
 import { Reveal } from "@/components/site/Reveal";
 import SubmissionForm from "@/components/SubmissionForm";
@@ -36,7 +37,12 @@ export default function ContactPage({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <PageHero title={t.title} intro={t.intro} size="compact" />
+      <PageHero
+        title={t.title}
+        intro={t.intro}
+        size="compact"
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Contact" : "Contact"} frPath="/contact" />}
+      />
 
       <section data-theme="mint" aria-label={t.contactLabel} className="tlf relative py-12 sm:py-20">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-12 px-5 sm:px-8 lg:grid-cols-12 lg:gap-12">

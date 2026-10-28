@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
 import { Counter } from "@/components/site/Counter";
@@ -219,6 +220,7 @@ export default function AProposPage({ locale }: { locale: Locale }) {
         }
         intro={t.intro}
         image={{ kind: "logo", alt: t.logoAlt }}
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "About" : "À propos"} frPath="/a-propos" />}
       />
 
       {/* 1. Menthe : la passion, grand énoncé + palette en parallaxe */}

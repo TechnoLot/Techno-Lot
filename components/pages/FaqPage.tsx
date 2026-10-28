@@ -1,4 +1,5 @@
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { FaqRecherche } from "@/components/formulaire/FaqRecherche";
 import { getFaq } from "@/components/formulaire/faq-contenu";
@@ -45,7 +46,12 @@ export default function FaqPage({ locale }: { locale: Locale }) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
-      <PageHero title={t.title} intro={t.intro} size="compact" />
+      <PageHero
+        title={t.title}
+        intro={t.intro}
+        size="compact"
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "FAQ" : "FAQ"} frPath="/faq" />}
+      />
 
       <section data-theme="mint" aria-label={t.listLabel} className="relative py-14 sm:py-20">
         <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">

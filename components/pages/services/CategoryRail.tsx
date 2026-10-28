@@ -1,12 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { m, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring } from "framer-motion";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Reveal } from "@/components/site/Reveal";
 import { Glows, type ChapterTheme } from "./Chapter";
 
-export type RailItem = { title: string; text: string; image: string };
+export type RailItem = {
+  title: string;
+  text: string;
+  image: string;
+  /** Lien discret vers la page dédiée à la catégorie (optionnel) */
+  link?: { href: string; label: string };
+};
 
 type CategoryRailProps = {
   theme: ChapterTheme;
@@ -158,6 +166,15 @@ export function CategoryRail({ theme, heading, intro, items, special, label }: C
                     </div>
                     <h3 className="mt-5 font-display text-xl font-semibold leading-snug text-mist sm:text-2xl">{item.title}</h3>
                     <p className="mt-2 text-[15px] leading-relaxed text-moss sm:text-base">{item.text}</p>
+                    {item.link && (
+                      <Link
+                        href={item.link.href}
+                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-emerald underline-offset-4 hover:underline focus-visible:underline"
+                      >
+                        {item.link.label}
+                        <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      </Link>
+                    )}
                   </article>
                 </li>
               ))}

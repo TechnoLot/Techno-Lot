@@ -3,10 +3,12 @@ import Link from "next/link";
 import { Logo } from "@/components/site/Logo";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
+import { findRoute } from "@/lib/seo/routes";
 
 /**
  * Pied de page compact, chapitre bleu nuit : logo, slogan et Facebook ; navigation
- * sur deux colonnes ; coordonnées à taille normale (téléphone, courriel, délai de
+ * sur deux colonnes ; zones desservies et catégories rachetées (pages du registre
+ * seulement, dans la langue affichée) ; coordonnées à taille normale (téléphone, courriel, délai de
  * réponse, adresse postale) ; puis les mentions et le lien « Haut de page ».
  */
 export function SiteFooter({ locale }: { locale: Locale }) {
@@ -27,6 +29,16 @@ export function SiteFooter({ locale }: { locale: Locale }) {
 
   const smallLink = "transition-colors duration-200 hover:text-[#6bd63b]";
 
+  // Liens en chemins complets : on ne garde que les pages du registre qui existent dans cette langue.
+  const inRegistry = (href: string) => {
+    const route = findRoute(href);
+    return locale === "en" ? route?.en === href : route?.fr === href;
+  };
+  const extraColumns = [
+    { id: "footer-zones", title: f.zonesTitle, links: f.zones.filter((l) => inRegistry(l.href)) },
+    { id: "footer-categories", title: f.categoriesTitle, links: f.categories.filter((l) => inRegistry(l.href)) },
+  ].filter((col) => col.links.length > 0);
+
   return (
     <footer data-theme="night" className="relative isolate overflow-hidden text-mist">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
@@ -35,7 +47,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       </div>
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-8 pt-14 sm:px-8 sm:pt-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-10">
           {/* Marque */}
           <div className="sm:col-span-2 lg:col-span-4">
             <Link href={lp("/")} aria-label={t.header.logoAria} className="inline-block rounded-md transition-opacity hover:opacity-90">
@@ -99,6 +111,24 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               </li>
             </ul>
           </div>
+
+          {/* Zones desservies et catégories : sous la navigation et les coordonnées sur grand écran */}
+          {extraColumns.map((col, i) => (
+            <nav key={col.id} aria-labelledby={col.id} className={`lg:col-span-4 ${i === 0 ? "lg:col-start-5" : ""}`}>
+              <p id={col.id} className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+                {col.title}
+              </p>
+              <ul className="mt-4 space-y-2.5 font-display text-[15px] font-medium text-white/85">
+                {col.links.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} className={smallLink}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
         {/* Mentions */}

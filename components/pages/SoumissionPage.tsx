@@ -1,4 +1,5 @@
 import { PageHero } from "@/components/site/PageHero";
+import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import SubmissionForm from "@/components/SubmissionForm";
 import { Engagements } from "@/components/formulaire/Engagements";
 import type { Locale } from "@/lib/i18n";
@@ -23,7 +24,12 @@ export default function SoumissionPage({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <PageHero title={t.title} intro={t.intro} size="compact" />
+      <PageHero
+        title={t.title}
+        intro={t.intro}
+        size="compact"
+        breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Get a quote" : "Soumission"} frPath="/soumission" />}
+      />
 
       <section data-theme="mint" aria-label={t.formLabel} className="tlf relative py-12 sm:py-20">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-5 sm:px-8 lg:grid-cols-12 lg:gap-10">
