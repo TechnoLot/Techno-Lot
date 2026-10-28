@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Mail, Phone, Plus } from "lucide-react";
+import { ArrowRight, Mail, Phone, Plus } from "lucide-react";
 
 export type SoumissionRow = {
   id: string;
@@ -22,8 +22,8 @@ function formatDateHeure(iso: string): string {
 
 /**
  * « Dernières soumissions » : demandes du formulaire public des 30 derniers
- * jours qui ne sont liées à aucun lot (aucune page admin ne les traite
- * ailleurs).
+ * jours qui ne sont liées à aucun lot. La liste complète est dans l'onglet
+ * Soumissions (/admin/soumissions).
  */
 export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }) {
   return (
@@ -33,13 +33,22 @@ export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }
       className="scroll-mt-20 rounded-2xl border border-admin-line bg-admin-card"
     >
       <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
-        <h2
-          id="soumissions-titre"
-          className="font-display text-lg font-semibold tracking-tight text-admin-ink"
+        <div className="min-w-0">
+          <h2
+            id="soumissions-titre"
+            className="font-display text-lg font-semibold tracking-tight text-admin-ink"
+          >
+            Dernières soumissions
+          </h2>
+          <p className="text-[13px] text-admin-muted">À traiter, 30 derniers jours</p>
+        </div>
+        <Link
+          href="/admin/soumissions"
+          className="admin-focus inline-flex shrink-0 items-center gap-1 rounded-md text-[13px] font-semibold text-admin-green hover:underline"
         >
-          Dernières soumissions
-        </h2>
-        <span className="text-[13px] text-admin-muted">30 derniers jours</span>
+          Toutes les soumissions
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </Link>
       </div>
       <ul className="pb-2">
         {rows.map((s) => (
@@ -75,7 +84,7 @@ export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }
                   Appeler
                 </a>
               )}
-              <Link href="/admin/lots/nouveau" className="admin-btn">
+              <Link href={`/admin/lots/nouveau?soumission=${s.id}`} className="admin-btn">
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 Créer le lot
               </Link>

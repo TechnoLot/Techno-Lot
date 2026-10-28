@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
-import type { User } from "@supabase/supabase-js";
-import { isAdminEmail, resolvePrenom } from "@/lib/admin/config";
+import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
 import { endOfPeriod, startOfPeriod } from "@/lib/admin/dates";
 import type { Lot, PeriodKey } from "@/lib/admin/types";
@@ -18,9 +16,8 @@ import AFaireTiles from "@/components/admin/accueil/AFaireTiles";
 import EbayAujourdhui from "@/components/admin/accueil/EbayAujourdhui";
 import ChiffresTiles, { CHIFFRES_PERIODES } from "@/components/admin/accueil/ChiffresTiles";
 import DerniersLots from "@/components/admin/accueil/DerniersLots";
-import DernieresSoumissions, {
-  type SoumissionRow,
-} from "@/components/admin/accueil/DernieresSoumissions";
+import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumissions";
+import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soumissions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,93 +29,6 @@ type SupabaseServer = ReturnType<typeof createClient>;
 /** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
 function torontoToday(now: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(now);
-}
-
-/** Les 10 derniers chiffres d'un téléphone (null si moins de 10 chiffres). */
-function phoneKey(v: string | null | undefined): string | null {
-  const digits = (v ?? "").replace(/\D/g, "");
-  return digits.length >= 10 ? digits.slice(-10) : null;
-}
-
-/**
- * Soumissions des 30 derniers jours qui ne sont liées à aucun lot
- * (lots.soumission_id, ou même courriel ou téléphone). La table soumissions n'a pas de politique de
- * lecture pour « authenticated » : on la lit avec la clé service (serveur
- * seulement, admin vérifié) quand elle est configurée. Sans clé, `readable`
- * est faux et le compte reste inconnu.
- */
-async function fetchSoumissionsATraiter(
-  user: User | null,
-  now: Date,
-): Promise<{ readable: boolean; rows: SoumissionRow[] }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) return { readable: false, rows: [] };
-
-  if (!user || !isAdminEmail(user.email)) return { readable: false, rows: [] };
-
-  const service = createServiceClient(url, serviceKey, { auth: { persistSession: false } });
-  const since = new Date(now.getTime() - 30 * 86_400_000).toISOString();
-  const { data, error } = await service
-    .from("soumissions")
-    .select('id, "DATE", nom, courriel, telephone, message')
-    .gte("DATE", since)
-    .order("DATE", { ascending: false })
-    .limit(200);
-  if (error || !data) return { readable: false, rows: [] };
-
-  type Raw = {
-    id: string;
-    DATE: string;
-    nom: string | null;
-    courriel: string | null;
-    telephone: string | null;
-    message: string | null;
-  };
-  const raw = data as unknown as Raw[];
-  const ids = raw.map((r) => r.id);
-  const linked = new Set<string>();
-  // Créer un lot ne remplit pas toujours lots.soumission_id : un lot créé
-  // depuis la plus ancienne soumission pour le même courriel ou le même
-  // téléphone compte aussi comme « traité ».
-  const emails = new Set<string>();
-  const phones = new Set<string>();
-  if (ids.length > 0) {
-    const oldest = raw[raw.length - 1]?.DATE ?? since;
-    const [{ data: lotsLinked }, { data: lotsRecent }] = await Promise.all([
-      service.from("lots").select("soumission_id").in("soumission_id", ids),
-      service.from("lots").select("client_email, client_phone").gte("created_at", oldest),
-    ]);
-    for (const l of (lotsLinked ?? []) as { soumission_id: string | null }[]) {
-      if (l.soumission_id) linked.add(l.soumission_id);
-    }
-    for (const l of (lotsRecent ?? []) as { client_email: string | null; client_phone: string | null }[]) {
-      const email = l.client_email?.trim().toLowerCase();
-      if (email) emails.add(email);
-      const phone = phoneKey(l.client_phone);
-      if (phone) phones.add(phone);
-    }
-  }
-  const handled = (r: Raw) => {
-    if (linked.has(r.id)) return true;
-    const email = r.courriel?.trim().toLowerCase();
-    if (email && emails.has(email)) return true;
-    const phone = phoneKey(r.telephone);
-    return phone !== null && phones.has(phone);
-  };
-  return {
-    readable: true,
-    rows: raw
-      .filter((r) => !handled(r))
-      .map((r) => ({
-        id: r.id,
-        date: r.DATE,
-        nom: r.nom,
-        courriel: r.courriel,
-        telephone: r.telephone,
-        message: r.message,
-      })),
-  };
 }
 
 /** Même règle que /admin/crm/suivis : rappels dus (note ou délai de statut). */
@@ -210,7 +120,10 @@ export default async function AccueilPage({
       .eq("status", "purchased")
       .is("sale_price", null),
     countSuivisAFaire(supabase, todayIso),
-    fetchSoumissionsATraiter(user, now),
+    fetchSoumissions(user, {
+      since: new Date(now.getTime() - A_TRAITER_JOURS * 86_400_000).toISOString(),
+      limit: 200,
+    }),
     getEbayTotals(start, end),
     getAdSpend(start, end),
     getEbayOrderRows(ebayYesterday, ebayToday, [
@@ -251,7 +164,8 @@ export default async function AccueilPage({
     timeZone: TZ,
   }).format(now);
 
-  const soumissionsCount = soumissions.readable ? soumissions.rows.length : null;
+  const soumissionsATraiter = soumissions.rows.filter((s) => estATraiter(s, now));
+  const soumissionsCount = soumissions.readable ? soumissionsATraiter.length : null;
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -285,8 +199,11 @@ export default async function AccueilPage({
               label: "Soumissions à traiter",
               count: soumissionsCount,
               hint: soumissions.readable ? "Reçues ces 30 derniers jours" : "Lecture à activer",
-              // Traitées dans le bloc « Dernières soumissions » plus bas
-              href: soumissions.rows.length > 0 ? "#soumissions" : null,
+              // Liste complète dans l'onglet Soumissions
+              href:
+                soumissionsATraiter.length > 0
+                  ? "/admin/soumissions?statut=a-traiter"
+                  : "/admin/soumissions",
             },
             {
               label: "Suivis à faire",
@@ -333,7 +250,7 @@ export default async function AccueilPage({
           }}
         />
 
-        {soumissions.rows.length > 0 && <DernieresSoumissions rows={soumissions.rows} />}
+        {soumissionsATraiter.length > 0 && <DernieresSoumissions rows={soumissionsATraiter} />}
 
         <DerniersLots lots={(derniersRaw ?? []) as Lot[]} />
       </div>

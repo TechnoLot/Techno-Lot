@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import NewLotTabs from "@/components/admin/NewLotTabs";
+import NewLotTabs, { type FromSoumission } from "@/components/admin/NewLotTabs";
 import { createClient } from "@/lib/supabase/server";
+import { fetchSoumission, type Soumission } from "@/lib/admin/soumissions";
 import type { CalcLotSummary } from "@/components/admin/SavedCalcLots";
 
 export const dynamic = "force-dynamic";
@@ -17,13 +18,60 @@ type SavedLotRow = {
   updated_at: string;
 };
 
-export default async function NewLotPage() {
+/** Valeurs du formulaire tirées d'une soumission du site (client, description, notes). */
+function depuisSoumission(s: Soumission): FromSoumission {
+  const recue = new Intl.DateTimeFormat("fr-CA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "America/Toronto",
+  }).format(new Date(s.date));
+  const notes = [
+    `Soumission du site reçue le ${recue}.`,
+    s.entreprise && s.nom ? `Contact : ${s.nom}` : null,
+    s.fichiers.length > 0 ? `Pièces jointes (dans le courriel) : ${s.fichiers.join(", ")}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return {
+    id: s.id,
+    resume: `${s.nom || "Sans nom"}, reçue le ${recue}`,
+    lotId: s.lotId,
+    initial: {
+      client_name: s.entreprise ?? s.nom ?? "",
+      client_email: s.courriel,
+      client_phone: s.telephone,
+      description: s.message,
+      notes,
+      status: "negotiating",
+    },
+  };
+}
+
+export default async function NewLotPage({
+  searchParams,
+}: {
+  searchParams: { soumission?: string };
+}) {
   const supabase = createClient();
-  const { data: savedLotsRaw } = await supabase
-    .from("saved_lots")
-    .select("id, name, data, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(20);
+  const [
+    { data: savedLotsRaw },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase
+      .from("saved_lots")
+      .select("id, name, data, updated_at")
+      .order("updated_at", { ascending: false })
+      .limit(20),
+    supabase.auth.getUser(),
+  ]);
+  // « Créer le lot » depuis l'onglet Soumissions : formulaire pré-rempli et lot lié.
+  const soumission = searchParams.soumission
+    ? await fetchSoumission(user, searchParams.soumission)
+    : null;
+  const fromSoumission = soumission ? depuisSoumission(soumission) : undefined;
 
   const calcLots: CalcLotSummary[] = ((savedLotsRaw ?? []) as SavedLotRow[]).map((l) => {
     const items = l.data?.items ?? [];
@@ -65,11 +113,11 @@ export default async function NewLotPage() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
       <div className="mb-6">
         <Link
-          href="/admin/lots"
+          href={fromSoumission ? "/admin/soumissions" : "/admin/lots"}
           className="inline-flex items-center gap-2 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-          Retour aux lots
+          {fromSoumission ? "Retour aux soumissions" : "Retour aux lots"}
         </Link>
       </div>
       <header className="mb-8 max-w-2xl">
@@ -83,7 +131,7 @@ export default async function NewLotPage() {
       </header>
 
       <div className="max-w-3xl">
-        <NewLotTabs calcLots={calcLotsWithDesc} />
+        <NewLotTabs calcLots={calcLotsWithDesc} fromSoumission={fromSoumission} />
       </div>
     </div>
   );

@@ -33,11 +33,14 @@ export default function LotForm({
   initial,
   lotId,
   source,
+  soumissionId,
 }: {
   mode: "create" | "edit";
   initial?: LotFormInitial;
   lotId?: string;
   source?: LotSource;
+  /** Soumission du site à lier au lot créé (lots.soumission_id). */
+  soumissionId?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -92,6 +95,7 @@ export default function LotForm({
       description: form.description || null,
       notes: form.notes || null,
       source: source ?? "manual",
+      soumission_id: soumissionId ?? null,
     };
 
     startTransition(async () => {

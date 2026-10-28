@@ -22,6 +22,8 @@ export type LotInput = {
   description?: string | null;
   notes?: string | null;
   source?: LotSource;
+  /** Soumission du site à l'origine du lot (création seulement). */
+  soumission_id?: string | null;
 };
 
 async function requireAdmin() {
@@ -55,6 +57,7 @@ export async function createLot(
       description: input.description?.trim() || null,
       notes: input.notes?.trim() || null,
       source: input.source ?? "manual",
+      soumission_id: input.soumission_id ?? null,
       created_by: user.id,
     })
     .select("id")
@@ -64,6 +67,7 @@ export async function createLot(
 
   revalidatePath("/admin");
   revalidatePath("/admin/lots");
+  revalidatePath("/admin/soumissions");
   return { ok: true, id: data.id };
 }
 

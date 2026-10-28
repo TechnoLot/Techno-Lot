@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Calculator, Edit3, Sparkles } from "lucide-react";
 import LotForm, { type LotFormInitial } from "@/components/admin/LotForm";
@@ -10,16 +11,28 @@ import type { CalcLotSummary } from "@/components/admin/SavedCalcLots";
 
 export type CalcLotWithDesc = CalcLotSummary & { description: string };
 
+/** Soumission du site qui pré-remplit le lot (/admin/lots/nouveau?soumission=…). */
+export type FromSoumission = {
+  id: string;
+  /** « Marie Tremblay, reçue le 28 oct. 2026 » */
+  resume: string;
+  /** Lot déjà lié à cette soumission, s'il y en a un */
+  lotId: string | null;
+  initial: LotFormInitial;
+};
+
 type Tab = "manual" | "paste";
 
 export default function NewLotTabs({
   calcLots = [],
+  fromSoumission,
 }: {
   calcLots?: CalcLotWithDesc[];
+  fromSoumission?: FromSoumission;
 }) {
   const [tab, setTab] = useState<Tab>("manual");
-  const [initial, setInitial] = useState<LotFormInitial | undefined>(undefined);
-  const [source, setSource] = useState<LotSource>("manual");
+  const [initial, setInitial] = useState<LotFormInitial | undefined>(fromSoumission?.initial);
+  const [source, setSource] = useState<LotSource>(fromSoumission ? "form" : "manual");
   const [confidence, setConfidence] = useState<number | null>(null);
   const [selectedCalcLot, setSelectedCalcLot] = useState<string | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -34,13 +47,16 @@ export default function NewLotTabs({
   }
 
   function onSelectCalcLot(lot: CalcLotWithDesc) {
+    const noteCalc = `Depuis calculatrice « ${lot.name} » — Valeur estimée : ${formatMoney(lot.offerPrice * 2.5)}, ${lot.unitCount} unité(s), ${lot.itemCount} item(s)`;
     setInitial({
+      // Le client de la soumission reste ; la calculatrice donne le prix et le détail.
+      ...fromSoumission?.initial,
       purchase_price: lot.offerPrice,
       description: lot.description || lot.name,
-      notes: `Depuis calculatrice « ${lot.name} » — Valeur estimée : ${formatMoney(lot.offerPrice * 2.5)}, ${lot.unitCount} unité(s), ${lot.itemCount} item(s)`,
+      notes: [fromSoumission?.initial.notes, noteCalc].filter(Boolean).join("\n"),
       status: "negotiating",
     });
-    setSource("manual");
+    setSource(fromSoumission ? "form" : "manual");
     setConfidence(null);
     setSelectedCalcLot(lot.id);
     setFormKey((k) => k + 1);
@@ -106,6 +122,20 @@ export default function NewLotTabs({
         </div>
       ) : (
         <div className="rounded-2xl border border-admin-line bg-admin-card p-5 sm:p-8">
+          {fromSoumission && (
+            <div className="mb-6 rounded-xl border border-admin-tint-green-line bg-admin-tint-green px-4 py-3 text-sm text-admin-green">
+              Pré-rempli depuis la soumission de {fromSoumission.resume}. Le lot sera lié à cette
+              demande. Vérifie les champs et ajoute le prix avant d&apos;enregistrer.
+            </div>
+          )}
+          {fromSoumission?.lotId && (
+            <div className="mb-6 rounded-xl border border-admin-tint-amber-line bg-admin-tint-amber px-4 py-3 text-sm text-admin-warning">
+              Un lot existe déjà pour cette soumission.{" "}
+              <Link href={`/admin/lots/${fromSoumission.lotId}`} className="font-semibold underline">
+                Voir le lot
+              </Link>
+            </div>
+          )}
           {confidence !== null && (
             <div
               className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
@@ -126,7 +156,13 @@ export default function NewLotTabs({
               Pré-rempli depuis la calculatrice. Ajuste le client et les détails avant d&apos;enregistrer.
             </div>
           )}
-          <LotForm key={formKey} mode="create" initial={initial} source={source} />
+          <LotForm
+            key={formKey}
+            mode="create"
+            initial={initial}
+            source={source}
+            soumissionId={fromSoumission?.id}
+          />
         </div>
       )}
     </div>

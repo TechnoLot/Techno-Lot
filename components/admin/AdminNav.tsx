@@ -9,6 +9,7 @@ import {
   Calculator,
   ChevronDown,
   House,
+  Inbox,
   ListOrdered,
   Mail,
   Megaphone,
@@ -41,9 +42,10 @@ type NavItem = Omit<LeafItem, "href"> & {
   children?: LeafItem[];
 };
 
-/** Menu principal : 7 entrées (version B « plus simple »). */
+/** Menu principal : 8 entrées (version B « plus simple »). */
 const items: NavItem[] = [
   { href: "/admin", label: "Accueil", icon: House },
+  { href: "/admin/soumissions", label: "Soumissions", icon: Inbox },
   { href: "/admin/lots", label: "Lots", icon: Package },
   {
     href: "#calculatrice",
