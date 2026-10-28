@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Bell,
   BellRing,
   Calculator,
   ChevronDown,
@@ -25,12 +26,18 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { OPEN_CALCULATRICE_EVENT } from "@/components/admin/CalculatriceOverlay";
+import {
+  NotificationsCount,
+  useNotifications,
+} from "@/components/admin/notifications/NotificationsProvider";
 
 type LeafItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   action?: "open-calculatrice";
+  /** Pastille du nombre de nouveautés */
+  badge?: "notifications";
 };
 
 /**
@@ -42,9 +49,10 @@ type NavItem = Omit<LeafItem, "href"> & {
   children?: LeafItem[];
 };
 
-/** Menu principal : 8 entrées (version B « plus simple »). */
+/** Menu principal : 9 entrées (version B « plus simple »). */
 const items: NavItem[] = [
   { href: "/admin", label: "Accueil", icon: House },
+  { href: "/admin/notifications", label: "Notifications", icon: Bell, badge: "notifications" },
   { href: "/admin/soumissions", label: "Soumissions", icon: Inbox },
   { href: "/admin/lots", label: "Lots", icon: Package },
   {
@@ -124,6 +132,7 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
   // Un layoutId unique par instance : la barre latérale et le tiroir
   // mobile ont chacun leur propre indicateur animé.
   const indicatorId = `nav-indicator-${useId()}`;
+  const unseen = useNotifications().summary?.unseen.tout ?? 0;
 
   const matches = (h: string) =>
     h === "/admin"
@@ -177,6 +186,16 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
                 active={bestMatch === href}
                 onNavigate={onNavigate}
                 indicatorId={indicatorId}
+                trailing={
+                  item.badge === "notifications" && unseen > 0 ? (
+                    <>
+                      <NotificationsCount count={unseen} tone={bestMatch === href ? "onGreen" : "default"} />
+                      <span className="sr-only">
+                        {` (${unseen} nouvelle${unseen > 1 ? "s" : ""})`}
+                      </span>
+                    </>
+                  ) : undefined
+                }
               />
             </li>
           );
@@ -265,6 +284,7 @@ function NavLink({
   indicatorId,
   tone = "default",
   className = "",
+  trailing,
 }: {
   item: LeafItem;
   active: boolean;
@@ -273,6 +293,7 @@ function NavLink({
   indicatorId: string;
   tone?: "default" | "lit";
   className?: string;
+  trailing?: React.ReactNode;
 }) {
   return (
     <Link
@@ -288,6 +309,7 @@ function NavLink({
         active={active}
         nested={nested}
         tone={tone}
+        trailing={trailing}
       />
     </Link>
   );

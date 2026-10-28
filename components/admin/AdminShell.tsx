@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { CornerDownLeft, LogOut, Menu, Search, UserRound, X } from "lucide-react";
+import { Bell, CornerDownLeft, LogOut, Menu, Search, UserRound, X } from "lucide-react";
 import AdminNav, { ADMIN_ROUTES } from "@/components/admin/AdminNav";
 import ThemeToggle, { writeAdminThemeCookie, type AdminTheme } from "@/components/admin/ThemeToggle";
 import { getAdminPrenom } from "@/app/admin/(dashboard)/compte/actions";
@@ -13,13 +13,18 @@ import CalculatriceOverlay, {
   OPEN_CALCULATRICE_EVENT,
 } from "@/components/admin/CalculatriceOverlay";
 import { Logo } from "@/components/site/Logo";
+import {
+  NotificationsCount,
+  useNotifications,
+} from "@/components/admin/notifications/NotificationsProvider";
 
 const EASE = [0.21, 0.47, 0.32, 0.98] as const;
 
 /**
  * Coque du tableau de bord : barre latérale bleu nuit (dans les deux thèmes),
  * contenu en couleurs par rôle (clair ou sombre selon data-admin-theme),
- * tiroir mobile et recherche rapide (Ctrl K).
+ * tiroir mobile et recherche rapide (Ctrl K). La pastille des notifications
+ * vient de NotificationsProvider (layout du tableau de bord).
  */
 export default function AdminShell({
   email,
@@ -126,6 +131,7 @@ export default function AdminShell({
                 <Logo variant="fonce" layout="horizontal" height={28} />
               </Link>
               <div className="flex items-center gap-1">
+                <MobileNotificationsLink />
                 <button
                   type="button"
                   onClick={openPalette}
@@ -204,6 +210,26 @@ export default function AdminShell({
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       </div>
     </MotionConfig>
+  );
+}
+
+/** Cloche de la barre mobile (le menu est replié) : mène aux notifications, avec la pastille. */
+function MobileNotificationsLink() {
+  const unseen = useNotifications().summary?.unseen.tout ?? 0;
+  return (
+    <Link
+      href="/admin/notifications"
+      aria-label={
+        unseen > 0 ? `Notifications (${unseen} nouvelle${unseen > 1 ? "s" : ""})` : "Notifications"
+      }
+      className="nav-focus relative inline-flex h-11 w-11 items-center justify-center rounded-[10px] text-[#cbd5e1] transition-colors hover:bg-white/[0.08] hover:text-white"
+    >
+      <Bell className="h-[18px] w-[18px]" aria-hidden />
+      <NotificationsCount
+        count={unseen}
+        className="absolute right-0.5 top-1 !h-[18px] !min-w-[18px] !px-1 !text-[10px]"
+      />
+    </Link>
   );
 }
 

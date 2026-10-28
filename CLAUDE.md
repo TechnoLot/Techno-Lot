@@ -14,6 +14,7 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - `app/admin/(dashboard)` — dashboard admin : lots, soumissions (`/admin/soumissions`, `lib/admin/soumissions.ts`), calculatrice, CRM (`/admin/crm`, `/admin/crm/[id]`, `clients`, `relances`, `modeles`)
 - `components/admin/` + `components/admin/crm/` — composants admin
 - `lib/admin/` — types/actions/format des lots ; `lib/crm/` — types/actions/email/parse-followup-date du CRM
+- Notifications : `/admin/notifications` + pastille du menu (`components/admin/notifications/`, `lib/admin/notifications.ts`) — fil calculé depuis `soumissions` (fonction `admin_soumissions`), `ad_leads` et `ebay_orders.first_seen_at` ; « vu » par admin dans `admin_notification_state`
 - Auth : lien magique Supabase, whitelist `ADMIN_EMAILS` (.env.local), protégé par `middleware.ts` + layout. En local, impossible de se connecter (boîte info@technolot.ca) — pour vérifier visuellement, bypass temporaire dans middleware + layout marqué `TEMP-DEV-BYPASS`, à retirer avant commit.
 
 ## Supabase (projet aznelukkwitvttycwnjb)

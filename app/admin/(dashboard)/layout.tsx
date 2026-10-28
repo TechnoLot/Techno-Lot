@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import AdminShell from "@/components/admin/AdminShell";
+import NotificationsProvider from "@/components/admin/notifications/NotificationsProvider";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
 
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
  * Layout partagé pour toutes les pages du tableau de bord.
  * Le middleware a déjà refusé l'accès aux visiteurs non connectés ;
  * on ajoute ici le check du whitelist ADMIN_EMAILS et l'habillage sidebar.
- * Le thème (clair ou sombre) vient du témoin tl_admin_theme.
+ * Le thème (clair ou sombre) vient du témoin tl_admin_theme. La pastille des
+ * notifications (menu et barre mobile) se met à jour toute seule.
  */
 export default async function DashboardLayout({
   children,
@@ -39,8 +41,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <AdminShell email={user.email ?? ""} theme={theme}>
-      {children}
-    </AdminShell>
+    <NotificationsProvider>
+      <AdminShell email={user.email ?? ""} theme={theme}>
+        {children}
+      </AdminShell>
+    </NotificationsProvider>
   );
 }
