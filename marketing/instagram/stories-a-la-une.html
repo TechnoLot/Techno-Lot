@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Stories à la une — Techno Lot</title>
+<!-- Écrans d'accueil des 4 stories à la une Instagram (1080 × 1920, format story).
+     Choix de la carte par ?c=1 à 4. Photos : photos/une-N.jpg (kie.ai, seedream, même
+     préambule pour les 4). Texte gardé hors des zones couvertes par Instagram
+     (haut ~220 px, bas ~280 px) ; le sujet de la photo sert de couverture ronde.
+     Rendu : chrome --headless=new --hide-scrollbars --force-device-scale-factor=1
+             --window-size=1080,1920 --virtual-time-budget=8000
+             --screenshot=une-1.png "file:///…/stories-a-la-une.html?c=1" -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600&display=block" rel="stylesheet">
+<style>
+  :root {
+    --night: #060A14;
+    --vivid: #6BD63B;
+    --mint: #34D399;
+    --mist: #F5F7F5;
+    --muted: #B7C1CC;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--night); }
+
+  .card {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    color: var(--mist);
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--night);
+  }
+  .photo { position: absolute; inset: 0; background-size: cover; background-position: center top; }
+  /* Haut assombri pour le logo, sujet dégagé, bas presque noir pour le texte */
+  .shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg,
+        rgba(6, 10, 20, 0.78) 0%,
+        rgba(6, 10, 20, 0.15) 17%,
+        rgba(6, 10, 20, 0) 32%,
+        rgba(6, 10, 20, 0.35) 46%,
+        rgba(6, 10, 20, 0.88) 58%,
+        var(--night) 72%);
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 22% at 50% 78%, rgba(107, 214, 59, 0.12), transparent 70%);
+  }
+
+  .content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    padding: 230px 90px 370px;
+  }
+  .logo { height: 64px; width: auto; filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.7)); }
+  .bottom { width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+  .kicker {
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--vivid);
+  }
+  h1 {
+    margin-top: 16px;
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 100px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-shadow: 0 6px 40px rgba(0, 0, 0, 0.7);
+  }
+  h1 .accent {
+    background: linear-gradient(105deg, #8BE95F 0%, var(--vivid) 45%, var(--mint) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .sub { margin-top: 18px; font-size: 33px; font-weight: 500; color: var(--muted); }
+
+  .block { margin-top: 48px; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 18px 26px;
+    border-radius: 24px;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+  }
+  .badge {
+    flex: none;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--vivid);
+    color: var(--night);
+    font-family: "Chakra Petch", sans-serif;
+    font-weight: 700;
+    font-size: 27px;
+  }
+  .row b { display: block; font-size: 31px; font-weight: 600; }
+  .row div span { display: block; margin-top: 3px; font-size: 24px; color: var(--muted); }
+  h1.fit { font-size: 86px; }
+
+  .chips { margin-top: 48px; display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+  .chip {
+    padding: 16px 28px;
+    border-radius: 999px;
+    font-size: 31px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .chip.cta { background: var(--vivid); color: var(--night); border-color: var(--vivid); }
+  .note { margin-top: 28px; font-size: 27px; color: var(--muted); }
+  .thanks { margin-top: 44px; font-family: "Chakra Petch", sans-serif; font-weight: 600; font-size: 50px; }
+
+  .site { position: absolute; left: 0; right: 0; bottom: 290px; text-align: center; font-size: 26px; font-weight: 600; letter-spacing: 0.14em; color: var(--vivid); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="photo" id="photo"></div>
+  <div class="shade"></div>
+  <div class="glow"></div>
+  <div class="content">
+    <img class="logo" src="../../public/logo-horizontal-fonce.png" alt="Techno Lot">
+    <div class="bottom" id="bottom"></div>
+  </div>
+  <p class="site">TECHNOLOT.CA</p>
+</div>
+
+<template id="c1">
+  <p class="kicker">Vendre votre lot</p>
+  <h1 class="fit">Comment ça <span class="accent">marche</span></h1>
+  <p class="sub">4 étapes, sans vous déplacer</p>
+  <div class="block">
+    <div class="row"><span class="badge">01</span><div><b>Demande de soumission</b><span>La liste ou quelques photos du matériel</span></div></div>
+    <div class="row"><span class="badge">02</span><div><b>Offre en 24 h</b><span>Après l'évaluation de votre lot</span></div></div>
+    <div class="row"><span class="badge">03</span><div><b>Ramassage sans frais</b><span>La moitié du paiement au ramassage</span></div></div>
+    <div class="row"><span class="badge">04</span><div><b>Inspection et solde</b><span>15 jours ouvrables au maximum</span></div></div>
+  </div>
+</template>
+
+<template id="c2">
+  <p class="kicker">Ce que nous rachetons</p>
+  <h1>Lots <span class="accent">rachetés</span></h1>
+  <p class="sub">Le matériel informatique des entreprises</p>
+  <div class="chips">
+    <span class="chip">Ordinateurs</span>
+    <span class="chip">Portables</span>
+    <span class="chip">Serveurs</span>
+    <span class="chip">Réseau</span>
+    <span class="chip">Stockage</span>
+    <span class="chip">Écrans</span>
+    <span class="chip">Télécom</span>
+  </div>
+  <p class="note">Neuf, usagé ou partiellement fonctionnel</p>
+</template>
+
+<template id="c3">
+  <p class="kicker">Vos questions</p>
+  <h1><span class="accent">FAQ</span></h1>
+  <p class="sub">Nos réponses, en quelques stories</p>
+  <div class="block">
+    <div class="row"><span class="badge">?</span><div><b>Comment obtenir une offre ?</b></div></div>
+    <div class="row"><span class="badge">?</span><div><b>Le ramassage est-il gratuit ?</b></div></div>
+    <div class="row"><span class="badge">?</span><div><b>Comment se passe le paiement ?</b></div></div>
+    <div class="row"><span class="badge">?</span><div><b>Et mes données ?</b></div></div>
+  </div>
+</template>
+
+<template id="c4">
+  <p class="kicker">Ils nous ont fait confiance</p>
+  <h1>Avis <span class="accent">clients</span></h1>
+  <p class="sub">Ce que nos clients en disent</p>
+  <p class="thanks">Merci de votre confiance.</p>
+  <div class="chips">
+    <span class="chip cta">Laissez-nous un avis sur Google</span>
+  </div>
+</template>
+
+<script>
+  const n = new URLSearchParams(location.search).get("c") || "1";
+  const tpl = document.getElementById("c" + n) || document.getElementById("c1");
+  document.getElementById("bottom").appendChild(tpl.content.cloneNode(true));
+  document.getElementById("photo").style.backgroundImage = "url(photos/une-" + n + ".jpg)";
+</script>
+</body>
+</html>
