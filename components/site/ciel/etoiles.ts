@@ -217,20 +217,68 @@ function grow(x: number, y: number, pointer: Pointeur, G: number, G2: number) {
   return d2 < G2 ? 1 + 0.5 * (1 - Math.sqrt(d2) / G) : 1;
 }
 
+/* ───────────── Peintre : mêmes tracés, préparés une seule fois ───────────── */
+
+/** Ce que l'accueil dessine sous les étoiles (traits des constellations, traînées de l'hyperespace) */
+export type Dessous = {
+  /** diffère de ce que montre le canevas : l'image doit être redessinée */
+  change: boolean;
+  /** dessin, juste après l'effacement du canevas */
+  dessiner(c2: CanvasRenderingContext2D): void;
+};
+
 /**
- * Dessine les étoiles (halos des plus brillantes, puis disques) dans un contexte déjà
- * à l'échelle dpr. Tri par couleur et palier d'opacité (tri par dénombrement, sans
- * allocation) : un seul fill par groupe.
+ * Mémoire du dessin des étoiles d'une image à l'autre. Chaque image garde exactement les
+ * tracés d'origine (effacement, halos, puis un fill par groupe de couleur × palier avec les
+ * mêmes disques dans le même ordre), mais le chemin de chaque groupe est un Path2D gardé tant
+ * que ses disques ne changent pas : seuls les groupes qu'une étoile quitte ou rejoint sont
+ * reconstruits (Path2D donne les mêmes pixels que le chemin du contexte). Quand rien ne change
+ * (scintillation sous le palier suivant, halos et dessous identiques), l'image n'est pas
+ * redessinée : le canevas montre déjà exactement ce dessin.
  */
-export function dessinerEtoiles(
-  c2: CanvasRenderingContext2D,
-  e: Etoiles,
-  w: number,
-  h: number,
-  pointer: Pointeur,
-  growR: number,
-) {
-  const { px, py, rad, base, tw, fade, cls, halo, bucket, order, counts, starts, sprites } = e;
+export type Peintre = {
+  /** faux : canevas effacé ou redimensionné, tous les chemins sont à refaire */
+  pret: boolean;
+  w: number;
+  h: number;
+  /** dessin affiché, par étoile : groupe, position, rayon du disque, alpha du halo */
+  bucket: Uint16Array;
+  x: Float32Array;
+  y: Float32Array;
+  r: Float64Array;
+  a: Float64Array;
+  /** image en cours : rayon du disque (grossissement compris), alpha du halo */
+  rayon: Float64Array;
+  alpha: Float64Array;
+  /** chemin de chaque groupe, groupes à reconstruire */
+  groupe: (Path2D | null)[];
+  sale: Uint8Array;
+};
+
+export function creerPeintre(): Peintre {
+  return {
+    pret: false,
+    w: 0,
+    h: 0,
+    bucket: new Uint16Array(N),
+    x: new Float32Array(N),
+    y: new Float32Array(N),
+    r: new Float64Array(N),
+    a: new Float64Array(N),
+    rayon: new Float64Array(N),
+    alpha: new Float64Array(N),
+    groupe: new Array<Path2D | null>(BUCKETS).fill(null),
+    sale: new Uint8Array(BUCKETS),
+  };
+}
+
+/**
+ * Groupes par couleur et palier d'opacité (tri par dénombrement, sans allocation : un seul
+ * fill par groupe), rayon du disque et alpha du halo de chaque étoile pour l'image en cours.
+ */
+function grouper(e: Etoiles, p: Peintre, w: number, h: number, pointer: Pointeur, growR: number) {
+  const { px, py, rad, base, tw, fade, cls, halo, bucket, order, counts, starts } = e;
+  const { rayon, alpha } = p;
   counts.fill(0);
   const G = growR;
   const G2 = G * G;
@@ -244,6 +292,8 @@ export function dessinerEtoiles(
     const b = cls[i] * (TIERS + 1) + tier;
     bucket[i] = b;
     counts[b]++;
+    rayon[i] = rad[i] * grow(x, y, pointer, G, G2);
+    alpha[i] = halo[i] ? 0.22 * tw[i] * fade[i] : 0;
   }
   starts[0] = 0;
   for (let b = 0; b < BUCKETS; b++) starts[b + 1] = starts[b] + counts[b];
@@ -251,28 +301,102 @@ export function dessinerEtoiles(
     const b = bucket[i];
     if (b !== SKIP) order[starts[b] + --counts[b]] = i;
   }
+}
+
+/** Compare l'image en cours au dessin affiché et marque les groupes à reconstruire ; vrai si l'image change */
+function comparer(e: Etoiles, p: Peintre, w: number, h: number) {
+  const { px, py, halo, bucket } = e;
+  const { rayon, alpha, sale } = p;
+  if (!p.pret || p.w !== w || p.h !== h) {
+    sale.fill(1);
+    return true;
+  }
+  sale.fill(0);
+  let change = false;
+  for (let i = 0; i < N; i++) {
+    const nb = bucket[i];
+    const ob = p.bucket[i];
+    if (nb !== ob) {
+      // l'étoile quitte un groupe et en rejoint un autre : les deux chemins changent
+      if (ob !== SKIP) sale[ob] = 1;
+      if (nb !== SKIP) sale[nb] = 1;
+      change = true;
+    } else if (nb !== SKIP) {
+      if (px[i] !== p.x[i] || py[i] !== p.y[i] || rayon[i] !== p.r[i]) {
+        sale[nb] = 1;
+        change = true;
+      } else if (halo[i] && alpha[i] !== p.a[i]) change = true;
+    }
+  }
+  return change;
+}
+
+/**
+ * Peint les étoiles (et le dessous de l'accueil) dans un contexte déjà à l'échelle dpr :
+ * halos des plus brillantes, puis disques groupés par couleur et palier d'opacité. Mettre
+ * p.pret à faux quand le canevas est effacé (redimensionnement). Rend vrai si l'image a été
+ * redessinée, faux si elle était déjà à l'écran.
+ */
+export function peindreEtoiles(
+  c2: CanvasRenderingContext2D,
+  p: Peintre,
+  e: Etoiles,
+  w: number,
+  h: number,
+  pointer: Pointeur,
+  growR: number,
+  dessous?: Dessous,
+) {
+  grouper(e, p, w, h, pointer, growR);
+  if (!comparer(e, p, w, h) && !dessous?.change) return false;
+
+  const { px, py, cls, halo, bucket, order, starts, sprites } = e;
+  const { rayon, alpha, groupe, sale } = p;
+  // chemins des groupes modifiés : mêmes disques, même ordre que le tri
+  for (let b = 1; b < BUCKETS; b++) {
+    if (!sale[b]) continue;
+    const from = starts[b];
+    const to = starts[b + 1];
+    if (from === to) {
+      groupe[b] = null;
+      continue;
+    }
+    const g = new Path2D();
+    for (let o = from; o < to; o++) {
+      const i = order[o];
+      const r = rayon[i];
+      g.moveTo(px[i] + r, py[i]);
+      g.arc(px[i], py[i], r, 0, TAU);
+    }
+    groupe[b] = g;
+  }
+
+  c2.clearRect(0, 0, w, h);
+  dessous?.dessiner(c2);
 
   // halos doux des étoiles brillantes (sprite pré-rendu)
   for (let i = 0; i < N; i++) {
     if (!halo[i] || bucket[i] === SKIP) continue;
-    const r = rad[i] * grow(px[i], py[i], pointer, G, G2) * 6;
-    c2.globalAlpha = 0.22 * tw[i] * fade[i];
+    const r = rayon[i] * 6;
+    c2.globalAlpha = alpha[i];
     c2.drawImage(sprites[cls[i]], px[i] - r, py[i] - r, r * 2, r * 2);
   }
   c2.globalAlpha = 1;
 
   for (let b = 1; b < BUCKETS; b++) {
-    const from = starts[b];
-    const to = starts[b + 1];
-    if (from === to) continue;
-    c2.beginPath();
-    for (let o = from; o < to; o++) {
-      const i = order[o];
-      const r = rad[i] * grow(px[i], py[i], pointer, G, G2);
-      c2.moveTo(px[i] + r, py[i]);
-      c2.arc(px[i], py[i], r, 0, TAU);
-    }
+    if (starts[b] === starts[b + 1]) continue;
     c2.fillStyle = FILLS[(b / (TIERS + 1)) | 0][b % (TIERS + 1)];
-    c2.fill();
+    c2.fill(groupe[b]!);
   }
+
+  // ce dessin devient la référence de l'image suivante
+  p.bucket.set(bucket);
+  p.x.set(px);
+  p.y.set(py);
+  p.r.set(rayon);
+  p.a.set(alpha);
+  p.w = w;
+  p.h = h;
+  p.pret = true;
+  return true;
 }

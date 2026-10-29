@@ -12,10 +12,12 @@ import {
   STAR_RGB,
   clamp,
   creerEtoiles,
-  dessinerEtoiles,
+  creerPeintre,
+  peindreEtoiles,
   peindrePoussiere,
   placerEtoiles,
   rayonsPointeur,
+  type Dessous,
 } from "@/components/site/ciel/etoiles";
 
 /**
@@ -47,6 +49,8 @@ const PERF_SAMPLE = 90;
 const LINE_REST = 0.22;
 const LINE_LIT = 0.5;
 const LINE_NEAR = 120;
+/** nombre de traits au plus (segments des chaînes de FIGURES) */
+const MAX_TRAITS = FIGURES.reduce((n, f) => n + f.length - 1, 0);
 
 export function HeroFx() {
   const fondRef = useRef<HTMLCanvasElement>(null);
@@ -94,6 +98,19 @@ export function HeroFx() {
     const trailStyles: string[] = new Array(CLASSES).fill("");
     let trailKey = -1;
 
+    /** dessin des étoiles : chemins gardés d'une image à l'autre, image sautée si rien ne change */
+    const peintre = creerPeintre();
+    /** traits de l'image en cours et de l'image affichée : alpha, x0, y0, x1, y1 */
+    const traits = new Float64Array(MAX_TRAITS * 5);
+    const traitsPeints = new Float64Array(MAX_TRAITS * 5);
+    let nTraits = 0;
+    let nTraitsPeints = 0;
+    let traitsOn = false;
+    let traineesPeintes = false;
+    /** chemin de chaque trait et ses deux bouts */
+    const cheminsTraits: (Path2D | null)[] = new Array(MAX_TRAITS).fill(null);
+    const boutsTraits = new Float64Array(MAX_TRAITS * 4);
+
     /* ───────────── Poussière d'étoiles faibles (canevas statique) ───────────── */
 
     const hasIdle = typeof window.requestIdleCallback === "function";
@@ -117,6 +134,7 @@ export function HeroFx() {
         c.height = Math.round(h * dpr);
       }
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      peintre.pret = false;
       ({ pushR, growR } = rayonsPointeur(w, h));
       placerEtoiles(etoiles, w, h);
       paintFond();
@@ -212,50 +230,110 @@ export function HeroFx() {
       return false;
     }
 
-    function draw() {
-      if (!w) return;
-      const c2 = ctx!;
-      c2.clearRect(0, 0, w, h);
-
-      // traits des deux constellations : raccourcis aux deux bouts, estompés près du texte
+    /** traits des deux constellations : raccourcis aux deux bouts, estompés près du texte */
+    function calculerTraits() {
+      nTraits = 0;
       const lineFade = Math.max(0, 1 - 3 * warp);
-      if (lineFade > 0.01) {
-        c2.lineWidth = 1;
-        c2.lineCap = "butt";
-        c2.strokeStyle = "rgb(94, 203, 51)";
-        const mcx = w / 2;
-        const mcy = h * 0.56;
-        for (let c = 0; c < CONSTELLATIONS.length; c++) {
-          const la = lit[c] * lineFade;
-          for (const chain of CONSTELLATIONS[c]) {
-            const fig = FIGURES[chain];
-            for (let k = 0; k < fig.length - 1; k++) {
-              const a = fig[k];
-              const b = fig[k + 1];
-              const ax = px[a];
-              const ay = py[a];
-              const dx = px[b] - ax;
-              const dy = py[b] - ay;
-              const d = Math.hypot(dx, dy);
-              if (d < 16) continue;
-              const mx = ax + dx / 2 - mcx;
-              const my = ay + dy / 2 - mcy;
-              const e = Math.hypot(mx / (0.36 * w), my / (0.34 * h));
-              const alpha = la * clamp((e - 0.75) / 0.45, 0, 1) * Math.min(fade[a], fade[b]);
-              if (alpha < 0.005) continue;
-              const g = 7 / d;
-              c2.globalAlpha = alpha;
-              c2.beginPath();
-              c2.moveTo(ax + dx * g, ay + dy * g);
-              c2.lineTo(ax + dx * (1 - g), ay + dy * (1 - g));
-              c2.stroke();
-            }
+      traitsOn = lineFade > 0.01;
+      if (!traitsOn) return;
+      const mcx = w / 2;
+      const mcy = h * 0.56;
+      for (let c = 0; c < CONSTELLATIONS.length; c++) {
+        const la = lit[c] * lineFade;
+        for (const chain of CONSTELLATIONS[c]) {
+          const fig = FIGURES[chain];
+          for (let k = 0; k < fig.length - 1; k++) {
+            const a = fig[k];
+            const b = fig[k + 1];
+            const ax = px[a];
+            const ay = py[a];
+            const dx = px[b] - ax;
+            const dy = py[b] - ay;
+            const d = Math.hypot(dx, dy);
+            if (d < 16) continue;
+            const mx = ax + dx / 2 - mcx;
+            const my = ay + dy / 2 - mcy;
+            const e = Math.hypot(mx / (0.36 * w), my / (0.34 * h));
+            const alpha = la * clamp((e - 0.75) / 0.45, 0, 1) * Math.min(fade[a], fade[b]);
+            if (alpha < 0.005) continue;
+            const g = 7 / d;
+            const t = nTraits++ * 5;
+            traits[t] = alpha;
+            traits[t + 1] = ax + dx * g;
+            traits[t + 2] = ay + dy * g;
+            traits[t + 3] = ax + dx * (1 - g);
+            traits[t + 4] = ay + dy * (1 - g);
           }
         }
-        c2.globalAlpha = 1;
       }
+    }
 
-      // traînées de l'hyperespace : courtes, discrètes, qui glissent vers le vert de la marque
+    /** traits identiques à ceux de l'image affichée ? */
+    function traitsInchanges() {
+      if (nTraits !== nTraitsPeints) return false;
+      for (let k = 0; k < nTraits * 5; k++) if (traits[k] !== traitsPeints[k]) return false;
+      return true;
+    }
+
+    /** chemin du trait k (Path2D : mêmes pixels que le chemin du contexte), refait si ses bouts changent */
+    function cheminTrait(k: number) {
+      const t = k * 5;
+      const b = k * 4;
+      let p = cheminsTraits[k];
+      if (
+        !p ||
+        boutsTraits[b] !== traits[t + 1] ||
+        boutsTraits[b + 1] !== traits[t + 2] ||
+        boutsTraits[b + 2] !== traits[t + 3] ||
+        boutsTraits[b + 3] !== traits[t + 4]
+      ) {
+        p = new Path2D();
+        p.moveTo(traits[t + 1], traits[t + 2]);
+        p.lineTo(traits[t + 3], traits[t + 4]);
+        cheminsTraits[k] = p;
+        for (let j = 0; j < 4; j++) boutsTraits[b + j] = traits[t + 1 + j];
+      }
+      return p;
+    }
+
+    function tracerTraits(c2: CanvasRenderingContext2D) {
+      if (!traitsOn) return;
+      c2.lineWidth = 1;
+      c2.lineCap = "butt";
+      c2.strokeStyle = "rgb(94, 203, 51)";
+      for (let k = 0; k < nTraits; k++) {
+        c2.globalAlpha = traits[k * 5];
+        c2.stroke(cheminTrait(k));
+      }
+      c2.globalAlpha = 1;
+    }
+
+    /** Sous les étoiles : traits, puis traînées de l'hyperespace */
+    const dessous: Dessous = {
+      change: false,
+      dessiner(c2) {
+        tracerTraits(c2);
+        tracerTrainees(c2);
+      },
+    };
+
+    /** Dessine l'image ; rend faux si elle était déjà à l'écran (rien n'a changé) */
+    function draw() {
+      if (!w) return false;
+      calculerTraits();
+      // traînées affichées ou à effacer, traits modifiés : l'image change
+      dessous.change = warp > 0.01 || traineesPeintes || !traitsInchanges();
+      const peint = peindreEtoiles(ctx!, peintre, etoiles, w, h, pointer, growR, dessous);
+      if (peint) {
+        traitsPeints.set(traits);
+        nTraitsPeints = nTraits;
+        traineesPeintes = warp > 0.01;
+      }
+      return peint;
+    }
+
+    /** traînées de l'hyperespace : courtes, discrètes, qui glissent vers le vert de la marque */
+    function tracerTrainees(c2: CanvasRenderingContext2D) {
       if (warp > 0.01) {
         const key = Math.round(warp * 40);
         if (key !== trailKey) {
@@ -291,10 +369,13 @@ export function HeroFx() {
           c2.stroke();
         }
       }
-
-      // étoiles : halos des plus brillantes puis disques, groupés par couleur et palier d'opacité
-      dessinerEtoiles(c2, etoiles, w, h, pointer, growR);
     }
+
+    /** contexte perdu puis rendu (GPU) : canevas vidé, image complète à la prochaine image */
+    const onRestored = () => {
+      peintre.pret = false;
+    };
+    canvas.addEventListener("contextrestored", onRestored);
 
     /* ───────────── Mouvement réduit : image fixe ───────────── */
 
@@ -308,7 +389,10 @@ export function HeroFx() {
       fond.classList.add("is-on");
       const ro = new ResizeObserver(paintStatic);
       ro.observe(canvas);
-      return () => ro.disconnect();
+      return () => {
+        ro.disconnect();
+        canvas.removeEventListener("contextrestored", onRestored);
+      };
     }
 
     /* ───────────── Boucle d'animation ───────────── */
@@ -522,6 +606,7 @@ export function HeroFx() {
       root.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("contextrestored", onRestored);
       img?.removeEventListener("load", setLogoUrl);
       logo?.removeEventListener("pointerenter", glitch);
       io.disconnect();

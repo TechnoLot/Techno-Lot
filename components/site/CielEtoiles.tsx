@@ -7,7 +7,8 @@ import {
   PUSH,
   SPRING,
   creerEtoiles,
-  dessinerEtoiles,
+  creerPeintre,
+  peindreEtoiles,
   peindrePoussiere,
   placerEtoiles,
   rayonsPointeur,
@@ -19,7 +20,8 @@ import {
  * (PageHero) : le même ciel que l'accueil (components/site/ciel/), sans hyperespace,
  * sans traits de constellations ni effets de logo. Deux canvas dans la boîte du parent :
  * poussière d'étoiles (statique, redessinée au redimensionnement) et étoiles (animées :
- * scintillation, écartement doux autour du curseur et retour par ressort). Le pointeur
+ * scintillation, écartement doux autour du curseur et retour par ressort ; chemins gardés
+ * d'une image à l'autre, image sautée si rien ne change : voir Peintre). Le pointeur
  * s'écoute sur le <header> parent ; les canvas restent sous le contenu, sans clic.
  * Démarrage après la première peinture, en fondu ; pause hors écran et onglet caché ;
  * image fixe en mouvement réduit. Rien n'est caché en attendant ce code (LCP).
@@ -51,6 +53,8 @@ export function CielEtoiles() {
 
     const etoiles = creerEtoiles();
     const { homeX, homeY, px, py, vx, vy, fade, phase, freq, tau, tw } = etoiles;
+    /** dessin des étoiles : chemins gardés d'une image à l'autre, image sautée si rien ne change */
+    const peintre = creerPeintre();
 
     function resize() {
       const rect = canvas!.getBoundingClientRect();
@@ -67,6 +71,7 @@ export function CielEtoiles() {
         c.height = Math.round(h * dpr);
       }
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      peintre.pret = false;
       ({ pushR, growR } = rayonsPointeur(w, h));
       placerEtoiles(etoiles, w, h);
       peindrePoussiere(fctx!, fond!, dpr, w, h, false);
@@ -126,9 +131,13 @@ export function CielEtoiles() {
 
     function draw() {
       if (!w) return;
-      ctx!.clearRect(0, 0, w, h);
-      dessinerEtoiles(ctx!, etoiles, w, h, pointer, growR);
+      peindreEtoiles(ctx!, peintre, etoiles, w, h, pointer, growR);
     }
+    /** contexte perdu puis rendu (GPU) : canevas vidé, image complète à la prochaine image */
+    const onRestored = () => {
+      peintre.pret = false;
+    };
+    canvas.addEventListener("contextrestored", onRestored);
 
     /* ───────────── Mouvement réduit : image fixe ───────────── */
 
@@ -142,7 +151,10 @@ export function CielEtoiles() {
       fond.classList.add("is-on");
       const ro = new ResizeObserver(paintStatic);
       ro.observe(canvas);
-      return () => ro.disconnect();
+      return () => {
+        ro.disconnect();
+        canvas.removeEventListener("contextrestored", onRestored);
+      };
     }
 
     /* ───────────── Boucle d'animation ───────────── */
@@ -255,6 +267,7 @@ export function CielEtoiles() {
       root.removeEventListener("pointercancel", onPointerUp);
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("contextrestored", onRestored);
       io.disconnect();
       ro.disconnect();
     };
