@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { locales, switchLocalePath, type Locale } from "@/lib/i18n";
+// Chemins seulement (pas lib/i18n) : l'en-tête de toutes les pages n'embarque pas les dictionnaires
+import { locales, switchLocalePath, type Locale } from "@/lib/i18n-chemins";
 
 type LangSwitcherProps = {
   currentLocale: Locale;

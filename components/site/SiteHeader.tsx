@@ -7,11 +7,21 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import { PrimaryButtonLink } from "@/components/site/Button";
 import { LangSwitcher } from "@/components/site/LangSwitcher";
 import { Logo } from "@/components/site/Logo";
-import { getDict, localePath, type Dict, type Locale } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n";
+import { localePath, type Locale } from "@/lib/i18n-chemins";
 import { site } from "@/lib/site";
 import { abonnerDefilement, lirePositionDefilement } from "@/lib/defilement";
 
 type NavItem = { label: string; href: string };
+
+/**
+ * Textes de l'en-tête, dans la seule langue de la page : choisis côté serveur
+ * (LocaleShell) pour que le JavaScript client n'embarque pas les dictionnaires FR + EN.
+ */
+export type TextesEntete = {
+  header: Pick<Dict["header"], "logoAria" | "navAria" | "navMobileAria" | "menuOpen" | "menuClose" | "switcherAria">;
+  shell: Pick<Dict["shell"], "topbar" | "nav" | "services" | "cta">;
+};
 
 /** En dessous de cette position (px), l'en-tête reste toujours affiché. */
 const TOUJOURS_VISIBLE = 140;
@@ -23,7 +33,7 @@ const SEUIL = 6;
  * Tous les liens du menu sont en préchargement complet (`prefetch`) : dans Next 14.2, la page
  * préchargée reste réutilisable 5 minutes au lieu de 30 secondes en mode automatique.
  */
-function liensMenu(s: Dict["shell"]): { before: NavItem[]; after: NavItem[] } {
+function liensMenu(s: TextesEntete["shell"]): { before: NavItem[]; after: NavItem[] } {
   return {
     before: [
       { label: s.nav.home, href: "/" },
@@ -103,7 +113,7 @@ const LiensMobiles = memo(function LiensMobiles({
   fermer,
 }: {
   locale: Locale;
-  s: Dict["shell"];
+  s: TextesEntete["shell"];
   pathname: string;
   fermer: () => void;
 }) {
@@ -188,8 +198,8 @@ const LiensMobiles = memo(function LiensMobiles({
  * (:focus-within, sans rendu React).
  * Les deux menus s'animent en CSS (useApparition) : framer-motion n'est plus chargé pour eux.
  */
-export function SiteHeader({ locale }: { locale: Locale }) {
-  const t = getDict(locale);
+export function SiteHeader({ locale, textes }: { locale: Locale; textes: TextesEntete }) {
+  const t = textes;
   const s = t.shell;
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);

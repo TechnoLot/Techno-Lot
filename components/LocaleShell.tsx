@@ -37,7 +37,21 @@ export default function LocaleShell({
           {t.shell.skipToContent}
         </a>
         {/* framer-motion (MotionProvider) : monté par les seuls gabarits qui l'utilisent */}
-        <SiteHeader locale={locale} />
+        {/* Textes de la seule langue de la page (pas les dictionnaires complets côté client) */}
+        <SiteHeader
+          locale={locale}
+          textes={{
+            header: {
+              logoAria: t.header.logoAria,
+              navAria: t.header.navAria,
+              navMobileAria: t.header.navMobileAria,
+              menuOpen: t.header.menuOpen,
+              menuClose: t.header.menuClose,
+              switcherAria: t.header.switcherAria,
+            },
+            shell: { topbar: t.shell.topbar, nav: t.shell.nav, services: t.shell.services, cta: t.shell.cta },
+          }}
+        />
         <main id="main" className="site-main flex-1">
           {children}
         </main>
