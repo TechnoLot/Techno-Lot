@@ -394,8 +394,8 @@ export function HeroFx() {
     /** contexte perdu puis rendu (GPU) : canevas vidé, image complète à la prochaine image */
     const onRestored = () => {
       peintre.pret = false;
-      // boucle arrêtée au repos : l'image est redessinée tout de suite
-      if (repos) draw();
+      // boucle arrêtée au repos : relancée pour redessiner à l'image suivante, comme avant
+      if (repos) wake();
     };
     canvas.addEventListener("contextrestored", onRestored);
 
@@ -627,7 +627,9 @@ export function HeroFx() {
     const ro = new ResizeObserver(() => {
       if (!started) return;
       resize();
-      if (!raf) draw();
+      // boucle arrêtée au repos (mode allégé) : relancée, le dessin vient à l'image suivante comme avant
+      if (repos && canRun()) wake();
+      else if (!raf) draw();
     });
     ro.observe(canvas);
 
