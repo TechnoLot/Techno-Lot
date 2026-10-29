@@ -1,10 +1,9 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { FileSpreadsheet, FileText, ImageIcon, ImagePlus, X } from "lucide-react";
-import { creerApercu } from "./apercu";
 
-export type FichierJoint = { id: string; file: File };
+export type FichierJoint = { id: string; file: File; url?: string };
 
 type Props = {
   /** Nom du champ attendu par /api/soumission */
@@ -22,48 +21,6 @@ type Props = {
   invalid?: boolean;
   describedBy?: string;
 };
-
-/**
- * Aperçu d'une photo : vignette réduite hors du fil principal (l'original reste
- * intact pour l'envoi). Tant qu'elle se prépare, la case reste vide, comme
- * pendant le décodage d'une grande image. L'URL est libérée au retrait.
- */
-const Vignette = memo(function Vignette({ file }: { file: File }) {
-  const [url, setUrl] = useState<string>();
-
-  useEffect(() => {
-    let actif = true;
-    let cree: string | undefined;
-    creerApercu(file).then((u) => {
-      if (actif) setUrl((cree = u));
-      else URL.revokeObjectURL(u);
-    });
-    return () => {
-      actif = false;
-      if (cree) URL.revokeObjectURL(cree);
-    };
-  }, [file]);
-
-  return (
-    <>
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- aperçu local (blob:)
-        <img
-          src={url}
-          alt={file.name}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            e.currentTarget.nextElementSibling?.removeAttribute("hidden");
-          }}
-        />
-      ) : null}
-      <span className="tlf-thumb-fallback" hidden>
-        <ImageIcon className="h-6 w-6" aria-hidden="true" />
-        <span className="sr-only">{file.name}</span>
-      </span>
-    </>
-  );
-});
 
 /**
  * Zone de dépôt (glisser-déposer ou clic) avec aperçus et retrait par fichier.
@@ -158,7 +115,21 @@ export const Depot = memo(function Depot({
           <ul ref={listRef} className="tlf-thumbs">
             {files.map((f, i) => (
               <li key={f.id} className="tlf-thumb" title={`${f.file.name} · ${formatSize(f.file.size)}`}>
-                <Vignette file={f.file} />
+                {f.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- aperçu local (blob:)
+                  <img
+                    src={f.url}
+                    alt={f.file.name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.nextElementSibling?.removeAttribute("hidden");
+                    }}
+                  />
+                ) : null}
+                <span className="tlf-thumb-fallback" hidden={!!f.url}>
+                  <ImageIcon className="h-6 w-6" aria-hidden="true" />
+                  <span className="sr-only">{f.file.name}</span>
+                </span>
                 <button
                   type="button"
                   data-remove=""

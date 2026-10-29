@@ -89,6 +89,14 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     return () => obs.disconnect();
   }, []);
 
+  // Libère les aperçus (blob:) au démontage.
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
+  useEffect(
+    () => () => photosRef.current.forEach((p) => p.url && URL.revokeObjectURL(p.url)),
+    [],
+  );
+
   // Changement d'étape : focus sur le titre et retour en haut du formulaire.
   // Fait à l'image suivante, avant qu'elle ne soit peinte : le focus et la mesure de
   // remonter() ne recalculent plus la mise en page dans la tâche du clic, et le
@@ -196,7 +204,11 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     const deja = new Set(existants.map((e) => cle(e.file)));
     const nouveaux: FichierJoint[] = acceptes
       .filter((x) => !deja.has(cle(x)))
-      .map((file) => ({ id: `${kind}-${++seq.current}`, file }));
+      .map((file) => ({
+        id: `${kind}-${++seq.current}`,
+        file,
+        url: kind === "photos" ? URL.createObjectURL(file) : undefined,
+      }));
 
     if (kind === "inventaire") setInventaire((prev) => [...prev, ...nouveaux]);
     else setPhotos((prev) => [...prev, ...nouveaux]);
@@ -210,6 +222,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     const liste = kind === "inventaire" ? inventaire : photos;
     const cible = liste.find((x) => x.id === fid);
     if (!cible) return;
+    if (cible.url) URL.revokeObjectURL(cible.url);
     if (kind === "inventaire") setInventaire((prev) => prev.filter((x) => x.id !== fid));
     else setPhotos((prev) => prev.filter((x) => x.id !== fid));
     setRejet("");
@@ -226,8 +239,8 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   const retirerPhotos = useCallback((fid: string) => fichiersRef.current.retirer("photos", fid), []);
   const taille = useCallback((n: number) => formatTaille(n, locale), [locale]);
 
-  // Les aperçus (blob:) sont libérés par les vignettes elles-mêmes, au retrait.
   function toutVider() {
+    photos.forEach((p) => p.url && URL.revokeObjectURL(p.url));
     setInventaire([]);
     setPhotos([]);
     setValues(VIDE);
