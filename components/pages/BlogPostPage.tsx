@@ -9,7 +9,7 @@ import { PrimaryButtonLink } from "@/components/site/Button";
 import JsonLd from "@/components/seo/JsonLd";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import PostImage from "@/components/blog/PostImage";
-import ReadingProgress from "@/components/blog/ReadingProgress";
+import ReadingProgress, { InternalLinks } from "@/components/blog/ReadingProgress";
 import ShareButtons from "@/components/blog/ShareButtons";
 import {
   findOtherLocale,
@@ -316,6 +316,7 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
     <>
       <JsonLd data={articleJsonLd} />
       <ReadingProgress targetId="article-body" label={t.progress} />
+      {!article.local && <InternalLinks targetId="article-body" />}
 
       {/* En-tête : chapitre bleu nuit (lueurs vertes) */}
       <header
