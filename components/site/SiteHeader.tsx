@@ -18,7 +18,11 @@ const TOUJOURS_VISIBLE = 140;
 /** Déplacement minimal (px) avant de cacher ou de réafficher l'en-tête. */
 const SEUIL = 6;
 
-/** Liens du menu avant et après « Services » (ordinateur et mobile). */
+/**
+ * Liens du menu avant et après « Services » (ordinateur et mobile).
+ * Tous les liens du menu sont en préchargement complet (`prefetch`) : dans Next 14.2, la page
+ * préchargée reste réutilisable 5 minutes au lieu de 30 secondes en mode automatique.
+ */
 function liensMenu(s: Dict["shell"]): { before: NavItem[]; after: NavItem[] } {
   return {
     before: [
@@ -118,6 +122,7 @@ const LiensMobiles = memo(function LiensMobiles({
         <Link
           key={item.href}
           href={lp(item.href)}
+          prefetch
           onClick={fermer}
           aria-current={isActive(item.href) ? "page" : undefined}
           className={mobileLinkCls(isActive(item.href))}
@@ -132,6 +137,7 @@ const LiensMobiles = memo(function LiensMobiles({
         <Link
           key={service.href}
           href={lp(service.href)}
+          prefetch
           onClick={fermer}
           aria-current={isActive(service.href) ? "page" : undefined}
           className={`flex items-center justify-between rounded-xl px-4 py-2.5 text-[15px] transition-colors ${
@@ -149,6 +155,7 @@ const LiensMobiles = memo(function LiensMobiles({
         <Link
           key={item.href}
           href={lp(item.href)}
+          prefetch
           onClick={fermer}
           aria-current={isActive(item.href) ? "page" : undefined}
           className={mobileLinkCls(isActive(item.href))}
@@ -365,6 +372,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
               <Link
                 key={item.href}
                 href={lp(item.href)}
+                prefetch
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={linkCls(isActive(item.href))}
               >
@@ -415,6 +423,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
                         <li key={service.href}>
                           <Link
                             href={lp(service.href)}
+                            prefetch
                             onClick={() => setServicesOpen(false)}
                             aria-current={current ? "page" : undefined}
                             className={`group/item flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 font-display text-[15px] font-medium transition-colors ${
@@ -441,6 +450,7 @@ export function SiteHeader({ locale }: { locale: Locale }) {
               <Link
                 key={item.href}
                 href={lp(item.href)}
+                prefetch
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={linkCls(isActive(item.href))}
               >
