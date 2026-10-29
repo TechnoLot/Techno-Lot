@@ -15,14 +15,24 @@ export default function ReadingProgress({ targetId, label }: { targetId: string;
     const bar = barRef.current;
     if (!target || !bar) return;
     let frame = 0;
+    // Dernières valeurs écrites : rien n'est réécrit si l'affichage ne change pas
+    let lastP = -1;
+    let lastPct = -1;
     const update = () => {
       frame = 0;
       const rect = target.getBoundingClientRect();
       const total = rect.height - window.innerHeight * 0.6;
       const read = -rect.top + window.innerHeight * 0.2;
       const p = total > 0 ? Math.min(1, Math.max(0, read / total)) : 1;
-      bar.style.transform = `scaleX(${p})`;
-      bar.parentElement?.setAttribute("aria-valuenow", String(Math.round(p * 100)));
+      if (p !== lastP) {
+        lastP = p;
+        bar.style.transform = `scaleX(${p})`;
+      }
+      const pct = Math.round(p * 100);
+      if (pct !== lastPct) {
+        lastPct = pct;
+        bar.parentElement?.setAttribute("aria-valuenow", String(pct));
+      }
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
