@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import { CIEL, CONSTELLATIONS, ETOILES, FIGURES } from "./ciel";
 
 /**
- * Effets du héros (client) : le vrai ciel de Montréal en deux canvas (voie lactée
- * statique, étoiles animées), parallaxe de la lueur d'horizon, inclinaison / reflet /
- * glitch du logo et épinglage « hyperespace » adouci.
+ * Effets du héros (client) : le vrai ciel de Montréal en deux canvas (poussière
+ * d'étoiles faibles statique, étoiles animées), parallaxe de la lueur d'horizon,
+ * inclinaison / reflet / glitch du logo et épinglage « hyperespace » adouci.
  * Le texte et le décor CSS sont rendus côté serveur (Hero.tsx) : si ce code ne
  * s'exécute pas, rien n'est caché. Ce composant ne fait que dessiner dans ses canvas
  * et poser des variables CSS et des attributs data-* sur la section [data-hero-tl] :
@@ -23,7 +23,6 @@ import { CIEL, CONSTELLATIONS, ETOILES, FIGURES } from "./ciel";
  */
 
 const TAU = Math.PI * 2;
-const D = Math.PI / 180;
 const REF_W = CIEL.largeur;
 const REF_H = CIEL.hauteur;
 const N = ETOILES.length / 4;
@@ -66,104 +65,6 @@ const LINE_NEAR = 120;
 const DUST_REF = 1100;
 const DUST_TIERS = 8;
 
-/* ───────────── Voie lactée : grille basse résolution, calculée dans le navigateur ───────────── */
-
-const GW = 200;
-const GH = 125;
-const PHI = CIEL.latitude * D;
-const LST = CIEL.tempsSideral * 15 * D;
-const A0 = CIEL.altitude * D;
-const AZ = CIEL.azimut * D;
-/** échelle de la projection stéréographique (px du cadre de référence) */
-const KPROJ = REF_W / 2 / (2 * Math.tan((CIEL.champ / 4) * D));
-/** repère local (nord, est, zénith) : visée, droite, haut de la caméra */
-const CAM_F = [Math.cos(A0) * Math.cos(AZ), Math.cos(A0) * Math.sin(AZ), Math.sin(A0)];
-const CAM_R = [-Math.sin(AZ), Math.cos(AZ), 0];
-const CAM_U = [-Math.sin(A0) * Math.cos(AZ), -Math.sin(A0) * Math.sin(AZ), Math.cos(A0)];
-const POLE = [Math.cos(PHI), 0, Math.sin(PHI)];
-const MERID = [-Math.sin(PHI), 0, Math.cos(PHI)];
-/** pôle nord galactique et longitude du pôle céleste (J2000) */
-const ANGP = 192.85948 * D;
-const DNGP = 27.12825 * D;
-const LNCP = 122.93192 * D;
-
-/* bruit de valeur + fbm, graine fixe : même voie lactée à chaque visite */
-const hash = (x: number, y: number) => {
-  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-  return s - Math.floor(s);
-};
-const smooth = (t: number) => t * t * (3 - 2 * t);
-function vnoise(x: number, y: number) {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const u = smooth(x - xi);
-  const v = smooth(y - yi);
-  const a = hash(xi, yi);
-  const b = hash(xi + 1, yi);
-  const c = hash(xi, yi + 1);
-  const d = hash(xi + 1, yi + 1);
-  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-}
-function fbm(x: number, y: number) {
-  let s = 0;
-  let a = 0.5;
-  let f = 1;
-  for (let o = 0; o < 5; o++) {
-    s += a * vnoise(x * f, y * f);
-    f *= 2.03;
-    a *= 0.5;
-  }
-  return s;
-}
-
-/**
- * Une rangée de la grille : projection inverse de chaque cellule, latitude et
- * longitude galactiques, bande lumineuse bruitée, bande sombre, extinction près de
- * l'horizon. Écrit l'alpha (couleur fixe) et garde b et la hauteur z pour la poussière.
- */
-function galaxyRow(j: number, rgba: Uint8ClampedArray, galB: Float32Array, galZ: Float32Array) {
-  for (let i = 0; i < GW; i++) {
-    const x = (((i + 0.5) / GW) * REF_W - REF_W / 2) / KPROJ;
-    const y = -(((j + 0.5) / GH) * REF_H - REF_H / 2) / KPROJ;
-    const rho = Math.hypot(x, y) || 1e-9;
-    const c = 2 * Math.atan(rho / 2);
-    const cc = Math.cos(c);
-    const sc = Math.sin(c);
-    const s0 = cc * CAM_F[0] + sc * ((x / rho) * CAM_R[0] + (y / rho) * CAM_U[0]);
-    const s1 = cc * CAM_F[1] + sc * ((x / rho) * CAM_R[1] + (y / rho) * CAM_U[1]);
-    const s2 = cc * CAM_F[2] + sc * ((x / rho) * CAM_R[2] + (y / rho) * CAM_U[2]);
-    const dec = Math.asin(clamp(s0 * POLE[0] + s2 * POLE[2], -1, 1));
-    const ra = LST - Math.atan2(-s1, s0 * MERID[0] + s2 * MERID[2]);
-    const sd = Math.sin(dec);
-    const cd = Math.cos(dec);
-    const cr = Math.cos(ra - ANGP);
-    const b = Math.asin(sd * Math.sin(DNGP) + cd * Math.cos(DNGP) * cr) / D;
-    const l = ((((LNCP - Math.atan2(cd * Math.sin(ra - ANGP), sd * Math.cos(DNGP) - cd * Math.sin(DNGP) * cr)) / D) % 360) + 360) % 360;
-
-    const k = j * GW + i;
-    galB[k] = b;
-    galZ[k] = s2;
-
-    const airmass = clamp((s2 - 0.03) / 0.3, 0, 1);
-    const core = Math.exp(-((b / 9) ** 2));
-    const halo = Math.exp(-((b / 24) ** 2)) * 0.35;
-    const lum = 0.55 + 0.45 * Math.cos((l * Math.PI) / 360) ** 2;
-    let alpha = 0;
-    // loin de la bande, l'intensité reste sous 1/255 : inutile de calculer le bruit
-    if ((core * 1.2 + halo) * lum * airmass * 51 >= 0.5) {
-      const n = fbm(i / 14 + l / 40, j / 14 + b / 25);
-      const lane = Math.exp(-(((b + 1.5) / 2.2) ** 2)) * Math.max(0, fbm(i / 7 + 9, j / 7) - 0.45) * 1.6;
-      const I = Math.max(0, (core * (0.45 + 0.75 * n) + halo * (0.6 + 0.4 * n) - lane * core) * lum * airmass);
-      alpha = Math.min(255, I * 255 * 0.2);
-    }
-    const p = k * 4;
-    rgba[p] = 196;
-    rgba[p + 1] = 214;
-    rgba[p + 2] = 236;
-    rgba[p + 3] = alpha;
-  }
-}
-
 /** Sprite de halo (dégradé radial pré-rendu) pour une couleur d'étoile */
 function haloSprite([r, g, b]: readonly [number, number, number]) {
   const c = document.createElement("canvas");
@@ -181,16 +82,16 @@ function haloSprite([r, g, b]: readonly [number, number, number]) {
 }
 
 export function HeroFx() {
-  const voieRef = useRef<HTMLCanvasElement>(null);
+  const fondRef = useRef<HTMLCanvasElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
-    const voie = voieRef.current;
+    const fond = fondRef.current;
     const root = canvas?.closest<HTMLElement>("[data-hero-tl]");
     const ctx = canvas?.getContext("2d");
-    const vctx = voie?.getContext("2d");
-    if (!canvas || !voie || !root || !ctx || !vctx) return;
+    const fctx = fond?.getContext("2d");
+    if (!canvas || !fond || !root || !ctx || !fctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -279,112 +180,40 @@ export function HeroFx() {
       }
     }
 
-    /* ───────────── Voie lactée et poussière (canevas statique) ───────────── */
+    /* ───────────── Poussière d'étoiles faibles (canevas statique) ───────────── */
 
-    let galCanvas: HTMLCanvasElement | null = null;
-    let galImage: ImageData | null = null;
-    const galB = new Float32Array(GW * GH);
-    const galZ = new Float32Array(GW * GH);
-    let galRow = 0;
-    let galReady = false;
-    let galIdle = 0;
-    let galTimer = 0;
     const hasIdle = typeof window.requestIdleCallback === "function";
 
-    function galaxyInit() {
-      galCanvas = document.createElement("canvas");
-      galCanvas.width = GW;
-      galCanvas.height = GH;
-      galImage = galCanvas.getContext("2d")?.createImageData(GW, GH) ?? null;
-      return galImage !== null;
-    }
-    function galaxyDone() {
-      galCanvas!.getContext("2d")!.putImageData(galImage!, 0, 0);
-      galReady = true;
-      paintVoie();
-      voie!.classList.add("is-on");
-    }
-    /** calcul par tranches, pendant les temps morts du navigateur */
-    function galaxyChunk(deadline?: IdleDeadline) {
-      galIdle = 0;
-      galTimer = 0;
-      const budget = deadline && !deadline.didTimeout ? clamp(deadline.timeRemaining(), 4, 12) : 8;
-      const until = performance.now() + budget;
-      do galaxyRow(galRow++, galImage!.data, galB, galZ);
-      while (galRow < GH && performance.now() < until);
-      if (galRow < GH) {
-        if (hasIdle) galIdle = window.requestIdleCallback(galaxyChunk, { timeout: 300 });
-        else galTimer = window.setTimeout(galaxyChunk, 16);
-      } else {
-        galaxyDone();
-      }
-    }
-
-    function paintVoie() {
-      if (!galReady || !w) return;
-      const vc = vctx!;
-      vc.setTransform(1, 0, 0, 1, 0, 0);
-      vc.clearRect(0, 0, voie!.width, voie!.height);
-      // voie lactée : grille agrandie au cadrage « cover », deux passes floutées
-      const dx = ox * dpr;
-      const dy = oy * dpr;
-      const dw = REF_W * S * dpr;
-      const dh = REF_H * S * dpr;
-      vc.imageSmoothingEnabled = true;
-      vc.imageSmoothingQuality = "high";
-      if (typeof vc.filter === "string") {
-        vc.filter = `blur(${10 * dpr}px)`;
-        vc.drawImage(galCanvas!, dx, dy, dw, dh);
-        vc.filter = `blur(${2 * dpr}px)`;
-        vc.globalAlpha = 0.7;
-        vc.drawImage(galCanvas!, dx, dy, dw, dh);
-        vc.filter = "none";
-      } else {
-        // navigateur sans filtre canvas : flou approché par 9 copies décalées additionnées
-        const o = 6 * dpr;
-        vc.globalCompositeOperation = "lighter";
-        vc.globalAlpha = 1 / 9;
-        for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) vc.drawImage(galCanvas!, dx + a * o, dy + b * o, dw, dh);
-        vc.globalCompositeOperation = "source-over";
-        vc.globalAlpha = 0.7;
-        vc.drawImage(galCanvas!, dx, dy, dw, dh);
-      }
-      vc.globalAlpha = 1;
-
-      // poussière d'étoiles faibles, plus dense le long de la voie lactée (graine fixe)
-      vc.setTransform(dpr, 0, 0, dpr, 0, 0);
+    /** Poussière d'étoiles faibles, répartie uniformément (graine fixe : même ciel à chaque visite). */
+    function paintFond() {
+      if (!w) return;
+      const fc = fctx!;
+      fc.setTransform(1, 0, 0, 1, 0, 0);
+      fc.clearRect(0, 0, fond!.width, fond!.height);
+      fc.setTransform(dpr, 0, 0, dpr, 0, 0);
       let seed = 7;
       const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       const count = Math.round(DUST_REF * ((w * h) / (1440 * 900)) * (lite ? LITE_SHARE : 1));
       const dust = new Float32Array(count * 4);
-      let placed = 0;
-      for (let tries = 0; placed < count && tries < count * 20; tries++) {
-        const x = rnd() * w;
-        const y = rnd() * h;
-        const gi = clamp(Math.floor(((x - ox) / (REF_W * S)) * GW), 0, GW - 1);
-        const gj = clamp(Math.floor(((y - oy) / (REF_H * S)) * GH), 0, GH - 1);
-        const k = gj * GW + gi;
-        if (galZ[k] < 0.03) continue;
-        if (rnd() > 0.35 + 0.65 * Math.exp(-((galB[k] / 14) ** 2))) continue;
+      for (let p = 0; p < count; p++) {
         const a = 0.1 + rnd() * 0.22;
-        dust[placed * 4] = x;
-        dust[placed * 4 + 1] = y;
-        dust[placed * 4 + 2] = 0.35 + rnd() * 0.3;
-        dust[placed * 4 + 3] = Math.min(DUST_TIERS - 1, Math.floor(((a - 0.1) / 0.22) * DUST_TIERS));
-        placed++;
+        dust[p * 4] = rnd() * w;
+        dust[p * 4 + 1] = rnd() * h;
+        dust[p * 4 + 2] = 0.35 + rnd() * 0.3;
+        dust[p * 4 + 3] = Math.min(DUST_TIERS - 1, Math.floor(((a - 0.1) / 0.22) * DUST_TIERS));
       }
       for (let t = 0; t < DUST_TIERS; t++) {
-        vc.beginPath();
-        for (let p = 0; p < placed; p++) {
+        fc.beginPath();
+        for (let p = 0; p < count; p++) {
           if (dust[p * 4 + 3] !== t) continue;
           const x = dust[p * 4];
           const y = dust[p * 4 + 1];
           const r = dust[p * 4 + 2];
-          vc.moveTo(x + r, y);
-          vc.arc(x, y, r, 0, TAU);
+          fc.moveTo(x + r, y);
+          fc.arc(x, y, r, 0, TAU);
         }
-        vc.fillStyle = `rgba(225, 235, 250, ${(0.1 + ((t + 0.5) / DUST_TIERS) * 0.22).toFixed(3)})`;
-        vc.fill();
+        fc.fillStyle = `rgba(225, 235, 250, ${(0.1 + ((t + 0.5) / DUST_TIERS) * 0.22).toFixed(3)})`;
+        fc.fill();
       }
     }
 
@@ -397,7 +226,7 @@ export function HeroFx() {
       if (nw === w && nh === h) return;
       w = nw;
       h = nh;
-      for (const c of [canvas!, voie!]) {
+      for (const c of [canvas!, fond!]) {
         c.width = Math.round(w * dpr);
         c.height = Math.round(h * dpr);
       }
@@ -407,7 +236,7 @@ export function HeroFx() {
       growR = linkDist * 1.45;
       frame();
       layoutStars();
-      paintVoie();
+      paintFond();
     }
 
     /* ───────────── Étoiles animées ───────────── */
@@ -643,14 +472,9 @@ export function HeroFx() {
         resize();
         draw();
       };
-      if (galaxyInit()) {
-        for (let j = 0; j < GH; j++) galaxyRow(j, galImage!.data, galB, galZ);
-        galCanvas!.getContext("2d")!.putImageData(galImage!, 0, 0);
-        galReady = true;
-      }
       paintStatic();
       canvas.classList.add("is-on");
-      voie.classList.add("is-on");
+      fond.classList.add("is-on");
       const ro = new ResizeObserver(paintStatic);
       ro.observe(canvas);
       return () => ro.disconnect();
@@ -847,20 +671,14 @@ export function HeroFx() {
       started = true;
       resize();
       canvas.classList.add("is-on");
+      fond.classList.add("is-on");
       wake();
-      // voie lactée : calculée par tranches, puis le canevas statique apparaît en fondu
-      if (galaxyInit()) galaxyChunk();
     };
     const idleId = hasIdle ? window.requestIdleCallback(start, { timeout: 1200 }) : window.setTimeout(start, 300);
 
     return () => {
-      if (hasIdle) {
-        window.cancelIdleCallback(idleId);
-        if (galIdle) window.cancelIdleCallback(galIdle);
-      } else {
-        window.clearTimeout(idleId);
-      }
-      window.clearTimeout(galTimer);
+      if (hasIdle) window.cancelIdleCallback(idleId);
+      else window.clearTimeout(idleId);
       cancelAnimationFrame(raf);
       raf = 0;
       started = false;
@@ -882,7 +700,7 @@ export function HeroFx() {
 
   return (
     <>
-      <canvas ref={voieRef} aria-hidden="true" className="hero-tl-canvas hero-tl-canvas--voie" />
+      <canvas ref={fondRef} aria-hidden="true" className="hero-tl-canvas hero-tl-canvas--fond" />
       <canvas ref={ref} aria-hidden="true" className="hero-tl-canvas" />
     </>
   );

@@ -20,11 +20,11 @@ const delay = (s: number) => ({ "--hero-tl-d": `${s.toFixed(2)}s` }) as CSSPrope
 
 /**
  * Héros de l'accueil : le vrai ciel de nuit au-dessus de Montréal (Grande Ourse,
- * Cassiopée, voie lactée, lueur verte d'horizon) derrière le logo empilé et
+ * Cassiopée, lueur verte d'horizon) derrière le logo empilé et
  * « Vos lots informatiques ont de la valeur ». Composant serveur : tout le texte
  * est dans le HTML, les entrées sont en keyframes CSS et le décor CSS (ciel, lueur,
  * vignette, voile) s'affiche sans JavaScript ; HeroFx (client) ajoute ensuite les
- * étoiles et la voie lactée en canvas, la parallaxe, l'inclinaison et le glitch du
+ * étoiles et la poussière d'étoiles en canvas, la parallaxe, l'inclinaison et le glitch du
  * logo, et l'épinglage « hyperespace ».
  */
 export function Hero({ locale }: { locale: Locale }) {
@@ -47,13 +47,13 @@ export function Hero({ locale }: { locale: Locale }) {
     >
       <div className="hero-tl-sticky">
         {/* Décor, de l'arrière vers l'avant (z-index dans hero.css) : ciel en dégradé,
-            voie lactée (canvas), lueur verte d'horizon, étoiles (canvas), vignette, voile */}
+            poussière d'étoiles (canvas), lueur verte d'horizon, étoiles (canvas), vignette, voile */}
         <div aria-hidden="true" className="hero-tl-bg" />
         <div aria-hidden="true" className="hero-tl-airglow">
           <span />
         </div>
 
-        {/* Voie lactée et étoiles (deux canvas, démarrés après la première peinture) */}
+        {/* Poussière d'étoiles et étoiles (deux canvas, démarrés après la première peinture) */}
         <HeroFx />
 
         <div aria-hidden="true" className="hero-tl-vignette" />
