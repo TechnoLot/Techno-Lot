@@ -712,6 +712,12 @@ html.lenis body {
   0%, 100% { opacity: 0.7; transform: scale(0.95); }
   50% { opacity: 1; transform: scale(1.05); }
 }
+/* Héros hors de l'écran (data-paused posé par PauseHorsEcran) : objet et logo en pause */
+header[data-paused] .tl-float,
+header[data-paused] .tl-logo-move,
+header[data-paused] .tl-logo-halo {
+  animation-play-state: paused;
+}
 
 /* ------------------------------------------------------------------ */
 /* Mouvement réduit                                                    */

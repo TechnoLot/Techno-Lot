@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
 import { CielEtoiles } from "@/components/site/CielEtoiles";
+import { PauseHorsEcran } from "@/components/site/PauseHorsEcran";
 
 export type PageHeroImage =
   | {
@@ -136,6 +137,7 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
                   />
                 </div>
               </div>
+              <PauseHorsEcran />
             </div>
           </div>
         )}
@@ -160,6 +162,7 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
                   />
                 </div>
               </div>
+              <PauseHorsEcran />
             </div>
           </div>
         )}
