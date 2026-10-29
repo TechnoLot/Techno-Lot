@@ -13,13 +13,18 @@
  *    à-coups (des dizaines de ms à pleine vitesse, puis des pauses), une
  *    mesure d'un seul tenant peut tomber dans un creux et passer pour rapide.
  *
- * Le verdict est mémorisé (localStorage `tl_appareil`) : le test ne tourne qu'une
- * fois par navigateur. Module sans dépendance, à n'appeler que côté client.
+ * « Lent » seulement si une seconde mesure, environ 2 s plus tard, le confirme :
+ * une charge passagère (mise à jour, autre onglet) ne coupe pas les effets à tort.
+ * Le verdict est mémorisé 7 jours (localStorage `tl_appareil`), puis refait. Module sans dépendance, à n'appeler que côté client.
  */
 
 const CLE = "tl_appareil";
 /** À incrémenter si le test ou le seuil change : les verdicts mémorisés sont alors refaits. */
-const VERSION = 1;
+const VERSION = 2;
+/** Durée de vie d'un verdict mémorisé : 7 jours. */
+const DUREE_VIE_MS = 7 * 24 * 3600 * 1000;
+/** Délai avant la mesure de confirmation d'un verdict « lent » (ms). */
+const CONFIRMATION_MS = 2000;
 /** Itérations d'un morceau de charge : ≈ 1,5 ms sur un i7-9700 (CPU 1×). */
 const ITERATIONS = 100_000;
 const MORCEAUX = 10;
@@ -32,7 +37,8 @@ const ECART_MS = 20;
  */
 const SEUIL_MS = 32;
 
-type Verdict = { v: number; lent: boolean; ms: number | null };
+/** `ms` : sommes mesurées (deux si la première dépassait le seuil) ; `t` : date du verdict. */
+type Verdict = { v: number; lent: boolean; ms: number[]; t: number };
 
 let verdict: Promise<boolean> | null = null;
 
@@ -41,15 +47,17 @@ function lireMemoire(): Verdict | null {
     const brut = window.localStorage.getItem(CLE);
     if (!brut) return null;
     const v = JSON.parse(brut) as Verdict;
-    return v && v.v === VERSION && typeof v.lent === "boolean" ? v : null;
+    if (!v || v.v !== VERSION || typeof v.lent !== "boolean" || typeof v.t !== "number") return null;
+    const age = Date.now() - v.t;
+    return age >= 0 && age < DUREE_VIE_MS ? v : null;
   } catch {
     return null;
   }
 }
 
-function memoriser(lent: boolean, ms: number | null) {
+function memoriser(lent: boolean, ms: number[]) {
   try {
-    window.localStorage.setItem(CLE, JSON.stringify({ v: VERSION, lent, ms } satisfies Verdict));
+    window.localStorage.setItem(CLE, JSON.stringify({ v: VERSION, lent, ms, t: Date.now() } satisfies Verdict));
   } catch {
     /* stockage indisponible (navigation privée…) : le test sera refait */
   }
@@ -104,14 +112,19 @@ export function appareilLent(): Promise<boolean> {
   const connu = lireMemoire();
   if (connu) verdict = Promise.resolve(connu.lent);
   else if (indicesStatiques()) {
-    memoriser(true, null);
+    memoriser(true, []);
     verdict = Promise.resolve(true);
   } else {
-    verdict = mesurer().then((ms) => {
-      const lent = ms > SEUIL_MS;
+    verdict = (async () => {
+      const ms = [await mesurer()];
+      if (ms[0] > SEUIL_MS) {
+        await new Promise((r) => setTimeout(r, CONFIRMATION_MS));
+        ms.push(await mesurer());
+      }
+      const lent = ms.every((m) => m > SEUIL_MS);
       memoriser(lent, ms);
       return lent;
-    });
+    })();
   }
   return verdict;
 }
