@@ -50,6 +50,25 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
       ca = new Uint8ClampedArray(0);
     let base: Uint8ClampedArray | null = null;
     let frameData: ImageData | null = null;
+    // Image affichée, pour ne recopier que ce qui change (rendu identique au pixel près) :
+    // nombre de fragments détachés qui recouvrent chaque pixel, fragments détachés, et fragments
+    // en vol (position en px physiques, couleur telle qu'écrite dans l'ImageData), affichés / à venir.
+    let cover = new Uint8Array(0);
+    let gone = new Uint8Array(0);
+    let chg = new Int32Array(0);
+    let fly = new Uint8Array(0),
+      nfly = new Uint8Array(0);
+    let fx = new Int32Array(0),
+      fy = new Int32Array(0),
+      nfx = new Int32Array(0),
+      nfy = new Int32Array(0);
+    let fc = new Uint32Array(0),
+      nfc = new Uint32Array(0);
+    const q = new Uint8ClampedArray(4); // même arrondi que l'écriture dans l'ImageData
+    let thMin = 0,
+      thMax = 0;
+    let painted = false; // faux : le canevas (vidé par build) doit être repeint en entier
+    let drawnD = 0;
     let raf = 0;
     let visible = true;
     let De = 0;
@@ -133,6 +152,24 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
         ca[k] = data[i * 4 + 3];
       });
       frameData = ctx.createImageData(canvas.width, canvas.height);
+      cover = new Uint8Array(canvas.width * canvas.height);
+      gone = new Uint8Array(n);
+      chg = new Int32Array(n);
+      fly = new Uint8Array(n);
+      nfly = new Uint8Array(n);
+      fx = new Int32Array(n);
+      fy = new Int32Array(n);
+      nfx = new Int32Array(n);
+      nfy = new Int32Array(n);
+      fc = new Uint32Array(n);
+      nfc = new Uint32Array(n);
+      thMin = Infinity;
+      thMax = -Infinity;
+      for (let k = 0; k < n; k++) {
+        thMin = Math.min(thMin, th[k]);
+        thMax = Math.max(thMax, th[k]);
+      }
+      painted = false;
       // reprise à la position courante (pas de dissolution rejouée au chargement en milieu de page)
       if (!De) De = progress();
       kick();
@@ -166,52 +203,134 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
       }
     };
 
+    // 0 : aucun fragment détaché ; 2 : tous détachés et posés ; 1 : plage active
+    const zone = (D: number) => (D <= thMin ? 0 : (D - thMax) / 0.28 >= 1 ? 2 : 1);
+
     const draw = (D: number) => {
       if (!frameData || !base) return;
+      // hors de la plage active, l'image ne dépend pas de D : déjà affichée, rien à refaire
+      if (painted && zone(D) !== 1 && zone(D) === zone(drawnD)) return;
+      const nette = base;
       const buf = frameData.data;
-      buf.set(base);
       const cw = canvas.width,
         chh = canvas.height;
-      // 1) on retire de l'image nette les fragments déjà détachés
+      if (!painted) {
+        buf.set(nette);
+        cover.fill(0);
+        gone.fill(0);
+        fly.fill(0);
+      }
+      // rectangle du canevas à recopier
+      let dx0 = cw,
+        dy0 = chh,
+        dx1 = 0,
+        dy1 = 0;
+      // remet l'image nette (moins les trous) sur un rectangle, et l'ajoute à la copie
+      const restore = (x0: number, y0: number, x1: number, y1: number) => {
+        const xa = Math.max(0, x0),
+          xb = Math.min(cw, x1),
+          ya = Math.max(0, y0),
+          yb = Math.min(chh, y1);
+        if (xa >= xb || ya >= yb) return;
+        dx0 = Math.min(dx0, xa);
+        dy0 = Math.min(dy0, ya);
+        dx1 = Math.max(dx1, xb);
+        dy1 = Math.max(dy1, yb);
+        for (let y = ya; y < yb; y++) {
+          let p = y * cw + xa,
+            o = p * 4;
+          for (let x = xa; x < xb; x++, p++, o += 4) {
+            if (cover[p]) {
+              buf[o] = buf[o + 1] = buf[o + 2] = buf[o + 3] = 0;
+            } else {
+              buf[o] = nette[o];
+              buf[o + 1] = nette[o + 1];
+              buf[o + 2] = nette[o + 2];
+              buf[o + 3] = nette[o + 3];
+            }
+          }
+        }
+      };
+      // 1) fragments qui se détachent (trou dans l'image nette) ou se recollent depuis l'image affichée
+      let nchg = 0;
       for (let k = 0; k < n; k++) {
-        if (D <= th[k]) continue;
-        fillBlock(
-          buf,
-          cw,
-          chh,
+        const g = D > th[k] ? 1 : 0;
+        if (g === gone[k]) continue;
+        gone[k] = g;
+        chg[nchg++] = k;
+        const xa = Math.max(0, Math.floor(px[k] * dpr)),
+          xb = Math.min(cw, Math.ceil((px[k] + cellW) * dpr)),
+          ya = Math.max(0, Math.floor(py[k] * dpr)),
+          yb = Math.min(chh, Math.ceil((py[k] + cellH) * dpr));
+        for (let y = ya; y < yb; y++) {
+          let p = y * cw + xa;
+          for (let x = xa; x < xb; x++, p++) cover[p] += g ? 1 : -1;
+        }
+      }
+      // 2) fragments en vol, qui virent au vert du logo (#6bd63b) : position et couleur finales
+      const size = Math.max(1, Math.round(STEP * dpr * 0.8));
+      let moved = false;
+      for (let k = 0; k < n; k++) {
+        const t = clamp((D - th[k]) / 0.28);
+        if (t <= 0 || t >= 1) {
+          nfly[k] = 0;
+          if (fly[k]) moved = true;
+          continue;
+        }
+        const e = t * t;
+        nfly[k] = 1;
+        nfx[k] = Math.round((px[k] + vx[k] * e * 160) * dpr);
+        nfy[k] = Math.round((py[k] - vy[k] * e * 190) * dpr);
+        q[0] = cr[k] + (107 - cr[k]) * t;
+        q[1] = cg[k] + (214 - cg[k]) * t;
+        q[2] = cb[k] + (59 - cb[k]) * t;
+        q[3] = ca[k] * (1 - t);
+        nfc[k] = (q[0] | (q[1] << 8) | (q[2] << 16) | (q[3] << 24)) >>> 0;
+        if (!fly[k] || nfx[k] !== fx[k] || nfy[k] !== fy[k] || nfc[k] !== fc[k]) moved = true;
+      }
+      drawnD = D;
+      // mouvement sans effet sur les pixels : l'image affichée est déjà la bonne
+      if (painted && !nchg && !moved) return;
+      // 3) on efface les fragments en vol de l'image affichée et on met à jour les trous…
+      for (let k = 0; k < n; k++) if (fly[k]) restore(fx[k], fy[k], fx[k] + size, fy[k] + size);
+      for (let i = 0; i < nchg; i++) {
+        const k = chg[i];
+        restore(
           Math.floor(px[k] * dpr),
           Math.floor(py[k] * dpr),
           Math.ceil((px[k] + cellW) * dpr),
-          Math.ceil((py[k] + cellH) * dpr),
-          0,
-          0,
-          0,
-          0
+          Math.ceil((py[k] + cellH) * dpr)
         );
       }
-      // 2) on dessine les fragments en vol, qui virent au vert du logo (#6bd63b)
-      const size = Math.max(1, Math.round(STEP * dpr * 0.8));
+      // … puis on redessine tous les fragments en vol, dans le même ordre
       for (let k = 0; k < n; k++) {
-        const t = clamp((D - th[k]) / 0.28);
-        if (t <= 0 || t >= 1) continue;
-        const e = t * t;
-        const x = Math.round((px[k] + vx[k] * e * 160) * dpr);
-        const y = Math.round((py[k] - vy[k] * e * 190) * dpr);
-        fillBlock(
-          buf,
-          cw,
-          chh,
-          x,
-          y,
-          x + size,
-          y + size,
-          cr[k] + (107 - cr[k]) * t,
-          cg[k] + (214 - cg[k]) * t,
-          cb[k] + (59 - cb[k]) * t,
-          ca[k] * (1 - t)
-        );
+        if (!nfly[k]) continue;
+        const x = nfx[k],
+          y = nfy[k],
+          c = nfc[k];
+        const xa = Math.max(0, x),
+          xb = Math.min(cw, x + size),
+          ya = Math.max(0, y),
+          yb = Math.min(chh, y + size);
+        if (xa < xb && ya < yb) {
+          dx0 = Math.min(dx0, xa);
+          dy0 = Math.min(dy0, ya);
+          dx1 = Math.max(dx1, xb);
+          dy1 = Math.max(dy1, yb);
+        }
+        fillBlock(buf, cw, chh, x, y, x + size, y + size, c & 255, (c >>> 8) & 255, (c >>> 16) & 255, c >>> 24);
       }
-      ctx.putImageData(frameData, 0, 0);
+      [fly, nfly] = [nfly, fly];
+      [fx, nfx] = [nfx, fx];
+      [fy, nfy] = [nfy, fy];
+      [fc, nfc] = [nfc, fc];
+      // 4) copie limitée au rectangle qui a changé (tout le canevas après build, qui l'a vidé)
+      if (!painted) {
+        painted = true;
+        ctx.putImageData(frameData, 0, 0);
+      } else if (dx0 < dx1 && dy0 < dy1) {
+        ctx.putImageData(frameData, 0, 0, dx0, dy0, dx1 - dx0, dy1 - dy0);
+      }
     };
 
     const frame = () => {
