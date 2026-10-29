@@ -652,13 +652,16 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
           ) : (
             <span className="hidden sm:block" />
           )}
+          {/* Clés distinctes : React crée un autre bouton au lieu de passer le même de
+              type=button à type=submit pendant le clic (le navigateur envoyait alors le
+              formulaire dès « Continuer », sans montrer le récapitulatif). */}
           {enhanced && step < DERNIERE ? (
-            <button type="button" onClick={suivant} className="tl-btn tl-btn-md tl-btn-primary tlf-btn">
+            <button key="suivant" type="button" onClick={suivant} className="tl-btn tl-btn-md tl-btn-primary tlf-btn">
               {t.next}
               <ArrowRight className="tl-btn-arrow" aria-hidden="true" />
             </button>
           ) : (
-            <button type="submit" disabled={loading} className="tl-btn tl-btn-md tl-btn-primary tlf-btn">
+            <button key="envoyer" type="submit" disabled={loading} className="tl-btn tl-btn-md tl-btn-primary tlf-btn">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
