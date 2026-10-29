@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, CircleAlert, Loader2, Pencil, Send, TriangleAlert } from "lucide-react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { getAttribution, trackEvent } from "@/lib/tracking/attribution";
@@ -89,26 +89,27 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     return () => obs.disconnect();
   }, []);
 
-  // Libère les aperçus (blob:) au démontage.
-  const photosRef = useRef(photos);
-  photosRef.current = photos;
-  useEffect(
-    () => () => photosRef.current.forEach((p) => p.url && URL.revokeObjectURL(p.url)),
-    [],
-  );
-
   // Changement d'étape : focus sur le titre et retour en haut du formulaire.
+  // Fait à l'image suivante, avant qu'elle ne soit peinte : le focus et la mesure de
+  // remonter() ne recalculent plus la mise en page dans la tâche du clic, et le
+  // résultat à l'écran est le même.
   useEffect(() => {
     if (!stepChanged.current) return;
     stepChanged.current = false;
-    headingRefs.current[step]?.focus({ preventScroll: true });
-    remonter();
+    const raf = requestAnimationFrame(() => {
+      headingRefs.current[step]?.focus({ preventScroll: true });
+      remonter();
+    });
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   useEffect(() => {
     if (!focusChamp) return;
-    firstInvalidRef.current[focusChamp]?.focus();
+    // Même image que le focus du titre, mais enregistré après lui : le champ invalide
+    // garde le focus, comme avant.
+    const champ = firstInvalidRef.current[focusChamp];
+    requestAnimationFrame(() => champ?.focus());
     setFocusChamp(null);
   }, [focusChamp]);
 
@@ -119,10 +120,11 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     trackEvent("form_start");
   }
 
-  function annoncer(message: string) {
+  // Stable : Categories (mémorisé) n'est pas rendu de nouveau pour rien.
+  const annoncer = useCallback((message: string) => {
     // Caractère invisible alterné : un message identique est quand même relu.
     setAnnonce((prev) => (prev.endsWith("​") ? message : `${message}​`));
-  }
+  }, []);
 
   function remonter() {
     const el = rootRef.current;
@@ -194,11 +196,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     const deja = new Set(existants.map((e) => cle(e.file)));
     const nouveaux: FichierJoint[] = acceptes
       .filter((x) => !deja.has(cle(x)))
-      .map((file) => ({
-        id: `${kind}-${++seq.current}`,
-        file,
-        url: kind === "photos" ? URL.createObjectURL(file) : undefined,
-      }));
+      .map((file) => ({ id: `${kind}-${++seq.current}`, file }));
 
     if (kind === "inventaire") setInventaire((prev) => [...prev, ...nouveaux]);
     else setPhotos((prev) => [...prev, ...nouveaux]);
@@ -212,15 +210,24 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
     const liste = kind === "inventaire" ? inventaire : photos;
     const cible = liste.find((x) => x.id === fid);
     if (!cible) return;
-    if (cible.url) URL.revokeObjectURL(cible.url);
     if (kind === "inventaire") setInventaire((prev) => prev.filter((x) => x.id !== fid));
     else setPhotos((prev) => prev.filter((x) => x.id !== fid));
     setRejet("");
     annoncer(t.fileRemoved(cible.file.name));
   }
 
+  // Rappels stables pour les dépôts (mémorisés) : ils appellent toujours la
+  // dernière version d'ajouter/retirer, qui lit l'état courant.
+  const fichiersRef = useRef({ ajouter, retirer });
+  fichiersRef.current = { ajouter, retirer };
+  const ajouterInventaire = useCallback((l: File[]) => fichiersRef.current.ajouter("inventaire", l), []);
+  const ajouterPhotos = useCallback((l: File[]) => fichiersRef.current.ajouter("photos", l), []);
+  const retirerInventaire = useCallback((fid: string) => fichiersRef.current.retirer("inventaire", fid), []);
+  const retirerPhotos = useCallback((fid: string) => fichiersRef.current.retirer("photos", fid), []);
+  const taille = useCallback((n: number) => formatTaille(n, locale), [locale]);
+
+  // Les aperçus (blob:) sont libérés par les vignettes elles-mêmes, au retrait.
   function toutVider() {
-    photos.forEach((p) => p.url && URL.revokeObjectURL(p.url));
     setInventaire([]);
     setPhotos([]);
     setValues(VIDE);
@@ -325,7 +332,6 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   const loading = status === "loading";
   const choisies = CATEGORIES.filter((c) => c !== "autre" && quantites[c] !== undefined);
   const fichiers = [...inventaire, ...photos];
-  const taille = (n: number) => formatTaille(n, locale);
   const filesErrId = id("fichiers-err");
   const filesDescribedBy = [tropLourd ? filesErrId : "", rejet ? id("rejet") : ""].filter(Boolean).join(" ") || undefined;
 
@@ -452,8 +458,8 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
                 formats={t.dropInventoryFormats}
                 activeText={t.dropActive}
                 files={inventaire}
-                onAdd={(l) => ajouter("inventaire", l)}
-                onRemove={(fid) => retirer("inventaire", fid)}
+                onAdd={ajouterInventaire}
+                onRemove={retirerInventaire}
                 removeLabel={t.removeFile}
                 formatSize={taille}
                 invalid={tropLourd}
@@ -467,8 +473,8 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
                 formats={t.dropPhotosFormats}
                 activeText={t.dropActive}
                 files={photos}
-                onAdd={(l) => ajouter("photos", l)}
-                onRemove={(fid) => retirer("photos", fid)}
+                onAdd={ajouterPhotos}
+                onRemove={retirerPhotos}
                 removeLabel={t.removeFile}
                 formatSize={taille}
                 invalid={tropLourd}

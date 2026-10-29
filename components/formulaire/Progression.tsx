@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Check } from "lucide-react";
 
 type Props = {
@@ -7,8 +8,8 @@ type Props = {
   stepOf: (n: number, total: number) => string;
 };
 
-/** Indicateur d'étapes : trois segments qui se remplissent, étape courante annoncée. */
-export function Progression({ steps, current, label, stepOf }: Props) {
+/** Indicateur d'étapes : trois segments qui se remplissent, étape courante annoncée (mémorisé). */
+export const Progression = memo(function Progression({ steps, current, label, stepOf }: Props) {
   return (
     <div>
       <ol className="tlf-steps" aria-label={label}>
@@ -51,4 +52,4 @@ export function Progression({ steps, current, label, stepOf }: Props) {
       </p>
     </div>
   );
-}
+});

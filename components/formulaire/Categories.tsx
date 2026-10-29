@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { memo, useId, useRef } from "react";
 import {
   Boxes,
   Check,
@@ -104,8 +104,9 @@ function Stepper({
  * Pastilles de catégories (bascule) + liste des quantités avec boutons –/+.
  * La pastille « Autre » ajoute à chaque clic une ligne où le client écrit lui-même
  * le matériel (ex. processeurs, cartes graphiques), avec sa propre quantité.
+ * Mémorisé : rendu de nouveau seulement quand ses quantités ou lignes changent.
  */
-export function Categories({ t, quantites, onChange, autres, onAutresChange, onAnnounce }: Props) {
+export const Categories = memo(function Categories({ t, quantites, onChange, autres, onAutresChange, onAnnounce }: Props) {
   const legendId = useId();
   const listTitleId = useId();
   const seq = useRef(0);
@@ -292,4 +293,4 @@ export function Categories({ t, quantites, onChange, autres, onAutresChange, onA
       )}
     </div>
   );
-}
+});
