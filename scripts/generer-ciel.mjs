@@ -1,6 +1,7 @@
 /**
- * Génère components/accueil/hero/ciel.ts : les vraies étoiles du héros de l'accueil,
- * le ciel de nuit vu de Montréal vers le nord-nord-est (Grande Ourse, Cassiopée).
+ * Génère components/site/ciel/ciel.ts : les vraies étoiles du ciel de nuit vu de
+ * Montréal vers le nord-nord-est (Grande Ourse, Cassiopée), partagées par le héros de
+ * l'accueil (HeroFx.tsx) et celui des pages intérieures (CielEtoiles.tsx).
  *
  * Source : catalogue Yale Bright Star (BSC5), version courte de brettonw.
  * Usage : node scripts/generer-ciel.mjs [chemin/vers/bsc5-short.json]
@@ -8,14 +9,14 @@
  * versionné. Sortie déterministe (même catalogue → même fichier).
  *
  * Projection stéréographique centrée sur la visée (azimut, altitude), sur un cadre
- * de référence LARGEUR × HAUTEUR ; HeroFx.tsx le cadre ensuite en « cover ».
+ * de référence LARGEUR × HAUTEUR ; components/site/ciel/etoiles.ts le cadre ensuite en « cover ».
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SOURCE = "https://raw.githubusercontent.com/brettonw/YaleBrightStarCatalog/master/bsc5-short.json";
-const SORTIE = join(dirname(fileURLToPath(import.meta.url)), "..", "components", "accueil", "hero", "ciel.ts");
+const SORTIE = join(dirname(fileURLToPath(import.meta.url)), "..", "components", "site", "ciel", "ciel.ts");
 
 /** Paramètres (repris tels quels dans ciel.ts) */
 const CIEL = {

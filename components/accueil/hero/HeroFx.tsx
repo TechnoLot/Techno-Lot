@@ -1,7 +1,22 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { CIEL, CONSTELLATIONS, ETOILES, FIGURES } from "./ciel";
+import { CONSTELLATIONS, ETOILES, FIGURES } from "@/components/site/ciel/ciel";
+import {
+  CLASSES,
+  FRICTION,
+  GREEN,
+  N,
+  PUSH,
+  SPRING,
+  STAR_RGB,
+  clamp,
+  creerEtoiles,
+  dessinerEtoiles,
+  peindrePoussiere,
+  placerEtoiles,
+  rayonsPointeur,
+} from "@/components/site/ciel/etoiles";
 
 /**
  * Effets du héros (client) : le vrai ciel de Montréal en deux canvas (poussière
@@ -16,70 +31,22 @@ import { CIEL, CONSTELLATIONS, ETOILES, FIGURES } from "./ciel";
  *   --hero-logo-url, data-fx  image du logo pour les calques masqués (reflet, glitch)
  *   data-glitch (sur le logo), data-pointer, data-warp, data-paused
  *   data-lite  ordinateur ou téléphone lent : canevas en 1x, moins de poussière, sans scintillation
- * Étoiles : catalogue Yale Bright Star projeté depuis Montréal (ciel.ts, généré par
- * scripts/generer-ciel.mjs). Elles restent en place, s'écartent doucement du curseur
- * et reviennent chez elles par un ressort ; les traits de la Grande Ourse et de
- * Cassiopée s'éclairent quand le curseur s'en approche.
+ * Étoiles : catalogue Yale Bright Star projeté depuis Montréal (components/site/ciel/ciel.ts,
+ * généré par scripts/generer-ciel.mjs) ; couleurs, cadrage, poussière et dessin des étoiles
+ * sont partagés avec les pages intérieures (components/site/ciel/etoiles.ts). Elles
+ * restent en place, s'écartent doucement du curseur et reviennent chez elles par un
+ * ressort ; les traits de la Grande Ourse et de Cassiopée s'éclairent quand le curseur
+ * s'en approche.
  */
-
-const TAU = Math.PI * 2;
-const REF_W = CIEL.largeur;
-const REF_H = CIEL.hauteur;
-const N = ETOILES.length / 4;
-
-/** Couleurs des étoiles : les verts de la marque, selon la classe de température du catalogue (froide … chaude) */
-const STAR_RGB = [
-  [52, 211, 153],
-  [94, 203, 51],
-  [94, 203, 51],
-  [139, 233, 95],
-  [170, 245, 130],
-] as const;
-const CLASSES = STAR_RGB.length;
-/** vert de la marque */
-const GREEN = [94, 203, 51] as const;
-
-/** Paliers d'opacité des étoiles : un seul fill par couleur et par palier */
-const TIERS = 32;
-const BUCKETS = CLASSES * (TIERS + 1);
-const FILLS = STAR_RGB.map(([r, g, b]) =>
-  Array.from({ length: TIERS + 1 }, (_, t) => `rgba(${r}, ${g}, ${b}, ${(t / TIERS).toFixed(3)})`),
-);
-
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 /** Mode allégé : en dessous d'environ 40 images/s en moyenne, l'effet se simplifie. */
 const SLOW_FRAME_MS = 25;
 const PERF_SAMPLE = 90;
-const LITE_SHARE = 0.5;
 
-/** Pointeur : poussée douce autour du curseur, ressort de retour, frottement par image */
-const PUSH = 0.25;
-const SPRING = 0.005;
-const FRICTION = 0.9;
 /** Traits des figures : opacité au repos, éclairés, distance d'éclairage (px) */
 const LINE_REST = 0.22;
 const LINE_LIT = 0.5;
 const LINE_NEAR = 120;
-/** Poussière d'étoiles faibles : nombre de points pour un écran 1440×900 */
-const DUST_REF = 1100;
-const DUST_TIERS = 8;
-
-/** Sprite de halo (dégradé radial pré-rendu) pour une couleur d'étoile */
-function haloSprite([r, g, b]: readonly [number, number, number]) {
-  const c = document.createElement("canvas");
-  c.width = 64;
-  c.height = 64;
-  const x = c.getContext("2d");
-  if (x) {
-    const grad = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
-    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-    x.fillStyle = grad;
-    x.fillRect(0, 0, 64, 64);
-  }
-  return c;
-}
 
 export function HeroFx() {
   const fondRef = useRef<HTMLCanvasElement>(null);
@@ -100,10 +67,6 @@ export function HeroFx() {
 
     let w = 0;
     let h = 0;
-    /** cadrage « cover » du cadre de référence */
-    let S = 1;
-    let ox = 0;
-    let oy = 0;
     let pushR = 110;
     let growR = 160;
 
@@ -117,69 +80,19 @@ export function HeroFx() {
 
     /* ───────────── Étoiles : tableaux alloués une fois ───────────── */
 
-    const homeX = new Float32Array(N);
-    const homeY = new Float32Array(N);
-    const px = new Float32Array(N);
-    const py = new Float32Array(N);
-    const vx = new Float32Array(N);
-    const vy = new Float32Array(N);
-    const rad = new Float32Array(N);
-    const base = new Float32Array(N);
+    const etoiles = creerEtoiles();
+    const { homeX, homeY, px, py, vx, vy, fade, phase, freq, tau, tw, cls } = etoiles;
+    /** profondeur (hyperespace) et vitesse de fuite, propres à l'accueil */
     const depth = new Float32Array(N);
-    const fade = new Float32Array(N).fill(1);
-    const phase = new Float32Array(N);
-    const freq = new Float32Array(N);
-    const tau = new Float32Array(N);
     const speed = new Float32Array(N);
-    const tw = new Float32Array(N).fill(1);
-    const cls = new Uint8Array(N);
-    const halo = new Uint8Array(N);
-    const bucket = new Uint16Array(N);
-    const order = new Uint16Array(N);
-    const counts = new Uint16Array(BUCKETS);
-    const starts = new Uint16Array(BUCKETS + 1);
-    const SKIP = 0xffff;
-
     for (let i = 0; i < N; i++) {
-      const mag = ETOILES[i * 4 + 2];
-      const fl = Math.pow(10, -0.4 * (mag - 6));
-      // le vert est moins lumineux que le blanc : étoiles un peu plus grosses et plus opaques
-      rad[i] = 0.45 + 0.3 * Math.pow(fl, 0.38);
-      base[i] = Math.min(1, 0.4 + 0.14 * Math.sqrt(fl));
-      depth[i] = 0.35 + 0.65 * clamp((6 - mag) / 6, 0, 1);
-      cls[i] = clamp(ETOILES[i * 4 + 3], 0, CLASSES - 1);
-      halo[i] = mag < 2.4 ? 1 : 0;
-      phase[i] = Math.random() * TAU;
-      freq[i] = 0.5 + Math.random() * 1.1;
+      depth[i] = 0.35 + 0.65 * clamp((6 - ETOILES[i * 4 + 2]) / 6, 0, 1);
     }
-    const sprites = STAR_RGB.map(haloSprite);
 
     /** éclairage courant des traits, par constellation */
     const lit = new Float32Array(CONSTELLATIONS.length).fill(LINE_REST);
     const trailStyles: string[] = new Array(CLASSES).fill("");
     let trailKey = -1;
-
-    function frame() {
-      S = Math.max(w / REF_W, h / REF_H);
-      // portrait : centré sur x = 0,30 du cadre (Grande Ourse), sans jamais montrer de vide
-      ox = w < h ? clamp(w / 2 - 0.3 * REF_W * S, w - REF_W * S, 0) : (w - REF_W * S) / 2;
-      oy = (h - REF_H * S) / 2;
-    }
-
-    function layoutStars() {
-      for (let i = 0; i < N; i++) {
-        const x = ox + ETOILES[i * 4] * REF_W * S;
-        const y = oy + ETOILES[i * 4 + 1] * REF_H * S;
-        homeX[i] = x;
-        homeY[i] = y;
-        px[i] = x;
-        py[i] = y;
-        vx[i] = 0;
-        vy[i] = 0;
-        // scintillation plus forte près de l'horizon
-        tau[i] = 0.1 + 0.2 * clamp(y / h, 0, 1);
-      }
-    }
 
     /* ───────────── Poussière d'étoiles faibles (canevas statique) ───────────── */
 
@@ -187,35 +100,7 @@ export function HeroFx() {
 
     /** Poussière d'étoiles faibles, répartie uniformément (graine fixe : même ciel à chaque visite). */
     function paintFond() {
-      if (!w) return;
-      const fc = fctx!;
-      fc.setTransform(1, 0, 0, 1, 0, 0);
-      fc.clearRect(0, 0, fond!.width, fond!.height);
-      fc.setTransform(dpr, 0, 0, dpr, 0, 0);
-      let seed = 7;
-      const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-      const count = Math.round(DUST_REF * ((w * h) / (1440 * 900)) * (lite ? LITE_SHARE : 1));
-      const dust = new Float32Array(count * 4);
-      for (let p = 0; p < count; p++) {
-        const a = 0.1 + rnd() * 0.22;
-        dust[p * 4] = rnd() * w;
-        dust[p * 4 + 1] = rnd() * h;
-        dust[p * 4 + 2] = 0.35 + rnd() * 0.3;
-        dust[p * 4 + 3] = Math.min(DUST_TIERS - 1, Math.floor(((a - 0.1) / 0.22) * DUST_TIERS));
-      }
-      for (let t = 0; t < DUST_TIERS; t++) {
-        fc.beginPath();
-        for (let p = 0; p < count; p++) {
-          if (dust[p * 4 + 3] !== t) continue;
-          const x = dust[p * 4];
-          const y = dust[p * 4 + 1];
-          const r = dust[p * 4 + 2];
-          fc.moveTo(x + r, y);
-          fc.arc(x, y, r, 0, TAU);
-        }
-        fc.fillStyle = `rgba(94, 203, 51, ${(0.12 + ((t + 0.5) / DUST_TIERS) * 0.24).toFixed(3)})`;
-        fc.fill();
-      }
+      peindrePoussiere(fctx!, fond!, dpr, w, h, lite);
     }
 
     function resize() {
@@ -232,11 +117,8 @@ export function HeroFx() {
         c.height = Math.round(h * dpr);
       }
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const linkDist = clamp(Math.min(w, h) * 0.15, 90, 150);
-      pushR = Math.max(110, linkDist * 1.05);
-      growR = linkDist * 1.45;
-      frame();
-      layoutStars();
+      ({ pushR, growR } = rayonsPointeur(w, h));
+      placerEtoiles(etoiles, w, h);
       paintFond();
     }
 
@@ -410,60 +292,8 @@ export function HeroFx() {
         }
       }
 
-      // étoiles : tri par couleur et palier d'opacité (tri par dénombrement, sans allocation)
-      counts.fill(0);
-      const G = growR;
-      const G2 = G * G;
-      for (let i = 0; i < N; i++) {
-        const x = px[i];
-        const y = py[i];
-        bucket[i] = SKIP;
-        if (x < -10 || x > w + 10 || y < -10 || y > h + 10) continue;
-        const tier = Math.round(base[i] * tw[i] * fade[i] * TIERS);
-        if (tier <= 0) continue;
-        const b = cls[i] * (TIERS + 1) + tier;
-        bucket[i] = b;
-        counts[b]++;
-      }
-      starts[0] = 0;
-      for (let b = 0; b < BUCKETS; b++) starts[b + 1] = starts[b] + counts[b];
-      for (let i = 0; i < N; i++) {
-        const b = bucket[i];
-        if (b !== SKIP) order[starts[b] + --counts[b]] = i;
-      }
-
-      // halos doux des étoiles brillantes (sprite pré-rendu)
-      for (let i = 0; i < N; i++) {
-        if (!halo[i] || bucket[i] === SKIP) continue;
-        const r = rad[i] * grow(i, G, G2) * 6;
-        c2.globalAlpha = 0.22 * tw[i] * fade[i];
-        c2.drawImage(sprites[cls[i]], px[i] - r, py[i] - r, r * 2, r * 2);
-      }
-      c2.globalAlpha = 1;
-
-      for (let b = 1; b < BUCKETS; b++) {
-        const from = starts[b];
-        const to = starts[b + 1];
-        if (from === to) continue;
-        c2.beginPath();
-        for (let o = from; o < to; o++) {
-          const i = order[o];
-          const r = rad[i] * grow(i, G, G2);
-          c2.moveTo(px[i] + r, py[i]);
-          c2.arc(px[i], py[i], r, 0, TAU);
-        }
-        c2.fillStyle = FILLS[(b / (TIERS + 1)) | 0][b % (TIERS + 1)];
-        c2.fill();
-      }
-    }
-
-    /** léger grossissement près du curseur (×1,5 au plus) */
-    function grow(i: number, G: number, G2: number) {
-      if (!pointer.on) return 1;
-      const dx = px[i] - pointer.x;
-      const dy = py[i] - pointer.y;
-      const d2 = dx * dx + dy * dy;
-      return d2 < G2 ? 1 + 0.5 * (1 - Math.sqrt(d2) / G) : 1;
+      // étoiles : halos des plus brillantes puis disques, groupés par couleur et palier d'opacité
+      dessinerEtoiles(c2, etoiles, w, h, pointer, growR);
     }
 
     /* ───────────── Mouvement réduit : image fixe ───────────── */

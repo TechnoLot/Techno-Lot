@@ -1,6 +1,6 @@
 import Image from "next/image";
 import type { CSSProperties, ReactNode } from "react";
-import { Constellation } from "@/components/site/Constellation";
+import { CielEtoiles } from "@/components/site/CielEtoiles";
 
 export type PageHeroImage =
   | { kind: "object"; src: string; alt?: string; width?: number }
@@ -17,8 +17,8 @@ type PageHeroProps = {
   /** compact : titre et marges réduits (ex. Contact, Soumission) */
   size?: "default" | "compact";
   /**
-   * night (défaut) = bleu nuit de l'ancien héros, lueurs vertes et constellation ;
-   * deep = vert profond, mêmes lueurs ; green / light / sand : anciens aplats (compatibilité).
+   * night (défaut) = ciel de nuit de l'accueil en étoiles vertes ;
+   * deep = vert profond, mêmes étoiles ; green / light / sand : anciens aplats (compatibilité).
    */
   theme?: "night" | "deep" | "green" | "light" | "sand";
   /** Sous le texte (boutons, puces…) */
@@ -30,16 +30,16 @@ type PageHeroProps = {
 const d = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
 
 /**
- * En-tête des pages intérieures, « chapitre » bleu nuit façon ancien héros :
- * lueurs vertes diffuses qui dérivent, constellation légère (canvas, coupée en
- * mouvement réduit), très grand titre Chakra Petch, intro, objet optionnel qui
+ * En-tête des pages intérieures : le ciel de nuit de l'accueil au-dessus de Montréal
+ * en étoiles vertes (CielEtoiles, canvas ; image fixe en mouvement réduit), lueur
+ * verte d'horizon, très grand titre Chakra Petch, intro, objet optionnel qui
  * flotte à droite. Premier bloc de la page : il porte `data-under-header` et
  * gère lui-même l'espace sous l'en-tête fixe (--site-header-h).
  * Entrées en CSS pur (.hero-item) : rien n'est caché en attendant le JavaScript (LCP).
  */
 export function PageHero({ title, intro, image, size = "default", theme = "night", children, breadcrumbs }: PageHeroProps) {
   const compact = size === "compact";
-  const glowing = theme === "night" || theme === "deep";
+  const starry = theme === "night" || theme === "deep";
   const legacyBg = theme === "sand" ? "bg-sand" : "";
 
   return (
@@ -52,11 +52,15 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
           : "pb-20 pt-[calc(var(--site-header-h)+3.5rem)] sm:pb-28 sm:pt-[calc(var(--site-header-h)+5.5rem)] lg:min-h-[min(78svh,760px)]"
       }`}
     >
-      {glowing && (
+      {starry && (
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-          <div className="tl-glow tl-glow-a -left-[18%] -top-[25%] h-[620px] w-[620px] bg-[radial-gradient(circle_at_center,rgba(94,203,51,0.20),transparent_62%)] sm:h-[820px] sm:w-[820px]" />
-          <div className="tl-glow tl-glow-b -bottom-[45%] -right-[12%] h-[620px] w-[620px] bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.14),transparent_62%)] sm:h-[900px] sm:w-[900px]" />
-          <Constellation />
+          {/* Décor, de l'arrière vers l'avant : ciel en dégradé (night ; deep garde son vert),
+              poussière d'étoiles et étoiles (canvas), lueur d'horizon, vignette, voile du texte */}
+          {theme === "night" && <div className="tl-ciel-fond" />}
+          <CielEtoiles />
+          <div className="tl-ciel-horizon" />
+          <div className="tl-ciel-vignette" />
+          <div className="tl-ciel-voile" />
           {/* Fondu bas : le chapitre suivant enchaîne sans filet */}
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-black/20" />
         </div>
