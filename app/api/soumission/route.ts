@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createClient as createSupabaseClient } from "@/lib/supabase/server";
+import { ENTETE_SOUMISSION } from "@/lib/hostinger/config";
 
 export const runtime = "nodejs";
 
@@ -99,9 +100,13 @@ export async function POST(request: Request) {
 
   // Sauvegarde dans Supabase — ne bloque pas l'envoi du courriel en cas d'échec.
   // Note : les pièces jointes ne sont pas stockées ici, seulement leurs noms.
+  // L'id est généré ici : anon peut insérer mais pas relire la ligne.
+  const soumissionId = crypto.randomUUID();
+  let soumissionEnregistree = false;
   try {
     const supabase = createSupabaseClient();
     const { error: dbError } = await supabase.from("soumissions").insert({
+      id: soumissionId,
       nom,
       courriel,
       telephone,
@@ -111,6 +116,8 @@ export async function POST(request: Request) {
     });
     if (dbError) {
       console.error("[soumission] Erreur Supabase :", dbError);
+    } else {
+      soumissionEnregistree = true;
     }
   } catch (err) {
     console.error("[soumission] Erreur Supabase (exception) :", err);
@@ -187,6 +194,10 @@ export async function POST(request: Request) {
       subject: `Nouvelle soumission de ${nom}`,
       html,
       attachments,
+      // Permet de retrouver ce courriel dans la boîte Hostinger (seulement si la demande est en base).
+      ...(soumissionEnregistree
+        ? { headers: { [ENTETE_SOUMISSION]: soumissionId } }
+        : {}),
     });
     if (error) {
       console.error("[soumission] Erreur Resend :", error);

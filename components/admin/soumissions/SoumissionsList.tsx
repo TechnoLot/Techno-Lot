@@ -3,6 +3,7 @@ import { MailOpen, Package, Paperclip, Phone, Plus } from "lucide-react";
 import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
 import MessageApercu from "@/components/admin/soumissions/MessageApercu";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
+import VoirCourriel from "@/components/admin/soumissions/VoirCourriel";
 import { WEBMAIL_URL } from "@/lib/admin/config";
 import { formatCount } from "@/lib/admin/format";
 import { A_TRAITER_JOURS, estATraiter, type Soumission } from "@/lib/admin/soumissions";
@@ -75,7 +76,7 @@ function Etat({ s, now }: { s: Soumission; now: Date }) {
   );
 }
 
-function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
+function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; courrielApi: boolean }) {
   const nouvelle = !s.lotId && now.getTime() - Date.parse(s.date) < NOUVELLE_MS;
   const sousTitre = [s.entreprise, s.ville].filter(Boolean).join(" · ");
 
@@ -148,16 +149,20 @@ function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
 
       <div className="mt-4 flex flex-wrap gap-2">
         {s.courriel && <EcrireHostinger courriel={s.courriel} />}
-        <a
-          href={WEBMAIL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="admin-btn"
-          title="Ouvre ta boîte courriel Hostinger (info@technolot.ca) dans un nouvel onglet"
-        >
-          <MailOpen className="h-3.5 w-3.5" aria-hidden />
-          Ouvrir le courriel
-        </a>
+        {courrielApi ? (
+          <VoirCourriel soumissionId={s.id} nom={s.nom} />
+        ) : (
+          <a
+            href={WEBMAIL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-btn"
+            title="Ouvre ta boîte courriel Hostinger (info@technolot.ca) dans un nouvel onglet"
+          >
+            <MailOpen className="h-3.5 w-3.5" aria-hidden />
+            Ouvrir le courriel
+          </a>
+        )}
         {s.telephone && (
           <a href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`} className="admin-btn">
             <Phone className="h-3.5 w-3.5" aria-hidden />
@@ -183,8 +188,19 @@ function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
   );
 }
 
-/** Liste des soumissions, regroupées par mois, chacune en carte avec ses actions. */
-export default function SoumissionsList({ rows, now }: { rows: Soumission[]; now: Date }) {
+/**
+ * Liste des soumissions, regroupées par mois, chacune en carte avec ses actions.
+ * `courrielApi` : Mail API Hostinger branchée, le courriel reçu s’ouvre dans l’admin.
+ */
+export default function SoumissionsList({
+  rows,
+  now,
+  courrielApi,
+}: {
+  rows: Soumission[];
+  now: Date;
+  courrielApi: boolean;
+}) {
   return (
     <div className="flex flex-col gap-8">
       {parMois(rows).map((groupe) => (
@@ -198,7 +214,7 @@ export default function SoumissionsList({ rows, now }: { rows: Soumission[]; now
           <ul className="flex flex-col gap-3">
             {groupe.rows.map((s) => (
               <li key={s.id}>
-                <SoumissionCard s={s} now={now} />
+                <SoumissionCard s={s} now={now} courrielApi={courrielApi} />
               </li>
             ))}
           </ul>

@@ -5,6 +5,7 @@ import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
 import SoumissionsList from "@/components/admin/soumissions/SoumissionsList";
 import { formatCount } from "@/lib/admin/format";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { pageDepuisParam, paginer, resumePage } from "@/lib/admin/pagination";
 import {
   FILTRES_SOUMISSIONS,
@@ -107,7 +108,11 @@ export default async function SoumissionsPage({
             </div>
           ) : (
             <>
-              <SoumissionsList rows={pagination.items} now={now} />
+              <SoumissionsList
+                rows={pagination.items}
+                now={now}
+                courrielApi={isMailApiConfigured()}
+              />
               <div className="mt-8 flex flex-col items-center gap-2">
                 <Pagination page={pagination.page} pageCount={pagination.pageCount} />
                 <p className="text-[13px] text-admin-muted tabular-nums">
