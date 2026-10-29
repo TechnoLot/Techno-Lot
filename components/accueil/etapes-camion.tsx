@@ -52,6 +52,10 @@ function makeSprites() {
   });
 }
 
+/** Volutes gardées en mémoire pour toute la visite : l'ouverture de l'étape n'a plus à les dessiner. */
+let spriteCache: HTMLCanvasElement[] | null = null;
+const getSprites = () => (spriteCache ??= makeSprites());
+
 /**
  * Étape 3 (copie de VanArrival d'ILR) : la camionnette entre en trombe par la droite, freine fort
  * (fumée sur les pneus arrière, roues floues, le nez plonge), puis se pose avec un léger rebond.
@@ -65,6 +69,14 @@ export function EtapesCamion({ reduce }: { reduce: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const filterId = `van-blur-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
 
+  // volutes préparées au repos, avant la première ouverture (rien à faire en mouvement réduit)
+  useEffect(() => {
+    if (spriteCache || !window.requestIdleCallback) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.requestIdleCallback(() => getSprites());
+    return () => window.cancelIdleCallback(id);
+  }, []);
+
   useEffect(() => {
     const box = boxRef.current;
     const van = vanRef.current;
@@ -73,13 +85,8 @@ export function EtapesCamion({ reduce }: { reduce: boolean }) {
     const stage = box?.closest<HTMLElement>("[data-stage]");
     const ctx = canvas?.getContext("2d");
     if (reduce || !box || !van || !body || !canvas || !stage || !ctx) return;
-    // l'aperçu existe en double (mobile et bureau) : la copie masquée reste garée, sans animation
-    if (!stage.offsetWidth) {
-      van.style.transform = "none";
-      return;
-    }
 
-    const sprites = makeSprites();
+    let sprites: HTMLCanvasElement[] = [];
     const puffs: Puff[] = [];
     let dpr = 1,
       offX = 0,
@@ -105,9 +112,8 @@ export function EtapesCamion({ reduce }: { reduce: boolean }) {
       canvas.height = Math.round((s.height + 80) * dpr);
       startX = s.right - b.left + 12;
     };
-    measure();
 
-    const v0 = startX / (CRUISE + BRAKE / 2);
+    let v0 = 0;
     const stopAt = CRUISE + BRAKE;
     const state = (t: number) => {
       if (t <= 0) return { x: startX, v: v0 };
@@ -204,7 +210,18 @@ export function EtapesCamion({ reduce }: { reduce: boolean }) {
       if (t < stopAt + 1.5 || puffs.length) raf = requestAnimationFrame(frame);
       else body.style.transform = "none";
     };
-    raf = requestAnimationFrame(frame);
+    // mesure et départ à l'image suivante, hors de la tâche du clic : la boucle partait déjà de cette image
+    raf = requestAnimationFrame((now) => {
+      // l'aperçu existe en double (mobile et bureau) : la copie masquée reste garée, sans animation
+      if (!stage.offsetWidth) {
+        van.style.transform = "none";
+        return;
+      }
+      sprites = getSprites();
+      measure();
+      v0 = startX / (CRUISE + BRAKE / 2);
+      frame(now);
+    });
     return () => cancelAnimationFrame(raf);
   }, [reduce, filterId]);
 
