@@ -427,6 +427,8 @@ export function HeroFx() {
     let perfSum = 0;
     /** dernier intervalle entre deux images (ms) : reprise au même rythme après un arrêt au repos */
     let cadence = 0;
+    /** défilement à mesurer (voir onScroll) */
+    let scrollQueued = false;
 
     const canRun = () => started && inView && !document.hidden;
     /** pointeur lissé arrivé : plus aucune écriture de --hx, --hy, --gx, --gy à venir */
@@ -457,7 +459,13 @@ export function HeroFx() {
 
     function loop(now: number) {
       raf = 0;
-      if (!canRun()) return;
+      // défilement en attente : la position est lue avant toute écriture de cette image et
+      // appliquée à la fin (l'hyperespace en tient compte à l'image suivante, comme avant)
+      const p = scrollQueued ? lirePosition() : -1;
+      if (!canRun()) {
+        if (p >= 0) appliquerPosition(p);
+        return;
+      }
       // reprise après un arrêt au repos : même intervalle qu'avant l'arrêt, comme si la boucle avait continué
       if (repos) {
         repos = false;
@@ -491,6 +499,7 @@ export function HeroFx() {
 
       const bouge = step(dt, now / 1000, !lite);
       const peint = draw();
+      if (p >= 0) appliquerPosition(p);
       // Mode allégé (sans scintillation) : quand plus rien ne bouge, les images suivantes seraient
       // identiques ; la boucle s'arrête jusqu'au prochain pointeur, défilement ou retour à l'écran.
       if (lite && !bouge && !peint && warp === 0 && scrollP === 0 && lisse()) {
@@ -551,16 +560,19 @@ export function HeroFx() {
 
     /* ───────────── Défilement : épinglage et hyperespace ───────────── */
 
-    let scrollQueued = false;
     let writtenP = -1;
-    const measure = () => {
+    /** Lecture de la position du héros et du canevas (aucune écriture) ; rend la progression de l'épinglage */
+    const lirePosition = () => {
       scrollQueued = false;
       const r = root.getBoundingClientRect();
       const range = r.height - window.innerHeight;
-      const p = range > 1 ? clamp(-r.top / range, 0, 1) : 0;
       const c = canvas.getBoundingClientRect();
       box.left = c.left;
       box.top = c.top;
+      return range > 1 ? clamp(-r.top / range, 0, 1) : 0;
+    };
+    /** Écritures qui suivent la lecture : --hp et data-warp */
+    const appliquerPosition = (p: number) => {
       scrollP = p;
       if (Math.abs(p - writtenP) > 0.0005 || (p === 0 && writtenP !== 0)) {
         writtenP = p;
@@ -568,13 +580,28 @@ export function HeroFx() {
       }
       if (p > 0.62) root.dataset.warp = "1";
       else delete root.dataset.warp;
+    };
+    const measure = () => {
+      appliquerPosition(lirePosition());
       wake();
     };
-    const onScroll = () => {
-      if (!scrollQueued) {
-        scrollQueued = true;
-        requestAnimationFrame(measure);
+    /**
+     * Mesure demandée : boucle en cours, elle lit la position au début de sa prochaine image,
+     * avant toute écriture ; sinon, une image dédiée (qui passe avant la boucle si celle-ci
+     * repart ensuite).
+     */
+    const demanderMesure = () => {
+      if (scrollQueued) return;
+      scrollQueued = true;
+      if (!raf) {
+        requestAnimationFrame(() => {
+          if (scrollQueued) measure();
+        });
       }
+    };
+    /** défilement : aucune mesure tant que le héros est hors écran */
+    const onScroll = () => {
+      if (inView) demanderMesure();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     measure();
@@ -583,6 +610,9 @@ export function HeroFx() {
 
     const io = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting;
+      // entrée ou sortie de l'écran : une mesure (le défilement hors écran n'en fait plus) ;
+      // à l'entrée, elle passe avant la boucle relancée, comme la mesure du dernier défilement
+      demanderMesure();
       if (inView) {
         delete root.dataset.paused;
         wake();
