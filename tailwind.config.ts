@@ -80,11 +80,21 @@ const siteColors = {
   },
 };
 
+/* Fichiers propres à l'admin : leurs classes sortent du CSS public (inliné dans
+   chaque page du site) et vont dans app/admin/admin.css, généré avec
+   tailwind.admin.config.ts et chargé seulement sous /admin. */
+export const adminContent = [
+  "./app/admin/**/*.{ts,tsx}",
+  "./components/admin/**/*.{ts,tsx}",
+  "./lib/{admin,ads,crm,ebay}/**/*.{ts,tsx}",
+];
+
 const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./lib/**/*.{ts,tsx}",
+    ...adminContent.map((glob) => `!${glob}`),
   ],
   theme: {
     extend: {
