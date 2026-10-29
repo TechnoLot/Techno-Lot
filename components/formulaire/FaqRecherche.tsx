@@ -76,21 +76,28 @@ export function FaqRecherche({ groups, locale }: { groups: FaqGroupe[]; locale: 
   const deferred = useDeferredValue(query);
   const q = deferred.trim();
 
+  // Mots normalisés de chaque question (question, réponse et thème), calculés une
+  // seule fois : une lettre tapée ne retraite plus tout le contenu.
+  const index = useMemo(
+    () => groups.map((g) => g.items.map((it) => normaliser(`${it.question} ${it.answer} ${g.title}`).split(/[^a-z0-9]+/))),
+    [groups],
+  );
+
   const filtres = useMemo(() => {
     const mots = normaliser(q).split(/[^a-z0-9]+/).filter(Boolean);
     return groups
-      .map((g) => ({
+      .map((g, gi) => ({
         ...g,
         items: mots.length
-          ? g.items.filter((it) => {
+          ? g.items.filter((_, ii) => {
               // Début de mot : « donnees » ne trouve pas « coordonnées ».
-              const tokens = normaliser(`${it.question} ${it.answer} ${g.title}`).split(/[^a-z0-9]+/);
+              const tokens = index[gi][ii];
               return mots.every((m) => tokens.some((tok) => tok.startsWith(m)));
             })
           : g.items,
       }))
       .filter((g) => g.items.length > 0);
-  }, [groups, q]);
+  }, [groups, index, q]);
 
   const total = groups.reduce((n, g) => n + g.items.length, 0);
   const trouves = filtres.reduce((n, g) => n + g.items.length, 0);
