@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { ArrowLeft, ArrowRight, CircleAlert, Loader2, Pencil, Send, TriangleAlert } from "lucide-react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { getAttribution, trackEvent } from "@/lib/tracking/attribution";
-import { trackLeadConversion } from "@/components/tracking/AdPixels";
+import { trackLeadConversion } from "@/components/formulaire/conversion";
 import { Categories } from "@/components/formulaire/Categories";
 import { Depot, type FichierJoint } from "@/components/formulaire/Depot";
 import { Progression } from "@/components/formulaire/Progression";
