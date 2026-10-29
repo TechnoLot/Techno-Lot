@@ -92,6 +92,25 @@ function listen() {
   }).observe(document.body);
 }
 
+/* Montage : les blocs montés ensemble sont traités en un seul passage, juste après les
+   effets (microtâche, avant l'affichage) : toutes les positions sont lues, puis les blocs
+   sous la ligne de flottaison sont armés. Jamais d'alternance lecture/écriture. */
+type Mounting = { el: HTMLElement; active: boolean; arm: () => void };
+const mounting: Mounting[] = [];
+
+function armMounted() {
+  const batch = mounting.splice(0).filter((m) => m.active);
+  if (!batch.length) return;
+  const limit = window.innerHeight * 0.92;
+  // Déjà à l'écran (ou au-dessus) : on ne masque rien.
+  batch.filter((m) => m.el.getBoundingClientRect().top >= limit).forEach((m) => m.arm());
+}
+
+function queueMount(m: Mounting) {
+  if (!mounting.length) queueMicrotask(armMounted);
+  mounting.push(m);
+}
+
 /**
  * Révélation au défilement : fondu + montée (transform/opacity, CSS .tl-reveal
  * dans app/site.css), une seule fois.
@@ -108,27 +127,33 @@ export function Reveal({ children, className, delay = 0, y = 28, style }: Reveal
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Déjà à l'écran (ou au-dessus) : on ne masque rien.
-    if (el.getBoundingClientRect().top < window.innerHeight * 0.92) return;
-
-    el.setAttribute("data-armed", "");
-    pending.add(el);
-    listen();
 
     let io: IntersectionObserver | undefined;
-    if (typeof IntersectionObserver !== "undefined") {
-      io = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            reveal(el);
-            io?.disconnect();
-          }
-        },
-        { rootMargin: "0px 0px -5% 0px", threshold: 0.01 },
-      );
-      io.observe(el);
-    }
+    const mount: Mounting = {
+      el,
+      active: true,
+      arm: () => {
+        el.setAttribute("data-armed", "");
+        pending.add(el);
+        listen();
+
+        if (typeof IntersectionObserver !== "undefined") {
+          io = new IntersectionObserver(
+            ([entry]) => {
+              if (entry.isIntersecting) {
+                reveal(el);
+                io?.disconnect();
+              }
+            },
+            { rootMargin: "0px 0px -5% 0px", threshold: 0.01 },
+          );
+          io.observe(el);
+        }
+      },
+    };
+    queueMount(mount);
     return () => {
+      mount.active = false;
       io?.disconnect();
       pending.delete(el);
       places.delete(el);
