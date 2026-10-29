@@ -1,9 +1,11 @@
 /* ------------------------------------------------------------------ */
-/* Héros de l'accueil : l'ancien héros Techno Lot, rendu interactif.   */
+/* Héros de l'accueil : le vrai ciel de nuit au-dessus de Montréal    */
+/* (dégradé, voie lactée, étoiles, lueur verte d'horizon), logo animé. */
 /* Classes préfixées hero-tl-. Variables posées par HeroFx.tsx :       */
 /*   --hx/--hy (pointeur lissé), --gx/--gy (pointeur très lissé),      */
 /*   --hp (progression de l'épinglage), --hero-logo-url.               */
-/* Sans JavaScript, tout reste visible (valeurs par défaut à 0).       */
+/* Sans JavaScript, tout reste visible (valeurs par défaut à 0) et le  */
+/* ciel CSS (dégradé, lueur, vignette, voile) s'affiche déjà.          */
 /* ------------------------------------------------------------------ */
 
 .hero-tl-root {
@@ -29,125 +31,56 @@
   overflow: hidden;
 }
 
-/* ───────────── Décor ───────────── */
+/* ───────────── Décor : le ciel de nuit au-dessus de Montréal ───────────── */
+/* Calques, de l'arrière vers l'avant : ciel (0) → voie lactée, canvas (1) →
+   lueur d'horizon (2) → étoiles, canvas (3) → vignette (4) → voile (5) →
+   grain (6) → fondu (7) → contenu (8) → indicateur de défilement (9). */
 
+/* Ciel en dégradé : visible avant tout JavaScript */
 .hero-tl-bg {
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  z-index: 0;
   pointer-events: none;
+  background: linear-gradient(to bottom, #060a14 0%, #08101d 45%, #0b1422 80%, #0a0f1c 100%);
 }
 
-.hero-tl-grid {
+/* Lueur verte d'horizon (couleur de la marque) : suit lentement le pointeur
+   (parallaxe), respire très lentement et s'estompe un peu pendant l'hyperespace.
+   Le cadre déborde légèrement pour que la parallaxe ne découvre jamais un bord. */
+.hero-tl-airglow {
   position: absolute;
-  inset: 0;
-  opacity: 0.15;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000, transparent);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 45%, #000, transparent);
-}
-
-/* Grandes lueurs vertes : la position suit lentement le curseur (parallaxe),
-   la tache elle-même respire (aurora) et grossit pendant l'hyperespace. */
-.hero-tl-glow {
-  position: absolute;
-  aspect-ratio: 1;
-  translate: calc(var(--gx) * var(--px, 40px)) calc(var(--gy) * var(--py, 30px));
-  scale: calc(1 + var(--hp) * 0.35);
+  inset: -10px -16px;
+  z-index: 2;
+  pointer-events: none;
+  translate: calc(var(--gx) * 14px) calc(var(--gy) * 8px);
+  opacity: calc(1 - var(--hp) * 0.3);
   will-change: translate;
 }
-.hero-tl-glow > span {
+.hero-tl-airglow > span {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 9999px;
-  animation: hero-tl-aurora 16s ease-in-out infinite alternate;
+  background:
+    radial-gradient(ellipse 62% 30% at 26% 100%, rgba(94, 203, 51, 0.22), rgba(94, 203, 51, 0) 72%),
+    radial-gradient(ellipse 55% 26% at 80% 100%, rgba(52, 211, 153, 0.15), rgba(52, 211, 153, 0) 72%),
+    linear-gradient(to bottom, rgba(94, 203, 51, 0) 58%, rgba(94, 203, 51, 0.05) 82%, rgba(94, 203, 51, 0.09) 100%);
+  animation: hero-tl-airglow 18s ease-in-out infinite alternate;
 }
-.hero-tl-glow--a {
-  width: max(460px, 46vw);
-  top: -30%;
-  left: -6%;
-  --px: 54px;
-  --py: 40px;
-}
-.hero-tl-glow--a > span {
-  background: radial-gradient(closest-side, rgba(94, 203, 51, 0.26), rgba(94, 203, 51, 0.12) 50%, rgba(94, 203, 51, 0));
-}
-.hero-tl-glow--b {
-  width: max(400px, 40vw);
-  top: 4%;
-  right: -10%;
-  --px: -42px;
-  --py: -32px;
-}
-.hero-tl-glow--b > span {
-  background: radial-gradient(closest-side, rgba(94, 203, 51, 0.2), rgba(94, 203, 51, 0.08) 50%, rgba(94, 203, 51, 0));
-  animation-delay: -7s;
-}
-.hero-tl-glow--c {
-  width: max(340px, 34vw);
-  bottom: -34%;
-  left: 30%;
-  --px: 26px;
-  --py: -22px;
-}
-.hero-tl-glow--c > span {
-  background: radial-gradient(closest-side, rgba(52, 211, 153, 0.17), rgba(52, 211, 153, 0.06) 50%, rgba(52, 211, 153, 0));
-  animation-delay: -3.5s;
-}
-
-@keyframes hero-tl-aurora {
-  0% {
-    transform: translate3d(-6%, -4%, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(5%, 6%, 0) scale(1.12);
-  }
-  100% {
-    transform: translate3d(-3%, 4%, 0) scale(1.05);
-  }
-}
-
-/* Balayage lumineux diagonal (signature de l'ancien héros, toutes les 14 s) */
-.hero-tl-sweep {
-  position: absolute;
-  top: -50%;
-  left: -60%;
-  width: 40%;
-  height: 220%;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(94, 203, 51, 0.05) 40%,
-    rgba(143, 229, 99, 0.12) 50%,
-    rgba(94, 203, 51, 0.05) 60%,
-    transparent 100%
-  );
-  filter: blur(24px);
-  transform: rotate(20deg);
-  animation: hero-tl-sweep 14s ease-in-out infinite;
-}
-@keyframes hero-tl-sweep {
-  0% {
-    transform: translateX(0) rotate(20deg);
-    opacity: 0;
-  }
-  20%,
-  80% {
+@keyframes hero-tl-airglow {
+  from {
     opacity: 1;
   }
-  100% {
-    transform: translateX(280vw) rotate(20deg);
-    opacity: 0;
+  to {
+    opacity: 0.85;
   }
 }
 
+/* Canvas de HeroFx : voie lactée (statique) et étoiles (animées), en fondu à l'apparition */
 .hero-tl-canvas {
   position: absolute;
   inset: 0;
+  z-index: 3;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -157,11 +90,43 @@
 .hero-tl-canvas.is-on {
   opacity: 1;
 }
+/* Voie lactée : s'efface et s'approche un peu pendant l'hyperespace. L'opacité suit
+   --hp sans transition (le fondu d'apparition passe par une animation). */
+.hero-tl-canvas--voie {
+  z-index: 1;
+  transition: none;
+  transform: scale(calc(1 + var(--hp) * 0.06));
+  transform-origin: 50% 45%;
+  will-change: transform;
+}
+.hero-tl-canvas--voie.is-on {
+  opacity: calc(1 - var(--hp) * 0.45);
+  animation: hero-tl-fade 1.4s ease backwards;
+}
+
+/* Vignette : bords du ciel assombris */
+.hero-tl-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 45%, rgba(4, 7, 14, 0) 55%, rgba(4, 7, 14, 0.5) 100%);
+}
+
+/* Voile derrière le texte : lisibilité au-dessus de la voie lactée */
+.hero-tl-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(ellipse 34% 32% at 50% 56%, rgba(8, 12, 22, 0.5), rgba(8, 12, 22, 0) 100%);
+}
 
 /* Grain argentique très discret */
 .hero-tl-grain {
   position: absolute;
   inset: 0;
+  z-index: 6;
   pointer-events: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   background-size: 240px;
@@ -174,7 +139,7 @@
 .hero-tl-fondu {
   position: absolute;
   inset: auto 0 0 0;
-  z-index: 1;
+  z-index: 7;
   height: 9rem;
   pointer-events: none;
   background: linear-gradient(to bottom, rgba(10, 15, 28, 0), rgba(10, 15, 28, 0.75) 60%, #0a0f1c);
@@ -184,7 +149,7 @@
 
 .hero-tl-stage {
   position: relative;
-  z-index: 2;
+  z-index: 8;
   display: flex;
   height: 100%;
   align-items: center;
@@ -616,7 +581,7 @@
   position: absolute;
   bottom: 1.25rem;
   left: 50%;
-  z-index: 3;
+  z-index: 9;
   transform: translateX(-50%);
   color: #64748b;
   opacity: calc(1 - var(--hp) * 5);
@@ -668,21 +633,19 @@
 }
 
 /* Hors écran : animations décoratives en pause */
-.hero-tl-root[data-paused] .hero-tl-glow > span,
-.hero-tl-root[data-paused] .hero-tl-sweep,
+.hero-tl-root[data-paused] .hero-tl-airglow > span,
 .hero-tl-root[data-paused] .hero-tl-sheen-sweep,
 .hero-tl-root[data-paused] .hero-tl-cta-halo,
 .hero-tl-root[data-paused] .hero-tl-chevron {
   animation-play-state: paused;
 }
 
-/* Appareil lent (data-lite posé par HeroFx) : on retire les couches les plus coûteuses
-   (grain en mode de fusion, balayage flou) et les lueurs ne respirent plus. */
-.hero-tl-root[data-lite] .hero-tl-grain,
-.hero-tl-root[data-lite] .hero-tl-sweep {
+/* Appareil lent (data-lite posé par HeroFx) : on retire le grain (fusion de calques
+   sur tout l'écran) et la lueur d'horizon ne respire plus. */
+.hero-tl-root[data-lite] .hero-tl-grain {
   display: none;
 }
-.hero-tl-root[data-lite] .hero-tl-glow > span {
+.hero-tl-root[data-lite] .hero-tl-airglow > span {
   animation: none;
 }
 
@@ -759,9 +722,8 @@
     transform: none;
     opacity: 1;
   }
-  .hero-tl-glow {
+  .hero-tl-airglow {
     translate: none;
-    scale: none;
   }
   .hero-tl-scroll {
     opacity: 1;

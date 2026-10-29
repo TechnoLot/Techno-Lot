@@ -19,11 +19,13 @@ const WORD_STEP = 0.07;
 const delay = (s: number) => ({ "--hero-tl-d": `${s.toFixed(2)}s` }) as CSSProperties;
 
 /**
- * Héros de l'accueil : l'ancien héros Techno Lot (bleu nuit, lueurs vertes,
- * constellation, logo empilé, « Vos lots informatiques ont de la valeur »),
- * rendu interactif. Composant serveur : tout le texte est dans le HTML et les
- * entrées sont en keyframes CSS ; HeroFx (client) ajoute ensuite les effets
- * (particules, parallaxe, inclinaison et glitch du logo, épinglage « hyperespace »).
+ * Héros de l'accueil : le vrai ciel de nuit au-dessus de Montréal (Grande Ourse,
+ * Cassiopée, voie lactée, lueur verte d'horizon) derrière le logo empilé et
+ * « Vos lots informatiques ont de la valeur ». Composant serveur : tout le texte
+ * est dans le HTML, les entrées sont en keyframes CSS et le décor CSS (ciel, lueur,
+ * vignette, voile) s'affiche sans JavaScript ; HeroFx (client) ajoute ensuite les
+ * étoiles et la voie lactée en canvas, la parallaxe, l'inclinaison et le glitch du
+ * logo, et l'épinglage « hyperespace ».
  */
 export function Hero({ locale }: { locale: Locale }) {
   const t = getDict(locale).hero;
@@ -44,24 +46,18 @@ export function Hero({ locale }: { locale: Locale }) {
       className="hero-tl-root relative bg-night-900 text-white"
     >
       <div className="hero-tl-sticky">
-        {/* Décor : grille fine, grandes lueurs vertes en diagonale, balayage lumineux */}
-        <div aria-hidden="true" className="hero-tl-bg">
-          <div className="hero-tl-grid" />
-          <div className="hero-tl-glow hero-tl-glow--a">
-            <span />
-          </div>
-          <div className="hero-tl-glow hero-tl-glow--b">
-            <span />
-          </div>
-          <div className="hero-tl-glow hero-tl-glow--c">
-            <span />
-          </div>
-          <div className="hero-tl-sweep" />
+        {/* Décor, de l'arrière vers l'avant (z-index dans hero.css) : ciel en dégradé,
+            voie lactée (canvas), lueur verte d'horizon, étoiles (canvas), vignette, voile */}
+        <div aria-hidden="true" className="hero-tl-bg" />
+        <div aria-hidden="true" className="hero-tl-airglow">
+          <span />
         </div>
 
-        {/* Constellation de particules (canvas, démarré après la première peinture) */}
+        {/* Voie lactée et étoiles (deux canvas, démarrés après la première peinture) */}
         <HeroFx />
 
+        <div aria-hidden="true" className="hero-tl-vignette" />
+        <div aria-hidden="true" className="hero-tl-scrim" />
         <div aria-hidden="true" className="hero-tl-grain" />
         {/* Bas du héros fondu dans le bleu nuit : raccord invisible avec le chapitre suivant */}
         <div aria-hidden="true" className="hero-tl-fondu" />
