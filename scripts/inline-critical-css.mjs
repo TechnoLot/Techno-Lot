@@ -7,8 +7,15 @@
  * ~7 Ko compressé), l'injecter directement dans le HTML supprime cette
  * requête bloquante et améliore FCP et LCP.
  *
- * À l'hydratation, React ré-insère le <link> (ressource « float ») de façon
- * non bloquante ; les règles étant identiques, aucun changement visuel.
+ * La balise <link> d'origine reste après le CSS inliné, mais désactivée
+ * (attribut disabled) : le navigateur ne la télécharge pas et ne l'applique
+ * pas. React (feuilles avec « precedence ») la retrouve à l'hydratation par
+ * link[rel="stylesheet"][href=…] : il ne retélécharge plus la feuille et ne
+ * la réinsère plus (avant : les 4 feuilles étaient redemandées après le JS).
+ * Rendue par le serveur, elle est tenue pour chargée : aucune navigation
+ * n'attend son chargement. Les feuilles d'une autre page, chargées à la
+ * navigation, s'insèrent après la dernière balise data-precedence, donc
+ * après tout le CSS inliné (même ordre de cascade qu'avec les <link>).
  *
  * Exécuté automatiquement après chaque build via le script npm "postbuild".
  */
@@ -64,9 +71,11 @@ for (const file of htmlDirs.flatMap((d) => [...walk(d)])) {
   let changed = false;
   const out = html.replace(linkRe, (match, href) => {
     const css = cssByHref[href];
-    if (!css) return match;
+    // Déjà traitée (2e passage, ex. "prestart") : on n'inline pas deux fois.
+    if (!css || /\sdisabled[\s=/>]/.test(match)) return match;
     changed = true;
-    return `<style data-href="${href}">${css}</style>`;
+    const lienDesactive = match.replace(/\s*\/?>$/, ' disabled=""/>');
+    return `<style data-href="${href}">${css}</style>${lienDesactive}`;
   });
   if (changed) {
     writeFileSync(file, out);
