@@ -696,7 +696,14 @@ export function sanitizeArticleHtml(
         const src = (getAttr(attrs, "src") ?? "").trim();
         if (!/^https:\/\//i.test(src)) return "";
         const alt = getAttr(attrs, "alt") ?? "";
-        return `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" loading="lazy" decoding="async">`;
+        // Dimensions fournies par Soro : gardées pour réserver la place (CSS : width 100 %, height auto)
+        const dims = (["width", "height"] as const)
+          .map((k) => {
+            const v = getAttr(attrs, k);
+            return v && /^\d{1,5}$/.test(v) ? ` ${k}="${v}"` : "";
+          })
+          .join("");
+        return `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}"${dims} loading="lazy" decoding="async">`;
       }
       if (tag === "th" || tag === "td") {
         const span = getAttr(attrs, "colspan");
