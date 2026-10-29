@@ -16,7 +16,11 @@ type LangSwitcherProps = {
   tone?: "default" | "onDark" | "onGreen";
 };
 
-/** Sélecteur FR / EN en pilule — conserve la page courante. */
+/**
+ * Sélecteur FR / EN en pilule — conserve la page courante. Sur écran tactile, chaque
+ * langue reçoit une zone de toucher de 44 px (tl-hit, app/site.css) : FR s'étend à
+ * gauche, EN à droite, et les deux se rejoignent au milieu de l'écart de 2 px.
+ */
 export function LangSwitcher({ currentLocale, label, tone = "default" }: LangSwitcherProps) {
   const pathname = usePathname() ?? "/";
 
@@ -45,9 +49,9 @@ export function LangSwitcher({ currentLocale, label, tone = "default" }: LangSwi
           hrefLang={locale === "fr" ? "fr-CA" : "en-CA"}
           lang={locale === "fr" ? "fr-CA" : "en-CA"}
           aria-current={locale === currentLocale ? "true" : undefined}
-          className={`rounded-full px-2.5 py-1 font-display text-xs font-bold uppercase tracking-wide transition-colors ${
+          className={`tl-hit rounded-full px-2.5 py-1 font-display text-xs font-bold uppercase tracking-wide transition-colors ${
             locale === currentLocale ? active : idle
-          }`}
+          } ${locale === locales[0] ? "[--hit:-10px_-1px_-14px_-9px]" : "[--hit:-10px_-9px_-14px_-1px]"}`}
         >
           {locale}
         </Link>

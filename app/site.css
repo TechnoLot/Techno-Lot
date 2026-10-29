@@ -720,6 +720,26 @@ header[data-paused] .tl-logo-halo {
 }
 
 /* ------------------------------------------------------------------ */
+/* Zones de toucher (écrans tactiles seulement)                         */
+/* Un pseudo-élément transparent agrandit la zone active d'un petit     */
+/* lien sans rien changer au rendu ; --hit donne l'inset (négatif) de   */
+/* chaque côté. Deux liens voisins s'arrêtent au milieu de l'écart qui  */
+/* les sépare : un toucher ne peut pas tomber sur le mauvais lien.      */
+/* Pas sur ordinateur : le survol à la souris garde sa zone d'origine.  */
+/* ------------------------------------------------------------------ */
+
+@media (pointer: coarse) {
+  .tl-hit {
+    position: relative;
+  }
+  .tl-hit::after {
+    content: "";
+    position: absolute;
+    inset: var(--hit, 0);
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Mouvement réduit                                                    */
 /* (app/globals.css raccourcit déjà toutes les animations)             */
 /* ------------------------------------------------------------------ */

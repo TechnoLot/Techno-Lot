@@ -37,6 +37,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
   ];
 
   const smallLink = "transition-colors duration-200 hover:text-[#6bd63b]";
+  // Zones de toucher agrandies sur écran tactile (tl-hit, app/site.css) : --hit = inset du pseudo-élément, compté
+  // depuis l'intérieur de la bordure ; jamais plus de la moitié de l'écart avec le lien voisin (listes : gap-y-2.5 → 5 px, gap-x-6 → 12 px).
+  const hitList = "tl-hit [--hit:-5px_-12px]";
 
   // Liens en chemins complets : on ne garde que les pages du registre qui existent dans cette langue.
   const inRegistry = (href: string) => {
@@ -59,7 +62,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8 lg:gap-y-10">
           {/* Marque */}
           <div className="sm:col-span-2 lg:col-span-4">
-            <Link href={lp("/")} aria-label={t.header.logoAria} className="inline-block rounded-md transition-opacity hover:opacity-90">
+            <Link href={lp("/")} aria-label={t.header.logoAria} className="tl-hit inline-block rounded-md transition-opacity hover:opacity-90 [--hit:-5px_0px]">
               <Logo variant="fonce" layout="horizontal" height={34} />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-moss">{f.slogan}</p>
@@ -68,7 +71,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t.footer.facebook}
-              className="mt-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-line-strong text-mist transition-colors duration-200 hover:border-[#6bd63b] hover:bg-[#6bd63b] hover:text-ink"
+              className="tl-hit mt-5 inline-flex h-10 w-10 items-center justify-center rounded-full border border-line-strong text-mist transition-colors duration-200 hover:border-[#6bd63b] hover:bg-[#6bd63b] hover:text-ink [--hit:-3px]"
             >
               <Facebook className="h-[18px] w-[18px]" aria-hidden="true" />
             </a>
@@ -79,7 +82,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             <ul className="grid grid-cols-2 gap-x-6 gap-y-2.5 font-display text-[15px] font-medium text-white/85">
               {navLinks.map((item) => (
                 <li key={item.href}>
-                  <Link href={lp(item.href)} className={smallLink}>
+                  <Link href={lp(item.href)} className={`${smallLink} ${hitList}`}>
                     {item.label}
                   </Link>
                 </li>
@@ -95,7 +98,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 <a
                   href={site.phoneHref}
                   aria-label={`${f.callAria} ${site.phone}`}
-                  className={`inline-flex items-center gap-2.5 font-display text-xl font-bold tracking-tight text-white ${smallLink}`}
+                  className={`tl-hit inline-flex items-center gap-2.5 font-display text-xl font-bold tracking-tight text-white [--hit:-10px_-12px_-6px] ${smallLink}`}
                 >
                   <Phone className="h-4 w-4 text-[#6bd63b]" aria-hidden="true" />
                   {site.phone}
@@ -105,7 +108,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 <a
                   href={`mailto:${site.email}`}
                   aria-label={`${f.emailAria} ${site.email}`}
-                  className={`inline-flex items-center gap-2.5 text-base font-medium text-white/85 ${smallLink}`}
+                  className={`tl-hit inline-flex items-center gap-2.5 text-base font-medium text-white/85 [--hit:-6px_-12px_-14px] ${smallLink}`}
                 >
                   <Mail className="h-4 w-4 text-[#6bd63b]" aria-hidden="true" />
                   {site.email}
@@ -135,7 +138,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 <ul className={`mt-4 ${list} font-display text-[15px] font-medium text-white/85`}>
                   {col.links.map((item) => (
                     <li key={item.href}>
-                      <LienIntention href={item.href} className={smallLink}>
+                      <LienIntention href={item.href} className={`${smallLink} ${hitList}`}>
                         {item.label}
                       </LienIntention>
                     </li>
@@ -150,11 +153,11 @@ export function SiteFooter({ locale }: { locale: Locale }) {
         <div className="mt-12 flex flex-col gap-4 border-t border-line pt-6 text-xs text-moss sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <p>{t.footer.copyright}</p>
-            <Link href={t.footer.privacyHref} className={`underline-offset-4 hover:underline ${smallLink}`}>
+            <Link href={t.footer.privacyHref} className={`tl-hit underline-offset-4 hover:underline [--hit:-20px_-12px_-8px] ${smallLink}`}>
               {t.footer.privacy}
             </Link>
           </div>
-          <a href="#top" className={`group inline-flex items-center gap-2 font-display font-semibold uppercase tracking-[0.1em] text-mist ${smallLink}`}>
+          <a href="#top" className={`tl-hit group inline-flex items-center gap-2 font-display font-semibold uppercase tracking-[0.1em] text-mist [--hit:-6px_0px] ${smallLink}`}>
             {f.backToTop}
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line-strong transition-transform duration-300 group-hover:-translate-y-0.5">
               <ArrowUp className="h-4 w-4" aria-hidden="true" />
