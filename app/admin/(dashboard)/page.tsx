@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
 import type { Lot } from "@/lib/admin/types";
-import { bornesPeriode, parsePeriode } from "@/lib/admin/periodes";
+import {
+  bornesPeriode,
+  legendeDates,
+  nomAnneeFiscale,
+  parsePeriode,
+  periodePrecedente,
+} from "@/lib/admin/periodes";
+import { mouvementsParJour, serieEvolution } from "@/lib/admin/evolution";
 import { pageDepuisParam, paginer } from "@/lib/admin/pagination";
 import { fusionnerVentes, type LotVendu, type VenteManuelle } from "@/lib/admin/dernieres-ventes";
 import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
@@ -30,6 +37,7 @@ const SOUMISSIONS_PAR_PAGE = 10;
 const NB_VENTES = 8;
 
 type Sale = { sale_price: number | string; sold_at: string };
+type LotPeriode = Pick<Lot, "purchase_price" | "sale_price" | "purchased_at">;
 type SupabaseServer = ReturnType<typeof createClient>;
 
 /** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
@@ -59,6 +67,22 @@ async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
   return count;
 }
 
+/** Mouvements par jour (lots, ventes manuelles, eBay) de la période de comparaison du graphique. */
+async function mouvementsPeriode(supabase: SupabaseServer, from: string, to: string) {
+  const [{ data: lots }, { data: ventes }, ebay] = await Promise.all([
+    supabase
+      .from("lots")
+      .select("purchase_price, sale_price, purchased_at")
+      .gte("purchased_at", from)
+      .lte("purchased_at", to),
+    supabase.from("sales").select("sale_price, sold_at").gte("sold_at", from).lte("sold_at", to),
+    getEbayOrderRows(from, to, ["created_at", "total", "refunded", "fees", "cancelled", "payment_status"]).catch(
+      () => [],
+    ),
+  ]);
+  return mouvementsParJour((lots ?? []) as LotPeriode[], (ventes ?? []) as Sale[], ebay);
+}
+
 export default async function AccueilPage({
   searchParams,
 }: {
@@ -81,9 +105,11 @@ export default async function AccueilPage({
   );
   const periode = CHIFFRES_OPTIONS.includes(choix) ? choix : "mois";
   const { from, to } = bornesPeriode(periode, todayIso);
+  // Graphique : même portion de la période précédente (aucune pour « Tout » ni un seul jour)
+  const precedente = from && to && from !== to ? periodePrecedente(periode, todayIso) : null;
 
   // Lots achetés dans la période (purchased_at) + ventes manuelles (sold_at)
-  let lotsQuery = supabase.from("lots").select("purchase_price, sale_price");
+  let lotsQuery = supabase.from("lots").select("purchase_price, sale_price, purchased_at");
   if (from) lotsQuery = lotsQuery.gte("purchased_at", from);
   if (to) lotsQuery = lotsQuery.lte("purchased_at", to);
 
@@ -109,6 +135,7 @@ export default async function AccueilPage({
     pubs,
     ebayRecentRows,
     pubsSync,
+    joursPrecedents,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
@@ -153,6 +180,7 @@ export default async function AccueilPage({
       "payment_status",
     ]).catch(() => []),
     getAdsSyncState(supabase).catch(() => undefined),
+    precedente ? mouvementsPeriode(supabase, precedente.from, precedente.to).catch(() => null) : null,
   ]);
 
   const ebayAujourdhui = sumEbayOrders(
@@ -164,16 +192,28 @@ export default async function AccueilPage({
 
   let achats = 0;
   let ventesLots = 0;
-  const lotsPeriode = (lotsRaw ?? []) as Pick<Lot, "purchase_price" | "sale_price">[];
+  const lotsPeriode = (lotsRaw ?? []) as LotPeriode[];
   for (const l of lotsPeriode) {
     achats += Number(l.purchase_price);
     if (l.sale_price != null) ventesLots += Number(l.sale_price);
   }
+  const ventesPeriode = (salesRaw ?? []) as Sale[];
   let ventesManuelles = 0;
-  for (const s of (salesRaw ?? []) as Sale[]) ventesManuelles += Number(s.sale_price);
+  for (const s of ventesPeriode) ventesManuelles += Number(s.sale_price);
   const ventesEbay = ebay.revenue;
   const ventes = ventesLots + ventesManuelles + ventesEbay;
   const profit = ventes - achats - (ebay.fees ?? 0);
+
+  // Graphique « Évolution » : le même profit, jour après jour
+  const evolution = serieEvolution(
+    from,
+    to ?? todayIso,
+    mouvementsParJour(lotsPeriode, ventesPeriode, ebay.rows),
+    precedente && joursPrecedents ? { ...precedente, jours: joursPrecedents } : null,
+  );
+  const dates = legendeDates(from, to);
+  const legende =
+    periode === "annee" ? `Année fiscale ${nomAnneeFiscale(todayIso)} · ${dates.charAt(0).toLowerCase()}${dates.slice(1)}` : dates;
 
   const dernieresVentes = fusionnerVentes(
     ebayRecentes,
@@ -245,6 +285,8 @@ export default async function AccueilPage({
 
         <ChiffresTiles
           periode={periode}
+          legende={legende}
+          evolution={evolution}
           data={{
             ventes,
             ventesLots,

@@ -166,22 +166,33 @@ export async function getEbayOrdersPage(
 
 /**
  * Totaux des ventes eBay d'une période, pour les tuiles « Ventes » et
- * « Profit » du tableau de bord. Jours inclusifs « YYYY-MM-DD » à l'heure de
- * Toronto ; null = sans borne.
+ * « Profit » du tableau de bord, avec les commandes elles-mêmes (graphique
+ * « Évolution »). Jours inclusifs « YYYY-MM-DD » à l'heure de Toronto ;
+ * null = sans borne.
  *
  * Lit la table `ebay_orders` (remplie par POST /api/admin/ebay-sync).
  * Les commandes annulées ou entièrement remboursées ne comptent pas.
  */
-export async function getEbayTotals(from: string | null, to: string | null): Promise<EbayTotals> {
+export async function getEbayTotals(
+  from: string | null,
+  to: string | null,
+): Promise<EbayTotals & { rows: Array<EbayCountable & { created_at: string }> }> {
   const configured = isEbayConfigured();
   try {
     const [rows, status] = await Promise.all([
-      getEbayOrderRows<keyof EbayCountable>(from, to, ["total", "refunded", "fees", "cancelled", "payment_status"]),
+      getEbayOrderRows<keyof EbayCountable | "created_at">(from, to, [
+        "created_at",
+        "total",
+        "refunded",
+        "fees",
+        "cancelled",
+        "payment_status",
+      ]),
       getEbaySyncStatus(),
     ]);
     const sums = sumEbayOrders(rows);
-    return { configured, revenue: sums.revenue, fees: sums.fees, orders: sums.orders, lastSync: status.lastSync };
+    return { configured, revenue: sums.revenue, fees: sums.fees, orders: sums.orders, lastSync: status.lastSync, rows };
   } catch {
-    return { configured, revenue: 0, fees: null, orders: 0, lastSync: null };
+    return { configured, revenue: 0, fees: null, orders: 0, lastSync: null, rows: [] };
   }
 }

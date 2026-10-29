@@ -6,7 +6,7 @@ import PeriodeSelect from "@/components/admin/PeriodeSelect";
 import Pagination from "@/components/admin/Pagination";
 import { formatCount, formatMoney } from "@/lib/admin/format";
 import { resumePage } from "@/lib/admin/pagination";
-import { libellePeriode, type PeriodeKey } from "@/lib/admin/periodes";
+import { legendeDates, libellePeriode, libellePrecedente, type PeriodeKey } from "@/lib/admin/periodes";
 import { ebayOrderStatus, type EbayOrderRow, type EbayRevenuePoint, type EbaySums } from "@/lib/ebay/totaux";
 import type { EbaySyncStatus } from "@/lib/ebay/ventes";
 
@@ -27,50 +27,9 @@ const dateFmt = new Intl.DateTimeFormat("fr-CA", {
   year: "numeric",
 });
 
-// Jours « YYYY-MM-DD » sans heure : formatés en UTC pour éviter tout décalage.
-const jourCourtFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", day: "numeric", month: "short" });
-const jourAnneeFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" });
-const jourLongFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
-
-function jourUtc(day: string): Date {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-}
-
-/** « Du 30 sept. au 29 oct. 2026 », « Jeudi 29 octobre » ou « Depuis le début ». */
-function legendeDates(from: string | null, to: string | null): string {
-  if (!from || !to) return "Depuis le début";
-  if (from === to) {
-    const s = jourLongFmt.format(jourUtc(from));
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-  const debut = from.slice(0, 4) === to.slice(0, 4) ? jourCourtFmt.format(jourUtc(from)) : jourAnneeFmt.format(jourUtc(from));
-  return `Du ${debut} au ${jourAnneeFmt.format(jourUtc(to))}`;
-}
-
-/** Libellé de la période de comparaison ; null s'il n'y en a pas. */
-function vsPrecedente(periode: PeriodeKey): string | null {
-  switch (periode) {
-    case "aujourdhui":
-      return "vs la veille";
-    case "hier":
-      return "vs avant-hier";
-    case "semaine":
-      return "vs la semaine d’avant";
-    case "7j":
-      return "vs les 7 jours d’avant";
-    case "30j":
-      return "vs les 30 jours d’avant";
-    case "90j":
-      return "vs les 90 jours d’avant";
-    default:
-      return null;
-  }
-}
-
 /** Sous-ligne de la tuile « Ventes » : variation vs la période précédente. */
 function variation(periode: PeriodeKey, revenue: number, prev: number | null): string | null {
-  const vs = vsPrecedente(periode);
+  const vs = libellePrecedente(periode);
   if (prev == null || !vs) return null;
   if (prev === 0) return "Rien la période d’avant";
   const pct = Math.round(((revenue - prev) / prev) * 100);

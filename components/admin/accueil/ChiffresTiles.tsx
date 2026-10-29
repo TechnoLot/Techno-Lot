@@ -3,8 +3,10 @@ import { ArrowRight } from "lucide-react";
 import PeriodeSelect from "@/components/admin/PeriodeSelect";
 import { formatMoney } from "@/lib/admin/format";
 import type { PeriodeKey } from "@/lib/admin/periodes";
+import type { SerieEvolution } from "@/lib/admin/evolution";
 import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
 import AdsAutoSync from "@/components/admin/ads/AdsAutoSync";
+import ChiffresGraphique from "@/components/admin/accueil/ChiffresGraphique";
 
 export type Chiffres = {
   /** Ventes totales = lots + ventes manuelles + eBay */
@@ -29,24 +31,36 @@ export type Chiffres = {
 /** Périodes proposées sur l'accueil (paramètre d'URL `periode`). */
 export const CHIFFRES_OPTIONS: PeriodeKey[] = ["hier", "semaine", "7j", "30j", "mois", "moisdernier", "annee", "tout"];
 
-/** « Chiffres » : 3 grands nombres (Ventes, Profit, Pubs) et le sélecteur de période. */
+/**
+ * « Chiffres » : 3 grands nombres (Ventes, Profit, Pubs), le sélecteur de
+ * période et le graphique « Évolution » du profit.
+ */
 export default function ChiffresTiles({
   periode,
+  legende,
+  evolution,
   data,
 }: {
   periode: PeriodeKey;
+  /** Dates de la période (« Année fiscale 2026-2027 · du 1er avr. au 29 oct. 2026 ») */
+  legende: string;
+  /** Série du graphique ; null quand la période tient en un jour */
+  evolution: SerieEvolution | null;
   data: Chiffres;
 }) {
   const profitNegatif = data.profit < 0;
   return (
     <section aria-labelledby="chiffres-titre">
       <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <h2
-          id="chiffres-titre"
-          className="font-display text-lg font-semibold tracking-tight text-admin-ink"
-        >
-          Chiffres
-        </h2>
+        <div className="min-w-0">
+          <h2
+            id="chiffres-titre"
+            className="font-display text-lg font-semibold tracking-tight text-admin-ink"
+          >
+            Chiffres
+          </h2>
+          <p className="mt-0.5 text-[13px] text-admin-muted">{legende}</p>
+        </div>
         <div className="min-w-0 max-w-full">
           <PeriodeSelect current={periode} options={CHIFFRES_OPTIONS} />
         </div>
@@ -104,6 +118,8 @@ export default function ChiffresTiles({
           </div>
         )}
       </div>
+
+      <ChiffresGraphique periode={periode} serie={evolution} />
     </section>
   );
 }
