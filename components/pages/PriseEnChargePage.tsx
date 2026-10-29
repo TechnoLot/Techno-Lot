@@ -145,7 +145,7 @@ export default function PriseEnChargePage({ locale }: { locale: Locale }) {
           </>
         }
         intro={t.intro}
-        image={{ kind: "object", src: "/images/camion/camion-techno-lot.webp", alt: t.heroAlt, width: 100 }}
+        image={{ kind: "object", src: "/images/camion/camion-techno-lot.webp", natural: { width: 1200, height: 497 }, alt: t.heroAlt, width: 100 }}
         breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Full-service pickup" : "Prise en charge"} frPath="/prise-en-charge-complete" />}
       >
         <div className="mt-8 flex flex-wrap items-center gap-3">

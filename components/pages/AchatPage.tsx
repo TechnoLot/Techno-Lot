@@ -201,7 +201,7 @@ export default function AchatPage({ locale }: { locale: Locale }) {
       <PageHero
         title={t.title}
         intro={t.intro}
-        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", alt: t.heroAlt, width: 86 }}
+        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", natural: { width: 546, height: 298 }, alt: t.heroAlt, width: 86 }}
         breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "What we buy" : "Ce que nous rachetons"} frPath="/achat-de-lot-description" />}
       >
         <div className="mt-8">

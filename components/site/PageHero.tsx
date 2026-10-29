@@ -3,7 +3,15 @@ import type { CSSProperties, ReactNode } from "react";
 import { CielEtoiles } from "@/components/site/CielEtoiles";
 
 export type PageHeroImage =
-  | { kind: "object"; src: string; alt?: string; width?: number }
+  | {
+      kind: "object";
+      src: string;
+      alt?: string;
+      /** largeur de l'objet dans sa boîte carrée, en % (78 par défaut) */
+      width?: number;
+      /** dimensions réelles du fichier : la place réservée avant le chargement a déjà le bon ratio (sinon carrée) */
+      natural?: { width: number; height: number };
+    }
   | { kind: "photo"; src: string; alt?: string }
   | { kind: "logo"; alt?: string };
 
@@ -120,8 +128,8 @@ export function PageHero({ title, intro, image, size = "default", theme = "night
                   <Image
                     src={image.src}
                     alt={image.alt ?? ""}
-                    width={560}
-                    height={560}
+                    width={image.natural?.width ?? 560}
+                    height={image.natural?.height ?? 560}
                     priority
                     sizes="(max-width: 1024px) 70vw, 420px"
                     className="h-auto w-full drop-shadow-[0_28px_30px_rgba(0,0,0,0.5)]"

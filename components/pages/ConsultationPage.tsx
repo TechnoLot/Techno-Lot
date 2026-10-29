@@ -143,7 +143,7 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
       <PageHero
         title={t.title}
         intro={t.intro}
-        image={{ kind: "object", src: "/images/services/soumission.webp", alt: t.heroAlt, width: 88 }}
+        image={{ kind: "object", src: "/images/services/soumission.webp", natural: { width: 827, height: 408 }, alt: t.heroAlt, width: 88 }}
         breadcrumbs={<HeroCrumbs locale={locale} name={locale === "en" ? "Appraisal" : "Estimation"} frPath="/consultation" />}
       >
         <div className="mt-8">

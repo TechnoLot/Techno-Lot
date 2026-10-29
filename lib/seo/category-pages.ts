@@ -20,7 +20,8 @@ export type CategoryPageContent = {
   hero: {
     title: string;
     intro: string;
-    image: { src: string; alt: string; width: number };
+    /** natural : dimensions réelles du fichier (PageHero réserve la bonne place avant le chargement). */
+    image: { src: string; alt: string; width: number; natural: { width: number; height: number } };
   };
   /** Ce que nous rachetons dans cette catégorie. */
   items: { title: string; intro: string; items: (TitledText & { linkFrPath?: string })[] };
@@ -91,7 +92,7 @@ export const categoryPages: Record<CategoryPageId, CategoryPageContent> = {
       title: "Rachat d'ordinateurs portables, de postes de travail et d'écrans en lot",
       intro:
         "Vous renouvelez le parc informatique de votre entreprise ou videz des bureaux ? Techno Lot rachète vos portables, ordinateurs de bureau et écrans en lot, neufs, usagés ou partiellement fonctionnels. Notre offre vous parvient en 24 h.",
-      image: { src: "/images/palette/obj-portable.webp", alt: "Ordinateur portable", width: 86 },
+      image: { src: "/images/palette/obj-portable.webp", alt: "Ordinateur portable", width: 86, natural: { width: 511, height: 135 } },
     },
     items: {
       title: "Ce que nous rachetons",
@@ -228,7 +229,7 @@ export const categoryPages: Record<CategoryPageId, CategoryPageContent> = {
       title: "Rachat de serveurs, de stockage et de matériel de centre de données",
       intro:
         "Vous fermez une salle de serveurs ou décommissionnez une partie de votre centre de données ? Techno Lot rachète vos serveurs, baies de stockage et composants en lot, et coordonne le ramassage avec votre équipe TI.",
-      image: { src: "/images/palette/obj-serveur.webp", alt: "Serveur en rack", width: 86 },
+      image: { src: "/images/palette/obj-serveur.webp", alt: "Serveur en rack", width: 86, natural: { width: 882, height: 277 } },
     },
     items: {
       title: "Ce que nous rachetons",
@@ -358,7 +359,7 @@ export const categoryPages: Record<CategoryPageId, CategoryPageContent> = {
       title: "Rachat de switchs, routeurs, pare-feu et équipements de télécommunication",
       intro:
         "Vous remplacez votre réseau ou votre système téléphonique ? Techno Lot rachète les équipements réseau et télécom des entreprises, en lot, neufs, usagés ou partiellement fonctionnels. Notre offre vous parvient en 24 h.",
-      image: { src: "/images/palette/obj-commutateur.webp", alt: "Commutateur réseau", width: 86 },
+      image: { src: "/images/palette/obj-commutateur.webp", alt: "Commutateur réseau", width: 86, natural: { width: 807, height: 239 } },
     },
     items: {
       title: "Ce que nous rachetons",

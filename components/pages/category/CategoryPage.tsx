@@ -60,7 +60,7 @@ export default function CategoryPage({ id }: { id: CategoryPageId }) {
         size="compact"
         title={t.hero.title}
         intro={t.hero.intro}
-        image={{ kind: "object", src: t.hero.image.src, width: t.hero.image.width, alt: t.hero.image.alt }}
+        image={{ kind: "object", src: t.hero.image.src, natural: t.hero.image.natural, width: t.hero.image.width, alt: t.hero.image.alt }}
         breadcrumbs={
           <Breadcrumbs
             locale="fr"

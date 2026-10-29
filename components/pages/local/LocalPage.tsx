@@ -56,7 +56,7 @@ export default function LocalPage({ id, locale }: { id: LocalPageId; locale: Loc
         size="compact"
         title={t.hero.title}
         intro={t.hero.intro}
-        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", width: 86, alt: t.hero.imageAlt }}
+        image={{ kind: "object", src: "/images/palette/obj-pile-portables.webp", natural: { width: 546, height: 298 }, width: 86, alt: t.hero.imageAlt }}
         breadcrumbs={
           <Breadcrumbs
             locale={locale}
