@@ -37,6 +37,8 @@ export function SmoothScroll() {
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
         wheelMultiplier: 1,
+        // Clic sur un lien vers une autre page : l'inertie s'arrête, la nouvelle page s'ouvre en haut
+        stopInertiaOnNavigate: true,
       });
       window.__lenis = lenis;
 
