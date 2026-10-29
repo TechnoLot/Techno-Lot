@@ -230,6 +230,70 @@ export const SERVICE_LABELS: Record<string, Record<Locale, string>> = {
     fr: "Rachat de matériel informatique sur la Rive-Nord",
     en: "IT equipment buyback on the North Shore",
   },
+  "/rachat-materiel-informatique-rive-sud": {
+    fr: "Rachat de matériel informatique sur la Rive-Sud",
+    en: "IT equipment buyback on the South Shore",
+  },
+  "/rachat-materiel-informatique-blainville": {
+    fr: "Rachat de matériel informatique à Blainville",
+    en: "IT equipment buyback in Blainville",
+  },
+  "/rachat-materiel-informatique-boisbriand": {
+    fr: "Rachat de matériel informatique à Boisbriand",
+    en: "IT equipment buyback in Boisbriand",
+  },
+  "/rachat-materiel-informatique-brossard": {
+    fr: "Rachat de matériel informatique à Brossard",
+    en: "IT equipment buyback in Brossard",
+  },
+  "/rachat-materiel-informatique-cote-saint-luc": {
+    fr: "Rachat de matériel informatique à Côte-Saint-Luc",
+    en: "IT equipment buyback in Côte-Saint-Luc",
+  },
+  "/rachat-materiel-informatique-dorval": {
+    fr: "Rachat de matériel informatique à Dorval",
+    en: "IT equipment buyback in Dorval",
+  },
+  "/rachat-materiel-informatique-kirkland": {
+    fr: "Rachat de matériel informatique à Kirkland",
+    en: "IT equipment buyback in Kirkland",
+  },
+  "/rachat-materiel-informatique-lachine": {
+    fr: "Rachat de matériel informatique à Lachine",
+    en: "IT equipment buyback in Lachine",
+  },
+  "/rachat-materiel-informatique-lasalle": {
+    fr: "Rachat de matériel informatique à LaSalle",
+    en: "IT equipment buyback in LaSalle",
+  },
+  "/rachat-materiel-informatique-longueuil": {
+    fr: "Rachat de matériel informatique à Longueuil",
+    en: "IT equipment buyback in Longueuil",
+  },
+  "/rachat-materiel-informatique-mirabel": {
+    fr: "Rachat de matériel informatique à Mirabel",
+    en: "IT equipment buyback in Mirabel",
+  },
+  "/rachat-materiel-informatique-repentigny": {
+    fr: "Rachat de matériel informatique à Repentigny",
+    en: "IT equipment buyback in Repentigny",
+  },
+  "/rachat-materiel-informatique-saint-eustache": {
+    fr: "Rachat de matériel informatique à Saint-Eustache",
+    en: "IT equipment buyback in Saint-Eustache",
+  },
+  "/rachat-materiel-informatique-saint-jerome": {
+    fr: "Rachat de matériel informatique à Saint-Jérôme",
+    en: "IT equipment buyback in Saint-Jérôme",
+  },
+  "/rachat-materiel-informatique-saint-laurent": {
+    fr: "Rachat de matériel informatique dans Saint-Laurent",
+    en: "IT equipment buyback in Saint-Laurent",
+  },
+  "/rachat-materiel-informatique-sainte-therese": {
+    fr: "Rachat de matériel informatique à Sainte-Thérèse",
+    en: "IT equipment buyback in Sainte-Thérèse",
+  },
   "/achat-de-lot-description": {
     fr: "Ce que nous rachetons",
     en: "What we buy",
@@ -275,6 +339,24 @@ const SERVICE_RULES: { path: string; keywords: string[] }[] = [
   { path: "/rachat-materiel-informatique-laval", keywords: ["laval"] },
   { path: "/rachat-materiel-informatique-terrebonne-mascouche", keywords: ["terrebonne", "mascouche"] },
   { path: "/rachat-materiel-informatique-rive-nord", keywords: ["rive-nord"] },
+  // Pages par ville, dans l'ordre du pied de page. Saint-Laurent : jamais « saint-laurent »
+  // seul (le fleuve revient dans des articles), seulement des expressions propres à l'arrondissement.
+  { path: "/rachat-materiel-informatique-rive-sud", keywords: ["rive-sud"] },
+  { path: "/rachat-materiel-informatique-blainville", keywords: ["blainville"] },
+  { path: "/rachat-materiel-informatique-boisbriand", keywords: ["boisbriand"] },
+  { path: "/rachat-materiel-informatique-brossard", keywords: ["brossard"] },
+  { path: "/rachat-materiel-informatique-cote-saint-luc", keywords: ["côte-saint-luc"] },
+  { path: "/rachat-materiel-informatique-dorval", keywords: ["dorval"] },
+  { path: "/rachat-materiel-informatique-kirkland", keywords: ["kirkland"] },
+  { path: "/rachat-materiel-informatique-lachine", keywords: ["lachine"] },
+  { path: "/rachat-materiel-informatique-lasalle", keywords: ["lasalle"] },
+  { path: "/rachat-materiel-informatique-longueuil", keywords: ["longueuil"] },
+  { path: "/rachat-materiel-informatique-mirabel", keywords: ["mirabel"] },
+  { path: "/rachat-materiel-informatique-repentigny", keywords: ["repentigny"] },
+  { path: "/rachat-materiel-informatique-saint-eustache", keywords: ["saint-eustache"] },
+  { path: "/rachat-materiel-informatique-saint-jerome", keywords: ["saint-jérôme"] },
+  { path: "/rachat-materiel-informatique-saint-laurent", keywords: ["technoparc", "arrondissement de saint-laurent"] },
+  { path: "/rachat-materiel-informatique-sainte-therese", keywords: ["sainte-thérèse"] },
 ];
 
 /** Dernier recours, toujours en fin de liste. */

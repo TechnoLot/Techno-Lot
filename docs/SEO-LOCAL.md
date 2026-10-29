@@ -13,6 +13,22 @@ Guide de maintenance des pages locales, des pages catégories et du blogue. Aucu
 | `/rachat-materiel-informatique-laval` | FR seulement | `LocalPage` |
 | `/rachat-materiel-informatique-terrebonne-mascouche` | FR seulement | `LocalPage` |
 | `/rachat-materiel-informatique-rive-nord` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-rive-sud` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-longueuil` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-brossard` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-blainville` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-boisbriand` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-sainte-therese` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-saint-eustache` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-mirabel` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-saint-jerome` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-repentigny` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-saint-laurent` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-lachine` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-lasalle` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-dorval` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-kirkland` | FR seulement | `LocalPage` |
+| `/rachat-materiel-informatique-cote-saint-luc` | FR seulement | `LocalPage` |
 | `/rachat-ordinateurs-portables-en-lot` | FR seulement | `CategoryPage` |
 | `/rachat-serveurs-et-stockage` | FR seulement | `CategoryPage` |
 | `/rachat-equipements-reseau-telecom` | FR seulement | `CategoryPage` |
@@ -24,7 +40,8 @@ Guide de maintenance des pages locales, des pages catégories et du blogue. Aucu
 | Registre des pages indexables (`allSeoRoutes`, `sitemapEntries`, `alternatesFor`, `findRoute`, `counterpartPath`) | `lib/seo/routes.ts` |
 | Métadonnées : titre, description, canonical/hreflang, Open Graph (`pageMetadata`) | `lib/seo/metadata.ts` |
 | Données structurées JSON-LD (`organizationJsonLd`, `breadcrumbJsonLd`, `serviceJsonLd`, `faqJsonLd`) | `lib/seo/schema.ts` |
-| Contenu des pages locales (`localPages`, `getLocalPage`, `CATEGORY_PAGES`) | `lib/seo/local-pages.ts` |
+| Contenu des pages locales (`localPages`, `getLocalPage`, `CATEGORY_PAGES`) ; blocs communs (catégories, avantages, étapes, fil d'Ariane) ajoutés par `frCity` | `lib/seo/local-pages.ts` |
+| Contenu propre à chaque ville des pages ajoutées le 2026-10-29 (type `LocalCityContent`), un fichier par région | `lib/seo/local-content/<région>.ts` |
 | Contenu des pages catégories (`categoryPages`, `CATEGORY_ADVANTAGES`, `CATEGORY_BREADCRUMB`) | `lib/seo/category-pages.ts` |
 | Gabarits | `components/pages/local/LocalPage.tsx`, `components/pages/category/CategoryPage.tsx` |
 | Fil d'Ariane visible (`Breadcrumbs`, `HeroCrumbs`, `pageCrumbs`) | `components/seo/Breadcrumbs.tsx` |
@@ -35,6 +52,7 @@ Guide de maintenance des pages locales, des pages catégories et du blogue. Aucu
 
 1. **Contenu typé**
    - Locale : ajouter l'identifiant au type `LocalPageId` et une entrée `{ fr: … }` (et `en` si traduite) dans `localPages` de `lib/seo/local-pages.ts`.
+   - Nouvelle ville : rédiger son contenu (`LocalCityContent`) dans le fichier de sa région sous `lib/seo/local-content/` (ou dans un nouveau fichier de région), puis l'inscrire dans `localPages` avec `{ fr: frCity(<région>Pages.<ville>) }`. Penser au maillage `nearby` des pages voisines, au pied de page (`lib/i18n.ts`) et aux mots-clés du blogue (`SERVICE_LABELS`, `SERVICE_RULES` de `lib/blog-seo.ts`).
    - Catégorie : ajouter l'identifiant à `CategoryPageId`, une entrée dans `categoryPages` et dans `CATEGORY_PAGE_IDS` (`lib/seo/category-pages.ts`).
 2. **Route** : créer `app/(fr)/<slug>/page.tsx` qui exporte `metadata` via `pageMetadata({ locale: "fr", frPath: "/<slug>", title, description })` et rend le gabarit. Copier une page existante (ex. `app/(fr)/rachat-materiel-informatique-laval/page.tsx`). Version anglaise : route sous `app/(en)/en/…`.
 3. **Registre** : ajouter l'entrée dans `allSeoRoutes` (`lib/seo/routes.ts`).
@@ -63,7 +81,7 @@ Interdits :
 
 Qualité :
 - la section sur la ville et la FAQ doivent être réellement propres à chaque page (secteurs, types d'entreprises, questions locales), pas un copier-coller avec le nom changé ;
-- pas de page pour chaque petite ville : on regroupe (ex. Rive-Nord couvre Blainville, Boisbriand, Sainte-Thérèse, Mirabel).
+- depuis le 2026-10-29, le client veut une page par ville ciblée ; chaque page garde une section locale et une FAQ vraiment propres à la ville.
 
 ## 3. Blogue
 
@@ -92,7 +110,7 @@ Qualité :
 4. Performances : filtre Requête → **Expression régulière personnalisée** :
 
 ```
-montr[eé]al|laval|terrebonne|mascouche|rive-nord|blainville|boisbriand|th[eé]r[eè]se|mirabel
+montr[eé]al|laval|terrebonne|mascouche|rive[- ]nord|rive[- ]sud|longueuil|brossard|repentigny|blainville|boisbriand|th[eé]r[eè]se|mirabel|saint[- ]eustache|saint[- ]j[eé]r[oô]me|saint[- ]laurent|lachine|la ?salle|dorval|kirkland|c[oô]te[- ]saint[- ]luc
 ```
 
 5. Rapport **Pages** (Indexation) : vérifier que les pages locales et catégories sont « Indexées » et lire les motifs d'exclusion.
@@ -136,8 +154,6 @@ Chaque semaine pendant 8 semaines, puis chaque mois :
 
 ## 6. Vague 2 (selon les données de la Search Console)
 
-- Page Rive-Sud / Longueuil.
-- Page Saint-Laurent, seulement si la demande le justifie.
 - Versions anglaises des pages en français seulement (ajouter `en` au registre et la route sous `app/(en)/en`).
 - Page « électronique professionnelle » : tablettes, téléphones, audio/vidéo, bureautique.
 - Attribut `lang` rendu côté serveur sur `/en`.

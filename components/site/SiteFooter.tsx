@@ -5,11 +5,19 @@ import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
 import { findRoute } from "@/lib/seo/routes";
 
+/** Au-delà de ce nombre de liens, une colonne zones/catégories s'élargit (8/12, liens en grille). */
+const WIDE_COLUMN_MAX_LINKS = 6;
+
 /**
  * Pied de page compact, chapitre bleu nuit : logo, slogan et Facebook ; navigation
  * sur deux colonnes ; zones desservies et catégories rachetées (pages du registre
  * seulement, dans la langue affichée) ; coordonnées à taille normale (téléphone, courriel, délai de
  * réponse, adresse postale) ; puis les mentions et le lien « Haut de page ».
+ *
+ * Zones et catégories : une colonne de 4/12 chacune, la première sous la
+ * navigation (lg:col-start-5). Une colonne de plus de WIDE_COLUMN_MAX_LINKS liens
+ * (les zones en français) s'élargit à 8/12 avec ses liens en grille (2 puis
+ * 3 colonnes) ; la colonne suivante occupe alors les 4 colonnes de droite.
  */
 export function SiteFooter({ locale }: { locale: Locale }) {
   const t = getDict(locale);
@@ -113,22 +121,27 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </div>
 
           {/* Zones desservies et catégories : sous la navigation et les coordonnées sur grand écran */}
-          {extraColumns.map((col, i) => (
-            <nav key={col.id} aria-labelledby={col.id} className={`lg:col-span-4 ${i === 0 ? "lg:col-start-5" : ""}`}>
-              <p id={col.id} className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
-                {col.title}
-              </p>
-              <ul className="mt-4 space-y-2.5 font-display text-[15px] font-medium text-white/85">
-                {col.links.map((item) => (
-                  <li key={item.href}>
-                    <Link href={item.href} className={smallLink}>
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
+          {extraColumns.map((col, i) => {
+            const wide = col.links.length > WIDE_COLUMN_MAX_LINKS;
+            const span = wide ? "sm:col-span-2 lg:col-span-8" : `lg:col-span-4 ${i === 0 ? "lg:col-start-5" : ""}`;
+            const list = wide ? "grid grid-cols-2 gap-x-6 gap-y-2.5 sm:grid-cols-3" : "space-y-2.5";
+            return (
+              <nav key={col.id} aria-labelledby={col.id} className={span}>
+                <p id={col.id} className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+                  {col.title}
+                </p>
+                <ul className={`mt-4 ${list} font-display text-[15px] font-medium text-white/85`}>
+                  {col.links.map((item) => (
+                    <li key={item.href}>
+                      <Link href={item.href} className={smallLink}>
+                        {item.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            );
+          })}
         </div>
 
         {/* Mentions */}

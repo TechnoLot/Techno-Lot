@@ -73,8 +73,10 @@ export const CATEGORY_NEARBY = {
   localItems: [
     { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
     { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
-    { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
     { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+    { frPath: "/rachat-materiel-informatique-rive-sud", label: "Rive-Sud" },
+    { frPath: "/rachat-materiel-informatique-longueuil", label: "Longueuil" },
+    { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
   ],
 };
 

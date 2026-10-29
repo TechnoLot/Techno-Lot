@@ -17,6 +17,7 @@ const SERVED_CITIES = [
   "Terrebonne",
   "Mascouche",
   "Longueuil",
+  "Brossard",
   "Blainville",
   "Boisbriand",
   "Sainte-Thérèse",
@@ -24,6 +25,9 @@ const SERVED_CITIES = [
   "Saint-Eustache",
   "Saint-Jérôme",
   "Repentigny",
+  "Dorval",
+  "Kirkland",
+  "Côte-Saint-Luc",
 ];
 
 const ORG_DESCRIPTION: Record<Locale, string> = {

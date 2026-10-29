@@ -1,9 +1,20 @@
 import type { Locale } from "@/lib/i18n";
+import { villesIlePages } from "@/lib/seo/local-content/ile-de-montreal";
+import { lanaudierePages } from "@/lib/seo/local-content/lanaudiere";
+import { laurentidesPages } from "@/lib/seo/local-content/laurentides";
+import { arrondissementsPages } from "@/lib/seo/local-content/montreal-arrondissements";
+import { riveSudPages } from "@/lib/seo/local-content/rive-sud";
+import { thereseDeBlainvillePages } from "@/lib/seo/local-content/therese-de-blainville";
 
 /**
  * Contenu des pages locales (« rachat de matériel informatique à <ville> »),
  * une entrée par page et par langue. Rendu : components/pages/local/LocalPage.tsx.
  * Chaque page doit aussi être inscrite au registre lib/seo/routes.ts.
+ *
+ * Les quatre premières pages (Montréal, Laval, Terrebonne et Mascouche,
+ * Rive-Nord) sont rédigées ici. Les pages supplémentaires vivent dans
+ * lib/seo/local-content/, un fichier par région (texte propre à la ville
+ * seulement) ; frCity y ajoute les blocs communs.
  *
  * Règles de contenu : aucune promesse d'achat avant l'évaluation, de prix, de
  * délai de ramassage, de certification ou de bureau dans la ville ; jamais
@@ -163,7 +174,50 @@ const FR_STEPS: LocalPageContent["steps"] = {
   ],
 };
 
-export type LocalPageId = "montreal" | "laval" | "terrebonne-mascouche" | "rive-nord";
+/**
+ * Contenu propre à une ville (fichiers de lib/seo/local-content/) : tout sauf
+ * les blocs communs, que frCity ajoute.
+ */
+export type LocalCityContent = Omit<LocalPageContent, "breadcrumbHome" | "categories" | "advantages" | "steps">;
+
+/** Page locale française complète : contenu de la ville + blocs communs. */
+function frCity(c: LocalCityContent): LocalPageContent {
+  return {
+    ...c,
+    breadcrumbHome: "Accueil",
+    categories: FR_CATEGORIES,
+    advantages: FR_ADVANTAGES,
+    steps: FR_STEPS,
+  };
+}
+
+export type LocalPageId =
+  | "montreal"
+  | "laval"
+  | "terrebonne-mascouche"
+  | "rive-nord"
+  // Rive-Sud
+  | "rive-sud"
+  | "longueuil"
+  | "brossard"
+  // Thérèse-De Blainville
+  | "blainville"
+  | "boisbriand"
+  | "sainte-therese"
+  // Laurentides
+  | "saint-eustache"
+  | "mirabel"
+  | "saint-jerome"
+  // Lanaudière
+  | "repentigny"
+  // Arrondissements de Montréal
+  | "saint-laurent"
+  | "lachine"
+  | "lasalle"
+  // Villes de l'île de Montréal
+  | "dorval"
+  | "kirkland"
+  | "cote-saint-luc";
 
 /**
  * Le français est obligatoire ; l'anglais est facultatif. Une page sans `en`
@@ -242,9 +296,16 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       nearby: {
         title: "Ailleurs dans le Grand Montréal",
         items: [
+          { frPath: "/rachat-materiel-informatique-saint-laurent", label: "Saint-Laurent" },
+          { frPath: "/rachat-materiel-informatique-lachine", label: "Lachine" },
+          { frPath: "/rachat-materiel-informatique-lasalle", label: "LaSalle" },
+          { frPath: "/rachat-materiel-informatique-dorval", label: "Dorval" },
+          { frPath: "/rachat-materiel-informatique-kirkland", label: "Kirkland" },
+          { frPath: "/rachat-materiel-informatique-cote-saint-luc", label: "Côte-Saint-Luc" },
           { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
-          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
           { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+          { frPath: "/rachat-materiel-informatique-rive-sud", label: "Rive-Sud" },
+          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
         ],
       },
       cta: {
@@ -408,9 +469,16 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       nearby: {
         title: "Elsewhere in Greater Montreal",
         items: [
+          { frPath: "/rachat-materiel-informatique-saint-laurent", label: "Saint-Laurent" },
+          { frPath: "/rachat-materiel-informatique-lachine", label: "Lachine" },
+          { frPath: "/rachat-materiel-informatique-lasalle", label: "LaSalle" },
+          { frPath: "/rachat-materiel-informatique-dorval", label: "Dorval" },
+          { frPath: "/rachat-materiel-informatique-kirkland", label: "Kirkland" },
+          { frPath: "/rachat-materiel-informatique-cote-saint-luc", label: "Côte-Saint-Luc" },
           { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
-          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne and Mascouche" },
           { frPath: "/rachat-materiel-informatique-rive-nord", label: "North Shore" },
+          { frPath: "/rachat-materiel-informatique-rive-sud", label: "South Shore" },
+          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne and Mascouche" },
         ],
       },
       cta: {
@@ -502,8 +570,11 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
         title: "Ailleurs dans la région",
         items: [
           { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
-          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
           { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+          { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
+          { frPath: "/rachat-materiel-informatique-boisbriand", label: "Boisbriand" },
+          { frPath: "/rachat-materiel-informatique-saint-eustache", label: "Saint-Eustache" },
+          { frPath: "/rachat-materiel-informatique-saint-laurent", label: "Saint-Laurent" },
         ],
       },
       cta: {
@@ -600,6 +671,8 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
           { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
           { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
           { frPath: "/rachat-materiel-informatique-rive-nord", label: "Rive-Nord" },
+          { frPath: "/rachat-materiel-informatique-repentigny", label: "Repentigny" },
+          { frPath: "/rachat-materiel-informatique-blainville", label: "Blainville" },
         ],
       },
       cta: {
@@ -708,6 +781,13 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
           { frPath: "/rachat-materiel-informatique-laval", label: "Laval" },
           { frPath: "/rachat-materiel-informatique-terrebonne-mascouche", label: "Terrebonne et Mascouche" },
           { frPath: "/rachat-materiel-informatique-montreal", label: "Montréal" },
+          { frPath: "/rachat-materiel-informatique-blainville", label: "Blainville" },
+          { frPath: "/rachat-materiel-informatique-boisbriand", label: "Boisbriand" },
+          { frPath: "/rachat-materiel-informatique-sainte-therese", label: "Sainte-Thérèse" },
+          { frPath: "/rachat-materiel-informatique-saint-eustache", label: "Saint-Eustache" },
+          { frPath: "/rachat-materiel-informatique-mirabel", label: "Mirabel" },
+          { frPath: "/rachat-materiel-informatique-saint-jerome", label: "Saint-Jérôme" },
+          { frPath: "/rachat-materiel-informatique-repentigny", label: "Repentigny" },
         ],
       },
       cta: {
@@ -721,6 +801,34 @@ export const localPages: Record<LocalPageId, { fr: LocalPageContent; en?: LocalP
       },
     },
   },
+
+  // Rive-Sud (lib/seo/local-content/rive-sud.ts)
+  "rive-sud": { fr: frCity(riveSudPages["rive-sud"]) },
+  longueuil: { fr: frCity(riveSudPages.longueuil) },
+  brossard: { fr: frCity(riveSudPages.brossard) },
+
+  // Thérèse-De Blainville (lib/seo/local-content/therese-de-blainville.ts)
+  blainville: { fr: frCity(thereseDeBlainvillePages.blainville) },
+  boisbriand: { fr: frCity(thereseDeBlainvillePages.boisbriand) },
+  "sainte-therese": { fr: frCity(thereseDeBlainvillePages["sainte-therese"]) },
+
+  // Laurentides (lib/seo/local-content/laurentides.ts)
+  "saint-eustache": { fr: frCity(laurentidesPages["saint-eustache"]) },
+  mirabel: { fr: frCity(laurentidesPages.mirabel) },
+  "saint-jerome": { fr: frCity(laurentidesPages["saint-jerome"]) },
+
+  // Lanaudière (lib/seo/local-content/lanaudiere.ts)
+  repentigny: { fr: frCity(lanaudierePages.repentigny) },
+
+  // Arrondissements de Montréal (lib/seo/local-content/montreal-arrondissements.ts)
+  "saint-laurent": { fr: frCity(arrondissementsPages["saint-laurent"]) },
+  lachine: { fr: frCity(arrondissementsPages.lachine) },
+  lasalle: { fr: frCity(arrondissementsPages.lasalle) },
+
+  // Villes de l'île de Montréal (lib/seo/local-content/ile-de-montreal.ts)
+  dorval: { fr: frCity(villesIlePages.dorval) },
+  kirkland: { fr: frCity(villesIlePages.kirkland) },
+  "cote-saint-luc": { fr: frCity(villesIlePages["cote-saint-luc"]) },
 };
 
 export function getLocalPage(id: LocalPageId, locale: Locale): LocalPageContent {
