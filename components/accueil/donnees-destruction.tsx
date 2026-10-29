@@ -6,7 +6,9 @@ import { PrimaryButtonLink } from "@/components/site/Button";
 import type { AccueilContenu } from "./contenu";
 import "./interactif.css";
 
-const SRC = "/images/donnees/disque-dur.webp";
+// AVIF recompressé (1200 px, comme l'original : assez pour le plus grand affichage × densité 2)
+const SRC = "/images/donnees/disque-dur.avif";
+const SRC_WEBP = "/images/donnees/disque-dur.webp";
 const STEP = 3; // taille d'une particule, en px CSS
 const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 
@@ -33,7 +35,6 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
 
     const img = new Image();
     img.decoding = "async";
-    img.src = SRC;
 
     let dpr = 1;
     let n = 0;
@@ -355,7 +356,10 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
     sync(reduce || progress() > 0.97);
 
     img.onload = build;
-    if (img.complete) build();
+    // navigateur sans AVIF : on se rabat une fois sur le WebP d'origine
+    img.onerror = () => {
+      if (img.src.endsWith(SRC)) img.src = SRC_WEBP;
+    };
     const ro = new ResizeObserver(build);
     ro.observe(box);
     const io = new IntersectionObserver(([e]) => {
@@ -363,13 +367,26 @@ export function DonneesDestruction({ labels, href }: { labels: AccueilContenu["d
       kick();
     });
     io.observe(track);
+    // image demandée à l'approche de la section (1,5 écran d'avance) pour être prête avant d'être vue ;
+    // tant qu'elle manque, frame() ne tient que l'état du certificat à jour
+    const near = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        near.disconnect();
+        img.src = SRC;
+      },
+      { rootMargin: "150% 0px" }
+    );
+    near.observe(track);
     window.addEventListener("scroll", kick, { passive: true });
 
     return () => {
       cancelAnimationFrame(raf);
       img.onload = null;
+      img.onerror = null;
       ro.disconnect();
       io.disconnect();
+      near.disconnect();
       window.removeEventListener("scroll", kick);
     };
   }, []);
