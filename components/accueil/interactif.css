@@ -21,6 +21,7 @@
 
 /* --etapes-band : hauteur d'une bande ; --etapes-n (posé sur la liste) : nombre d'étapes */
 .etapes-acc {
+  position: relative;
   container-type: size;
   --etapes-band: 64px;
 }
@@ -30,29 +31,31 @@
   }
 }
 
-/* Bandes empilées ; le panneau ouvert prend la hauteur restante */
+/* Bandes empilées sans mise en page pendant l'ouverture : chaque panneau a la hauteur de la liste
+   (au moins n bandes), recouvre le bas du précédent et se place par translation (--etapes-i : rang).
+   Ceux qui suivent l'étape ouverte (data-after) descendent de l'espace libre (100 % − n bandes) :
+   même mouvement que l'ancien partage en flex-grow, avec la même durée et la même courbe. */
 .etapes-panel {
-  flex: 0 0 var(--etapes-band);
+  position: absolute;
+  inset: 0 0 auto;
+  height: max(100%, calc(var(--etapes-n, 4) * var(--etapes-band)));
   min-width: 0;
-  min-height: 0;
-  transition: flex-grow 450ms cubic-bezier(0.65, 0, 0.35, 1);
+  transform: translateY(calc(var(--etapes-i, 0) * var(--etapes-band)));
+  transition: transform 450ms cubic-bezier(0.65, 0, 0.35, 1);
 }
-.etapes-panel[data-open] {
-  flex-grow: 1;
+.etapes-panel[data-after] {
+  transform: translateY(calc(var(--etapes-i, 0) * var(--etapes-band) + 100% - var(--etapes-n, 4) * var(--etapes-band)));
+  /* arrondi au pixel : bords et texte nets, au même pixel que l'ancienne mise en page */
+  transform: translateY(round(nearest, calc(var(--etapes-i, 0) * var(--etapes-band) + 100% - var(--etapes-n, 4) * var(--etapes-band)), 1px));
 }
 .etapes-band {
   height: var(--etapes-band);
 }
-/* Le contenu garde la taille du panneau ouvert : rien ne se recompose pendant l'ouverture */
+/* Le contenu garde la taille du panneau ouvert (l'espace libre) : rien ne se recompose pendant l'ouverture */
 .etapes-content {
   top: var(--etapes-band);
   width: 100%;
-  height: calc(100% - var(--etapes-band));
-}
-@supports (height: 1cqh) {
-  .etapes-content {
-    height: calc(100cqh - var(--etapes-n, 4) * var(--etapes-band));
-  }
+  height: calc(100% - var(--etapes-n, 4) * var(--etapes-band));
 }
 
 /* Maquettes : réduites quand la place manque (petits téléphones), masquées si trop basses */

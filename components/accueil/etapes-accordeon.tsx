@@ -89,7 +89,13 @@ export function EtapesAccordeon({ steps, href }: { steps: Steps; href: string })
                 const btnId = `${uid}-b${i}`;
                 const panelId = `${uid}-p${i}`;
                 return (
-                  <li key={step.title} data-open={on || undefined} className={`etapes-panel relative overflow-hidden ${t.bg} ${t.fg}`}>
+                  <li
+                    key={step.title}
+                    data-open={on || undefined}
+                    data-after={i > active || undefined}
+                    style={{ "--etapes-i": i } as CSSProperties}
+                    className={`etapes-panel overflow-hidden ${t.bg} ${t.fg}`}
+                  >
                     {/* Bande : icône, nom de l'étape et son numéro, toujours à l'horizontale */}
                     <button
                       id={btnId}
