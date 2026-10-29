@@ -1,5 +1,5 @@
 import { ArrowUpRight, Phone } from "lucide-react";
-import Link from "next/link";
+import { LienIntention } from "@/components/site/LienIntention";
 import { Marquee } from "@/components/site/Marquee";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
@@ -12,6 +12,7 @@ const ICONE = "h-4 w-4 shrink-0 text-[#2b7a10] transition-colors duration-200 gr
  * Ruban de liens utiles (services, FAQ, contact, téléphone) qui défile doucement sous
  * un appel à l'action. Pause au survol et au focus pour cliquer sans viser une cible
  * mobile ; en mouvement réduit, c'est une simple rangée qu'on fait défiler.
+ * Liens préchargés à l'intention seulement (LienIntention), pas quand le ruban apparaît.
  * `exclude` : chemins (non localisés) à retirer, ex. la page courante ou le bouton voisin.
  */
 export function LiensDefilants({
@@ -35,10 +36,10 @@ export function LiensDefilants({
         className="py-1 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
       >
         {liens.map((l) => (
-          <Link key={l.href} href={localePath(locale, l.href)} className={PILULE}>
+          <LienIntention key={l.href} href={localePath(locale, l.href)} className={PILULE}>
             {l.label}
             <ArrowUpRight className={ICONE} aria-hidden="true" />
-          </Link>
+          </LienIntention>
         ))}
         <a href={site.phoneHref} className={PILULE}>
           <Phone className={ICONE} aria-hidden="true" />

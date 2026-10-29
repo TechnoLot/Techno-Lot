@@ -1,5 +1,6 @@
 import { ArrowUp, Facebook, Mail, Phone } from "lucide-react";
 import Link from "next/link";
+import { LienIntention } from "@/components/site/LienIntention";
 import { Logo } from "@/components/site/Logo";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
@@ -120,7 +121,8 @@ export function SiteFooter({ locale }: { locale: Locale }) {
             </ul>
           </div>
 
-          {/* Zones desservies et catégories : sous la navigation et les coordonnées sur grand écran */}
+          {/* Zones desservies et catégories : sous la navigation et les coordonnées sur grand écran.
+              Une vingtaine de liens : préchargés à l'intention seulement (LienIntention), pas à l'apparition. */}
           {extraColumns.map((col, i) => {
             const wide = col.links.length > WIDE_COLUMN_MAX_LINKS;
             const span = wide ? "sm:col-span-2 lg:col-span-8" : `lg:col-span-4 ${i === 0 ? "lg:col-start-5" : ""}`;
@@ -133,9 +135,9 @@ export function SiteFooter({ locale }: { locale: Locale }) {
                 <ul className={`mt-4 ${list} font-display text-[15px] font-medium text-white/85`}>
                   {col.links.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className={smallLink}>
+                      <LienIntention href={item.href} className={smallLink}>
                         {item.label}
-                      </Link>
+                      </LienIntention>
                     </li>
                   ))}
                 </ul>
