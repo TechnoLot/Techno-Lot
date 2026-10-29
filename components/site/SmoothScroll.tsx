@@ -42,11 +42,9 @@ export function SmoothScroll() {
       });
       window.__lenis = lenis;
 
-      // Image suivante réservée avant tout travail : Lenis reste le premier rappel de chaque
-      // image et règle la position avant les écritures de style des autres animations
       const raf = (time: number) => {
-        rafId = requestAnimationFrame(raf);
         lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
       };
       rafId = requestAnimationFrame(raf);
     })();
