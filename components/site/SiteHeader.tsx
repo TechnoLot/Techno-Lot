@@ -23,8 +23,9 @@ const SEUIL = 6;
  * FR/EN) + barre de navigation noire #0a0a0a (logo horizontal foncé, liens
  * blancs, menu Services déroulant bleu nuit, bouton « Faire une soumission »),
  * menu mobile sombre. Hauteur totale fixe : 112 px (40 + 72) — voir --site-header-h.
- * Il glisse hors de l'écran quand on descend et revient dès qu'on remonte un peu ;
- * il reste affiché en haut de page, menu ouvert ou focus clavier dedans.
+ * Sur ordinateur (≥ 1024 px), il reste toujours affiché. Sur mobile et tablette
+ * (< 1024 px), il glisse hors de l'écran quand on descend et revient dès qu'on
+ * remonte un peu ; il reste affiché en haut de page, menu ouvert ou focus clavier dedans.
  */
 export function SiteHeader({ locale }: { locale: Locale }) {
   const t = getDict(locale);
@@ -42,11 +43,12 @@ export function SiteHeader({ locale }: { locale: Locale }) {
   useEffect(() => {
     let lastY = Math.max(0, window.scrollY);
     let queued = false;
+    const bureau = window.matchMedia("(min-width: 1024px)");
     const update = () => {
       queued = false;
       const y = Math.max(0, window.scrollY);
       setScrolled(y > 24);
-      if (y < TOUJOURS_VISIBLE) {
+      if (bureau.matches || y < TOUJOURS_VISIBLE) {
         setHidden(false);
         lastY = y;
         return;
@@ -62,9 +64,17 @@ export function SiteHeader({ locale }: { locale: Locale }) {
       queued = true;
       requestAnimationFrame(update);
     };
+    // Passage à la largeur ordinateur : réaffiche l'en-tête s'il était caché
+    const onBureau = () => {
+      if (bureau.matches) setHidden(false);
+    };
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    bureau.addEventListener("change", onBureau);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      bureau.removeEventListener("change", onBureau);
+    };
   }, []);
 
   const hide = hidden && !mobileOpen && !servicesOpen && !focusWithin;
