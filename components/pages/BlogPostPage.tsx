@@ -9,7 +9,8 @@ import { PrimaryButtonLink } from "@/components/site/Button";
 import JsonLd from "@/components/seo/JsonLd";
 import { Breadcrumbs } from "@/components/seo/Breadcrumbs";
 import PostImage from "@/components/blog/PostImage";
-import ReadingProgress, { InternalLinks } from "@/components/blog/ReadingProgress";
+import ReadingProgress from "@/components/blog/ReadingProgress";
+import InternalLinks from "@/components/blog/InternalLinks";
 import ShareButtons from "@/components/blog/ShareButtons";
 import {
   findOtherLocale,
