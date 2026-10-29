@@ -212,7 +212,7 @@ export default async function BlogIndexPage({ locale, page = 1 }: { locale: Loca
                     <PostImage
                       src={featured.image}
                       alt={featured.imageAlt}
-                      sizes="(min-width: 1024px) 640px, 100vw"
+                      sizes="(min-width: 1024px) 640px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
                       priority
                       className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
@@ -255,7 +255,7 @@ export default async function BlogIndexPage({ locale, page = 1 }: { locale: Loca
                         <PostImage
                           src={lead.image}
                           alt={lead.imageAlt}
-                          sizes="(min-width: 1024px) 620px, 100vw"
+                          sizes="(min-width: 1024px) 620px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
                           className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                         />
                       </div>
@@ -281,7 +281,7 @@ export default async function BlogIndexPage({ locale, page = 1 }: { locale: Loca
                             <PostImage
                               src={p.image}
                               alt={p.imageAlt}
-                              sizes="(min-width: 1024px) 420px, 100vw"
+                              sizes="(min-width: 1024px) 380px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
                               className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                             />
                           </div>

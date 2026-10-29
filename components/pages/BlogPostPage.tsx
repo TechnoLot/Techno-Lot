@@ -359,7 +359,7 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
             className="hero-item relative -mt-24 aspect-[16/9] overflow-hidden rounded-3xl bg-surface sm:-mt-36 lg:aspect-[21/9]"
             style={d(0.2)}
           >
-            <PostImage src={summary.image} alt={summary.imageAlt} sizes="(min-width: 1152px) 1088px, 100vw" priority />
+            <PostImage src={summary.image} alt={summary.imageAlt} sizes="(min-width: 1152px) 1088px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)" priority />
           </div>
 
           <div className="mt-12 grid gap-12 sm:mt-16 lg:grid-cols-12">
@@ -445,7 +445,7 @@ export default async function BlogPostPage({ locale, slug }: { locale: Locale; s
                     <PostImage
                       src={next.image}
                       alt=""
-                      sizes="(min-width: 768px) 440px, 100vw"
+                      sizes="(min-width: 768px) 440px, (min-width: 640px) calc(100vw - 4rem), calc(100vw - 2.5rem)"
                       className="transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
                   </div>

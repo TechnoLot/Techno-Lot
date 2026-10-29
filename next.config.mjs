@@ -8,6 +8,16 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
     // Cache les images optimisées 30 jours côté navigateur/CDN.
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    // Images des articles Soro (stockage Supabase de Soro) : seul ce chemin
+    // passe par l'optimiseur (voir components/blog/PostImage.tsx).
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "afocirmbqdxnkyescnev.supabase.co",
+        port: "",
+        pathname: "/storage/v1/object/public/featured-images/**",
+      },
+    ],
   },
   experimental: {
     // N'importe que les icônes/animations réellement utilisées au lieu de
