@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { MailOpen, Package, Paperclip, Phone, Plus } from "lucide-react";
-import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
+import { ExternalLink, Package, Paperclip, Phone, Plus } from "lucide-react";
 import MessageApercu from "@/components/admin/soumissions/MessageApercu";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
 import VoirCourriel from "@/components/admin/soumissions/VoirCourriel";
@@ -112,9 +111,7 @@ function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; cou
 
       {(s.courriel || s.telephone) && (
         <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
-          {s.courriel && (
-            <EcrireHostinger courriel={s.courriel} variante="lien" />
-          )}
+          {s.courriel && <span className="break-all text-admin-ink">{s.courriel}</span>}
           {s.telephone && (
             <a
               href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`}
@@ -148,21 +145,17 @@ function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; cou
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {s.courriel && <EcrireHostinger courriel={s.courriel} />}
-        {courrielApi ? (
-          <VoirCourriel soumissionId={s.id} nom={s.nom} />
-        ) : (
-          <a
-            href={WEBMAIL_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="admin-btn"
-            title="Ouvre ta boîte courriel Hostinger (info@technolot.ca) dans un nouvel onglet"
-          >
-            <MailOpen className="h-3.5 w-3.5" aria-hidden />
-            Ouvrir le courriel
-          </a>
-        )}
+        {courrielApi && <VoirCourriel soumissionId={s.id} nom={s.nom} />}
+        <a
+          href={courrielApi ? `/api/admin/soumissions/${s.id}/courriel/hostinger` : WEBMAIL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="admin-btn"
+          title="Ouvre le courriel dans le webmail Hostinger (info@technolot.ca), dans un nouvel onglet"
+        >
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          Ouvrir dans Hostinger
+        </a>
         {s.telephone && (
           <a href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`} className="admin-btn">
             <Phone className="h-3.5 w-3.5" aria-hidden />

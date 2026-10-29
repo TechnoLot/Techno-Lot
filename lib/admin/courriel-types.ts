@@ -23,6 +23,8 @@ export type CourrielSoumission = {
   html: string | null;
   texte: string | null;
   piecesJointes: PieceJointe[];
+  /** Webmail Hostinger, ouvert directement sur ce message */
+  lienHostinger: string;
 };
 
 export type ReponseCourriel =

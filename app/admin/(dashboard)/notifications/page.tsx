@@ -9,6 +9,7 @@ import { getEbaySyncStatus } from "@/lib/ebay/ventes";
 import { getNotificationsFeed } from "@/lib/admin/notifications";
 import { FILTRES_NOTIFICATIONS, type FiltreNotifications } from "@/lib/admin/notifications-types";
 import { periodeNotifications } from "@/lib/admin/notifications-regles";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,7 @@ export default async function NotificationsPage({
         clearedAt={feed.clearedAt}
         periode={periode}
         filtreInitial={filtre}
+        courrielApi={isMailApiConfigured()}
       />
     </div>
   );

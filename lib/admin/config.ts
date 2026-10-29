@@ -1,6 +1,6 @@
 import { site } from "@/lib/site";
 
-/** Webmail Hostinger de la boîte info@technolot.ca (aucun lien n'ouvre un message précis ni ne pré-remplit un nouveau message). */
+/** Webmail Hostinger de la boîte info@technolot.ca (un message précis : lienWebmail dans lib/hostinger/courriel-regles.ts ; aucun lien ne pré-remplit un nouveau message). */
 export const WEBMAIL_URL = "https://mail.hostinger.com/";
 
 /**

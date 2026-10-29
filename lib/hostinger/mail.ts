@@ -6,6 +6,7 @@ import {
   entetesPiece,
   formaterAdresse,
   formaterAdresses,
+  lienWebmail,
   messageErreurHostinger,
   messageLePlusProche,
   piecesVisibles,
@@ -214,6 +215,7 @@ export async function lireCourriel(dossier: string, uid: number): Promise<Courri
     html: html.trim() ? html : null,
     texte: texte.trim() ? texte : null,
     piecesJointes: piecesVisibles(message.attachments),
+    lienHostinger: lienWebmail(dossier, uid),
   };
 }
 

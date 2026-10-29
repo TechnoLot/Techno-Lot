@@ -36,6 +36,14 @@ export type DossierApi = {
   messageCount?: number | null;
 };
 
+/** Dossiers du webmail Hostinger (même hôte que WEBMAIL_URL) : …/{dossier}/{uid} ouvre un message précis. */
+const WEBMAIL_BOITES = "https://mail.hostinger.com/0/mailboxes";
+
+/** Adresse du webmail Hostinger qui ouvre directement ce message. */
+export function lienWebmail(dossier: string, uid: number | string): string {
+  return `${WEBMAIL_BOITES}/${encodeURIComponent(dossier)}/${encodeURIComponent(String(uid))}`;
+}
+
 /** Messages d'erreur de la Mail API, selon le code HTTP (null : réseau ou délai dépassé). */
 export function messageErreurHostinger(status: number | null): string {
   if (status === null) return "Hostinger est injoignable pour l'instant.";

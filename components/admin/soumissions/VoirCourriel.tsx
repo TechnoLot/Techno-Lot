@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ExternalLink, FileText, MailOpen, RotateCw, X } from "lucide-react";
-import { WEBMAIL_URL } from "@/lib/admin/config";
 import type { CourrielSoumission, PieceJointe, ReponseCourriel } from "@/lib/admin/courriel-types";
 
 const TZ = "America/Toronto";
@@ -231,7 +230,15 @@ export default function VoirCourriel({ soumissionId, nom }: { soumissionId: stri
               </div>
 
               <footer className="border-t border-admin-line px-5 py-3">
-                <a href={WEBMAIL_URL} target="_blank" rel="noopener noreferrer" className="admin-btn">
+                <a
+                  href={
+                    courriel?.lienHostinger ??
+                    `/api/admin/soumissions/${encodeURIComponent(soumissionId)}/courriel/hostinger`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-btn"
+                >
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                   Ouvrir dans Hostinger
                 </a>
