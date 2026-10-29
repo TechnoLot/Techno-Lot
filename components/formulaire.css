@@ -355,6 +355,7 @@ textarea.tlf-field {
   box-shadow: 0 0 0 3px rgb(107 214 59 / 0.28);
 }
 .tlf-ajout-autre {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -368,6 +369,20 @@ textarea.tlf-field {
 }
 .tlf-ajout-autre:hover {
   background: rgb(107 214 59 / 0.14);
+}
+/* Écran tactile : zone de toucher de 44 px de haut, invisible (ici et pour « Modifier »
+   du récapitulatif). Rien ne change à la souris (pas de survol élargi). */
+@media (pointer: coarse) {
+  .tlf-ajout-autre::after,
+  .tlf-review .tlf-link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2.75rem;
+    transform: translateY(-50%);
+  }
 }
 
 .tlf-qty-list {
@@ -413,6 +428,7 @@ textarea.tlf-field {
 }
 .tlf-stepper button,
 .tlf-icon-btn {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 2.5rem;
@@ -420,6 +436,22 @@ textarea.tlf-field {
   border-radius: 999px;
   color: var(--tlf-ink);
   transition: background-color 0.2s, color 0.2s, transform 0.15s;
+}
+/* Écran tactile : zone de toucher de 44 px, invisible ; le bouton reste à 40 px */
+@media (pointer: coarse) {
+  .tlf-stepper button::after,
+  .tlf-icon-btn::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+  }
+  /* –/+ : la zone ne déborde que vers l'extérieur, le champ du milieu reste entier */
+  .tlf-stepper button:first-child::after {
+    inset: -2px 0 -2px -4px;
+  }
+  .tlf-stepper button:last-child::after {
+    inset: -2px -4px -2px 0;
+  }
 }
 .tlf-stepper button:hover:not(:disabled),
 .tlf-icon-btn:hover {
@@ -716,6 +748,9 @@ textarea.tlf-field {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tlf-muted);
+}
+.tlf-review .tlf-link {
+  position: relative;
 }
 .tlf-review dd {
   margin: 0;
