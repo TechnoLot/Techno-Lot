@@ -375,8 +375,6 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
           name={required ? name : undefined}
           type={input.type ?? "text"}
           inputMode={input.inputMode}
-          // Entrée valide les coordonnées et passe à l'étape suivante (onSubmit → suivant).
-          enterKeyHint="next"
           autoComplete={input.autoComplete}
           placeholder={input.placeholder}
           required={required}
