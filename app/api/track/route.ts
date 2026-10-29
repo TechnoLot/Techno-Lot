@@ -18,9 +18,12 @@ function str(value: unknown, max: number): string | null {
 }
 
 export async function POST(request: Request) {
-  // En local (npm run dev), rien n'est enregistré : la base est celle de la
-  // production et les visites de test fausseraient les statistiques.
-  if (process.env.NODE_ENV === "development") return noContent();
+  // En local (npm run dev) et sur les Preview Vercel, rien n'est enregistré :
+  // la base est celle de la production et les visites de test fausseraient
+  // les statistiques.
+  if (process.env.NODE_ENV === "development" || process.env.VERCEL_ENV === "preview") {
+    return noContent();
+  }
 
   try {
     if (BOT_RE.test(request.headers.get("user-agent") ?? "")) return noContent();
