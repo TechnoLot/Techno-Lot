@@ -340,6 +340,12 @@ textarea.tlf-field {
   font-weight: 600;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+/* iOS zoome la page au focus d'un champ sous 16 px : 16 px sur iOS seulement */
+@supports (-webkit-touch-callout: none) {
+  .tlf-autre-input {
+    font-size: 1rem;
+  }
+}
 .tlf-autre-input::placeholder {
   color: var(--tlf-muted);
   font-weight: 500;
