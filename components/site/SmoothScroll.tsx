@@ -1,6 +1,6 @@
 "use client";
 
-import Lenis from "lenis";
+import type Lenis from "lenis";
 import { useEffect } from "react";
 import { appareilLent } from "@/lib/appareil";
 
@@ -15,6 +15,7 @@ declare global {
  * Le tactile garde le défilement natif ; désactivé en mouvement réduit et sur
  * les appareils lents (lib/appareil), où le défilement natif, porté par le
  * compositeur, reste fluide même quand le fil principal est chargé.
+ * Lenis n'est téléchargé que si ces conditions sont réunies (import dynamique).
  * Monté uniquement par la coque du site public (LocaleShell).
  */
 export function SmoothScroll() {
@@ -28,6 +29,8 @@ export function SmoothScroll() {
 
     (async () => {
       if ((await appareilLent()) || annule) return;
+      const { default: Lenis } = await import("lenis");
+      if (annule) return;
 
       lenis = new Lenis({
         duration: 1.1,
