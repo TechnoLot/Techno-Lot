@@ -6,7 +6,7 @@ import { site } from "@/lib/site";
  * serveur/client (fichier sans "use client").
  */
 
-/** Ligne de la table certificats_destruction. */
+/** Ligne de la table certificats_destruction (+ la fiche client liée, si demandée). */
 export type CertificatDestruction = {
   id: string;
   numero: string;
@@ -19,6 +19,21 @@ export type CertificatDestruction = {
   /** AAAA-MM-JJ */
   date_emission: string;
   created_at: string;
+  /** Fiche client (companies) : /admin/crm/[id] */
+  company_id: string | null;
+  companies?: { id: string; name: string } | null;
+};
+
+export const COLONNES_CERTIFICAT =
+  "id, numero, compagnie, adresse, materiel, nb_appareils, date_destruction, date_emission, created_at, company_id, companies(id, name)";
+
+/** Compagnie du CRM proposée dans le formulaire (remplit le nom et l'adresse). */
+export type ClientCertificat = {
+  id: string;
+  nom: string;
+  adresse: string;
+  /** Compagnie convertie en client (sinon : prospect du CRM). */
+  client: boolean;
 };
 
 /** Valeurs saisies dans le formulaire, affichées sur le certificat. */
@@ -43,23 +58,32 @@ export const MENTIONS_CERTIFICAT = {
 } as const;
 
 export const LIMITES_CERTIFICAT = {
-  numero: 40,
   compagnie: 160,
   adresse: 200,
   materiel: 200,
   nbAppareils: 100_000,
 } as const;
 
-/** Numéros par année : TL-AAAA-0001, TL-AAAA-0002… (le plus grand + 1). */
-export function prochainNumero(numeros: string[], annee: string): string {
+/**
+ * Numéro affiché pour un nouveau certificat : TL-AAAA-NNNN suivant le compteur
+ * de l'année (certificats_destruction_compteurs). La base attribue le vrai
+ * numéro à l'enregistrement (fonction prochain_numero_certificat) : jamais
+ * deux fois le même, même après une suppression.
+ */
+export function prochainNumero(annee: string, dernier: number | null, numeros: string[] = []): string {
   const prefixe = `TL-${annee}-`;
-  let max = 0;
+  let max = dernier ?? 0;
   for (const numero of numeros) {
     if (!numero.startsWith(prefixe)) continue;
     const suite = Number(numero.slice(prefixe.length));
     if (Number.isInteger(suite) && suite > max) max = suite;
   }
   return `${prefixe}${String(max + 1).padStart(4, "0")}`;
+}
+
+/** Texte cherché tel quel dans un filtre ilike (%, _ et \ ne sont plus des jokers). */
+export function echapperLike(texte: string): string {
+  return texte.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
 // Dates AAAA-MM-JJ lues en UTC : pas de décalage d'un jour selon le fuseau de l'appareil.
@@ -111,8 +135,6 @@ export function validerCertificat(
 ): { ok: true; valeurs: ValeursCertificat } | { ok: false; error: string } {
   const v = nettoyerCertificat(brut);
   const L = LIMITES_CERTIFICAT;
-  if (!v.numero) return { ok: false, error: "Indique le numéro du certificat." };
-  if (v.numero.length > L.numero) return { ok: false, error: `Le numéro dépasse ${L.numero} caractères.` };
   if (!v.compagnie) return { ok: false, error: "Indique le nom de la compagnie." };
   if (v.compagnie.length > L.compagnie) {
     return { ok: false, error: `Le nom de la compagnie dépasse ${L.compagnie} caractères.` };

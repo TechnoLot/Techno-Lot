@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
+  ChevronRight,
   Globe,
   MapPin,
   Phone,
+  Plus,
+  ShieldCheck,
   Users,
   Zap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { dateLongue, echapperLike, type CertificatDestruction } from "@/lib/admin/destruction";
 import FitScoreBadge from "@/components/admin/crm/FitScoreBadge";
 import LeadQuickActions from "@/components/admin/crm/LeadQuickActions";
 import ContactCard from "@/components/admin/crm/ContactCard";
@@ -63,6 +67,22 @@ export default async function CompanyPage({
   }
 
   const contactsById = Object.fromEntries(contacts.map((c) => [c.id, c]));
+
+  // Certificats de destruction remis à ce client : liés à la fiche, ou émis à
+  // son nom exact avant que la fiche existe (sans autre lien).
+  const colonnes = "id, numero, nb_appareils, date_destruction";
+  const [parLien, parNom] = await Promise.all([
+    supabase.from("certificats_destruction").select(colonnes).eq("company_id", company.id),
+    supabase
+      .from("certificats_destruction")
+      .select(colonnes)
+      .is("company_id", null)
+      .ilike("compagnie", echapperLike(company.name)),
+  ]);
+  type CertificatFiche = Pick<CertificatDestruction, "id" | "numero" | "nb_appareils" | "date_destruction">;
+  const certificats = [...((parLien.data ?? []) as CertificatFiche[]), ...((parNom.data ?? []) as CertificatFiche[])].sort(
+    (a, b) => b.date_destruction.localeCompare(a.date_destruction) || b.numero.localeCompare(a.numero),
+  );
 
   const addressValue = [company.street_address, company.region].filter(Boolean).join(" · ");
   const mapsQuery = [company.name, company.street_address, company.region].filter(Boolean).join(", ");
@@ -208,18 +228,70 @@ export default async function CompanyPage({
           </div>
         </section>
 
-        {/* Historique */}
-        <section className="min-w-0">
-          <h2 className="mb-4 font-display text-lg font-semibold text-admin-ink">
-            Historique
-          </h2>
-          <div className="glass p-5">
-            <ActivityTimeline
-              activities={activities}
-              contactsById={contactsById}
-            />
-          </div>
-        </section>
+        <div className="flex min-w-0 flex-col gap-6">
+          {/* Certificats de destruction des données remis au client */}
+          <section className="flex flex-col gap-3">
+            <h2 className="mb-1 font-display text-lg font-semibold text-admin-ink">
+              Certificats de destruction{" "}
+              <span className="text-sm font-normal text-admin-muted">
+                ({certificats.length})
+              </span>
+            </h2>
+            <div className="glass overflow-hidden">
+              {certificats.length === 0 ? (
+                <p className="p-5 text-sm text-admin-muted">
+                  Aucun certificat remis à ce client pour l&apos;instant.
+                </p>
+              ) : (
+                <ul className="divide-y divide-admin-line">
+                  {certificats.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/admin/destruction-donnees?certificat=${c.id}`}
+                        className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-admin-subtle"
+                      >
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-admin-green" aria-hidden />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-display text-sm font-semibold text-admin-ink">
+                            {c.numero}
+                          </span>
+                          <span className="block text-xs text-admin-muted">
+                            {c.nb_appareils} appareil{c.nb_appareils > 1 ? "s" : ""} ·{" "}
+                            {dateLongue(c.date_destruction)}
+                          </span>
+                        </span>
+                        <ChevronRight
+                          className="h-4 w-4 shrink-0 text-admin-faint transition-colors group-hover:text-admin-ink"
+                          aria-hidden
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <Link
+              href={`/admin/destruction-donnees?client=${company.id}`}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-admin-line-strong bg-admin-card px-5 py-2.5 text-sm font-semibold text-admin-ink transition-colors hover:bg-admin-page focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card"
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              Nouveau certificat
+            </Link>
+          </section>
+
+          {/* Historique */}
+          <section>
+            <h2 className="mb-4 font-display text-lg font-semibold text-admin-ink">
+              Historique
+            </h2>
+            <div className="glass p-5">
+              <ActivityTimeline
+                activities={activities}
+                contactsById={contactsById}
+              />
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );

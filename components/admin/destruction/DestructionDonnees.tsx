@@ -1,19 +1,26 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { flushSync } from "react-dom";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   FileDown,
   FilePlus2,
   ImageDown,
+  Link2,
   Loader2,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
 import CertificatDestruction from "@/components/admin/destruction/CertificatDestruction";
 import { telechargerCertificat } from "@/components/admin/destruction/export";
-import { enregistrerCertificat, supprimerCertificat } from "@/lib/admin/destruction-actions";
+import {
+  chercherClients,
+  enregistrerCertificat,
+  supprimerCertificat,
+} from "@/lib/admin/destruction-actions";
 import {
   LIMITES_CERTIFICAT,
   dateLongue,
@@ -22,6 +29,7 @@ import {
   nomFichierCertificat,
   validerCertificat,
   type CertificatDestruction as Ligne,
+  type ClientCertificat,
 } from "@/lib/admin/destruction";
 
 type Formulaire = {
@@ -34,12 +42,16 @@ type Formulaire = {
   dateEmission: string;
 };
 
+/** Fiche client (compagnie du CRM) à laquelle le certificat est lié. */
+type Fiche = { id: string; nom: string };
+
 type Etat =
   | { type: "repos" }
   | { type: "travail"; format: "pdf" | "png" }
   | { type: "ok"; message: string }
   | { type: "erreur"; message: string };
 
+const PAGE = "/admin/destruction-donnees";
 const LARGEUR_FEUILLE = 816;
 
 function formulaireVide(numero: string, aujourdhui: string): Formulaire {
@@ -54,30 +66,63 @@ function formulaireVide(numero: string, aujourdhui: string): Formulaire {
   };
 }
 
+function formulaireDe(c: Ligne): Formulaire {
+  return {
+    numero: c.numero,
+    compagnie: c.compagnie,
+    adresse: c.adresse ?? "",
+    materiel: c.materiel ?? "",
+    nbAppareils: String(c.nb_appareils),
+    dateDestruction: c.date_destruction,
+    dateEmission: c.date_emission,
+  };
+}
+
+function ficheDe(c: Ligne): Fiche | null {
+  if (c.companies) return { id: c.companies.id, nom: c.companies.name };
+  return c.company_id ? { id: c.company_id, nom: c.compagnie } : null;
+}
+
 /** « 12 » → 12 ; tout le reste (vide, 2,5, -3) → NaN, refusé à la validation. */
 function entier(texte: string): number {
   return /^\d+$/.test(texte.trim()) ? Number(texte.trim()) : Number.NaN;
 }
 
 /**
- * Onglet Destruction des données : formulaire, aperçu en direct du certificat,
- * téléchargement en PDF ou en photo (enregistré au registre à chaque fois) et
- * liste des certificats émis.
+ * Onglet Destruction des données : formulaire (le nom de la compagnie propose
+ * les clients du CRM et remplit leur adresse), aperçu en direct du certificat,
+ * téléchargement en PDF ou en photo (enregistré au registre à chaque fois ; la
+ * base attribue le numéro) et liste des certificats émis.
  */
 export default function DestructionDonnees({
   certificats,
   prochainNumero,
   aujourdhui,
   erreurListe,
+  certificatInitial,
+  clientInitial,
 }: {
   certificats: Ligne[];
   prochainNumero: string;
   aujourdhui: string;
   erreurListe: string | null;
+  certificatInitial: Ligne | null;
+  clientInitial: ClientCertificat | null;
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<Formulaire>(() => formulaireVide(prochainNumero, aujourdhui));
-  const [idOuvert, setIdOuvert] = useState<string | null>(null);
+  const [form, setForm] = useState<Formulaire>(() => {
+    if (certificatInitial) return formulaireDe(certificatInitial);
+    const vide = formulaireVide(prochainNumero, aujourdhui);
+    return clientInitial ? { ...vide, compagnie: clientInitial.nom, adresse: clientInitial.adresse } : vide;
+  });
+  const [idOuvert, setIdOuvert] = useState<string | null>(certificatInitial?.id ?? null);
+  const [fiche, setFiche] = useState<Fiche | null>(() =>
+    certificatInitial
+      ? ficheDe(certificatInitial)
+      : clientInitial
+        ? { id: clientInitial.id, nom: clientInitial.nom }
+        : null,
+  );
   const [etat, setEtat] = useState<Etat>({ type: "repos" });
   const certificatRef = useRef<HTMLDivElement>(null);
   const hautRef = useRef<HTMLDivElement>(null);
@@ -86,7 +131,6 @@ export default function DestructionDonnees({
     () => nettoyerCertificat({ ...form, nbAppareils: entier(form.nbAppareils) }),
     [form],
   );
-  const ouvert = idOuvert ? certificats.find((c) => c.id === idOuvert) : undefined;
   const occupe = etat.type === "travail";
 
   function modifier<K extends keyof Formulaire>(cle: K, valeur: Formulaire[K]) {
@@ -96,23 +140,25 @@ export default function DestructionDonnees({
 
   function nouveau() {
     setIdOuvert(null);
+    setFiche(null);
     setForm(formulaireVide(prochainNumero, aujourdhui));
     setEtat({ type: "repos" });
+    // Sans ?certificat= ou ?client= dans l'adresse : un rechargement ne rouvre pas l'ancien.
+    router.replace(PAGE, { scroll: false });
   }
 
   function ouvrir(c: Ligne) {
     setIdOuvert(c.id);
-    setForm({
-      numero: c.numero,
-      compagnie: c.compagnie,
-      adresse: c.adresse ?? "",
-      materiel: c.materiel ?? "",
-      nbAppareils: String(c.nb_appareils),
-      dateDestruction: c.date_destruction,
-      dateEmission: c.date_emission,
-    });
+    setFiche(ficheDe(c));
+    setForm(formulaireDe(c));
     setEtat({ type: "repos" });
     hautRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function choisirClient(c: ClientCertificat) {
+    setForm((f) => ({ ...f, compagnie: c.nom, adresse: c.adresse }));
+    setFiche({ id: c.id, nom: c.nom });
+    setEtat({ type: "repos" });
   }
 
   async function telecharger(format: "pdf" | "png") {
@@ -126,35 +172,44 @@ export default function DestructionDonnees({
     const v = verif.valeurs;
     setEtat({ type: "travail", format });
 
-    let id: string;
+    let enregistre: { id: string; numero: string; companyId: string | null };
     try {
-      const res = await enregistrerCertificat(idOuvert, v);
+      const res = await enregistrerCertificat(idOuvert, v, fiche?.id ?? null);
       if (!res.ok) {
         setEtat({ type: "erreur", message: res.error });
         return;
       }
-      id = res.id;
+      enregistre = res;
     } catch {
       setEtat({ type: "erreur", message: "Connexion perdue : le certificat n’a pas été enregistré. Réessaie." });
       return;
     }
-    setIdOuvert(id);
+    // Le numéro attribué par la base est à l'écran avant la capture.
+    flushSync(() => {
+      setIdOuvert(enregistre.id);
+      setForm((f) => ({ ...f, numero: enregistre.numero }));
+      // Lié d'office par la base (même nom qu'une compagnie du CRM)
+      if (!fiche && enregistre.companyId) setFiche({ id: enregistre.companyId, nom: v.compagnie });
+    });
+    const dansFiche = Boolean(fiche || enregistre.companyId);
 
     try {
       await telechargerCertificat(
         noeud,
         format,
-        nomFichierCertificat(v.numero, v.compagnie, format),
-        `Certificat de destruction des données ${v.numero} — ${v.compagnie}`,
+        nomFichierCertificat(enregistre.numero, v.compagnie, format),
+        `Certificat de destruction des données ${enregistre.numero} — ${v.compagnie}`,
       );
       setEtat({
         type: "ok",
-        message: `Certificat ${v.numero} enregistré. ${format === "pdf" ? "Le PDF est téléchargé." : "La photo est téléchargée."}`,
+        message: `Certificat ${enregistre.numero} enregistré${dansFiche ? " dans la fiche du client" : ""}. ${
+          format === "pdf" ? "Le PDF est téléchargé." : "La photo est téléchargée."
+        }`,
       });
     } catch (e) {
       setEtat({
         type: "erreur",
-        message: `Certificat ${v.numero} enregistré, mais le fichier n’a pas pu être créé (${
+        message: `Certificat ${enregistre.numero} enregistré, mais le fichier n’a pas pu être créé (${
           e instanceof Error ? e.message : "erreur inconnue"
         }). Réessaie.`,
       });
@@ -167,18 +222,12 @@ export default function DestructionDonnees({
   return (
     <>
       <div ref={hautRef} className="grid scroll-mt-6 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
-        <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            void telecharger("pdf");
-          }}
-          className="admin-card space-y-5 p-5 sm:p-6"
-        >
+        {/* Pas d'envoi par Entrée : chaque enregistrement réserve un numéro. */}
+        <form noValidate onSubmit={(e) => e.preventDefault()} className="admin-card space-y-5 p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 className="admin-card-title">
-                {idOuvert ? `Certificat ${ouvert?.numero ?? form.numero}` : "Nouveau certificat"}
+                {idOuvert ? `Certificat ${form.numero}` : "Nouveau certificat"}
               </h2>
               <p className="mt-1 text-sm text-admin-muted">
                 {idOuvert
@@ -194,31 +243,26 @@ export default function DestructionDonnees({
             )}
           </div>
 
-          <Champ id="cert-numero" label="Numéro du certificat" aide="Rempli tout seul (suite de l’année) ; tu peux le changer.">
-            <input
-              id="cert-numero"
-              type="text"
-              value={form.numero}
-              maxLength={LIMITES_CERTIFICAT.numero}
-              onChange={(e) => modifier("numero", e.target.value)}
-              aria-describedby="cert-numero-aide"
-              className="field font-display tracking-wide"
-            />
-          </Champ>
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-admin-ink">Numéro du certificat</p>
+            <p className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-[10px] border border-admin-line bg-admin-subtle px-3.5 py-2.5">
+              <span className="font-display text-sm font-semibold tracking-wide text-admin-ink">{form.numero}</span>
+              <span className="text-xs text-admin-muted">
+                {idOuvert ? "numéro de ce certificat" : "attribué automatiquement, jamais deux fois le même"}
+              </span>
+            </p>
+          </div>
 
-          <Champ id="cert-compagnie" label="Nom de la compagnie">
-            <input
-              id="cert-compagnie"
-              type="text"
-              required
-              autoComplete="organization"
-              value={form.compagnie}
-              maxLength={LIMITES_CERTIFICAT.compagnie}
-              onChange={(e) => modifier("compagnie", e.target.value)}
-              placeholder="Ex. : Entreprise Exemple inc."
-              className="field"
-            />
-          </Champ>
+          <ChampClient
+            valeur={form.compagnie}
+            fiche={fiche}
+            onSaisie={(texte) => {
+              modifier("compagnie", texte);
+              // Un autre nom que celui du client choisi : le lien vers sa fiche tombe.
+              if (fiche && texte.trim() !== fiche.nom) setFiche(null);
+            }}
+            onChoix={choisirClient}
+          />
 
           <Champ id="cert-adresse" label="Adresse du client" facultatif>
             <input
@@ -314,7 +358,7 @@ export default function DestructionDonnees({
           )}
 
           <div className="flex flex-wrap gap-3 border-t border-admin-line pt-5">
-            <button type="submit" disabled={occupe} className="btn-primary">
+            <button type="button" disabled={occupe} onClick={() => void telecharger("pdf")} className="btn-primary">
               {etat.type === "travail" && etat.format === "pdf" ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
@@ -360,7 +404,8 @@ export default function DestructionDonnees({
             )}
           </h2>
           <p className="mt-1 text-sm text-admin-muted">
-            Chaque téléchargement enregistre le certificat ici. Ouvre-le pour le retélécharger ou le corriger.
+            Chaque téléchargement enregistre le certificat ici et dans la fiche du client. Ouvre-le pour le
+            retélécharger ou le corriger.
           </p>
         </div>
 
@@ -379,38 +424,51 @@ export default function DestructionDonnees({
           </p>
         ) : (
           <ul className="admin-card divide-y divide-admin-line overflow-hidden">
-            {certificats.map((c) => (
-              <li
-                key={c.id}
-                className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5 ${
-                  c.id === idOuvert ? "bg-admin-tint-green" : ""
-                }`}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                    <span className="font-display text-sm font-semibold text-admin-ink">{c.numero}</span>
-                    <span className="min-w-0 truncate text-sm text-admin-ink">{c.compagnie}</span>
-                  </p>
-                  <p className="mt-0.5 text-xs text-admin-muted">
-                    {c.nb_appareils} appareil{c.nb_appareils > 1 ? "s" : ""} · données détruites le{" "}
-                    {dateLongue(c.date_destruction)} · émis le {dateLongue(c.date_emission)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => ouvrir(c)} disabled={occupe} className="admin-btn">
-                    Ouvrir
-                  </button>
-                  <BoutonSupprimer
-                    id={c.id}
-                    numero={c.numero}
-                    onSupprime={() => {
-                      if (c.id === idOuvert) nouveau();
-                      router.refresh();
-                    }}
-                  />
-                </div>
-              </li>
-            ))}
+            {certificats.map((c) => {
+              const lien = ficheDe(c);
+              return (
+                <li
+                  key={c.id}
+                  className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-5 ${
+                    c.id === idOuvert ? "bg-admin-tint-green" : ""
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                      <span className="font-display text-sm font-semibold text-admin-ink">{c.numero}</span>
+                      {lien ? (
+                        <Link
+                          href={`/admin/crm/${lien.id}`}
+                          className="inline-flex min-w-0 items-center gap-1 text-sm text-admin-ink underline-offset-2 hover:text-admin-green hover:underline"
+                        >
+                          <span className="truncate">{c.compagnie}</span>
+                          <Link2 className="h-3 w-3 shrink-0 text-admin-green" aria-label="fiche client" />
+                        </Link>
+                      ) : (
+                        <span className="min-w-0 truncate text-sm text-admin-ink">{c.compagnie}</span>
+                      )}
+                    </p>
+                    <p className="mt-0.5 text-xs text-admin-muted">
+                      {c.nb_appareils} appareil{c.nb_appareils > 1 ? "s" : ""} · données détruites le{" "}
+                      {dateLongue(c.date_destruction)} · émis le {dateLongue(c.date_emission)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => ouvrir(c)} disabled={occupe} className="admin-btn">
+                      Ouvrir
+                    </button>
+                    <BoutonSupprimer
+                      id={c.id}
+                      numero={c.numero}
+                      onSupprime={() => {
+                        if (c.id === idOuvert) nouveau();
+                        router.refresh();
+                      }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
@@ -427,7 +485,7 @@ function Champ({
 }: {
   id: string;
   label: string;
-  aide?: string;
+  aide?: React.ReactNode;
   facultatif?: boolean;
   children: React.ReactNode;
 }) {
@@ -443,6 +501,155 @@ function Champ({
           {aide}
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Nom de la compagnie avec suggestions des compagnies du CRM (clients d'abord) :
+ * en choisir une remplit le nom et l'adresse, et lie le certificat à sa fiche.
+ */
+function ChampClient({
+  valeur,
+  fiche,
+  onSaisie,
+  onChoix,
+}: {
+  valeur: string;
+  fiche: Fiche | null;
+  onSaisie: (texte: string) => void;
+  onChoix: (c: ClientCertificat) => void;
+}) {
+  const [suggestions, setSuggestions] = useState<ClientCertificat[]>([]);
+  const [ouverte, setOuverte] = useState(false);
+  const [actif, setActif] = useState(-1);
+  const derniereRecherche = useRef(0);
+  const minuterie = useRef<number | undefined>(undefined);
+
+  useEffect(() => () => window.clearTimeout(minuterie.current), []);
+
+  function saisir(texte: string) {
+    onSaisie(texte);
+    window.clearTimeout(minuterie.current);
+    const recherche = texte.trim();
+    const numero = ++derniereRecherche.current;
+    if (recherche.length < 2) {
+      setSuggestions([]);
+      setOuverte(false);
+      return;
+    }
+    minuterie.current = window.setTimeout(async () => {
+      try {
+        const res = await chercherClients(recherche);
+        if (numero !== derniereRecherche.current) return; // une saisie plus récente a pris le relais
+        setSuggestions(res);
+        setActif(-1);
+        setOuverte(res.length > 0);
+      } catch {
+        setOuverte(false);
+      }
+    }, 220);
+  }
+
+  function choisir(c: ClientCertificat) {
+    derniereRecherche.current++;
+    setOuverte(false);
+    setSuggestions([]);
+    onChoix(c);
+  }
+
+  return (
+    <div>
+      <label htmlFor="cert-compagnie" className="mb-1.5 block text-sm font-medium text-admin-ink">
+        Nom de la compagnie
+      </label>
+      <div className="relative">
+        <input
+          id="cert-compagnie"
+          type="text"
+          required
+          autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={ouverte}
+          aria-controls="cert-clients"
+          aria-activedescendant={ouverte && actif >= 0 ? `cert-client-${actif}` : undefined}
+          aria-describedby="cert-compagnie-aide"
+          value={valeur}
+          maxLength={LIMITES_CERTIFICAT.compagnie}
+          onChange={(e) => saisir(e.target.value)}
+          onFocus={() => {
+            if (suggestions.length > 0 && !fiche) setOuverte(true);
+          }}
+          onBlur={() => setOuverte(false)}
+          onKeyDown={(e) => {
+            if (!ouverte || suggestions.length === 0) return;
+            if (e.key === "ArrowDown") {
+              e.preventDefault();
+              setActif((i) => (i + 1) % suggestions.length);
+            } else if (e.key === "ArrowUp") {
+              e.preventDefault();
+              setActif((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+            } else if (e.key === "Enter" && actif >= 0) {
+              e.preventDefault();
+              choisir(suggestions[actif]);
+            } else if (e.key === "Escape") {
+              setOuverte(false);
+            }
+          }}
+          placeholder="Tape le nom : les clients existants s’affichent"
+          className="field"
+        />
+        {ouverte && (
+          <ul
+            id="cert-clients"
+            role="listbox"
+            aria-label="Clients existants"
+            className="absolute inset-x-0 top-full z-30 mt-1.5 max-h-80 overflow-auto rounded-xl border border-admin-line bg-admin-card py-1 shadow-admin-pop"
+          >
+            {suggestions.map((s, i) => (
+              <li
+                key={s.id}
+                id={`cert-client-${i}`}
+                role="option"
+                aria-selected={i === actif}
+                // mousedown : le choix passe avant que le champ perde le focus
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choisir(s);
+                }}
+                onMouseEnter={() => setActif(i)}
+                className={`cursor-pointer px-3.5 py-2.5 ${i === actif ? "bg-admin-hover" : ""}`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="truncate text-sm font-medium text-admin-ink">{s.nom}</span>
+                  {s.client && (
+                    <span className="shrink-0 rounded-full bg-admin-tint-green px-2 py-0.5 text-[11px] font-semibold text-admin-green">
+                      Client
+                    </span>
+                  )}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-admin-muted">
+                  {s.adresse || "Adresse inconnue"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <p id="cert-compagnie-aide" className="mt-1.5 text-xs text-admin-muted">
+        {fiche ? (
+          <span className="inline-flex flex-wrap items-center gap-1 text-admin-green">
+            <Link2 className="h-3.5 w-3.5" aria-hidden />
+            Ajouté à la fiche client&nbsp;:
+            <Link href={`/admin/crm/${fiche.id}`} className="font-semibold underline-offset-2 hover:underline">
+              {fiche.nom}
+            </Link>
+          </span>
+        ) : (
+          "Choisis un client existant pour remplir son adresse et garder le certificat dans sa fiche."
+        )}
+      </p>
     </div>
   );
 }
