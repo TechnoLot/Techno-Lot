@@ -1,9 +1,8 @@
-"use client";
-
-import { useEffect, useId, useRef, type CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import type { Locale } from "@/lib/i18n";
 import { getContenuCarte } from "./contenu-carte";
 import { CADRE, DEPART, QUEBEC_PATH, VILLES_POINTS, VILLES_REPERES } from "./zones-carte";
+import { ZonesObservateur } from "./zones-observateur";
 import "./zones.css";
 
 /** Côté de l'étiquette de chaque ville nommée (l = gauche, r = droite, t = dessus). */
@@ -43,37 +42,18 @@ const delai = (s: number) => ({ "--zc-d": `${s.toFixed(2)}s` }) as CSSProperties
  * les trajets vers les grandes villes se dessinent, puis les autres villes apparaissent
  * (une seule fois, à l'entrée dans l'écran). Aucune animation liée au défilement.
  * Rendu serveur = état final (rien de caché si le JS échoue) ; mouvement réduit : état final.
+ * Composant serveur : seul l'observateur d'apparition (zones-observateur.tsx) va au navigateur.
  */
 export function ZonesCarte({ locale }: { locale: Locale }) {
   const t = getContenuCarte(locale);
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
-  const ref = useRef<HTMLElement>(null);
   const nom = (id: string, defaut: string) => t.names[id] ?? defaut;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Déjà à l'écran au chargement : rien n'est masqué
-    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) return;
-    el.setAttribute("data-armed", "");
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        el.setAttribute("data-in", "");
-        io.disconnect();
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
 
   const nommees = [DEPART, ...VILLES_REPERES];
   const toutes = [...nommees, ...VILLES_POINTS].sort((a, b) => a.km - b.km).map((v) => nom(v.id, v.nom));
 
   return (
-    <figure ref={ref} className="zc m-0">
+    <ZonesObservateur>
       <div className="zc-frame" style={{ aspectRatio: `${CADRE.w} / ${CADRE.h}` }}>
         <svg
           viewBox={`${CADRE.x} ${CADRE.y} ${CADRE.w} ${CADRE.h}`}
@@ -127,6 +107,6 @@ export function ZonesCarte({ locale }: { locale: Locale }) {
           ))}
         </ul>
       </div>
-    </figure>
+    </ZonesObservateur>
   );
 }
