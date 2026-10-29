@@ -5,6 +5,7 @@ import Image from "next/image";
 import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import { PrimaryButtonLink } from "@/components/site/Button";
+import { hauteurFenetre, lirePositionDefilement, positionDefilement } from "@/lib/defilement";
 import type { AccueilContenu } from "./contenu";
 import { OBJETS, PAL_H, PAL_W, STAGE_H, TOTAL } from "./palette-objets";
 import "./interactif.css";
@@ -52,13 +53,28 @@ export function PaletteScene({ labels, href }: { labels: AccueilContenu["palette
     let visible = true;
     let shown = true;
 
-    const target = () => {
-      if (reduce) return 1;
+    // Place de la piste dans le document, en cache (relue au redimensionnement) : chaque image
+    // n'utilise que la position partagée (lib/defilement), sans mesurer le DOM.
+    let trackTop = 0;
+    let trackH = 0;
+    const measureTrack = () => {
       const rect = track.getBoundingClientRect();
-      return clamp(-rect.top / Math.max(1, rect.height - window.innerHeight));
+      trackTop = rect.top + lirePositionDefilement();
+      trackH = rect.height;
     };
-    // Départ à la position courante : pas de chute rejouée au chargement en milieu de page.
-    let Pe = target();
+    if (!reduce) measureTrack();
+    // La piste bouge si elle change de taille ou si le contenu au-dessus d'elle change de hauteur
+    const roTrack = new ResizeObserver(() => {
+      if (!reduce) measureTrack();
+    });
+
+    const target = (y = positionDefilement()) => {
+      if (reduce) return 1;
+      return clamp(-(trackTop - y) / Math.max(1, trackH - hauteurFenetre()));
+    };
+    // Départ à la position courante (relue : elle a pu changer avec la navigation) :
+    // pas de chute rejouée au chargement en milieu de page.
+    let Pe = target(reduce ? 0 : lirePositionDefilement());
 
     const paint = () => {
       const k = stageW / PAL_W; // px par unité de palette
@@ -144,12 +160,15 @@ export function PaletteScene({ labels, href }: { labels: AccueilContenu["palette
     ro.observe(scene);
     ro.observe(stage);
     io.observe(track);
+    roTrack.observe(track);
+    roTrack.observe(document.body);
     window.addEventListener("scroll", kick, { passive: true });
     kick();
 
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      roTrack.disconnect();
       io.disconnect();
       window.removeEventListener("scroll", kick);
     };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { hauteurFenetre, lirePositionDefilement, positionDefilement } from "@/lib/defilement";
 
 type RevealProps = {
   children: ReactNode;
@@ -17,25 +18,51 @@ type RevealProps = {
 /* Registre partagé : un seul écouteur de défilement (filet de sécurité de
    l'IntersectionObserver, qui peut être suspendu dans certains contextes). */
 const pending = new Set<HTMLElement>();
+/* Place des blocs en attente dans le document (décalage de départ compris), en cache :
+   le filet ne lit le DOM que pour confirmer les blocs que ce cache annonce à l'écran,
+   toutes les lectures avant toute écriture. */
+const places = new Map<HTMLElement, { top: number; bottom: number }>();
 let listening = false;
 let last = 0;
 
 function reveal(el: HTMLElement) {
   el.setAttribute("data-in", "");
   pending.delete(el);
+  places.delete(el);
+}
+
+/** Relit la place des blocs en attente (lectures seulement). */
+function measure(els: HTMLElement[]) {
+  const sy = lirePositionDefilement();
+  const out: { el: HTMLElement; top: number; bottom: number }[] = [];
+  els.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    places.set(el, { top: r.top + sy, bottom: r.bottom + sy });
+    out.push({ el, top: r.top, bottom: r.bottom });
+  });
+  return out;
 }
 
 function sweep() {
-  const limit = window.innerHeight * 0.95;
-  pending.forEach((el) => {
-    const r = el.getBoundingClientRect();
-    if (r.top < limit && r.bottom > 0) reveal(el);
+  const y = positionDefilement();
+  const limit = hauteurFenetre() * 0.95;
+  // Candidats d'après le cache (bloc jamais mesuré : toujours vérifié)
+  const candidates = Array.from(pending).filter((el) => {
+    const p = places.get(el);
+    return !p || (p.top - y < limit && p.bottom - y > 0);
   });
+  if (!candidates.length) return;
+  // Lectures d'abord, puis écritures : une seule mise en page au plus
+  measure(candidates)
+    .filter((r) => r.top < limit && r.bottom > 0)
+    .forEach((r) => reveal(r.el));
 }
 
 function listen() {
   if (listening) return;
   listening = true;
+  // Installe d'abord la position partagée : elle est à jour quand nos écouteurs passent
+  hauteurFenetre();
   let trailing: ReturnType<typeof setTimeout> | undefined;
   const onScroll = () => {
     if (!pending.size) return;
@@ -47,10 +74,22 @@ function listen() {
     sweep();
   };
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll, { passive: true });
+  window.addEventListener(
+    "resize",
+    () => {
+      // Largeur ou hauteur changée : les places en cache ne valent plus
+      places.clear();
+      onScroll();
+    },
+    { passive: true },
+  );
   window.addEventListener("hashchange", sweep);
   // Impression : tout afficher
   window.addEventListener("beforeprint", () => pending.forEach(reveal));
+  // Contenu plus haut ou plus bas (images, polices, accordéons) : places relues après la mise en page
+  new ResizeObserver(() => {
+    if (pending.size) measure(Array.from(pending));
+  }).observe(document.body);
 }
 
 /**
@@ -92,6 +131,7 @@ export function Reveal({ children, className, delay = 0, y = 28, style }: Reveal
     return () => {
       io?.disconnect();
       pending.delete(el);
+      places.delete(el);
     };
   }, []);
 

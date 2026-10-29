@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { abonnerDefilement, lirePositionDefilement } from "@/lib/defilement";
 
 type MarqueeProps = {
   children: ReactNode;
@@ -51,16 +52,21 @@ export function Marquee({ children, label, className, speed = 38, scrollBoost = 
     let x = 0;
     let dir = -1;
     let boost = 0;
-    let lastY = window.scrollY;
+    let lastY = lirePositionDefilement();
     let lastT = performance.now();
     let raf = 0;
     let visible = false;
     let hover = false;
+    // Largeur d'une moitié + écart, mesurée au montage puis à chaque redimensionnement (jamais par image)
+    let width = half.offsetWidth + 16;
+    const ro = new ResizeObserver(() => {
+      width = half.offsetWidth + 16;
+    });
+    ro.observe(half);
 
     const loop = (t: number) => {
       const dt = Math.min(0.05, (t - lastT) / 1000);
       lastT = t;
-      const width = half.offsetWidth + 16;
       boost *= 0.92;
       const v = hover ? 0 : speed + boost;
       x += dir * v * dt;
@@ -72,8 +78,8 @@ export function Marquee({ children, label, className, speed = 38, scrollBoost = 
       raf = visible ? requestAnimationFrame(loop) : 0;
     };
 
-    const onScroll = () => {
-      const y = window.scrollY;
+    // Position partagée (lib/defilement), une fois par image : aucune lecture du DOM
+    const onScroll = (y: number) => {
       const dy = y - lastY;
       lastY = y;
       if (Math.abs(dy) > 0.5) dir = dy > 0 ? -1 : 1;
@@ -94,16 +100,17 @@ export function Marquee({ children, label, className, speed = 38, scrollBoost = 
     root.addEventListener("pointerleave", leave);
     root.addEventListener("focusin", enter);
     root.addEventListener("focusout", leave);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    const desabonner = abonnerDefilement(onScroll);
 
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
+      ro.disconnect();
       root.removeEventListener("pointerenter", enter);
       root.removeEventListener("pointerleave", leave);
       root.removeEventListener("focusin", enter);
       root.removeEventListener("focusout", leave);
-      window.removeEventListener("scroll", onScroll);
+      desabonner();
     };
   }, [speed, scrollBoost, maxBoost]);
 

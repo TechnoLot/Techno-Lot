@@ -10,6 +10,7 @@ import { LangSwitcher } from "@/components/site/LangSwitcher";
 import { Logo } from "@/components/site/Logo";
 import { getDict, localePath, type Locale } from "@/lib/i18n";
 import { site } from "@/lib/site";
+import { abonnerDefilement, lirePositionDefilement } from "@/lib/defilement";
 
 type NavItem = { label: string; href: string };
 
@@ -41,12 +42,11 @@ export function SiteHeader({ locale }: { locale: Locale }) {
   const reduce = useReducedMotion();
 
   useEffect(() => {
-    let lastY = Math.max(0, window.scrollY);
-    let queued = false;
+    let lastY = Math.max(0, lirePositionDefilement());
     const bureau = window.matchMedia("(min-width: 1024px)");
-    const update = () => {
-      queued = false;
-      const y = Math.max(0, window.scrollY);
+    // Appelé une fois par image avec la position partagée (lib/defilement) : aucune lecture du DOM
+    const update = (pos: number) => {
+      const y = Math.max(0, pos);
       setScrolled(y > 24);
       if (bureau.matches || y < TOUJOURS_VISIBLE) {
         setHidden(false);
@@ -59,20 +59,15 @@ export function SiteHeader({ locale }: { locale: Locale }) {
       setHidden(dy > 0);
       lastY = y;
     };
-    const onScroll = () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(update);
-    };
     // Passage à la largeur ordinateur : réaffiche l'en-tête s'il était caché
     const onBureau = () => {
       if (bureau.matches) setHidden(false);
     };
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    update(lastY);
+    const desabonner = abonnerDefilement(update);
     bureau.addEventListener("change", onBureau);
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      desabonner();
       bureau.removeEventListener("change", onBureau);
     };
   }, []);
