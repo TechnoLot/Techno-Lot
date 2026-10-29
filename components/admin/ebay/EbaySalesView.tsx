@@ -2,11 +2,13 @@ import { ExternalLink, Info, TriangleAlert } from "lucide-react";
 import EbaySalesChart from "@/components/admin/ebay/EbaySalesChart";
 import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import ConnectEbay, { type EbayEnvStatus } from "@/components/admin/ebay/ConnectEbay";
-import { formatMoney } from "@/lib/admin/format";
-import { ebayOrderStatus, type EbayOrderRow, type EbaySums } from "@/lib/ebay/totaux";
+import PeriodeSelect from "@/components/admin/PeriodeSelect";
+import Pagination from "@/components/admin/Pagination";
+import { formatCount, formatMoney } from "@/lib/admin/format";
+import { resumePage } from "@/lib/admin/pagination";
+import { libellePeriode, type PeriodeKey } from "@/lib/admin/periodes";
+import { ebayOrderStatus, type EbayOrderRow, type EbayRevenuePoint, type EbaySums } from "@/lib/ebay/totaux";
 import type { EbaySyncStatus } from "@/lib/ebay/ventes";
-
-export type EbayTile = { label: string; sums: EbaySums; highlight?: boolean };
 
 const SELLER_HUB = "https://www.ebay.ca/sh/ovw";
 
@@ -25,6 +27,57 @@ const dateFmt = new Intl.DateTimeFormat("fr-CA", {
   year: "numeric",
 });
 
+// Jours « YYYY-MM-DD » sans heure : formatés en UTC pour éviter tout décalage.
+const jourCourtFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", day: "numeric", month: "short" });
+const jourAnneeFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" });
+const jourLongFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" });
+
+function jourUtc(day: string): Date {
+  const [y, m, d] = day.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+/** « Du 30 sept. au 29 oct. 2026 », « Jeudi 29 octobre » ou « Depuis le début ». */
+function legendeDates(from: string | null, to: string | null): string {
+  if (!from || !to) return "Depuis le début";
+  if (from === to) {
+    const s = jourLongFmt.format(jourUtc(from));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  const debut = from.slice(0, 4) === to.slice(0, 4) ? jourCourtFmt.format(jourUtc(from)) : jourAnneeFmt.format(jourUtc(from));
+  return `Du ${debut} au ${jourAnneeFmt.format(jourUtc(to))}`;
+}
+
+/** Libellé de la période de comparaison ; null s'il n'y en a pas. */
+function vsPrecedente(periode: PeriodeKey): string | null {
+  switch (periode) {
+    case "aujourdhui":
+      return "vs la veille";
+    case "hier":
+      return "vs avant-hier";
+    case "semaine":
+      return "vs la semaine d’avant";
+    case "7j":
+      return "vs les 7 jours d’avant";
+    case "30j":
+      return "vs les 30 jours d’avant";
+    case "90j":
+      return "vs les 90 jours d’avant";
+    default:
+      return null;
+  }
+}
+
+/** Sous-ligne de la tuile « Ventes » : variation vs la période précédente. */
+function variation(periode: PeriodeKey, revenue: number, prev: number | null): string | null {
+  const vs = vsPrecedente(periode);
+  if (prev == null || !vs) return null;
+  if (prev === 0) return "Rien la période d’avant";
+  const pct = Math.round(((revenue - prev) / prev) * 100);
+  const fleche = pct > 0 ? "↑ " : pct < 0 ? "↓ " : "";
+  return `${fleche}${formatCount(Math.abs(pct))} % ${vs}`;
+}
+
 const card = "rounded-2xl border border-admin-line bg-admin-card";
 
 /** Vue de la page Ventes eBay (données passées en props, sans accès réseau). */
@@ -32,23 +85,49 @@ export default function EbaySalesView({
   configured,
   env,
   status,
-  tiles,
-  daily,
+  periode,
+  options,
+  from,
+  to,
+  sums,
+  prevRevenue,
+  chart,
+  granularite,
   orders,
+  ordersTotal,
+  page,
+  pageCount,
+  parPage,
   live,
 }: {
   configured: boolean;
   env: EbayEnvStatus;
   status: EbaySyncStatus;
-  tiles: EbayTile[];
-  daily: Array<{ day: string; total: number; orders: number }>;
+  periode: PeriodeKey;
+  options: PeriodeKey[];
+  /** Bornes de la période (jours inclusifs, Toronto) ; null = sans borne */
+  from: string | null;
+  to: string | null;
+  sums: EbaySums;
+  /** Ventes de la période précédente, null s'il n'y a pas de comparaison */
+  prevRevenue: number | null;
+  /** Série du graphique, null pour aujourd'hui et hier */
+  chart: EbayRevenuePoint[] | null;
+  granularite: "jour" | "mois";
+  /** Commandes de la page courante */
   orders: EbayOrderRow[];
+  ordersTotal: number;
+  page: number;
+  pageCount: number;
+  parPage: number;
   /** Panneau « Boutique en direct » (Suspense), seulement si eBay est connecté */
   live?: React.ReactNode;
 }) {
   const lastRunFailed =
     status.lastRun && !status.lastRun.ok && (!status.lastSync || status.lastRun.at > status.lastSync);
-  const hasData = Boolean(status.lastSync) || orders.length > 0;
+  const hasData = Boolean(status.lastSync) || ordersTotal > 0;
+  const libelle = libellePeriode(periode);
+  const net = sums.revenue - (sums.fees ?? 0);
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-7 text-admin-ink sm:px-8 sm:py-9 lg:px-10">
@@ -100,81 +179,119 @@ export default function EbaySalesView({
         <Notice tone="info">eBay est connecté. La première synchronisation importe les 12 derniers mois ; elle démarre automatiquement.</Notice>
       )}
 
-      <section aria-label="Ventes par période" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-        {tiles.map((t) => (
-          <Tile key={t.label} tile={t} />
-        ))}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PeriodeSelect current={periode} options={options} />
+        <p className="text-[13px] text-admin-muted">{legendeDates(from, to)}</p>
+      </div>
+
+      <section aria-label="Ventes de la période" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <Tile label="Ventes" value={formatMoney(sums.revenue)} sub={variation(periode, sums.revenue, prevRevenue)} highlight />
+        <Tile label="Commandes" value={formatCount(sums.orders)} sub="annulées et remboursées exclues" />
+        <Tile
+          label="Frais eBay"
+          value={sums.fees == null ? "—" : formatMoney(sums.fees)}
+          sub={
+            sums.fees == null
+              ? "inconnus"
+              : sums.ordersWithoutFees > 0
+                ? `${sums.ordersWithoutFees} commande${sums.ordersWithoutFees > 1 ? "s" : ""} sans frais connus`
+                : null
+          }
+        />
+        <Tile
+          label="Net après frais"
+          value={formatMoney(net)}
+          sub={sums.fees == null ? "frais inconnus non retirés" : "ventes − frais eBay"}
+        />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <section className={`${card} min-w-0 p-5 lg:p-6 ${live ? "lg:col-span-2" : "lg:col-span-3"}`}>
-          <h2 className="font-display text-sm font-semibold text-admin-ink">Ventes par jour · 30 jours</h2>
-          <EbaySalesChart data={daily} />
-        </section>
+      {(chart || live) && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {chart && (
+            <section className={`${card} min-w-0 p-5 lg:p-6 ${live ? "lg:col-span-2" : "lg:col-span-3"}`}>
+              <h2 className="font-display text-sm font-semibold text-admin-ink">
+                {granularite === "mois" ? "Ventes par mois" : "Ventes par jour"} · {libelle}
+              </h2>
+              <EbaySalesChart data={chart} granularite={granularite} />
+            </section>
+          )}
 
-        {live && (
-          <section className={`${card} p-5 lg:p-6`}>
-            <h2 className="font-display text-sm font-semibold text-admin-ink">
-              Boutique en direct
-            </h2>
-            {live}
-          </section>
-        )}
-      </div>
+          {live && (
+            <section className={`${card} p-5 lg:p-6 ${chart ? "" : "lg:col-span-3"}`}>
+              <h2 className="font-display text-sm font-semibold text-admin-ink">
+                Boutique en direct
+              </h2>
+              {live}
+            </section>
+          )}
+        </div>
+      )}
 
       <section className={`${card} p-5 lg:p-6`}>
         <h2 className="font-display text-sm font-semibold text-admin-ink">
-          Dernières commandes <span className="font-normal text-admin-muted">· {orders.length}</span>
+          Commandes · {libelle} <span className="font-normal text-admin-muted">· {formatCount(ordersTotal)}</span>
         </h2>
         {orders.length === 0 ? (
           <p className="mt-4 text-sm text-admin-muted">
-            {configured ? "Aucune commande enregistrée pour l’instant." : "Les commandes apparaîtront ici une fois eBay connecté."}
+            {configured ? `Aucune commande ${libelle.startsWith("les ") ? "dans " : ""}${libelle}.` : "Les commandes apparaîtront ici une fois eBay connecté."}
           </p>
         ) : (
-          <div className="-mx-5 mt-4 overflow-x-auto px-5 lg:-mx-6 lg:px-6">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="text-xs text-admin-muted">
-                <tr className="border-b border-admin-line-soft">
-                  <th className="py-2 pr-4 font-medium">Date</th>
-                  <th className="py-2 pr-4 font-medium">Article</th>
-                  <th className="py-2 pr-4 font-medium">Acheteur</th>
-                  <th className="py-2 pr-4 text-right font-medium">Total payé</th>
-                  <th className="py-2 pr-4 text-right font-medium">Frais eBay</th>
-                  <th className="py-2 font-medium">Statut</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-admin-line-soft">
-                {orders.map((o) => (
-                  <OrderRow key={o.order_id} order={o} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="-mx-5 mt-4 overflow-x-auto px-5 lg:-mx-6 lg:px-6">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="text-xs text-admin-muted">
+                  <tr className="border-b border-admin-line-soft">
+                    <th className="py-2 pr-4 font-medium">Date</th>
+                    <th className="py-2 pr-4 font-medium">Article</th>
+                    <th className="py-2 pr-4 font-medium">Acheteur</th>
+                    <th className="py-2 pr-4 text-right font-medium">Total payé</th>
+                    <th className="py-2 pr-4 text-right font-medium">Frais eBay</th>
+                    <th className="py-2 font-medium">Statut</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-admin-line-soft">
+                  {orders.map((o) => (
+                    <OrderRow key={o.order_id} order={o} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-5 flex flex-col items-center gap-2">
+              <Pagination page={page} pageCount={pageCount} scroll={false} />
+              <p className="text-[13px] text-admin-muted tabular-nums">
+                {resumePage(page, parPage, ordersTotal)} commandes
+              </p>
+            </div>
+          </>
         )}
       </section>
     </div>
   );
 }
 
-function Tile({ tile }: { tile: EbayTile }) {
-  const { sums, highlight } = tile;
-  const sub = highlight ? "text-admin-ink/75" : "text-admin-muted";
-  const fees =
-    sums.orders === 0 ? null : sums.fees == null ? "frais inconnus" : `frais ${formatMoney(sums.fees)}`;
+function Tile({
+  label,
+  value,
+  sub,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string | null;
+  highlight?: boolean;
+}) {
+  const subTone = highlight ? "text-admin-ink/75" : "text-admin-muted";
   return (
     <div
       className={`flex min-w-0 flex-col rounded-2xl p-4 lg:p-5 ${
         highlight ? "bg-[#6bd63b] text-admin-ink" : "border border-admin-line bg-admin-card"
       }`}
     >
-      <p className={`text-xs font-medium ${sub}`}>{tile.label}</p>
+      <p className={`text-xs font-medium ${subTone}`}>{label}</p>
       <p className="mt-2 truncate font-display text-2xl font-semibold tabular-nums tracking-tight lg:text-[28px]">
-        {formatMoney(sums.revenue)}
+        {value}
       </p>
-      <p className={`mt-1 text-xs tabular-nums ${sub}`}>
-        {sums.orders} commande{sums.orders > 1 ? "s" : ""}
-        {fees ? ` · ${fees}` : ""}
-      </p>
+      {sub && <p className={`mt-1 text-xs tabular-nums ${subTone}`}>{sub}</p>}
     </div>
   );
 }

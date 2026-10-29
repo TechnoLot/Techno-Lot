@@ -103,12 +103,65 @@ export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
 /** Dernières commandes (toutes, y compris annulées) pour l'affichage. */
 export async function getRecentEbayOrders(limit = 20): Promise<EbayOrderRow[]> {
   const supabase = createClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("ebay_orders")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (error) console.error("[ebay] Lecture des dernières commandes impossible :", error.message);
   return (data ?? []).map((r) => normalizeRow(r) as unknown as EbayOrderRow);
+}
+
+/**
+ * Une page des commandes de la période (toutes, y compris annulées et
+ * remboursées), plus récentes d'abord. Jours inclusifs « YYYY-MM-DD » à
+ * l'heure de Toronto ; null = sans borne. La page est ramenée dans
+ * [1, pageCount].
+ */
+export async function getEbayOrdersPage(
+  from: string | null,
+  to: string | null,
+  page: number,
+  parPage: number,
+): Promise<{ rows: EbayOrderRow[]; total: number; page: number; pageCount: number }> {
+  const supabase = createClient();
+  const { gte, lt } = torontoRangeUtc(from, to);
+  const taille = Math.max(1, Math.floor(parPage) || 1);
+  const nbPages = (total: number) => Math.max(1, Math.ceil(total / taille));
+
+  const lire = (n: number) => {
+    let q = supabase
+      .from("ebay_orders")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range((n - 1) * taille, n * taille - 1);
+    if (gte) q = q.gte("created_at", gte);
+    if (lt) q = q.lt("created_at", lt);
+    return q;
+  };
+
+  let courante = Math.max(1, Math.floor(page) || 1);
+  let res = await lire(courante);
+
+  // Page hors limites (PostgREST répond alors une erreur) : on compte, puis on relit.
+  if (res.error || (res.count != null && courante > nbPages(res.count))) {
+    let q = supabase.from("ebay_orders").select("order_id", { count: "exact", head: true });
+    if (gte) q = q.gte("created_at", gte);
+    if (lt) q = q.lt("created_at", lt);
+    const { count, error } = await q;
+    if (error) return { rows: [], total: 0, page: 1, pageCount: 1 };
+    courante = Math.min(courante, nbPages(count ?? 0));
+    res = await lire(courante);
+  }
+
+  if (res.error) return { rows: [], total: 0, page: 1, pageCount: 1 };
+  const total = res.count ?? 0;
+  return {
+    rows: (res.data ?? []).map((r) => normalizeRow(r) as unknown as EbayOrderRow),
+    total,
+    page: courante,
+    pageCount: nbPages(total),
+  };
 }
 
 /**

@@ -3,33 +3,39 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { PERIODS, type PeriodKey } from "@/lib/admin/types";
+import { PERIODES, type PeriodeKey } from "@/lib/admin/periodes";
 
 /**
- * Sélecteur de période (paramètre d'URL `period`). `options` limite les
- * choix proposés (par défaut : toutes les périodes de PERIODS).
+ * Sélecteur de période (paramètre d'URL `param`, « periode » par défaut).
+ * `options` limite les choix ; `resetParams` sont retirés de l'URL au
+ * changement (par défaut « page », pour revenir à la première page).
  */
-export default function PeriodPills({
+export default function PeriodeSelect({
   current,
+  param = "periode",
   options,
+  resetParams = ["page"],
 }: {
-  current: PeriodKey;
-  options?: PeriodKey[];
+  current: PeriodeKey;
+  param?: string;
+  options?: PeriodeKey[];
+  resetParams?: string[];
 }) {
   const router = useRouter();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
   // Sélection optimiste : la pastille bouge tout de suite, les données suivent.
-  const [optimistic, setOptimistic] = useState<PeriodKey | null>(null);
+  const [optimistic, setOptimistic] = useState<PeriodeKey | null>(null);
   const selected = pending && optimistic ? optimistic : current;
-  const layoutId = `period-${useId()}`;
-  const list = options ? PERIODS.filter((p) => options.includes(p.key)) : PERIODS;
+  const layoutId = `periode-${useId()}`;
+  const list = options ? PERIODES.filter((p) => options.includes(p.key)) : PERIODES;
 
-  function pick(key: PeriodKey) {
+  function pick(key: PeriodeKey) {
     if (key === current) return;
     setOptimistic(key);
     const p = new URLSearchParams(params?.toString() ?? "");
-    p.set("period", key);
+    p.set(param, key);
+    for (const r of resetParams) p.delete(r);
     startTransition(() => {
       router.push(`?${p.toString()}`, { scroll: false });
     });

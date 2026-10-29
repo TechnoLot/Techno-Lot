@@ -3,26 +3,31 @@ import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
-import { endOfPeriod, startOfPeriod } from "@/lib/admin/dates";
-import type { Lot, PeriodKey } from "@/lib/admin/types";
+import type { Lot } from "@/lib/admin/types";
+import { bornesPeriode, parsePeriode } from "@/lib/admin/periodes";
+import { pageDepuisParam, paginer } from "@/lib/admin/pagination";
+import { fusionnerVentes, type LotVendu, type VenteManuelle } from "@/lib/admin/dernieres-ventes";
 import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
-import { getEbayOrderRows, getEbayTotals } from "@/lib/ebay/ventes";
+import { getEbayOrderRows, getEbayTotals, getRecentEbayOrders } from "@/lib/ebay/ventes";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { addDays, inTorontoRange, sumEbayOrders, torontoDay } from "@/lib/ebay/totaux";
 import { getAdSpend } from "@/lib/ads/depenses";
 import { getAdsSyncState } from "@/lib/ads/queries";
 import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
-import AFaireTiles from "@/components/admin/accueil/AFaireTiles";
-import EbayAujourdhui from "@/components/admin/accueil/EbayAujourdhui";
-import ChiffresTiles, { CHIFFRES_PERIODES } from "@/components/admin/accueil/ChiffresTiles";
-import DerniersLots from "@/components/admin/accueil/DerniersLots";
+import Aujourdhui from "@/components/admin/accueil/Aujourdhui";
+import DernieresVentes from "@/components/admin/accueil/DernieresVentes";
+import ChiffresTiles, { CHIFFRES_OPTIONS } from "@/components/admin/accueil/ChiffresTiles";
 import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumissions";
 import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soumissions";
 
 export const dynamic = "force-dynamic";
 
 const TZ = "America/Toronto";
+/** Demandes par page dans « Dernières soumissions » (paramètre `sp`). */
+const SOUMISSIONS_PAR_PAGE = 10;
+/** Rangées de « Dernières ventes ». */
+const NB_VENTES = 8;
 
 type Sale = { sale_price: number | string; sold_at: string };
 type SupabaseServer = ReturnType<typeof createClient>;
@@ -57,12 +62,8 @@ async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
 export default async function AccueilPage({
   searchParams,
 }: {
-  searchParams: { period?: string };
+  searchParams: { periode?: string | string[]; sp?: string | string[] };
 }) {
-  const period: PeriodKey = CHIFFRES_PERIODES.includes(searchParams.period as PeriodKey)
-    ? (searchParams.period as PeriodKey)
-    : "month";
-
   const supabase = createClient();
   const {
     data: { user },
@@ -72,19 +73,23 @@ export default async function AccueilPage({
   const prenom = resolvePrenom(user?.email ?? site.email, user?.user_metadata);
   const now = new Date();
   const todayIso = torontoToday(now);
-  // Bornes calculées sur la date de Toronto (startOfPeriod lit la date UTC).
-  const torontoNow = new Date(todayIso + "T12:00:00Z");
-  const start = startOfPeriod(period, torontoNow);
-  const end = endOfPeriod(period, torontoNow);
 
-  // Chiffres : lots achetés dans la période (purchased_at) + ventes manuelles (sold_at)
+  // Chiffres : jours inclusifs à l'heure de Toronto (l'ancien paramètre `period` est ignoré).
+  const choix = parsePeriode(
+    Array.isArray(searchParams.periode) ? searchParams.periode[0] : searchParams.periode,
+    "mois",
+  );
+  const periode = CHIFFRES_OPTIONS.includes(choix) ? choix : "mois";
+  const { from, to } = bornesPeriode(periode, todayIso);
+
+  // Lots achetés dans la période (purchased_at) + ventes manuelles (sold_at)
   let lotsQuery = supabase.from("lots").select("purchase_price, sale_price");
-  if (start) lotsQuery = lotsQuery.gte("purchased_at", start);
-  if (end) lotsQuery = lotsQuery.lte("purchased_at", end);
+  if (from) lotsQuery = lotsQuery.gte("purchased_at", from);
+  if (to) lotsQuery = lotsQuery.lte("purchased_at", to);
 
   let salesQuery = supabase.from("sales").select("sale_price, sold_at");
-  if (start) salesQuery = salesQuery.gte("sold_at", start);
-  if (end) salesQuery = salesQuery.lte("sold_at", end);
+  if (from) salesQuery = salesQuery.gte("sold_at", from);
+  if (to) salesQuery = salesQuery.lte("sold_at", to);
 
   // eBay aujourd'hui / hier (jours à l'heure de Toronto)
   const ebayToday = torontoDay(now);
@@ -93,7 +98,9 @@ export default async function AccueilPage({
   const [
     { data: lotsRaw, error },
     { data: salesRaw },
-    { data: derniersRaw },
+    ebayRecentes,
+    { data: lotsVendusRaw },
+    { data: ventesRaw },
     { count: negoCount },
     { count: prixCount },
     suivisCount,
@@ -105,12 +112,21 @@ export default async function AccueilPage({
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
+    // Dernières ventes : commandes eBay, lots vendus et ventes manuelles
+    getRecentEbayOrders(NB_VENTES).catch(() => []),
     supabase
       .from("lots")
-      .select("*")
-      .order("purchased_at", { ascending: false })
+      .select("id, client_name, description, purchase_price, sale_price, sold_at")
+      .eq("status", "sold")
+      .order("sold_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(NB_VENTES),
+    supabase
+      .from("sales")
+      .select("id, buyer_name, description, sale_price, sold_at, source")
+      .order("sold_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(NB_VENTES),
     supabase
       .from("lots")
       .select("id", { count: "exact", head: true })
@@ -126,8 +142,8 @@ export default async function AccueilPage({
       since: new Date(now.getTime() - A_TRAITER_JOURS * 86_400_000).toISOString(),
       limit: 200,
     }),
-    getEbayTotals(start, end),
-    getAdSpend(start, end),
+    getEbayTotals(from, to),
+    getAdSpend(from, to),
     getEbayOrderRows(ebayYesterday, ebayToday, [
       "created_at",
       "total",
@@ -159,6 +175,13 @@ export default async function AccueilPage({
   const ventes = ventesLots + ventesManuelles + ventesEbay;
   const profit = ventes - achats - (ebay.fees ?? 0);
 
+  const dernieresVentes = fusionnerVentes(
+    ebayRecentes,
+    (lotsVendusRaw ?? []) as LotVendu[],
+    (ventesRaw ?? []) as VenteManuelle[],
+    NB_VENTES,
+  );
+
   const today = new Intl.DateTimeFormat("fr-CA", {
     weekday: "long",
     day: "numeric",
@@ -169,6 +192,7 @@ export default async function AccueilPage({
 
   const soumissionsATraiter = soumissions.rows.filter((s) => estATraiter(s, now));
   const soumissionsCount = soumissions.error ? null : soumissionsATraiter.length;
+  const soumissionsPage = paginer(soumissionsATraiter, pageDepuisParam(searchParams.sp), SOUMISSIONS_PAR_PAGE);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -196,48 +220,31 @@ export default async function AccueilPage({
       )}
 
       <div className="flex flex-col gap-8 sm:gap-10">
-        <AFaireTiles
-          tiles={[
-            {
-              label: "Soumissions à traiter",
-              count: soumissionsCount,
-              hint: soumissions.error ? "Lecture impossible" : "Reçues ces 30 derniers jours",
-              // Liste complète dans l'onglet Soumissions
-              href:
-                soumissionsATraiter.length > 0
-                  ? "/admin/soumissions?statut=a-traiter"
-                  : "/admin/soumissions",
-            },
-            {
-              label: "Suivis à faire",
-              count: suivisCount,
-              hint: "Prospects à relancer",
-              href: "/admin/crm/suivis",
-            },
-            {
-              label: "Lots en négociation",
-              count: negoCount ?? 0,
-              hint: "Offre à conclure",
-              href: "/admin/lots?status=negotiating",
-            },
-            {
-              label: "Prix de vente à saisir",
-              count: prixCount ?? 0,
-              hint: "Lots achetés sans prix de vente",
-              href: "/admin/lots?status=purchased",
-            },
-          ]}
+        <Aujourdhui
+          ebay={{
+            configured: isEbayConfigured(),
+            lastSync: ebay.lastSync,
+            today: ebayAujourdhui,
+            yesterday: ebayHier,
+          }}
+          soumissions={{
+            count: soumissionsCount,
+            hint: soumissions.error ? "Lecture impossible" : "Reçues ces 30 derniers jours",
+            // Liste complète dans l'onglet Soumissions
+            href:
+              soumissionsATraiter.length > 0
+                ? "/admin/soumissions?statut=a-traiter"
+                : "/admin/soumissions",
+          }}
+          suivis={suivisCount}
+          negociation={negoCount ?? 0}
+          prixASaisir={prixCount ?? 0}
         />
 
-        <EbayAujourdhui
-          configured={isEbayConfigured()}
-          lastSync={ebay.lastSync}
-          today={ebayAujourdhui}
-          yesterday={ebayHier}
-        />
+        <DernieresVentes ventes={dernieresVentes} aujourdhui={todayIso} />
 
         <ChiffresTiles
-          period={period}
+          periode={periode}
           data={{
             ventes,
             ventesLots,
@@ -254,9 +261,15 @@ export default async function AccueilPage({
           }}
         />
 
-        {soumissionsATraiter.length > 0 && <DernieresSoumissions rows={soumissionsATraiter} />}
-
-        <DerniersLots lots={(derniersRaw ?? []) as Lot[]} />
+        {soumissionsATraiter.length > 0 && (
+          <DernieresSoumissions
+            rows={soumissionsPage.items}
+            page={soumissionsPage.page}
+            pageCount={soumissionsPage.pageCount}
+            parPage={SOUMISSIONS_PAR_PAGE}
+            total={soumissionsPage.total}
+          />
+        )}
       </div>
     </div>
   );

@@ -36,7 +36,8 @@ function ago(iso: string | null, now: number): string {
 /**
  * Synchro automatique des pubs (même principe que EbayAutoSync) : au montage,
  * chaque minute (onglet visible) et au retour sur l'onglet, POST
- * /api/admin/ads-sync `{ auto: true }` (aujourd'hui et hier ; le serveur saute
+ * /api/admin/ads-sync `{ auto: true }` (aujourd'hui et hier, ou les jours manqués
+ * depuis la dernière synchro réussie à la première du jour ; le serveur saute
  * si la dernière synchro a moins de 50 s). Une pastille par plateforme ; un clic
  * force la synchro. Rafraîchit la page quand une plateforme a été resynchronisée.
  */

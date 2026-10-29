@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, Info } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
-import { NO_ID, type AdDetail, type AdPlatform, type AdsSyncState, type LastSync } from "@/lib/ads/types";
+import { NO_ID, type AdDetail, type AdPlatform, type AdsSyncState } from "@/lib/ads/types";
 import { judgeAd } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
-import SyncButton from "./SyncButton";
 import AdsAutoSync from "./AdsAutoSync";
 import AdsKpis from "./AdsKpis";
 import AdsFunnel from "./AdsFunnel";
@@ -19,9 +18,7 @@ export type AdDetailViewProps = {
   platform: AdPlatform;
   adId: string;
   data: AdDetail & { periodKey: string; error: string | null };
-  lastSync: LastSync;
   connected: boolean;
-  syncDays: number;
   /** Lien de retour (garde la période et la plateforme) */
   backHref: string;
   /** Synchro automatique par plateforme (absent dans les données de test) */
@@ -46,9 +43,7 @@ export default function AdDetailView({
   platform,
   adId,
   data,
-  lastSync,
   connected,
-  syncDays,
   backHref,
   liveSync,
 }: AdDetailViewProps) {
@@ -85,14 +80,7 @@ export default function AdDetailView({
             Chiffres {periodText(data.range)}.
           </>
         }
-        actions={
-          <div className="flex flex-col items-start gap-2">
-            {connected && (
-              <SyncButton lastSync={lastSync} days={syncDays} label={`Mettre à jour depuis ${platformName}`} />
-            )}
-            {liveSync && <AdsAutoSync platforms={[platform]} state={liveSync} />}
-          </div>
-        }
+        actions={liveSync && <AdsAutoSync platforms={[platform]} state={liveSync} />}
       />
 
       <div className="mb-6">

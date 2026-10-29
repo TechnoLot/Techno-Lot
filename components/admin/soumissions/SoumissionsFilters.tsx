@@ -26,12 +26,15 @@ export default function SoumissionsFilters({
   const [pending, startTransition] = useTransition();
   const layoutId = `soumissions-statut-${useId()}`;
 
-  // Recherche débounée
+  // Recherche débounée ; rien à faire quand q est déjà celui de l'URL (au
+  // montage notamment), sinon on perdrait la page en cours.
   useEffect(() => {
+    if (q === (params?.get("q") ?? "")) return;
     const timeout = setTimeout(() => {
       const p = new URLSearchParams(params?.toString() ?? "");
       if (q) p.set("q", q);
       else p.delete("q");
+      p.delete("page");
       startTransition(() =>
         router.replace(`?${p.toString()}`, { scroll: false }),
       );
@@ -44,6 +47,7 @@ export default function SoumissionsFilters({
     const p = new URLSearchParams(params?.toString() ?? "");
     if (key === "toutes") p.delete("statut");
     else p.set("statut", key);
+    p.delete("page");
     startTransition(() =>
       router.replace(`?${p.toString()}`, { scroll: false }),
     );

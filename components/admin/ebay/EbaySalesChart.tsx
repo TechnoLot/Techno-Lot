@@ -10,7 +10,33 @@ function shortDate(iso: string): string {
   return `${d.getDate()} ${d.toLocaleDateString("fr-CA", { month: "short" })}`;
 }
 
-export default function EbaySalesChart({ data }: { data: Point[] }) {
+// Mois « YYYY-MM-01 » sans heure : formatés en UTC pour éviter tout décalage.
+const moisCourtFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", month: "short" });
+const moisLongFmt = new Intl.DateTimeFormat("fr-CA", { timeZone: "UTC", month: "long", year: "numeric" });
+
+function moisUtc(iso: string): Date {
+  const [y, m] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1));
+}
+
+/** « oct. 26 » */
+function shortMonth(iso: string): string {
+  return `${moisCourtFmt.format(moisUtc(iso))} ${iso.slice(2, 4)}`;
+}
+
+/** « octobre 2026 » */
+function longMonth(iso: string): string {
+  return moisLongFmt.format(moisUtc(iso));
+}
+
+export default function EbaySalesChart({
+  data,
+  granularite = "jour",
+}: {
+  data: Point[];
+  granularite?: "jour" | "mois";
+}) {
+  const mois = granularite === "mois";
   return (
     <div className="mt-4 h-60 sm:h-64">
       <ResponsiveContainer width="100%" height="100%">
@@ -18,7 +44,7 @@ export default function EbaySalesChart({ data }: { data: Point[] }) {
           <CartesianGrid stroke="rgb(var(--a-line-soft))" vertical={false} />
           <XAxis
             dataKey="day"
-            tickFormatter={shortDate}
+            tickFormatter={mois ? shortMonth : shortDate}
             tick={{ fill: "rgb(var(--a-muted))", fontSize: 11 }}
             axisLine={{ stroke: "rgb(var(--a-line))" }}
             tickLine={false}
@@ -41,7 +67,7 @@ export default function EbaySalesChart({ data }: { data: Point[] }) {
               color: "rgb(var(--a-ink))",
             }}
             labelStyle={{ color: "rgb(var(--a-muted))" }}
-            labelFormatter={(l) => shortDate(String(l))}
+            labelFormatter={(l) => (mois ? longMonth(String(l)) : shortDate(String(l)))}
             formatter={(v, _name, item) => {
               const orders = (item?.payload as Point | undefined)?.orders;
               const suffix = orders ? ` · ${orders} commande${orders > 1 ? "s" : ""}` : "";
@@ -55,6 +81,7 @@ export default function EbaySalesChart({ data }: { data: Point[] }) {
             strokeWidth={2}
             fill="#6bd63b"
             fillOpacity={0.18}
+            dot={mois ? { r: 4, fill: "rgb(var(--a-green))", stroke: "rgb(var(--a-card))", strokeWidth: 2 } : false}
             activeDot={{ r: 4, fill: "rgb(var(--a-green))", stroke: "rgb(var(--a-card))", strokeWidth: 2 }}
           />
         </AreaChart>

@@ -1,9 +1,11 @@
 import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/components/admin/PageHeader";
+import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
 import SoumissionsList from "@/components/admin/soumissions/SoumissionsList";
 import { formatCount } from "@/lib/admin/format";
+import { pageDepuisParam, paginer, resumePage } from "@/lib/admin/pagination";
 import {
   FILTRES_SOUMISSIONS,
   estATraiter,
@@ -13,6 +15,8 @@ import {
 } from "@/lib/admin/soumissions";
 
 export const dynamic = "force-dynamic";
+
+const PAR_PAGE = 10;
 
 /** Minuscules sans accents, pour la recherche. */
 function normaliser(v: string): string {
@@ -37,7 +41,7 @@ function correspond(s: Soumission, q: string): boolean {
 export default async function SoumissionsPage({
   searchParams,
 }: {
-  searchParams: { q?: string; statut?: string };
+  searchParams: { q?: string; statut?: string; page?: string };
 }) {
   const { error, rows } = await fetchSoumissions(createClient());
 
@@ -53,6 +57,7 @@ export default async function SoumissionsPage({
   const avecLot = rows.filter((s) => s.lotId !== null);
   const parFiltre = filtre === "a-traiter" ? aTraiter : filtre === "lot-cree" ? avecLot : rows;
   const affichees = q ? parFiltre.filter((s) => correspond(s, q)) : parFiltre;
+  const pagination = paginer(affichees, pageDepuisParam(searchParams.page), PAR_PAGE);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -101,7 +106,15 @@ export default async function SoumissionsPage({
               </p>
             </div>
           ) : (
-            <SoumissionsList rows={affichees} now={now} />
+            <>
+              <SoumissionsList rows={pagination.items} now={now} />
+              <div className="mt-8 flex flex-col items-center gap-2">
+                <Pagination page={pagination.page} pageCount={pagination.pageCount} />
+                <p className="text-[13px] text-admin-muted tabular-nums">
+                  {resumePage(pagination.page, PAR_PAGE, pagination.total)} demandes
+                </p>
+              </div>
+            </>
           )}
         </>
       )}

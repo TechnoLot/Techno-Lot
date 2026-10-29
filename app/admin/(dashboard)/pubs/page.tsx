@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import {
-  daysBetween,
   getAdsOverview,
   getAdsSyncState,
   getConfigStatus,
   getLastSync,
   getTrackingCoverage,
   parsePlatformFilter,
-  torontoDay,
 } from "@/lib/ads/queries";
 import PubsOverview from "@/components/admin/ads/PubsOverview";
 
@@ -30,15 +28,12 @@ export default async function PubsPage({
     platform: data.platform,
     attributedLeads: data.totals.leads,
   });
-  // Resynchronise au moins 30 jours, et toute la période affichée (max. 1 an)
-  const syncDays = Math.min(Math.max(daysBetween(data.range.from, torontoDay(new Date())), 30), 365);
 
   return (
     <PubsOverview
       data={data}
       lastSync={lastSync}
       config={getConfigStatus()}
-      syncDays={syncDays}
       coverage={coverage}
       liveSync={liveSync}
     />

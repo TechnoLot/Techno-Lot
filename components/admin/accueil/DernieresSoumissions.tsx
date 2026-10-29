@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, Mail, Phone, Plus } from "lucide-react";
+import { ArrowRight, Phone, Plus } from "lucide-react";
+import Pagination from "@/components/admin/Pagination";
+import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
+import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
+import { resumePage } from "@/lib/admin/pagination";
 
 export type SoumissionRow = {
   id: string;
@@ -22,10 +26,23 @@ function formatDateHeure(iso: string): string {
 
 /**
  * « Dernières soumissions » : demandes du formulaire public des 30 derniers
- * jours qui ne sont liées à aucun lot. La liste complète est dans l'onglet
- * Soumissions (/admin/soumissions).
+ * jours qui ne sont liées à aucun lot, par pages (paramètre d'URL `sp`). La
+ * liste complète est dans l'onglet Soumissions (/admin/soumissions).
  */
-export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }) {
+export default function DernieresSoumissions({
+  rows,
+  page,
+  pageCount,
+  parPage,
+  total,
+}: {
+  /** Demandes de la page affichée */
+  rows: SoumissionRow[];
+  page: number;
+  pageCount: number;
+  parPage: number;
+  total: number;
+}) {
   return (
     <section
       id="soumissions"
@@ -69,14 +86,7 @@ export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               {s.courriel && (
-                <a
-                  href={`mailto:${s.courriel}`}
-                  className="admin-btn"
-                  title={s.courriel}
-                >
-                  <Mail className="h-3.5 w-3.5" aria-hidden />
-                  Écrire
-                </a>
+                <EcrireHostinger courriel={s.courriel} />
               )}
               {s.telephone && (
                 <a href={`tel:${s.telephone}`} className="admin-btn" title={s.telephone}>
@@ -88,10 +98,17 @@ export default function DernieresSoumissions({ rows }: { rows: SoumissionRow[] }
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 Créer le lot
               </Link>
+              <SupprimerSoumission id={s.id} nom={s.nom} compact />
             </div>
           </li>
         ))}
       </ul>
+      {pageCount > 1 && (
+        <div className="flex flex-col items-center gap-2 border-t border-admin-line-soft px-4 py-3 sm:px-5">
+          <Pagination page={page} pageCount={pageCount} param="sp" scroll={false} />
+          <p className="text-[12px] tabular-nums text-admin-muted">{resumePage(page, parPage, total)}</p>
+        </div>
+      )}
     </section>
   );
 }

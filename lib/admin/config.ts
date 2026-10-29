@@ -1,5 +1,8 @@
 import { site } from "@/lib/site";
 
+/** Webmail Hostinger de la boîte info@technolot.ca (aucun lien n'ouvre un message précis ni ne pré-remplit un nouveau message). */
+export const WEBMAIL_URL = "https://mail.hostinger.com/";
+
 /**
  * Whitelist des courriels autorisés à accéder au tableau de bord admin.
  * Défini via la variable d'environnement ADMIN_EMAILS (liste séparée par

@@ -3,24 +3,23 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  AlertTriangle,
   ArrowRight,
   Bell,
-  CircleDollarSign,
   ExternalLink,
-  Inbox,
-  Mail,
-  Megaphone,
   Package,
   Phone,
   Plus,
-  type LucideIcon,
+  Trash2,
+  X,
 } from "lucide-react";
 import { formatCount, formatMoney } from "@/lib/admin/format";
 import {
   FILTRES_NOTIFICATIONS,
   SOURCE_LABELS,
+  countByFiltre,
   matchesFiltre,
   type FiltreNotifications,
   type NotifCounts,
@@ -28,12 +27,23 @@ import {
   type NotifVenteEbay,
   type NotificationItem,
 } from "@/lib/admin/notifications-types";
+import { PERIODES_NOTIFICATIONS, estRetiree, sansRetirees } from "@/lib/admin/notifications-regles";
+import { libellePeriode, type PeriodeKey } from "@/lib/admin/periodes";
+import { paginer } from "@/lib/admin/pagination";
 import { PlatformIcon } from "@/components/admin/ads/PlatformBadge";
+import PeriodeSelect from "@/components/admin/PeriodeSelect";
+import Pagination from "@/components/admin/Pagination";
+import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
+import { PastilleIcone } from "./apparence";
 import { useNotifications } from "./NotificationsProvider";
 
 const TZ = "America/Toronto";
 /** Recalcul des « il y a X min ». */
 const TICK_MS = 30_000;
+/** Notifications par page, dans le filtre choisi. */
+const PAR_PAGE = 20;
+/** « Tout effacer » se ré-arme après 4 s sans confirmation. */
+const CONFIRMATION_MS = 4000;
 
 const ONGLETS: Record<FiltreNotifications, string> = {
   tout: "Tout",
@@ -43,13 +53,12 @@ const ONGLETS: Record<FiltreNotifications, string> = {
 };
 
 const VIDE: Record<FiltreNotifications, string> = {
-  tout: "Rien depuis 30 jours. Les ventes eBay, les soumissions et les leads des pubs arriveront ici tout seuls.",
-  ebay: "Aucune vente eBay depuis 30 jours.",
-  soumissions: "Aucune soumission depuis 30 jours.",
-  pubs: "Aucun lead venu d’une pub Meta ou Google depuis 30 jours.",
+  tout: "Rien sur cette période. Les ventes eBay, les soumissions et les leads des pubs arriveront ici tout seuls.",
+  ebay: "Aucune vente eBay sur cette période.",
+  soumissions: "Aucune soumission sur cette période.",
+  pubs: "Aucun lead venu d’une pub Meta ou Google sur cette période.",
 };
-
-const SUJET = "Votre demande de soumission — Techno Lot";
+const VIDE_EFFACE = "Rien de nouveau pour l’instant. Les prochaines ventes et demandes apparaîtront ici.";
 
 const STATUT: Record<NotifVenteEbay["status"]["tone"], string> = {
   ok: "bg-admin-tint-green text-admin-tint-green-ink",
@@ -96,17 +105,33 @@ function parJour(items: NotificationItem[]): { jour: string; items: Notification
   return groupes;
 }
 
+async function poster(body: unknown): Promise<void> {
+  const r = await fetch("/api/admin/notifications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const data = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error ?? `Erreur ${r.status}.`);
+  }
+}
+
 /**
- * Fil des notifications : filtres, regroupement par jour, nouveautés mises
- * en avant. Ouvrir l’onglet marque tout comme vu (la pastille du menu
- * retombe à zéro) mais les nouveautés restent en vert pendant la visite ; le
- * fil se recharge dès que la pastille voit arriver quelque chose.
+ * Fil des notifications : période, filtres, regroupement par jour, 20 par
+ * page, nouveautés mises en avant. Ouvrir l’onglet marque tout comme vu (la
+ * pastille du menu retombe à zéro) mais les nouveautés restent en vert
+ * pendant la visite ; le fil se recharge dès que la pastille voit arriver
+ * quelque chose. Retirer une notification ne touche pas à la vente ou à la
+ * demande, qui reste dans son onglet.
  */
 export default function NotificationsFeed({
   items,
   counts,
   latest,
   renderedAt,
+  clearedAt,
+  periode,
   filtreInitial,
 }: {
   items: NotificationItem[];
@@ -115,14 +140,27 @@ export default function NotificationsFeed({
   latest: string | null;
   /** Instant du rendu serveur (ISO) */
   renderedAt: string;
+  /** Dernier « Tout effacer » (ISO), null : jamais */
+  clearedAt: string | null;
+  periode: PeriodeKey;
   filtreInitial: FiltreNotifications;
 }) {
   const router = useRouter();
-  const { summary, markSeen } = useNotifications();
+  const reduce = useReducedMotion() ?? false;
+  const { summary, markSeen, refresh } = useNotifications();
   const [filtre, setFiltre] = useState<FiltreNotifications>(filtreInitial);
+  const [page, setPage] = useState(1);
   // Même valeur au rendu serveur et à l’hydratation, puis l’heure du navigateur.
   const [now, setNow] = useState(() => Date.parse(renderedAt));
   const layoutId = `notif-filtre-${useId()}`;
+  const haut = useRef<HTMLDivElement>(null);
+
+  // Retraits optimistes : la carte part tout de suite, revient si le serveur refuse.
+  const [retirees, setRetirees] = useState<Set<string>>(() => new Set());
+  const [effaceJusqua, setEffaceJusqua] = useState<string | null>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [confirmer, setConfirmer] = useState(false);
+  const rearme = useRef<number | null>(null);
 
   // Nouveautés en vert pendant toute la visite, même une fois marquées comme vues.
   const [enAvant, setEnAvant] = useState<Set<string>>(
@@ -167,8 +205,21 @@ export default function NotificationsFeed({
     return () => window.clearInterval(id);
   }, []);
 
+  // Nouvelle période : retour à la première page.
+  useEffect(() => {
+    setPage(1);
+  }, [periode]);
+
+  useEffect(
+    () => () => {
+      if (rearme.current !== null) window.clearTimeout(rearme.current);
+    },
+    [],
+  );
+
   function choisir(f: FiltreNotifications) {
     setFiltre(f);
+    setPage(1);
     const params = new URLSearchParams(window.location.search);
     if (f === "tout") params.delete("filtre");
     else params.set("filtre", f);
@@ -176,11 +227,83 @@ export default function NotificationsFeed({
     window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
   }
 
-  const visibles = useMemo(() => items.filter((i) => matchesFiltre(i, filtre)), [items, filtre]);
-  const nouveautes = items.filter((i) => enAvant.has(i.key)).length;
+  function changerPage(n: number) {
+    setPage(n);
+    haut.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+
+  async function retirer(it: NotificationItem) {
+    setErreur(null);
+    setRetirees((prev) => new Set(prev).add(it.key));
+    try {
+      await poster({ action: "retirer", keys: [it.key] });
+      void refresh();
+    } catch (e) {
+      setRetirees((prev) => {
+        const next = new Set(prev);
+        next.delete(it.key);
+        return next;
+      });
+      setErreur(
+        `La notification n’a pas pu être retirée${e instanceof Error ? ` (${e.message})` : ""}. Réessaie.`,
+      );
+    }
+  }
+
+  async function toutEffacer() {
+    setErreur(null);
+    const avant = effaceJusqua;
+    setEffaceJusqua(renderedAt);
+    try {
+      await poster({ action: "effacer", upTo: renderedAt });
+      void refresh();
+    } catch (e) {
+      setEffaceJusqua(avant);
+      setErreur(`Le fil n’a pas pu être effacé${e instanceof Error ? ` (${e.message})` : ""}. Réessaie.`);
+    }
+  }
+
+  function clicEffacer() {
+    if (rearme.current !== null) window.clearTimeout(rearme.current);
+    rearme.current = null;
+    if (!confirmer) {
+      setConfirmer(true);
+      rearme.current = window.setTimeout(() => {
+        rearme.current = null;
+        setConfirmer(false);
+      }, CONFIRMATION_MS);
+      return;
+    }
+    setConfirmer(false);
+    void toutEffacer();
+  }
+
+  const restants = useMemo(() => sansRetirees(items, retirees, effaceJusqua), [items, retirees, effaceJusqua]);
+  // Comptes du serveur, moins ce qui vient d’être retiré ici.
+  const comptes = useMemo(() => {
+    const partis = countByFiltre(items.filter((i) => estRetiree(i, retirees, effaceJusqua)));
+    const out = { ...counts };
+    for (const f of FILTRES_NOTIFICATIONS) out[f] = Math.max(0, counts[f] - partis[f]);
+    return out;
+  }, [items, counts, retirees, effaceJusqua]);
+  const visibles = useMemo(() => restants.filter((i) => matchesFiltre(i, filtre)), [restants, filtre]);
+  const pagee = paginer(visibles, page, PAR_PAGE);
+  const nouveautes = restants.filter((i) => enAvant.has(i.key)).length;
+  const legende = libellePeriode(periode);
+  const vide =
+    restants.length === 0 && (effaceJusqua !== null || clearedAt !== null) ? VIDE_EFFACE : VIDE[filtre];
+
+  const sortie = reduce
+    ? { opacity: 0, transition: { duration: 0 } }
+    : { opacity: 0, height: 0, paddingTop: 0, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } };
 
   return (
-    <div>
+    <div ref={haut} className="scroll-mt-20 lg:scroll-mt-6">
+      <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <PeriodeSelect current={periode} options={PERIODES_NOTIFICATIONS} />
+        <p className="text-[13px] text-admin-muted">{legende.charAt(0).toUpperCase() + legende.slice(1)}</p>
+      </div>
+
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-admin-muted" aria-live="polite">
           {nouveautes > 0 ? (
@@ -194,77 +317,134 @@ export default function NotificationsFeed({
             "Rien de nouveau depuis ta dernière visite."
           )}
         </p>
-        <div role="tablist" aria-label="Filtrer les notifications" className="admin-segment">
-          {FILTRES_NOTIFICATIONS.map((f) => {
-            const active = filtre === f;
-            const aDuNouveau = items.some((i) => enAvant.has(i.key) && matchesFiltre(i, f));
-            return (
-              <button
-                key={f}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => choisir(f)}
-                className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card ${
-                  active ? "text-admin-ink" : "text-admin-muted hover:text-admin-ink"
-                }`}
-              >
-                {active && (
-                  <motion.span
-                    layoutId={layoutId}
-                    aria-hidden
-                    transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                    className="absolute inset-0 rounded-full bg-[#6bd63b]"
-                  />
-                )}
-                <span className="relative inline-flex items-center gap-1.5">
-                  {ONGLETS[f]}
-                  <span className="tabular-nums opacity-70">{formatCount(counts[f])}</span>
-                  {aDuNouveau && !active && (
-                    <>
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#4fae2a]" aria-hidden />
-                      <span className="sr-only">, nouveautés</span>
-                    </>
+        <div className="flex flex-wrap items-center gap-2">
+          <div role="tablist" aria-label="Filtrer les notifications" className="admin-segment">
+            {FILTRES_NOTIFICATIONS.map((f) => {
+              const active = filtre === f;
+              const aDuNouveau = restants.some((i) => enAvant.has(i.key) && matchesFiltre(i, f));
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => choisir(f)}
+                  className={`relative shrink-0 rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] focus-visible:ring-offset-2 focus-visible:ring-offset-admin-card ${
+                    active ? "text-admin-ink" : "text-admin-muted hover:text-admin-ink"
+                  }`}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId={layoutId}
+                      aria-hidden
+                      transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                      className="absolute inset-0 rounded-full bg-[#6bd63b]"
+                    />
                   )}
-                </span>
-              </button>
-            );
-          })}
+                  <span className="relative inline-flex items-center gap-1.5">
+                    {ONGLETS[f]}
+                    <span className="tabular-nums opacity-70">{formatCount(comptes[f])}</span>
+                    {aDuNouveau && !active && (
+                      <>
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#4fae2a]" aria-hidden />
+                        <span className="sr-only">, nouveautés</span>
+                      </>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={clicEffacer}
+            title="Retire toutes les notifications actuelles du fil ; les ventes, soumissions et leads restent dans leurs onglets"
+            className={`admin-focus inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors ${
+              confirmer
+                ? "border-admin-tint-red-line bg-admin-tint-red-strong text-admin-danger"
+                : "border-admin-line bg-admin-card text-admin-muted hover:border-admin-tint-red-line hover:text-admin-danger"
+            }`}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            {confirmer ? "Confirmer" : "Tout effacer"}
+          </button>
         </div>
       </div>
+
+      {erreur && (
+        <p
+          role="alert"
+          className="mb-6 flex gap-2 rounded-2xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span className="min-w-0 break-words">{erreur}</span>
+        </p>
+      )}
 
       {visibles.length === 0 ? (
         <div className="rounded-2xl border border-admin-line bg-admin-card px-5 py-12 text-center">
           <Bell className="mx-auto h-7 w-7 text-admin-faint" aria-hidden />
-          <p className="mx-auto mt-2 max-w-sm text-sm text-admin-muted">{VIDE[filtre]}</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-admin-muted">{vide}</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-8">
-          {parJour(visibles).map((g) => {
-            const titre = libelleJour(g.jour, now);
-            return (
-              <section key={g.jour} aria-label={titre}>
-                <h2 className="mb-3 flex items-baseline gap-2 font-display text-lg font-semibold tracking-tight text-admin-ink">
-                  {titre}
-                  <span className="text-[13px] font-normal tabular-nums text-admin-muted">
-                    {formatCount(g.items.length)}
-                  </span>
-                </h2>
-                <ul className="flex flex-col gap-3">
-                  {g.items.map((it) => (
-                    <li key={it.key}>
-                      {it.kind === "vente-ebay" ? (
-                        <Vente v={it} nouveau={enAvant.has(it.key)} now={now} />
-                      ) : (
-                        <Soumission s={it} nouveau={enAvant.has(it.key)} now={now} />
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+        <>
+          {/* Nouvelle page ou nouveau filtre : liste neuve, sans animation de sortie. */}
+          <div key={`${periode}-${filtre}-${pagee.page}`} className="flex flex-col">
+            <AnimatePresence initial={false}>
+              {parJour(pagee.items).map((g) => {
+                const titre = libelleJour(g.jour, now);
+                return (
+                  <motion.section
+                    key={g.jour}
+                    aria-label={titre}
+                    exit={sortie}
+                    className="overflow-hidden pt-8 first:pt-0"
+                  >
+                    <h2 className="mb-3 flex items-baseline gap-2 font-display text-lg font-semibold tracking-tight text-admin-ink">
+                      {titre}
+                      <span className="text-[13px] font-normal tabular-nums text-admin-muted">
+                        {formatCount(g.items.length)}
+                      </span>
+                    </h2>
+                    <ul className="flex flex-col">
+                      <AnimatePresence initial={false}>
+                        {g.items.map((it) => (
+                          <motion.li key={it.key} exit={sortie} className="overflow-hidden pt-3 first:pt-0">
+                            {it.kind === "vente-ebay" ? (
+                              <Vente
+                                v={it}
+                                nouveau={enAvant.has(it.key)}
+                                now={now}
+                                onRetirer={() => void retirer(it)}
+                              />
+                            ) : (
+                              <Soumission
+                                s={it}
+                                nouveau={enAvant.has(it.key)}
+                                now={now}
+                                onRetirer={() => void retirer(it)}
+                              />
+                            )}
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  </motion.section>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+          {pagee.pageCount > 1 && (
+            <div className="mt-8">
+              <Pagination
+                page={pagee.page}
+                pageCount={pagee.pageCount}
+                onChange={changerPage}
+                label="Pages des notifications"
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -272,14 +452,12 @@ export default function NotificationsFeed({
 
 /** Carte d’une notification : pastille d’icône, liseré vert si nouvelle. */
 function Carte({
+  item,
   nouveau,
-  tint,
-  icon: Icon,
   children,
 }: {
+  item: NotificationItem;
   nouveau: boolean;
-  tint: string;
-  icon: LucideIcon;
   children: React.ReactNode;
 }) {
   return (
@@ -289,32 +467,32 @@ function Carte({
       }`}
     >
       {nouveau && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[#6bd63b]" />}
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tint}`}>
-        <Icon className="h-5 w-5" aria-hidden />
-      </span>
+      <PastilleIcone item={item} />
       <div className="min-w-0 flex-1">{children}</div>
     </article>
   );
 }
 
-/** Ligne du haut : type et provenance à gauche, « Nouveau » et l’heure à droite. */
+/** Ligne du haut : type et provenance à gauche ; « Nouveau », l’heure et le retrait à droite. */
 function EnTete({
   label,
   at,
   now,
   nouveau,
+  onRetirer,
 }: {
   label: React.ReactNode;
   at: string;
   now: number;
   nouveau: boolean;
+  onRetirer: () => void;
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-medium text-admin-muted">
         {label}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="-my-1 flex shrink-0 items-center gap-2">
         {nouveau && (
           <span className="rounded-full bg-[#6bd63b] px-2 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
             Nouveau
@@ -327,12 +505,31 @@ function EnTete({
         >
           {moment(at, now)}
         </time>
+        <button
+          type="button"
+          onClick={onRetirer}
+          aria-label="Retirer cette notification"
+          title="Retirer du fil (la vente ou la demande reste dans son onglet)"
+          className="admin-focus -mr-1.5 flex h-7 w-7 items-center justify-center rounded-full text-admin-muted transition-colors hover:bg-admin-page hover:text-admin-ink"
+        >
+          <X className="h-4 w-4" aria-hidden />
+        </button>
       </div>
     </div>
   );
 }
 
-function Vente({ v, nouveau, now }: { v: NotifVenteEbay; nouveau: boolean; now: number }) {
+function Vente({
+  v,
+  nouveau,
+  now,
+  onRetirer,
+}: {
+  v: NotifVenteEbay;
+  nouveau: boolean;
+  now: number;
+  onRetirer: () => void;
+}) {
   const montant = `${formatMoney(v.total, true)}${v.currency !== "CAD" ? ` ${v.currency}` : ""}`;
   const details = [
     v.others > 0
@@ -346,11 +543,12 @@ function Vente({ v, nouveau, now }: { v: NotifVenteEbay; nouveau: boolean; now: 
     .join(" · ");
 
   return (
-    <Carte nouveau={nouveau} tint="bg-admin-tint-green text-admin-tint-green-ink" icon={CircleDollarSign}>
+    <Carte item={v} nouveau={nouveau}>
       <EnTete
         at={v.at}
         now={now}
         nouveau={nouveau}
+        onRetirer={onRetirer}
         label={
           <>
             <span>Vente eBay</span>
@@ -384,21 +582,28 @@ function Vente({ v, nouveau, now }: { v: NotifVenteEbay; nouveau: boolean; now: 
   );
 }
 
-function Soumission({ s, nouveau, now }: { s: NotifSoumission; nouveau: boolean; now: number }) {
+function Soumission({
+  s,
+  nouveau,
+  now,
+  onRetirer,
+}: {
+  s: NotifSoumission;
+  nouveau: boolean;
+  now: number;
+  onRetirer: () => void;
+}) {
   const pub = s.pub;
   const sousTitre = [s.entreprise, s.ville].filter(Boolean).join(" · ");
   const contact = [s.courriel, s.telephone].filter(Boolean).join(" · ");
 
   return (
-    <Carte
-      nouveau={nouveau}
-      tint={pub ? "bg-admin-tint-violet text-admin-tint-violet-ink" : "bg-admin-tint-blue text-admin-tint-blue-ink"}
-      icon={pub ? Megaphone : Inbox}
-    >
+    <Carte item={s} nouveau={nouveau}>
       <EnTete
         at={s.at}
         now={now}
         nouveau={nouveau}
+        onRetirer={onRetirer}
         label={
           <>
             <span>Soumission</span>
@@ -438,10 +643,7 @@ function Soumission({ s, nouveau, now }: { s: NotifSoumission; nouveau: boolean;
           </a>
         )}
         {s.courriel && (
-          <a href={`mailto:${s.courriel}?subject=${encodeURIComponent(SUJET)}`} className="admin-btn">
-            <Mail className="h-3.5 w-3.5" aria-hidden />
-            Écrire
-          </a>
+          <EcrireHostinger courriel={s.courriel} />
         )}
         {s.soumissionId &&
           (s.lotId ? (

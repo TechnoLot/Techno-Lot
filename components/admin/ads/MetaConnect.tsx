@@ -123,8 +123,8 @@ export default function MetaConnect({ env }: { env: { token: boolean; account: b
       ),
     },
     {
-      title: "Cliquer « Mettre à jour depuis Meta »",
-      body: <>Le bouton apparaît ici dès que les deux clés sont présentes. Les dépenses par pub arrivent en quelques secondes.</>,
+      title: "Laisser la synchro automatique faire le reste",
+      body: <>Dès que les deux clés sont présentes, les dépenses par pub se mettent à jour d&apos;elles-mêmes chaque minute tant que la page est ouverte.</>,
     },
   ];
 

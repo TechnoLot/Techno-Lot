@@ -96,6 +96,29 @@ export const LIVE_MIN_INTERVAL_MS = 50_000;
 /** Jours resynchronisés à chaque passage en direct (aujourd'hui et hier). */
 export const LIVE_DAYS = 2;
 
+/**
+ * Jours à resynchroniser en mode `auto` : 30 si aucune synchro n'a jamais
+ * réussi ; à la première synchro du jour (heure de Toronto), du jour de la
+ * dernière synchro réussie à aujourd'hui (min. 30, max. 365) pour rattraper
+ * les jours manqués ; sinon LIVE_DAYS.
+ */
+export async function joursSynchroAuto(supabase: SupabaseClient): Promise<number> {
+  const { data } = await supabase
+    .from("ad_sync_runs")
+    .select("created_at")
+    .eq("ok", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const at = data?.created_at as string | undefined;
+  if (!at) return 30;
+  const dernier = torontoDate((new Date(at).getTime() - Date.now()) / 86_400_000);
+  const aujourdhui = torontoDate(0);
+  if (dernier >= aujourdhui) return LIVE_DAYS;
+  const ecart = Math.round((Date.parse(aujourdhui) - Date.parse(dernier)) / 86_400_000) + 1;
+  return Math.min(365, Math.max(30, ecart));
+}
+
 /** Date ISO de la dernière tentative de synchro pub (null : jamais). */
 export async function getLastAdsRunAt(supabase: SupabaseClient): Promise<string | null> {
   const { data } = await supabase

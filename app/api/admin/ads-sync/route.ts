@@ -8,7 +8,7 @@ import {
   getLastAdsRunsByPlatform,
   isGoogleConfigured,
   isMetaConfigured,
-  LIVE_DAYS,
+  joursSynchroAuto,
   syncAds,
 } from "@/lib/ads/sync";
 
@@ -38,8 +38,9 @@ export async function GET() {
 /**
  * POST : synchronise les stats pub. Auth : admin connecté, ou
  * `Authorization: Bearer $CRON_SECRET` (cron). Corps optionnel : { days }.
- * `{ auto: true }` (pages admin ouvertes) : aujourd'hui et hier seulement,
- * sauté si une synchro a eu lieu il y a moins de 50 s.
+ * `{ auto: true }` (pages admin ouvertes) : sauté si une synchro a eu lieu il
+ * y a moins de 50 s ; sinon aujourd'hui et hier, ou, à la première synchro du
+ * jour, depuis la dernière synchro réussie (30 à 365 jours, voir joursSynchroAuto).
  * Réponse : { results: [{ platform, ok, rows, message }], lastSync: { meta, google } }
  * (dernière tentative par plateforme), ou { skipped: true, lastSync }
  */
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     // corps absent ou invalide : valeurs par défaut
   }
   const auto = body?.auto === true;
-  const days = auto ? LIVE_DAYS : typeof body?.days === "number" ? body.days : 30;
+  const manualDays = typeof body?.days === "number" ? body.days : 30;
 
   const cronSecret = process.env.CRON_SECRET;
   const bearer = request.headers.get("authorization");
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, results: [], lastSync: await getLastAdsRunsByPlatform(supabase) });
   }
 
+  const days = auto ? await joursSynchroAuto(supabase) : manualDays;
   const results = await syncAds({ days, supabase });
   return NextResponse.json({ results, lastSync: await getLastAdsRunsByPlatform(supabase) });
 }

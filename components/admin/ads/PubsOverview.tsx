@@ -12,7 +12,6 @@ import type {
 import TrackingCoverage from "./TrackingCoverage";
 import { rankAds } from "@/lib/ads/verdict";
 import AdsFilters from "./AdsFilters";
-import SyncButton from "./SyncButton";
 import AdsAutoSync from "./AdsAutoSync";
 import AdsKpis from "./AdsKpis";
 import AdsTable from "./AdsTable";
@@ -27,8 +26,6 @@ export type PubsOverviewProps = {
   data: AdsOverview & { periodKey: string; platform: PlatformFilter; error: string | null };
   lastSync: LastSync;
   config: ConfigStatus;
-  /** Jours à resynchroniser (couvre la période affichée) */
-  syncDays: number;
   /** Formulaires reçus vs rattachés (absent dans les données de test) */
   coverage?: TrackingCoverageData;
   /** Synchro automatique par plateforme (absent dans les données de test) */
@@ -36,7 +33,7 @@ export type PubsOverviewProps = {
 };
 
 /** Contenu de /admin/pubs (séparé de la page pour l'alimenter en données de test). */
-export default function PubsOverview({ data, lastSync, config, syncDays, coverage, liveSync }: PubsOverviewProps) {
+export default function PubsOverview({ data, lastSync, config, coverage, liveSync }: PubsOverviewProps) {
   const { platform, range } = data;
   const connected =
     platform === "meta" ? config.meta : platform === "google" ? config.google : config.meta || config.google;
@@ -58,18 +55,9 @@ export default function PubsOverview({ data, lastSync, config, syncDays, coverag
         title={platform === "all" ? "Vos pubs" : `Vos pubs ${name}`}
         description={`Ce que chaque pub coûte, combien de leads et de clients elle amène, ${periodText(range)}.`}
         actions={
-          <div className="flex flex-col items-start gap-2">
-            {connected && (
-              <SyncButton
-                lastSync={lastSync}
-                days={syncDays}
-                label={platform === "google" ? "Mettre à jour depuis Google" : platform === "all" ? "Mettre à jour" : "Mettre à jour depuis Meta"}
-              />
-            )}
-            {liveSync && (
-              <AdsAutoSync platforms={platform === "all" ? ["meta", "google"] : [platform]} state={liveSync} />
-            )}
-          </div>
+          liveSync && (
+            <AdsAutoSync platforms={platform === "all" ? ["meta", "google"] : [platform]} state={liveSync} />
+          )
         }
       />
 

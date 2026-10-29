@@ -76,6 +76,14 @@ export type NotificationsSummary = {
   latest: string | null;
 };
 
+/** Réponse du GET : la pastille, plus les arrivées depuis le repère du navigateur (alertes). */
+export type NotificationsPoll = NotificationsSummary & {
+  /** Arrivés après `?depuis=`, plus récents d'abord, 5 au plus ([] sans `depuis`) */
+  nouveaux: NotificationItem[];
+  /** Instant de la lecture côté serveur (ISO) : premier repère quand rien n'est arrivé */
+  now: string;
+};
+
 /** Libellés des provenances hors pub. */
 export const SOURCE_LABELS: Record<SessionPlatform, string> = {
   meta: "Pub Meta",

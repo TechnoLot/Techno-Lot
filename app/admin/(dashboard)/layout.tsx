@@ -5,6 +5,7 @@ import AdminShell from "@/components/admin/AdminShell";
 import NotificationsProvider from "@/components/admin/notifications/NotificationsProvider";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
+import { isEbayConfigured } from "@/lib/ebay/client";
 
 export const metadata: Metadata = {
   title: "Admin — Techno Lot",
@@ -16,7 +17,8 @@ export const metadata: Metadata = {
  * Le middleware a déjà refusé l'accès aux visiteurs non connectés ;
  * on ajoute ici le check du whitelist ADMIN_EMAILS et l'habillage sidebar.
  * Le thème (clair ou sombre) vient du témoin tl_admin_theme. La pastille des
- * notifications (menu et barre mobile) se met à jour toute seule.
+ * notifications (menu et barre mobile) se met à jour toute seule ; la synchro
+ * eBay tourne en fond quand eBay est connecté (alerte des nouvelles ventes).
  */
 export default async function DashboardLayout({
   children,
@@ -41,7 +43,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <NotificationsProvider>
+    <NotificationsProvider ebayConfigured={isEbayConfigured()}>
       <AdminShell email={user.email ?? ""} theme={theme}>
         {children}
       </AdminShell>

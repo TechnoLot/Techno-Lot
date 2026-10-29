@@ -3,26 +3,42 @@ import type { createClient } from "@/lib/supabase/server";
 import { fetchSoumissions, type Soumission } from "@/lib/admin/soumissions";
 import { adHref, isPaid, normPlatform, publisherOf, PUBLISHER_LABELS, resolveAdId } from "@/lib/ads/queries";
 import { NO_ID } from "@/lib/ads/types";
-import { ebayOrderStatus, isCountedOrder, type EbayOrderItem } from "@/lib/ebay/totaux";
+import {
+  ebayOrderStatus,
+  isCountedOrder,
+  torontoDay,
+  torontoRangeUtc,
+  type EbayOrderItem,
+} from "@/lib/ebay/totaux";
+import { bornesPeriode, type PeriodeKey } from "@/lib/admin/periodes";
 import {
   countByFiltre,
   type NotifCounts,
   type NotifPub,
   type NotificationItem,
-  type NotificationsSummary,
+  type NotificationsPoll,
 } from "@/lib/admin/notifications-types";
+import {
+  dansFenetre,
+  normaliserDepuis,
+  plusGrandeArrivee,
+  sansRetirees,
+  selectionnerNouveaux,
+} from "@/lib/admin/notifications-regles";
 
 type Supa = ReturnType<typeof createClient>;
 
 const DAY_MS = 86_400_000;
-/** Le fil couvre les 30 derniers jours. */
-export const FIL_JOURS = 30;
+/** Pastille et alertes : les ventes passées il y a plus de 30 jours (synchronisées très en retard) sont ignorées. */
+const VENTES_RECENTES_JOURS = 30;
 /** Aucune visite enregistrée : ce qui est arrivé dans les dernières 24 h compte comme nouveau. */
 const PREMIERE_VISITE_MS = DAY_MS;
 /** Une soumission et son lead sont enregistrés par le même envoi, à quelques millisecondes d'écart. */
 const LIEN_LEAD_MS = 10 * 60_000;
-const MAX_ROWS = 500;
-const MAX_ITEMS = 200;
+const MAX_ROWS = 1000;
+const MAX_ITEMS = 1000;
+/** Retraits lus au plus (« Tout effacer » purge ceux qu'il couvre). */
+const MAX_RETIREES = 5000;
 
 type LeadRaw = {
   id: string;
@@ -80,17 +96,43 @@ function num(v: number | string | null | undefined): number {
 }
 
 /* ------------------------------------------------------------------ */
-/* Dernière visite                                                     */
+/* Dernière visite, retraits                                           */
 /* ------------------------------------------------------------------ */
+
+type EtatNotifications = {
+  /** Dernière visite de l'onglet (ISO), null : jamais */
+  seenAt: string | null;
+  /** Dernier « Tout effacer » (ISO), null : jamais */
+  clearedAt: string | null;
+};
+
+async function getEtat(supabase: Supa, userId: string): Promise<EtatNotifications> {
+  const { data } = await supabase
+    .from("admin_notification_state")
+    .select("seen_at, cleared_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  return {
+    seenAt: (data?.seen_at as string | undefined) ?? null,
+    clearedAt: (data?.cleared_at as string | null | undefined) ?? null,
+  };
+}
 
 /** Dernière visite de l'onglet Notifications (ISO), null : jamais. */
 export async function getSeenAt(supabase: Supa, userId: string): Promise<string | null> {
-  const { data } = await supabase
-    .from("admin_notification_state")
-    .select("seen_at")
-    .eq("user_id", userId)
-    .maybeSingle();
-  return (data?.seen_at as string | undefined) ?? null;
+  return (await getEtat(supabase, userId)).seenAt;
+}
+
+/** Instant demandé, jamais dans le futur (maintenant s'il est illisible). */
+function cible(upTo: string | null, now: number): number {
+  const asked = upTo ? Date.parse(upTo) : NaN;
+  return Number.isFinite(asked) ? Math.min(asked, now) : now;
+}
+
+/** Le plus tardif entre un instant (ms) et une valeur ISO déjà enregistrée. */
+function sansReculer(target: number, prev: string | null): string {
+  const p = prev ? Date.parse(prev) : NaN;
+  return iso(Number.isFinite(p) ? Math.max(target, p) : target);
 }
 
 /** Marque le fil comme vu jusqu'à `upTo` (jamais en arrière ni dans le futur) ; renvoie la valeur retenue. */
@@ -100,8 +142,7 @@ export async function markNotificationsSeen(
   upTo: string | null,
 ): Promise<string> {
   const now = Date.now();
-  const asked = upTo ? Date.parse(upTo) : NaN;
-  const target = Number.isFinite(asked) ? Math.min(asked, now) : now;
+  const target = cible(upTo, now);
   const prev = await getSeenAt(supabase, userId);
   if (prev && Date.parse(prev) >= target) return prev;
   const seenAt = iso(target);
@@ -110,6 +151,65 @@ export async function markNotificationsSeen(
     .upsert({ user_id: userId, seen_at: seenAt, updated_at: iso(now) }, { onConflict: "user_id" });
   if (error) throw new Error(error.message);
   return seenAt;
+}
+
+/** Retire des éléments du fil (la vente ou la demande reste dans son onglet) ; doublons ignorés. */
+export async function retirerNotifications(supabase: Supa, userId: string, keys: string[]): Promise<number> {
+  const uniques = Array.from(new Set(keys));
+  if (uniques.length === 0) return 0;
+  const { error } = await supabase
+    .from("admin_notification_dismissed")
+    .upsert(
+      uniques.map((k) => ({ user_id: userId, item_key: k })),
+      { onConflict: "user_id,item_key", ignoreDuplicates: true },
+    );
+  if (error) throw new Error(error.message);
+  return uniques.length;
+}
+
+/**
+ * « Tout effacer » : tout ce qui est arrivé jusqu'à `upTo` (jamais dans le
+ * futur) quitte le fil et compte comme vu. Aucune des deux dates ne recule.
+ */
+export async function effacerNotifications(
+  supabase: Supa,
+  userId: string,
+  upTo: string,
+): Promise<{ clearedAt: string; seenAt: string }> {
+  const now = Date.now();
+  const target = cible(upTo, now);
+  const etat = await getEtat(supabase, userId);
+  const clearedAt = sansReculer(target, etat.clearedAt);
+  const seenAt = sansReculer(target, etat.seenAt);
+  const { error } = await supabase
+    .from("admin_notification_state")
+    .upsert(
+      { user_id: userId, seen_at: seenAt, cleared_at: clearedAt, updated_at: iso(now) },
+      { onConflict: "user_id" },
+    );
+  if (error) throw new Error(error.message);
+  // Un élément était arrivé avant d'être retiré : les retraits antérieurs à
+  // l'effacement sont couverts par cleared_at. Purge sans effet si elle échoue.
+  await supabase
+    .from("admin_notification_dismissed")
+    .delete()
+    .eq("user_id", userId)
+    .lte("dismissed_at", clearedAt);
+  return { clearedAt, seenAt };
+}
+
+/** Clés retirées par l'admin. */
+async function getRetirees(supabase: Supa, userId: string): Promise<{ keys: Set<string>; error: string | null }> {
+  const { data, error } = await supabase
+    .from("admin_notification_dismissed")
+    .select("item_key")
+    .eq("user_id", userId)
+    .order("dismissed_at", { ascending: false })
+    .limit(MAX_RETIREES);
+  return {
+    keys: new Set(((data ?? []) as { item_key: string }[]).map((r) => r.item_key)),
+    error: error ? `retraits : ${error.message}` : null,
+  };
 }
 
 /** Seuil « nouveau » (ms) : dernière visite, sinon les dernières 24 h. */
@@ -121,31 +221,39 @@ function seuilNouveau(seenAt: string | null, now: number): number {
 /* Lecture                                                             */
 /* ------------------------------------------------------------------ */
 
+/** Bornes de lecture (ISO) ; null : sans borne. */
+type Fenetre = {
+  /** Soumissions et leads reçus à partir de */
+  depuis: string | null;
+  /** Leads reçus avant (les soumissions sont bornées en mémoire) */
+  avant: string | null;
+  /** Ventes arrivées dans la base (first_seen_at) à partir de */
+  ventesArrivees: string | null;
+  /** Ventes passées (created_at) à partir de */
+  ventesDepuis: string | null;
+  /** Ventes passées avant */
+  ventesAvant: string | null;
+};
+
 /**
- * Soumissions (fonction admin_soumissions), leads (ad_leads : un par envoi du formulaire,
- * avec sa provenance) et commandes eBay arrivés depuis `arrivedSince` ; les
- * commandes passées avant `occurredSince` sont ignorées.
+ * Soumissions (fonction admin_soumissions), leads (ad_leads : un par envoi du
+ * formulaire, avec sa provenance) et commandes eBay de la fenêtre, plus
+ * récents d'abord, 1000 au plus par source.
  */
-async function fetchRows(
-  supabase: Supa,
-  arrivedSince: string,
-  occurredSince: string,
-): Promise<Rows> {
+async function fetchRows(supabase: Supa, f: Fenetre): Promise<Rows> {
+  let leadsQ = supabase.from("ad_leads").select(LEAD_COLS);
+  if (f.depuis) leadsQ = leadsQ.gte("created_at", f.depuis);
+  if (f.avant) leadsQ = leadsQ.lt("created_at", f.avant);
+
+  let ordersQ = supabase.from("ebay_orders").select(ORDER_COLS);
+  if (f.ventesArrivees) ordersQ = ordersQ.gte("first_seen_at", f.ventesArrivees);
+  if (f.ventesDepuis) ordersQ = ordersQ.gte("created_at", f.ventesDepuis);
+  if (f.ventesAvant) ordersQ = ordersQ.lt("created_at", f.ventesAvant);
+
   const [leads, orders, soumissions] = await Promise.all([
-    supabase
-      .from("ad_leads")
-      .select(LEAD_COLS)
-      .gte("created_at", arrivedSince)
-      .order("created_at", { ascending: false })
-      .limit(MAX_ROWS),
-    supabase
-      .from("ebay_orders")
-      .select(ORDER_COLS)
-      .gte("first_seen_at", arrivedSince)
-      .gte("created_at", occurredSince)
-      .order("created_at", { ascending: false })
-      .limit(MAX_ROWS),
-    fetchSoumissions(supabase, { since: arrivedSince, limit: MAX_ROWS }),
+    leadsQ.order("created_at", { ascending: false }).limit(MAX_ROWS),
+    ordersQ.order("created_at", { ascending: false }).limit(MAX_ROWS),
+    fetchSoumissions(supabase, { since: f.depuis ?? undefined, limit: MAX_ROWS }),
   ]);
   const errors = [
     leads.error && `leads : ${leads.error.message}`,
@@ -334,29 +442,45 @@ function construireFil(rows: Rows, seuil: number, noms: Noms): NotificationItem[
   return items.sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 }
 
-function plusRecente(items: NotificationItem[]): string | null {
-  let max: string | null = null;
-  for (const it of items) if (!max || Date.parse(it.arrivedAt) > Date.parse(max)) max = it.arrivedAt;
-  return max;
-}
-
 /* ------------------------------------------------------------------ */
 /* API                                                                 */
 /* ------------------------------------------------------------------ */
 
-/** Pastille du menu : nouveautés depuis la dernière visite (lecture légère, appelée chaque 30 s). */
-export async function getNotificationsSummary(supabase: Supa, user: User): Promise<NotificationsSummary> {
+/**
+ * Pastille du menu (nouveautés depuis la dernière visite) et, avec `depuis`,
+ * les arrivées à signaler (son et fenêtre). Lecture légère, chaque 30 s.
+ * Les éléments retirés ou effacés ne comptent nulle part.
+ */
+export async function getNotificationsPoll(
+  supabase: Supa,
+  user: User,
+  depuisBrut: string | null,
+): Promise<NotificationsPoll> {
   const now = Date.now();
-  const seuil = seuilNouveau(await getSeenAt(supabase, user.id), now);
-  const rows = await fetchRows(supabase, iso(seuil - LIEN_LEAD_MS), iso(now - FIL_JOURS * DAY_MS));
-  const items = construireFil(rows, seuil, SANS_NOMS);
-  return { unseen: countByFiltre(items.filter((i) => i.isNew)), latest: plusRecente(items) };
+  const depuis = normaliserDepuis(depuisBrut, now);
+  const [etat, retirees] = await Promise.all([getEtat(supabase, user.id), getRetirees(supabase, user.id)]);
+  const seuil = seuilNouveau(etat.seenAt, now);
+  const debut = depuis ? Math.min(seuil, Date.parse(depuis)) : seuil;
+  const rows = await fetchRows(supabase, {
+    depuis: iso(debut - LIEN_LEAD_MS),
+    avant: null,
+    ventesArrivees: iso(debut - LIEN_LEAD_MS),
+    ventesDepuis: iso(now - VENTES_RECENTES_JOURS * DAY_MS),
+    ventesAvant: null,
+  });
+  const items = sansRetirees(construireFil(rows, seuil, SANS_NOMS), retirees.keys, etat.clearedAt);
+  return {
+    unseen: countByFiltre(items.filter((i) => i.isNew)),
+    latest: plusGrandeArrivee(items),
+    nouveaux: selectionnerNouveaux(items, depuis),
+    now: iso(now),
+  };
 }
 
 export type NotificationsFeed = {
-  /** Les 200 plus récentes des 30 derniers jours */
+  /** Les 1000 plus récentes de la période */
   items: NotificationItem[];
-  /** Nombre par filtre sur les 30 jours */
+  /** Nombre par filtre sur la période */
   counts: NotifCounts;
   /** Nouveautés par filtre à l'ouverture */
   unseen: NotifCounts;
@@ -364,23 +488,40 @@ export type NotificationsFeed = {
   latest: string | null;
   /** Instant du rendu : l'ouverture marque le fil comme vu jusque-là */
   renderedAt: string;
+  /** Dernier « Tout effacer » (ISO), null : jamais */
+  clearedAt: string | null;
   errors: string[];
 };
 
-/** Fil de l'onglet Notifications. */
-export async function getNotificationsFeed(supabase: Supa, user: User): Promise<NotificationsFeed> {
+/** Fil de l'onglet Notifications : éléments dont l'événement tombe dans la période (Toronto). */
+export async function getNotificationsFeed(
+  supabase: Supa,
+  user: User,
+  { periode }: { periode: PeriodeKey },
+): Promise<NotificationsFeed> {
   const now = Date.now();
-  const seuil = seuilNouveau(await getSeenAt(supabase, user.id), now);
-  const debut = iso(now - FIL_JOURS * DAY_MS);
-  const rows = await fetchRows(supabase, debut, debut);
-  const items = construireFil(rows, seuil, await fetchNoms(supabase, rows.leads));
-  const latest = plusRecente(items);
+  const [etat, retirees] = await Promise.all([getEtat(supabase, user.id), getRetirees(supabase, user.id)]);
+  const seuil = seuilNouveau(etat.seenAt, now);
+  const { from, to } = bornesPeriode(periode, torontoDay());
+  const { gte, lt } = torontoRangeUtc(from, to);
+  // Marge pour retrouver le lead d'une soumission reçue pile à une borne.
+  const rows = await fetchRows(supabase, {
+    depuis: gte ? iso(Date.parse(gte) - LIEN_LEAD_MS) : null,
+    avant: lt ? iso(Date.parse(lt) + LIEN_LEAD_MS) : null,
+    ventesArrivees: null,
+    ventesDepuis: gte,
+    ventesAvant: lt,
+  });
+  const fil = construireFil(rows, seuil, await fetchNoms(supabase, rows.leads));
+  const items = sansRetirees(fil, retirees.keys, etat.clearedAt).filter((i) => dansFenetre(i.at, gte, lt));
+  const latest = plusGrandeArrivee(items);
   return {
     items: items.slice(0, MAX_ITEMS),
     counts: countByFiltre(items),
     unseen: countByFiltre(items.filter((i) => i.isNew)),
     latest,
     renderedAt: iso(Math.max(now, latest ? Date.parse(latest) : 0)),
-    errors: rows.errors,
+    clearedAt: etat.clearedAt,
+    errors: retirees.error ? [...rows.errors, retirees.error] : rows.errors,
   };
 }

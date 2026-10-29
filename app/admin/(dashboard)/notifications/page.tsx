@@ -3,23 +3,26 @@ import { createClient } from "@/lib/supabase/server";
 import PageHeader from "@/components/admin/PageHeader";
 import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import NotificationsFeed from "@/components/admin/notifications/NotificationsFeed";
+import SonToggle from "@/components/admin/notifications/SonToggle";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { getEbaySyncStatus } from "@/lib/ebay/ventes";
-import { FIL_JOURS, getNotificationsFeed } from "@/lib/admin/notifications";
+import { getNotificationsFeed } from "@/lib/admin/notifications";
 import { FILTRES_NOTIFICATIONS, type FiltreNotifications } from "@/lib/admin/notifications-types";
+import { periodeNotifications } from "@/lib/admin/notifications-regles";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Onglet Notifications : nouvelles ventes eBay, nouvelles soumissions du
- * formulaire et leads venus des pubs Meta / Google, des 30 derniers jours.
- * L'ouverture remet la pastille du menu à zéro ; le fil se recharge seul
- * quand quelque chose arrive (et la synchro eBay tourne pendant la visite).
+ * formulaire et leads venus des pubs Meta / Google, sur la période choisie
+ * (30 derniers jours par défaut). L'ouverture remet la pastille du menu à
+ * zéro ; le fil se recharge seul quand quelque chose arrive (et la synchro
+ * eBay tourne pendant la visite).
  */
 export default async function NotificationsPage({
   searchParams,
 }: {
-  searchParams: { filtre?: string };
+  searchParams: { filtre?: string; periode?: string };
 }) {
   const supabase = createClient();
   const {
@@ -27,9 +30,10 @@ export default async function NotificationsPage({
   } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const periode = periodeNotifications(searchParams.periode);
   const ebayConfigured = isEbayConfigured();
   const [feed, ebay] = await Promise.all([
-    getNotificationsFeed(supabase, user),
+    getNotificationsFeed(supabase, user, { periode }),
     ebayConfigured ? getEbaySyncStatus().catch(() => null) : Promise.resolve(null),
   ]);
   const filtre: FiltreNotifications = FILTRES_NOTIFICATIONS.includes(
@@ -43,9 +47,12 @@ export default async function NotificationsPage({
       <PageHeader
         eyebrow="En direct"
         title="Notifications"
-        description={`Nouvelles ventes eBay, soumissions du site et leads venus de tes pubs, des ${FIL_JOURS} derniers jours. La page se met à jour toute seule.`}
+        description="Nouvelles ventes eBay, soumissions du site et leads venus de tes pubs. La page se met à jour toute seule."
         actions={
-          ebayConfigured ? <EbayAutoSync configured lastSync={ebay?.lastSync ?? null} /> : undefined
+          <>
+            {ebayConfigured && <EbayAutoSync configured lastSync={ebay?.lastSync ?? null} />}
+            <SonToggle />
+          </>
         }
       />
 
@@ -66,6 +73,8 @@ export default async function NotificationsPage({
         counts={feed.counts}
         latest={feed.latest}
         renderedAt={feed.renderedAt}
+        clearedAt={feed.clearedAt}
+        periode={periode}
         filtreInitial={filtre}
       />
     </div>

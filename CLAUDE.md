@@ -14,7 +14,9 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - `app/admin/(dashboard)` — dashboard admin : lots, soumissions (`/admin/soumissions`, `lib/admin/soumissions.ts`), calculatrice, CRM (`/admin/crm`, `/admin/crm/[id]`, `clients`, `relances`, `modeles`)
 - `components/admin/` + `components/admin/crm/` — composants admin
 - `lib/admin/` — types/actions/format des lots ; `lib/crm/` — types/actions/email/parse-followup-date du CRM
-- Notifications : `/admin/notifications` + pastille du menu (`components/admin/notifications/`, `lib/admin/notifications.ts`) — fil calculé depuis `soumissions` (fonction `admin_soumissions`), `ad_leads` et `ebay_orders.first_seen_at` ; « vu » par admin dans `admin_notification_state`
+- Notifications : `/admin/notifications` + pastille du menu (`components/admin/notifications/`, `lib/admin/notifications.ts`) — fil calculé depuis `soumissions` (fonction `admin_soumissions`), `ad_leads` et `ebay_orders.first_seen_at` ; « vu » par admin dans `admin_notification_state` ; retraits par admin dans `admin_notification_dismissed` et `admin_notification_state.cleared_at` (« Tout effacer ») ; le provider lit toutes les 30 s (même onglet caché), lance la synchro eBay de fond chaque minute et déclenche son (`sons.ts`, Web Audio : cha-ching = vente eBay) + fenêtre en bas à droite (`NotificationsToasts`), un seul onglet sonnant grâce à `localStorage.tl_notif_alerte`
+- Périodes et pages partagées : `lib/admin/periodes.ts` + `components/admin/PeriodeSelect.tsx` (paramètre `periode`), `lib/admin/pagination.ts` + `components/admin/Pagination.tsx`
+- « Écrire » d'une soumission : pas de `mailto:` (ouvrait Outlook) ; `EcrireHostinger` copie l'adresse et ouvre le webmail Hostinger (`WEBMAIL_URL`, aucun lien ne pré-remplit un message)
 - Auth : lien magique Supabase, whitelist `ADMIN_EMAILS` (.env.local), protégé par `middleware.ts` + layout. En local, impossible de se connecter (boîte info@technolot.ca) — pour vérifier visuellement, bypass temporaire dans middleware + layout marqué `TEMP-DEV-BYPASS`, à retirer avant commit.
 
 ## Supabase (projet aznelukkwitvttycwnjb)
@@ -22,7 +24,7 @@ Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - RLS : tables CRM = `authenticated` full access → les lectures anonymes renvoient vide (pages locales vides sans session : normal).
 - Tables à NE JAMAIS modifier (schéma) : `soumissions`, `lots`, `email_logs`, `sales`. Le CRM peut seulement les lire/lier (`contacts.lot_id → lots.id`).
 - Tables CRM modifiables : `companies` (fit_score 1-10, lead_status, next_followup_on, lead_status_changed_at), `contacts` (stage new→…→converted), `outreach_activities`, `email_templates`, `daily_prospect_batches`.
-- `soumissions` n'a aucune politique de lecture : l'admin la lit via la fonction `admin_soumissions` (security definer, réservée aux courriels listés dans la fonction, à garder alignés sur `ADMIN_EMAILS`).
+- `soumissions` n'a aucune politique de lecture : l'admin la lit via la fonction `admin_soumissions` (security definer, réservée aux courriels listés dans la fonction, à garder alignés sur `ADMIN_EMAILS`). La suppression passe par `admin_supprimer_soumission` (même liste de courriels ; supprime aussi le lead de pub `ad_leads` du même envoi ; le lot éventuel reste).
 - Migrations DDL via l'outil MCP apply_migration.
 
 ## Règles CRM

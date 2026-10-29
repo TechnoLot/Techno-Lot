@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
-import { getNotificationsSummary, markNotificationsSeen } from "@/lib/admin/notifications";
+import {
+  effacerNotifications,
+  getNotificationsPoll,
+  markNotificationsSeen,
+  retirerNotifications,
+} from "@/lib/admin/notifications";
+import { lireActionNotifications } from "@/lib/admin/notifications-regles";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,35 +22,65 @@ async function getAdmin() {
   return user && isAdminEmail(user.email) ? { supabase, user } : null;
 }
 
-/** GET : nouveautés depuis la dernière visite de l'onglet (pastille du menu). */
-export async function GET() {
+function erreur(e: unknown) {
+  const message = e instanceof Error ? e.message : "Erreur inconnue";
+  return NextResponse.json({ error: message }, { status: 500, headers: NO_STORE });
+}
+
+/**
+ * GET [?depuis=ISO] : nouveautés depuis la dernière visite de l'onglet
+ * (pastille du menu) ; `nouveaux` : arrivées après `depuis` (alertes), 5 au
+ * plus, plus récentes d'abord. `depuis` illisible : ignoré ; plus vieux que
+ * 7 jours : ramené à 7 jours.
+ * Réponse : { unseen, latest, nouveaux, now }
+ */
+export async function GET(request: Request) {
   const admin = await getAdmin();
   if (!admin) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  const depuis = new URL(request.url).searchParams.get("depuis");
   try {
-    const summary = await getNotificationsSummary(admin.supabase, admin.user);
-    return NextResponse.json(summary, { headers: NO_STORE });
+    const poll = await getNotificationsPoll(admin.supabase, admin.user, depuis);
+    return NextResponse.json(poll, { headers: NO_STORE });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erreur inconnue";
-    return NextResponse.json({ error: message }, { status: 500, headers: NO_STORE });
+    return erreur(e);
   }
 }
 
-/** POST { upTo } : l'onglet a été vu jusqu'à cet instant (ISO), ce qui remet la pastille à zéro. */
+/**
+ * POST :
+ * - { action: "vu", upTo } (ou sans action) : l'onglet a été vu jusqu'à cet
+ *   instant, la pastille retombe à zéro → { ok, seenAt }
+ * - { action: "retirer", keys } : retire 1 à 200 éléments du fil → { ok, retirees }
+ * - { action: "effacer", upTo } : retire tout ce qui est arrivé jusque-là → { ok, clearedAt, seenAt }
+ * Entrée invalide : 400 { error }.
+ */
 export async function POST(request: Request) {
   const admin = await getAdmin();
   if (!admin) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  let upTo: string | null = null;
+  let body: unknown = {};
   try {
-    const body = (await request.json()) as { upTo?: unknown };
-    if (typeof body.upTo === "string") upTo = body.upTo;
+    const text = await request.text();
+    if (text.trim()) body = JSON.parse(text);
   } catch {
-    /* corps absent : maintenant */
+    return NextResponse.json({ error: "Requête illisible." }, { status: 400, headers: NO_STORE });
   }
+  const lu = lireActionNotifications(body);
+  if (!lu.ok) return NextResponse.json({ error: lu.message }, { status: 400, headers: NO_STORE });
+
+  const { supabase, user } = admin;
   try {
-    const seenAt = await markNotificationsSeen(admin.supabase, admin.user.id, upTo);
+    const a = lu.value;
+    if (a.action === "retirer") {
+      const retirees = await retirerNotifications(supabase, user.id, a.keys);
+      return NextResponse.json({ ok: true, retirees }, { headers: NO_STORE });
+    }
+    if (a.action === "effacer") {
+      const { clearedAt, seenAt } = await effacerNotifications(supabase, user.id, a.upTo);
+      return NextResponse.json({ ok: true, clearedAt, seenAt }, { headers: NO_STORE });
+    }
+    const seenAt = await markNotificationsSeen(supabase, user.id, a.upTo);
     return NextResponse.json({ ok: true, seenAt }, { headers: NO_STORE });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erreur inconnue";
-    return NextResponse.json({ error: message }, { status: 500, headers: NO_STORE });
+    return erreur(e);
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Calculs purs sur les commandes eBay (aucun accès réseau ni base) :
  * conversion d'une commande de l'API en ligne de `ebay_orders`, règles de
- * comptage, totaux et séries quotidiennes. Utilisable côté serveur et client.
+ * comptage, totaux et séries quotidiennes ou mensuelles. Utilisable côté serveur et client.
  */
 
 export const EBAY_TZ = "America/Toronto";
@@ -61,6 +61,11 @@ export function isCountedOrder(o: Pick<EbayOrderRow, "cancelled" | "payment_stat
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Montant finalement payé d'une commande comptée (remboursement partiel retiré). */
+function montantPaye(r: Pick<EbayOrderRow, "total" | "refunded">): number {
+  return Math.max(0, (Number(r.total) || 0) - (Number(r.refunded) || 0));
+}
+
 /** Additionne les commandes comptées. */
 export function sumEbayOrders(rows: EbayCountable[]): EbaySums {
   let revenue = 0;
@@ -71,7 +76,7 @@ export function sumEbayOrders(rows: EbayCountable[]): EbaySums {
     if (!isCountedOrder(r)) continue;
     orders += 1;
     // Remboursement partiel : seul ce que l'acheteur a finalement payé compte.
-    revenue += Math.max(0, (Number(r.total) || 0) - (Number(r.refunded) || 0));
+    revenue += montantPaye(r);
     if (r.fees != null && Number.isFinite(Number(r.fees))) {
       fees += Number(r.fees);
       feesKnown += 1;
@@ -151,26 +156,68 @@ export function inTorontoRange(createdAt: string, from: string | null, to: strin
   return true;
 }
 
-/** Série quotidienne des ventes comptées sur `days` jours se terminant à `today`. */
-export function dailyEbayRevenue(
+export type EbayRevenuePoint = { day: string; total: number; orders: number };
+
+/**
+ * Regroupe les commandes comptées par clé (jour ou mois à l'heure de
+ * Toronto), avec la même règle de montant que `sumEbayOrders`.
+ */
+function grouperVentes(
   rows: Array<EbayCountable & { created_at: string }>,
-  days: number,
-  today: string = torontoDay(),
-): Array<{ day: string; total: number; orders: number }> {
-  const byDay = new Map<string, { total: number; orders: number }>();
+  cle: (day: string) => string,
+): Map<string, { total: number; orders: number }> {
+  const out = new Map<string, { total: number; orders: number }>();
   for (const r of rows) {
     if (!isCountedOrder(r)) continue;
-    const d = torontoDay(r.created_at);
-    const cur = byDay.get(d) ?? { total: 0, orders: 0 };
-    cur.total += Number(r.total) || 0;
+    const k = cle(torontoDay(r.created_at));
+    const cur = out.get(k) ?? { total: 0, orders: 0 };
+    cur.total += montantPaye(r);
     cur.orders += 1;
-    byDay.set(d, cur);
+    out.set(k, cur);
   }
-  const out: Array<{ day: string; total: number; orders: number }> = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const day = addDays(today, -i);
+  return out;
+}
+
+/**
+ * Série quotidienne des ventes comptées, du jour `from` au jour `to` inclus
+ * (« YYYY-MM-DD », Toronto). Les jours sans vente valent 0.
+ */
+export function dailyEbayRevenue(
+  rows: Array<EbayCountable & { created_at: string }>,
+  from: string,
+  to: string,
+): EbayRevenuePoint[] {
+  const byDay = grouperVentes(rows, (d) => d);
+  const out: EbayRevenuePoint[] = [];
+  // Garde-fou : au plus ~10 ans de jours.
+  for (let day = from, i = 0; day <= to && i < 3700; day = addDays(day, 1), i++) {
     const v = byDay.get(day);
     out.push({ day, total: round2(v?.total ?? 0), orders: v?.orders ?? 0 });
+  }
+  return out;
+}
+
+/** Mois suivant (ou précédent) d'un mois « YYYY-MM ». */
+function addMonths(month: string, n: number): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
+}
+
+/**
+ * Série mensuelle des ventes comptées, du mois `fromMonth` au mois `toMonth`
+ * inclus (« YYYY-MM », Toronto). `day` vaut le 1er du mois (« YYYY-MM-01 ») ;
+ * les mois sans vente valent 0.
+ */
+export function monthlyEbayRevenue(
+  rows: Array<EbayCountable & { created_at: string }>,
+  fromMonth: string,
+  toMonth: string,
+): EbayRevenuePoint[] {
+  const byMonth = grouperVentes(rows, (d) => d.slice(0, 7));
+  const out: EbayRevenuePoint[] = [];
+  for (let month = fromMonth, i = 0; month <= toMonth && i < 1200; month = addMonths(month, 1), i++) {
+    const v = byMonth.get(month);
+    out.push({ day: `${month}-01`, total: round2(v?.total ?? 0), orders: v?.orders ?? 0 });
   }
   return out;
 }

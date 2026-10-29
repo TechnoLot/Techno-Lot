@@ -37,7 +37,7 @@ Pour la balise de conversion, renseigne `NEXT_PUBLIC_GOOGLE_ADS_ID` (AW-XXXXXXXX
 
 ## Synchronisation en direct
 
-- **Pages ouvertes** : /admin/pubs (et le détail d'une pub) et /admin/ventes-eBay se mettent à jour chaque minute (pastille « En direct » / « Synchro auto »). Pubs : aujourd'hui et hier (`{ auto: true }` sur /api/admin/ads-sync), sauté si la dernière synchro a moins de 50 s.
+- **Pages ouvertes** : /admin/pubs (et le détail d'une pub) et /admin/ventes-eBay se mettent à jour chaque minute (pastille « En direct » / « Synchro auto »). Pubs : aujourd'hui et hier (`{ auto: true }` sur /api/admin/ads-sync) ; à la première synchro du jour, tous les jours depuis la dernière synchro réussie (30 à 365 jours) pour rattraper les trous ; sauté si la dernière synchro a moins de 50 s. Il n'y a plus de bouton « Mettre à jour » : cliquer une pastille force une synchro.
 - **Sans personne sur le site** : pg_cron (Supabase) appelle `/api/cron/sync` chaque minute (eBay incrémental + pubs sur 2 jours) et chaque heure avec `?days=30` (plus le ménage des journaux de plus de 14 jours). Requiert `CRON_SECRET` et `SUPABASE_SERVICE_ROLE_KEY` côté serveur, puis le script `supabase/cron/sync-live.sql` (une fois, après la mise en ligne).
 
 ## Synchronisation

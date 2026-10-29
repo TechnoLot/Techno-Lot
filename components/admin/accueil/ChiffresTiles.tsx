@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import PeriodPills from "@/components/admin/PeriodPills";
-import { formatCount, formatMoney } from "@/lib/admin/format";
-import type { PeriodKey } from "@/lib/admin/types";
+import PeriodeSelect from "@/components/admin/PeriodeSelect";
+import { formatMoney } from "@/lib/admin/format";
+import type { PeriodeKey } from "@/lib/admin/periodes";
 import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
 import AdsAutoSync from "@/components/admin/ads/AdsAutoSync";
 
@@ -26,39 +26,36 @@ export type Chiffres = {
   pubsSync?: Record<AdPlatform, AdsSyncState>;
 };
 
-export const CHIFFRES_PERIODES: PeriodKey[] = ["month", "lastmonth", "ytd", "all"];
+/** Périodes proposées sur l'accueil (paramètre d'URL `periode`). */
+export const CHIFFRES_OPTIONS: PeriodeKey[] = ["hier", "semaine", "7j", "30j", "mois", "moisdernier", "annee", "tout"];
 
-/** « Chiffres » : 4 grands nombres (Ventes, Achats, Profit, Pubs) et le sélecteur de période. */
+/** « Chiffres » : 3 grands nombres (Ventes, Profit, Pubs) et le sélecteur de période. */
 export default function ChiffresTiles({
-  period,
+  periode,
   data,
 }: {
-  period: PeriodKey;
+  periode: PeriodeKey;
   data: Chiffres;
 }) {
   const profitNegatif = data.profit < 0;
   return (
     <section aria-labelledby="chiffres-titre">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h2
           id="chiffres-titre"
           className="font-display text-lg font-semibold tracking-tight text-admin-ink"
         >
           Chiffres
         </h2>
-        <PeriodPills current={period} options={CHIFFRES_PERIODES} />
+        <div className="min-w-0 max-w-full">
+          <PeriodeSelect current={periode} options={CHIFFRES_OPTIONS} />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <Tile label="Ventes" value={formatMoney(data.ventes)}>
-          Lots {formatMoney(data.ventesLots)} · Ventes {formatMoney(data.ventesManuelles)} · eBay{" "}
-          {data.ebayConfigured ? formatMoney(data.ventesEbay) : "—"}
-        </Tile>
-
-        <Tile label="Achats" value={formatMoney(data.achats)}>
-          {data.nbLots === 0
-            ? "Aucun lot acheté"
-            : `${formatCount(data.nbLots)} lot${data.nbLots > 1 ? "s" : ""}`}
+          eBay {data.ebayConfigured ? formatMoney(data.ventesEbay) : "—"} · lots {formatMoney(data.ventesLots)} ·
+          ventes {formatMoney(data.ventesManuelles)}
         </Tile>
 
         <Tile
@@ -66,9 +63,13 @@ export default function ChiffresTiles({
           value={formatMoney(data.profit)}
           valueClass={profitNegatif ? "text-admin-danger" : "text-admin-green"}
         >
-          {data.fraisEbay
-            ? `Ventes − achats − frais eBay (${formatMoney(data.fraisEbay)})`
-            : "Ventes − achats"}
+          {data.nbLots === 0
+            ? data.fraisEbay
+              ? `Ventes − frais eBay (${formatMoney(data.fraisEbay)}) · aucun lot acheté`
+              : "Aucun lot acheté"
+            : data.fraisEbay
+              ? `Ventes − achats (${formatMoney(data.achats)}) − frais eBay (${formatMoney(data.fraisEbay)})`
+              : `Ventes − achats (${formatMoney(data.achats)})`}
         </Tile>
 
         {data.pubsConfigured ? (

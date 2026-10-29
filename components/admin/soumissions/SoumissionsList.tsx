@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { Mail, Package, Paperclip, Phone, Plus } from "lucide-react";
+import { MailOpen, Package, Paperclip, Phone, Plus } from "lucide-react";
+import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
 import MessageApercu from "@/components/admin/soumissions/MessageApercu";
+import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
+import { WEBMAIL_URL } from "@/lib/admin/config";
 import { formatCount } from "@/lib/admin/format";
 import { A_TRAITER_JOURS, estATraiter, type Soumission } from "@/lib/admin/soumissions";
 
@@ -8,11 +11,6 @@ const TZ = "America/Toronto";
 
 /** Une demande sans lot est « nouvelle » pendant 48 h. */
 const NOUVELLE_MS = 48 * 3_600_000;
-
-const SUJET: Record<Soumission["locale"], string> = {
-  fr: "Votre demande de soumission — Techno Lot",
-  en: "Your quote request — Techno Lot",
-};
 
 function formatDateHeure(iso: string): string {
   return new Intl.DateTimeFormat("fr-CA", {
@@ -114,9 +112,7 @@ function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
       {(s.courriel || s.telephone) && (
         <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[14px]">
           {s.courriel && (
-            <a href={`mailto:${s.courriel}`} className="admin-focus min-w-0 break-all rounded text-admin-ink hover:underline">
-              {s.courriel}
-            </a>
+            <EcrireHostinger courriel={s.courriel} variante="lien" />
           )}
           {s.telephone && (
             <a
@@ -151,15 +147,17 @@ function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {s.courriel && (
-          <a
-            href={`mailto:${s.courriel}?subject=${encodeURIComponent(SUJET[s.locale])}`}
-            className="admin-btn"
-          >
-            <Mail className="h-3.5 w-3.5" aria-hidden />
-            Écrire
-          </a>
-        )}
+        {s.courriel && <EcrireHostinger courriel={s.courriel} />}
+        <a
+          href={WEBMAIL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="admin-btn"
+          title="Ouvre ta boîte courriel Hostinger (info@technolot.ca) dans un nouvel onglet"
+        >
+          <MailOpen className="h-3.5 w-3.5" aria-hidden />
+          Ouvrir le courriel
+        </a>
         {s.telephone && (
           <a href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`} className="admin-btn">
             <Phone className="h-3.5 w-3.5" aria-hidden />
@@ -177,6 +175,9 @@ function SoumissionCard({ s, now }: { s: Soumission; now: Date }) {
             Créer le lot
           </Link>
         )}
+        <div className="ml-auto">
+          <SupprimerSoumission id={s.id} nom={s.nom} />
+        </div>
       </div>
     </article>
   );
