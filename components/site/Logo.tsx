@@ -14,6 +14,8 @@ type LogoProps = {
   /** Hauteur affichée en px (largeur calculée) */
   height?: number;
   priority?: boolean;
+  /** eager : chargé tout de suite, sans la priorité haute ni le préchargement de `priority` */
+  loading?: "eager" | "lazy";
   className?: string;
 };
 
@@ -23,6 +25,7 @@ export function Logo({
   layout = "empile",
   height = 52,
   priority = false,
+  loading,
   className,
 }: LogoProps) {
   const file = FILES[layout];
@@ -34,6 +37,7 @@ export function Logo({
       width={width}
       height={height}
       priority={priority}
+      loading={priority ? undefined : loading}
       className={className}
       style={{ width, height }}
     />

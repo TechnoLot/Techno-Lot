@@ -363,7 +363,8 @@ export function SiteHeader({ locale }: { locale: Locale }) {
             aria-label={t.header.logoAria}
             className="shrink-0 rounded-md transition-opacity hover:opacity-90"
           >
-            <Logo variant="fonce" layout="horizontal" height={40} priority />
+            {/* Chargé tout de suite mais sans priorité haute : l'image principale de la page passe d'abord */}
+            <Logo variant="fonce" layout="horizontal" height={40} loading="eager" />
           </Link>
 
           {/* Navigation bureau */}
