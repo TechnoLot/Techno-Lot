@@ -1,4 +1,5 @@
 import { PageHero } from "@/components/site/PageHero";
+import MotionProvider from "@/components/MotionProvider";
 import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
 import { Reveal } from "@/components/site/Reveal";
@@ -133,8 +134,9 @@ export default function PriseEnChargePage({ locale }: { locale: Locale }) {
   const t = content[locale];
   const pct = locale === "fr" ? " %" : "%";
 
+  // Moteur framer-motion (LazyMotion) monté ici seulement : seuls les gabarits à composants m.* le chargent
   return (
-    <>
+    <MotionProvider>
       <PageHero
         title={
           <>
@@ -261,6 +263,6 @@ export default function PriseEnChargePage({ locale }: { locale: Locale }) {
       </Chapter>
 
       <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} current="/prise-en-charge-complete" />
-    </>
+    </MotionProvider>
   );
 }

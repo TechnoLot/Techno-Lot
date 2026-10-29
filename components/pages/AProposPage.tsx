@@ -1,4 +1,5 @@
 import Image from "next/image";
+import MotionProvider from "@/components/MotionProvider";
 import { PageHero } from "@/components/site/PageHero";
 import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
@@ -210,8 +211,9 @@ function BigValue({ item, locale, className }: { item: Big; locale: Locale; clas
 
 export default function AProposPage({ locale }: { locale: Locale }) {
   const t = content[locale];
+  // Moteur framer-motion (LazyMotion) monté ici seulement : seuls les gabarits à composants m.* le chargent
   return (
-    <>
+    <MotionProvider>
       <PageHero
         title={
           <>
@@ -325,6 +327,6 @@ export default function AProposPage({ locale }: { locale: Locale }) {
       </Chapter>
 
       <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} buttonLabel={t.ctaButton} href="/contact" />
-    </>
+    </MotionProvider>
   );
 }

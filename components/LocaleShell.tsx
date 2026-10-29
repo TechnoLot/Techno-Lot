@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import MotionProvider from "@/components/MotionProvider";
 import SetDocumentLang from "@/components/SetDocumentLang";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -37,13 +36,12 @@ export default function LocaleShell({
         >
           {t.shell.skipToContent}
         </a>
-        <MotionProvider>
-          <SiteHeader locale={locale} />
-          <main id="main" className="site-main flex-1">
-            {children}
-          </main>
-          <SiteFooter locale={locale} />
-        </MotionProvider>
+        {/* framer-motion (MotionProvider) : monté par les seuls gabarits qui l'utilisent */}
+        <SiteHeader locale={locale} />
+        <main id="main" className="site-main flex-1">
+          {children}
+        </main>
+        <SiteFooter locale={locale} />
         <SmoothScroll />
       </div>
     </>

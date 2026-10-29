@@ -1,4 +1,5 @@
 import Image from "next/image";
+import MotionProvider from "@/components/MotionProvider";
 import { PageHero } from "@/components/site/PageHero";
 import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
@@ -136,8 +137,9 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
   const t = content[locale];
   const s = t.steps;
 
+  // Moteur framer-motion (LazyMotion) monté ici seulement : seuls les gabarits à composants m.* le chargent
   return (
-    <>
+    <MotionProvider>
       <PageHero
         title={t.title}
         intro={t.intro}
@@ -218,6 +220,6 @@ export default function ConsultationPage({ locale }: { locale: Locale }) {
       </Chapter>
 
       <CtaBanner locale={locale} title={t.ctaTitle} text={t.ctaText} current="/consultation" />
-    </>
+    </MotionProvider>
   );
 }

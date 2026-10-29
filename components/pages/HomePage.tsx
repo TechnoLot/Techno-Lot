@@ -1,4 +1,5 @@
 import type { Locale } from "@/lib/i18n";
+import MotionProvider from "@/components/MotionProvider";
 import { Hero } from "@/components/accueil/hero/Hero";
 import { Stats } from "@/components/accueil/Stats";
 import { Etapes } from "@/components/accueil/Etapes";
@@ -16,8 +17,9 @@ import { AppelFinal } from "@/components/accueil/AppelFinal";
  * Les sections vivent dans components/accueil/.
  */
 export default function HomePage({ locale }: { locale: Locale }) {
+  // Moteur framer-motion (LazyMotion) monté ici seulement : seuls les gabarits à composants m.* le chargent
   return (
-    <>
+    <MotionProvider>
       <Hero locale={locale} />
       <Stats locale={locale} />
       <Etapes locale={locale} />
@@ -27,6 +29,6 @@ export default function HomePage({ locale }: { locale: Locale }) {
       <SecondeVie locale={locale} />
       <Rachetons locale={locale} />
       <AppelFinal locale={locale} />
-    </>
+    </MotionProvider>
   );
 }

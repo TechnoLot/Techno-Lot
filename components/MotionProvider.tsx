@@ -12,6 +12,10 @@ const loadFeatures = () =>
  * d'animation est chargé dans un chunk séparé après le rendu initial.
  * `strict` garantit qu'aucun `motion.*` (bundle complet) ne se glisse
  * dans l'arbre public par erreur.
+ * Monté seulement par les gabarits qui affichent des `m.*` (HomePage,
+ * AProposPage, AchatPage, ConsultationPage, PriseEnChargePage) : un `m.*`
+ * hors de ce fournisseur ne s'animerait pas. Les autres pages ne chargent
+ * pas framer-motion.
  */
 export default function MotionProvider({ children }: { children: ReactNode }) {
   return (
