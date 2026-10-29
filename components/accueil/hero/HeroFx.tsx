@@ -27,13 +27,13 @@ const REF_W = CIEL.largeur;
 const REF_H = CIEL.hauteur;
 const N = ETOILES.length / 4;
 
-/** Couleurs des étoiles par classe de température : orangée … bleutée */
+/** Couleurs des étoiles : les verts de la marque, selon la classe de température du catalogue (froide … chaude) */
 const STAR_RGB = [
-  [255, 210, 168],
-  [255, 234, 208],
-  [250, 248, 240],
-  [226, 236, 255],
-  [206, 222, 255],
+  [52, 211, 153],
+  [94, 203, 51],
+  [94, 203, 51],
+  [139, 233, 95],
+  [170, 245, 130],
 ] as const;
 const CLASSES = STAR_RGB.length;
 /** vert de la marque */
@@ -143,8 +143,9 @@ export function HeroFx() {
     for (let i = 0; i < N; i++) {
       const mag = ETOILES[i * 4 + 2];
       const fl = Math.pow(10, -0.4 * (mag - 6));
-      rad[i] = 0.35 + 0.3 * Math.pow(fl, 0.38);
-      base[i] = Math.min(1, 0.28 + 0.12 * Math.sqrt(fl));
+      // le vert est moins lumineux que le blanc : étoiles un peu plus grosses et plus opaques
+      rad[i] = 0.45 + 0.3 * Math.pow(fl, 0.38);
+      base[i] = Math.min(1, 0.4 + 0.14 * Math.sqrt(fl));
       depth[i] = 0.35 + 0.65 * clamp((6 - mag) / 6, 0, 1);
       cls[i] = clamp(ETOILES[i * 4 + 3], 0, CLASSES - 1);
       halo[i] = mag < 2.4 ? 1 : 0;
@@ -212,7 +213,7 @@ export function HeroFx() {
           fc.moveTo(x + r, y);
           fc.arc(x, y, r, 0, TAU);
         }
-        fc.fillStyle = `rgba(225, 235, 250, ${(0.1 + ((t + 0.5) / DUST_TIERS) * 0.22).toFixed(3)})`;
+        fc.fillStyle = `rgba(94, 203, 51, ${(0.12 + ((t + 0.5) / DUST_TIERS) * 0.24).toFixed(3)})`;
         fc.fill();
       }
     }
