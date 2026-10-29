@@ -32,7 +32,8 @@ import {
  *   --hp         progression de l'épinglage (0..1) → recul du logo et des titres
  *   --hero-logo-url, data-fx  image du logo pour les calques masqués (reflet, glitch)
  *   data-glitch (sur le logo), data-pointer, data-warp, data-paused
- *   data-lite  ordinateur ou téléphone lent : canevas en 1x, moins de poussière, sans scintillation
+ *   data-lite  ordinateur ou téléphone lent : canevas en 1x, moins de poussière, sans scintillation,
+ *              boucle arrêtée quand plus rien ne bouge
  * Étoiles : catalogue Yale Bright Star projeté depuis Montréal (components/site/ciel/ciel.ts,
  * généré par scripts/generer-ciel.mjs) ; couleurs, cadrage, poussière et dessin des étoiles
  * sont partagés avec les pages intérieures (components/site/ciel/etoiles.ts). Elles
@@ -44,6 +45,8 @@ import {
 /** Mode allégé : en dessous d'environ 40 images/s en moyenne, l'effet se simplifie. */
 const SLOW_FRAME_MS = 25;
 const PERF_SAMPLE = 90;
+/** Mode allégé, arrêt au repos : écart du pointeur lissé à sa cible sous lequel il est arrivé */
+const REPOS_LISSE = 1e-6;
 
 /** Traits des figures : opacité au repos, éclairés, distance d'éclairage (px) */
 const LINE_REST = 0.22;
@@ -142,6 +145,7 @@ export function HeroFx() {
 
     /* ───────────── Étoiles animées ───────────── */
 
+    /** Fait avancer les étoiles et les traits ; rend vrai si quelque chose a bougé */
     function step(dt: number, t: number, twinkle: boolean) {
       const cx = w / 2;
       const cy = h * 0.45;
@@ -151,10 +155,17 @@ export function HeroFx() {
       // pendant l'hyperespace les étoiles filent ; sous 0,05 le ressort les ramène chez elles
       const spring = warp < 0.05;
       const margin = 30;
+      let bouge = false;
 
       for (let i = 0; i < N; i++) {
         let x = px[i];
         let y = py[i];
+        const x0 = x;
+        const y0 = y;
+        const vx0 = vx[i];
+        const vy0 = vy[i];
+        const fade0 = fade[i];
+        const tw0 = tw[i];
         let ax = 0;
         let ay = 0;
         if (pointer.on) {
@@ -208,13 +219,19 @@ export function HeroFx() {
         py[i] = y;
 
         tw[i] = twinkle ? 1 - tau[i] + tau[i] * (0.5 + 0.5 * Math.sin(phase[i] + freq[i] * t)) : 1;
+        if (px[i] !== x0 || py[i] !== y0 || vx[i] !== vx0 || vy[i] !== vy0 || fade[i] !== fade0 || tw[i] !== tw0) {
+          bouge = true;
+        }
       }
 
       // traits : s'éclairent quand le pointeur approche d'une étoile de la constellation
       for (let c = 0; c < CONSTELLATIONS.length; c++) {
         const goal = pointer.on && pointerNear(c) ? LINE_LIT : LINE_REST;
+        const l0 = lit[c];
         lit[c] += (goal - lit[c]) * Math.min(1, 0.06 * dt);
+        if (lit[c] !== l0) bouge = true;
       }
+      return bouge;
     }
 
     /** le pointeur est-il à moins de LINE_NEAR px d'une étoile de cette constellation ? */
@@ -371,9 +388,14 @@ export function HeroFx() {
       }
     }
 
+    /** mode allégé : boucle arrêtée parce que plus rien ne bouge (voir loop) */
+    let repos = false;
+
     /** contexte perdu puis rendu (GPU) : canevas vidé, image complète à la prochaine image */
     const onRestored = () => {
       peintre.pret = false;
+      // boucle arrêtée au repos : l'image est redessinée tout de suite
+      if (repos) draw();
     };
     canvas.addEventListener("contextrestored", onRestored);
 
@@ -403,12 +425,27 @@ export function HeroFx() {
     let inView = true;
     let perfFrames = 0;
     let perfSum = 0;
+    /** dernier intervalle entre deux images (ms) : reprise au même rythme après un arrêt au repos */
+    let cadence = 0;
 
     const canRun = () => started && inView && !document.hidden;
+    /** pointeur lissé arrivé : plus aucune écriture de --hx, --hy, --gx, --gy à venir */
+    const lisse = () =>
+      Math.abs(target.x - tilt.x) <= REPOS_LISSE &&
+      Math.abs(target.y - tilt.y) <= REPOS_LISSE &&
+      Math.abs(target.x - glow.x) <= REPOS_LISSE &&
+      Math.abs(target.y - glow.y) <= REPOS_LISSE &&
+      Math.abs(target.x - tilt.wx) <= 0.001 &&
+      Math.abs(target.y - tilt.wy) <= 0.001 &&
+      Math.abs(target.x - glow.wx) <= 0.001 &&
+      Math.abs(target.y - glow.wy) <= 0.001;
 
     const writeVar = (name: string, value: number) => root.style.setProperty(name, value.toFixed(3));
 
-    /** Appareil lent : canevas en 1x, moins de poussière, sans scintillation, décor CSS allégé (data-lite). */
+    /**
+     * Appareil lent : canevas en 1x, moins de poussière, sans scintillation, décor CSS allégé (data-lite),
+     * boucle arrêtée au repos.
+     */
     const goLite = () => {
       lite = true;
       dpr = 1;
@@ -421,6 +458,11 @@ export function HeroFx() {
     function loop(now: number) {
       raf = 0;
       if (!canRun()) return;
+      // reprise après un arrêt au repos : même intervalle qu'avant l'arrêt, comme si la boucle avait continué
+      if (repos) {
+        repos = false;
+        last = now - cadence;
+      }
       const dt = last ? Math.min((now - last) / 16.667, 3) : 1;
       // Mesure de la fluidité (images réellement enchaînées seulement)
       if (!lite && last && now - last < 250) {
@@ -431,6 +473,7 @@ export function HeroFx() {
           perfSum = 0;
         }
       }
+      if (last) cadence = now - last;
       last = now;
 
       // pointeur lissé : rapide pour le logo, lent pour la lueur d'horizon
@@ -446,14 +489,20 @@ export function HeroFx() {
       warp += (scrollP - warp) * Math.min(1, 0.08 * dt);
       if (warp < 0.0005) warp = 0;
 
-      step(dt, now / 1000, !lite);
-      draw();
+      const bouge = step(dt, now / 1000, !lite);
+      const peint = draw();
+      // Mode allégé (sans scintillation) : quand plus rien ne bouge, les images suivantes seraient
+      // identiques ; la boucle s'arrête jusqu'au prochain pointeur, défilement ou retour à l'écran.
+      if (lite && !bouge && !peint && warp === 0 && scrollP === 0 && lisse()) {
+        repos = true;
+        return;
+      }
       raf = requestAnimationFrame(loop);
     }
 
     function wake() {
       if (!raf && canRun()) {
-        last = 0;
+        if (!repos) last = 0;
         raf = requestAnimationFrame(loop);
       }
     }
@@ -476,6 +525,8 @@ export function HeroFx() {
       target.x = 0;
       target.y = 0;
       delete root.dataset.pointer;
+      // retour des étoiles et du pointeur lissé (boucle arrêtée au repos en mode allégé)
+      wake();
     };
     /** toucher : les étoiles s'écartent pendant le contact */
     const onPointerDown = (e: PointerEvent) => {
@@ -486,7 +537,10 @@ export function HeroFx() {
       wake();
     };
     const onPointerUp = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") pointer.on = false;
+      if (e.pointerType !== "mouse") {
+        pointer.on = false;
+        wake();
+      }
     };
 
     root.addEventListener("pointermove", onPointerMove, { passive: true });
