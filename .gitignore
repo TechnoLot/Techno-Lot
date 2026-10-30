@@ -31,3 +31,6 @@ scrollcraft/builds/*/lab/en/
 scrollcraft/builds/*/lab/maq/
 scrollcraft/builds/*/lab/proto/*.png
 scrollcraft/builds/*/lab/proto/*.jpg
+
+# Passe sécurité : rapports et cartes de l'app (dépôt public → jamais versionnés)
+securite/
