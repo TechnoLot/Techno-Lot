@@ -56,6 +56,15 @@ export const TABLE_LIMITES = {
   lienMagiqueGlobalHeure: { route: "auth-lien:global:heure", fenetreSecondes: 3_600, max: 5 },
   /** GET /admin/auth/callback, par IP : 20 / 10 min (au-delà : /admin/login?error=trop_de_tentatives). */
   callbackIp10min: { route: "auth-callback:ip:10min", fenetreSecondes: 600, max: 20 },
+  /**
+   * POST /admin/auth/mfa/verification (code de la double authentification),
+   * par compte (user.id) : 5 essais / 5 min. Chaque essai compte AVANT l'appel
+   * à Supabase (la limite doit précéder la vérification) : un code juste met
+   * fin au parcours, donc 5 codes faux → le 6e essai reçoit 429.
+   */
+  mfaCompte5min: { route: "auth-mfa:compte:5min", fenetreSecondes: 300, max: 5 },
+  /** POST /admin/auth/mfa/verification, par IP : 5 essais / 5 min (même règle). */
+  mfaIp5min: { route: "auth-mfa:ip:5min", fenetreSecondes: 300, max: 5 },
   /** GET/POST /api/ebay/account-deletion, par IP : 30 / min. */
   ebaySuppressionIpMinute: { route: "ebay-suppression:ip:min", fenetreSecondes: 60, max: 30 },
   /** Courriels d'alerte de sécurité : 1 / h par type d'alerte (lib/securite/journal.ts). */

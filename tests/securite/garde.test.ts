@@ -174,7 +174,7 @@ describe("verifierAdmin", () => {
 
   it("403 si est_admin n'est pas exactement true ou échoue", async () => {
     supa.user = ADMIN;
-    supa.claims = { sub: ADMIN.id, amr: [{ method: "password", timestamp: maintenant() - 60 }] };
+    supa.claims = { sub: ADMIN.id, aal: "aal2", amr: [{ method: "password", timestamp: maintenant() - 60 }] };
     supa.estAdmin = { data: false, error: null };
     expect(await verifierAdmin()).toMatchObject({ ok: false, status: 403, motif: "role_refuse" });
     supa.estAdmin = { data: "true", error: null };
@@ -191,7 +191,7 @@ describe("verifierAdmin", () => {
 
   it("admin connecté depuis moins de 24 h → contexte", async () => {
     supa.user = ADMIN;
-    supa.claims = { sub: ADMIN.id, amr: [{ method: "password", timestamp: maintenant() - 3600 }] };
+    supa.claims = { sub: ADMIN.id, aal: "aal2", amr: [{ method: "password", timestamp: maintenant() - 3600 }] };
     const v = await verifierAdmin();
     expect(v.ok).toBe(true);
     if (v.ok) {
@@ -200,10 +200,10 @@ describe("verifierAdmin", () => {
     }
   });
 
-  it("revendications illisibles → repli sur last_sign_in_at", async () => {
+  it("revendications illisibles → repli sur last_sign_in_at pour l'âge, niveau aal inconnu = refusé (F5)", async () => {
     supa.user = { ...ADMIN, last_sign_in_at: new Date(Date.now() - 60_000).toISOString() };
     supa.claims = null;
-    expect((await verifierAdmin()).ok).toBe(true);
+    expect(await verifierAdmin()).toMatchObject({ ok: false, status: 401, motif: "mfa_requise" });
     supa.user = { ...ADMIN, last_sign_in_at: new Date(Date.now() - 30 * 3_600_000).toISOString() };
     expect(await verifierAdmin()).toMatchObject({ ok: false, motif: "session_expiree" });
   });
@@ -238,7 +238,7 @@ describe("exigerAdminRoute", () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('"evenement":"admin.refus"'));
 
     supa.user = ADMIN;
-    supa.claims = { sub: ADMIN.id, amr: [{ method: "password", timestamp: maintenant() - 60 }] };
+    supa.claims = { sub: ADMIN.id, aal: "aal2", amr: [{ method: "password", timestamp: maintenant() - 60 }] };
     const ok = await exigerAdminRoute(
       new Request("https://technolot.ca/api/admin/x", { method: "POST", headers: { origin: "https://www.technolot.ca" } }),
     );

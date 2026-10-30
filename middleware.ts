@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { isAdminEmail } from "@/lib/admin/config";
 import { OPTIONS_COOKIES } from "@/lib/supabase/options-cookies";
 import { derniereAuthentification, sessionExpiree } from "@/lib/securite/age-session";
+import { doitPasserParMfa, niveauAal, urlMfa } from "@/lib/securite/mfa";
 import {
   cspAdmin,
   estRouteAdminPublique,
@@ -38,7 +39,10 @@ const ENTETE_CSP =
  *      les routes d'API ni les outils encadrés (…/embed) ;
  *    - sauf /admin/login et /admin/auth/* : session vérifiée par `getUser()`,
  *      courriel dans ADMIN_EMAILS (sinon déconnexion), dernière connexion de
- *      moins de 24 h (sinon déconnexion et retour à la connexion).
+ *      moins de 24 h (sinon déconnexion et retour à la connexion), puis
+ *      double authentification : une session de niveau aal1 est renvoyée vers
+ *      /admin/auth/mfa?next=<chemin>. La page /admin/auth/mfa elle-même passe
+ *      par les mêmes contrôles de session, sans exiger aal2.
  *    Ce n'est qu'un premier filtre : chaque page, route et action admin
  *    revérifie elle-même (lib/securite/garde.ts).
  */
@@ -168,15 +172,23 @@ export async function middleware(request: NextRequest) {
   // Reconnexion chaque jour : même calcul que verifierAdmin (lib/securite/garde.ts),
   // sur les revendications VÉRIFIÉES du jeton (amr), repli sur last_sign_in_at.
   let amr: unknown = undefined;
+  let aal: string | null = null;
   try {
     const { data } = await supabase.auth.getClaims();
     if (data?.claims && data.claims.sub === user.id) amr = data.claims.amr;
+    aal = niveauAal(data?.claims, user.id);
   } catch {
-    // Repli sur last_sign_in_at.
+    // Repli sur last_sign_in_at ; niveau inconnu = pas aal2.
   }
   if (sessionExpiree(derniereAuthentification(amr, user.last_sign_in_at))) {
     await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
     return rediriger(urlConnexion("session_expiree", cheminDemande));
+  }
+
+  // Double authentification exigée (même règle que verifierAdmin) : la session
+  // est gardée, seul le code manque.
+  if (doitPasserParMfa(pathname, aal)) {
+    return rediriger(urlMfa(cheminDemande));
   }
 
   return response;

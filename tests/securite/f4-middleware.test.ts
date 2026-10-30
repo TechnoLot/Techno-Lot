@@ -244,7 +244,7 @@ describe("middleware", () => {
 
   it("admin connecté depuis moins de 24 h → page servie avec la CSP", async () => {
     supa.user = ADMIN;
-    supa.claims = { sub: ADMIN.id, amr: [{ method: "otp", timestamp: maintenant() - 3600 }] };
+    supa.claims = { sub: ADMIN.id, aal: "aal2", amr: [{ method: "otp", timestamp: maintenant() - 3600 }] };
     const r = await middleware(requete("/admin/soumissions"));
     expect(r.headers.get("location")).toBeNull();
     expect(supa.signOut).toEqual([]);
@@ -254,7 +254,7 @@ describe("middleware", () => {
 
   it("outil encadré et API sous /admin : session vérifiée, sans CSP du middleware", async () => {
     supa.user = ADMIN;
-    supa.claims = { sub: ADMIN.id, amr: [{ method: "password", timestamp: maintenant() }] };
+    supa.claims = { sub: ADMIN.id, aal: "aal2", amr: [{ method: "password", timestamp: maintenant() }] };
     for (const chemin of ["/admin/calculatrice/embed", "/admin/calculatrice/api/saved"]) {
       const r = await middleware(requete(chemin));
       expect(r.headers.get("location")).toBeNull();

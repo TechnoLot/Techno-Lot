@@ -17,7 +17,20 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       getUser: async () => ({ data: { user: etat.user }, error: null }),
-      getClaims: async () => ({ data: null, error: { message: "x" } }),
+      // Session connectée : jeton vérifié récent, double authentification faite (aal2, F5).
+      getClaims: async () =>
+        etat.user
+          ? {
+              data: {
+                claims: {
+                  sub: etat.user.id,
+                  aal: "aal2",
+                  amr: [{ method: "password", timestamp: Math.floor(Date.now() / 1000) - 60 }],
+                },
+              },
+              error: null,
+            }
+          : { data: null, error: { message: "x" } },
       signOut: async () => ({ error: null }),
     },
     rpc: async (nom: string) => {
@@ -258,7 +271,7 @@ describe("routes JSON : type de contenu exigé (CSRF « text/plain »)", () => {
   it("POST notifications en text/plain d'un admin → 415, aucune écriture", async () => {
     etat.user = ADMIN;
     etat.estAdmin = { data: true, error: null };
-    // getClaims simulé en échec : repli sur last_sign_in_at (récent).
+    // Jeton simulé : connexion récente, niveau aal2.
     etat.user = { ...ADMIN, last_sign_in_at: new Date().toISOString() };
     const corps = '{"action":"vu"}';
     const req = new Request(`${SITE}/api/admin/notifications`, {

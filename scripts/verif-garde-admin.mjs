@@ -5,10 +5,12 @@
  * Échoue (code 1, liste des fichiers) si un point d'entrée privilégié n'appelle
  * pas la garde commune de lib/securite/garde.ts :
  *  - chaque `page.tsx`, `layout.tsx` et `route.ts` sous `app/admin/(dashboard)`,
- *    `app/api/admin` et `app/api/cron` ;
+ *    `app/api/admin`, `app/api/cron` et `app/admin/auth/mfa` ;
  *  - chaque fichier `"use server"` (actions serveur) de app/, lib/, components/.
  * Marqueurs acceptés : `exigerAdminPage(`, `exigerAdminRoute(`, `adminPourAction(`,
- * `bearerCronValide(` — un APPEL hors commentaire, pas un simple import.
+ * `bearerCronValide(` — un APPEL hors commentaire, pas un simple import ; sous
+ * `app/admin/auth/mfa/` seulement, aussi `exigerSessionMfaPage(` et
+ * `exigerSessionMfaRoute(` (garde de session aal1, voir MARQUEURS_MFA).
  * Routes et actions : CHAQUE fonction exportée (GET, POST… ou action) doit
  * appeler la garde ; pages et layouts : le fichier.
  *
@@ -30,9 +32,24 @@ const LISTE_BLANCHE = new Set([
   // (vide)
 ]);
 
-const DOSSIERS_ROUTES = ["app/admin/(dashboard)", "app/api/admin", "app/api/cron"];
+const DOSSIERS_ROUTES = ["app/admin/(dashboard)", "app/api/admin", "app/api/cron", "app/admin/auth/mfa"];
 const DOSSIERS_ACTIONS = ["app", "lib", "components"];
 const MARQUEURS = ["exigerAdminPage", "exigerAdminRoute", "adminPourAction", "bearerCronValide"];
+
+/**
+ * Garde de la double authentification (lib/securite/garde.ts) : session aal1
+ * d'un courriel de ADMIN_EMAILS, de moins de 24 h — SANS exiger aal2 ni
+ * est_admin(), puisque c'est là que l'admin entre son code. Acceptée
+ * SEULEMENT sous ce dossier (page et routes POST de /admin/auth/mfa) : partout
+ * ailleurs elle ne compte pas comme une garde admin.
+ */
+const DOSSIER_MFA = "app/admin/auth/mfa/";
+const MARQUEURS_MFA = ["exigerSessionMfaPage", "exigerSessionMfaRoute"];
+
+/** Marqueurs acceptés pour un fichier donné (chemin relatif, séparateur « / »). */
+export function marqueursPour(chemin) {
+  return chemin.startsWith(DOSSIER_MFA) ? [...MARQUEURS, ...MARQUEURS_MFA] : MARQUEURS;
+}
 const IGNORES = new Set(["node_modules", ".next", ".git"]);
 
 function fichiers(dossier) {
@@ -59,8 +76,8 @@ export function sansCommentaires(source) {
 }
 
 /** Vrai si le texte contient un APPEL à l'un des marqueurs. */
-export function appelleGarde(texte) {
-  return MARQUEURS.some((m) => new RegExp(`\\b${m}\\s*\\(`).test(texte));
+export function appelleGarde(texte, marqueurs = MARQUEURS) {
+  return marqueurs.some((m) => new RegExp(`\\b${m}\\s*\\(`).test(texte));
 }
 
 /** Directive « use server » (fichier ou fonction). */
@@ -93,8 +110,9 @@ const CONFIG_ROUTE = new Set(["runtime", "dynamic", "maxDuration", "revalidate",
 export function verifierFichier(chemin, source) {
   const nom = chemin.split("/").pop();
   const problemes = [];
+  const marqueurs = marqueursPour(chemin);
   if (nom === "page.tsx" || nom === "layout.tsx") {
-    if (!appelleGarde(sansCommentaires(source))) problemes.push("aucun appel à la garde");
+    if (!appelleGarde(sansCommentaires(source), marqueurs)) problemes.push("aucun appel à la garde");
     return problemes;
   }
   if (nom === "route.ts") {
@@ -103,14 +121,14 @@ export function verifierFichier(chemin, source) {
       if (!METHODES.has(f.nom)) continue;
       // `export const GET = handler` : la garde doit être dans le fichier.
       const corps = /^export\s+const/.test(f.corps) ? sansCommentaires(source) : f.corps;
-      if (!appelleGarde(corps)) problemes.push(`${f.nom} sans garde`);
+      if (!appelleGarde(corps, marqueurs)) problemes.push(`${f.nom} sans garde`);
     }
     if (!exportes.some((f) => METHODES.has(f.nom))) problemes.push("aucune méthode HTTP exportée trouvée");
     return problemes;
   }
   if (estFichierActions(source)) {
     for (const f of fonctionsExportees(source)) {
-      if (!appelleGarde(f.corps)) problemes.push(`action ${f.nom} sans adminPourAction()`);
+      if (!appelleGarde(f.corps, marqueurs)) problemes.push(`action ${f.nom} sans adminPourAction()`);
     }
   }
   return problemes;

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin/config";
 import { derniereAuthentification, sessionExpiree, DUREE_MAX_SESSION_S } from "./age-session";
 import { cheminInterne } from "./chemin-interne";
+import { niveauAal, urlMfa } from "./mfa";
 import { EVENEMENTS, journaliser } from "./journal";
 
 /**
@@ -19,11 +20,20 @@ import { EVENEMENTS, journaliser } from "./journal";
  *  1. `getUser()` (session revalidée par le serveur Auth, jamais `getSession()`)
  *     → 401 sans session ;
  *  2. courriel dans ADMIN_EMAILS (variable serveur) → sinon 403 ;
- *  3. `rpc("est_admin")` = rôle par UUID dans public.admins (non modifiable par
+ *  3. reconnexion obligatoire chaque jour (décision du 30 oct. 2026) : 401
+ *     motif `session_expiree` si la dernière authentification a plus de 24 h ;
+ *  4. double authentification (décision du 30 oct. 2026) : 401 motif
+ *     `mfa_requise` si la revendication VÉRIFIÉE `aal` du jeton n'est pas
+ *     `aal2` (illisible = refus). Contrôlée AVANT est_admin : une fois la
+ *     migration `…030000_admin_exige_aal2.sql` appliquée, est_admin() répond
+ *     faux à une session aal1, et le visiteur doit être envoyé vers le code,
+ *     pas vers « accès refusé » ;
+ *  5. `rpc("est_admin")` = rôle par UUID dans public.admins (non modifiable par
  *     l'utilisateur) → 403 si la réponse n'est pas exactement `true` ou en cas
- *     d'erreur ;
- *  4. reconnexion obligatoire chaque jour (décision du 30 oct. 2026) : 401
- *     motif `session_expiree` si la dernière authentification a plus de 24 h.
+ *     d'erreur.
+ *
+ * Les étapes 1 à 3 seules (session aal1 acceptée) : `verifierSessionMfa`, pour
+ * la page et les routes de /admin/auth/mfa, où l'admin entre justement le code.
  */
 
 type ClientSupabase = Awaited<ReturnType<typeof createClient>>;
@@ -36,11 +46,17 @@ export type MotifRefus =
   | "courriel_non_autorise"
   | "role_refuse"
   | "origine_refusee"
+  | "mfa_requise"
   | "configuration";
 
-export type VerdictAdmin =
-  | { ok: true; ctx: ContexteAdmin }
-  | { ok: false; status: 401 | 403; motif: MotifRefus; requestId: string; userId: string | null };
+type Refus = { ok: false; status: 401 | 403; motif: MotifRefus; requestId: string; userId: string | null };
+
+export type VerdictAdmin = { ok: true; ctx: ContexteAdmin } | Refus;
+
+/** Contexte de la double authentification : session vérifiée, niveau `aal1` ou `aal2`. */
+export type ContexteSessionMfa = ContexteAdmin & { aal: string | null };
+
+export type VerdictSessionMfa = { ok: true; ctx: ContexteSessionMfa } | Refus;
 
 // --- Âge de la session ------------------------------------------------------------
 
@@ -54,12 +70,16 @@ function refus(
   motif: MotifRefus,
   requestId: string,
   userId: string | null = null,
-): VerdictAdmin {
+): Refus {
   return { ok: false, status, motif, requestId, userId };
 }
 
-/** Session + rôle admin + âge de la session. Refus par défaut. */
-export async function verifierAdmin(): Promise<VerdictAdmin> {
+/**
+ * Session + courriel autorisé + âge de la session (étapes 1 à 3), SANS exiger
+ * aal2 ni est_admin : garde de la page et des routes de /admin/auth/mfa.
+ * Renvoie aussi le niveau `aal` vérifié du jeton.
+ */
+export async function verifierSessionMfa(): Promise<VerdictSessionMfa> {
   const requestId = randomUUID();
 
   let supabase: ClientSupabase;
@@ -75,23 +95,36 @@ export async function verifierAdmin(): Promise<VerdictAdmin> {
 
   if (!isAdminEmail(user.email)) return refus(403, "courriel_non_autorise", requestId, user.id);
 
+  // Revendications VÉRIFIÉES (signature ou serveur Auth), lues après getUser().
+  let amr: unknown = undefined;
+  let aal: string | null = null;
+  try {
+    const { data } = await supabase.auth.getClaims();
+    if (data?.claims && data.claims.sub === user.id) amr = data.claims.amr;
+    aal = niveauAal(data?.claims, user.id);
+  } catch {
+    // Repli sur last_sign_in_at ci-dessous ; niveau inconnu (= pas aal2).
+  }
+  if (sessionExpiree(derniereAuthentification(amr, user.last_sign_in_at))) {
+    return refus(401, "session_expiree", requestId, user.id);
+  }
+
+  return { ok: true, ctx: { supabase, user, requestId, aal } };
+}
+
+/** Session + âge de la session + double authentification + rôle admin. Refus par défaut. */
+export async function verifierAdmin(): Promise<VerdictAdmin> {
+  const v = await verifierSessionMfa();
+  if (!v.ok) return v;
+  const { supabase, user, requestId, aal } = v.ctx;
+
+  if (aal !== "aal2") return refus(401, "mfa_requise", requestId, user.id);
+
   try {
     const { data: estAdmin, error } = await supabase.rpc("est_admin");
     if (error || estAdmin !== true) return refus(403, "role_refuse", requestId, user.id);
   } catch {
     return refus(403, "role_refuse", requestId, user.id);
-  }
-
-  // Revendications VÉRIFIÉES (signature ou serveur Auth), lues après getUser().
-  let amr: unknown = undefined;
-  try {
-    const { data } = await supabase.auth.getClaims();
-    if (data?.claims && data.claims.sub === user.id) amr = data.claims.amr;
-  } catch {
-    // Repli sur last_sign_in_at ci-dessous.
-  }
-  if (sessionExpiree(derniereAuthentification(amr, user.last_sign_in_at))) {
-    return refus(401, "session_expiree", requestId, user.id);
   }
 
   return { ok: true, ctx: { supabase, user, requestId } };
@@ -186,6 +219,7 @@ const MESSAGES_REFUS: Record<MotifRefus, string> = {
   courriel_non_autorise: "Accès refusé.",
   role_refuse: "Accès refusé.",
   origine_refusee: "Origine refusée.",
+  mfa_requise: "Double authentification requise.",
   configuration: "Service temporairement indisponible.",
 };
 
@@ -214,33 +248,58 @@ export function estRefus(resultat: ContexteAdmin | NextResponse): resultat is Ne
  *   }
  */
 export async function exigerAdminRoute(request: Request): Promise<ContexteAdmin | NextResponse> {
-  const origine = verifierOrigine(request);
-  if (origine !== "ok") {
-    const requestId = randomUUID();
-    const motif: MotifRefus = origine === "non_configuree" ? "configuration" : "origine_refusee";
-    const status = origine === "non_configuree" ? 503 : 403;
-    void journaliser(EVENEMENTS.adminRefus, {
-      resultat: "refus",
-      request,
-      requestId,
-      statut: status,
-      details: { motif },
-    });
-    return reponseRefus(status, motif, requestId);
-  }
+  const refusOrigine = refusDOrigine(request);
+  if (refusOrigine) return refusOrigine;
 
   const v = await verifierAdmin();
-  if (!v.ok) {
-    void journaliser(EVENEMENTS.adminRefus, {
-      resultat: "refus",
-      request,
-      requestId: v.requestId,
-      userId: v.userId,
-      statut: v.status,
-      details: { motif: v.motif },
-    });
-    return reponseRefus(v.status, v.motif, v.requestId);
-  }
+  if (!v.ok) return refusDeRoute(request, v);
+  return v.ctx;
+}
+
+/** Refus 403/503 si l'origine d'une requête non sûre n'est pas celle du site, sinon null. */
+function refusDOrigine(request: Request, details: Record<string, string> = {}): NextResponse | null {
+  const origine = verifierOrigine(request);
+  if (origine === "ok") return null;
+  const requestId = randomUUID();
+  const motif: MotifRefus = origine === "non_configuree" ? "configuration" : "origine_refusee";
+  const status = origine === "non_configuree" ? 503 : 403;
+  void journaliser(EVENEMENTS.adminRefus, {
+    resultat: "refus",
+    request,
+    requestId,
+    statut: status,
+    details: { motif, ...details },
+  });
+  return reponseRefus(status, motif, requestId);
+}
+
+/** Journalise le refus de la garde et renvoie la réponse JSON (401/403). */
+function refusDeRoute(request: Request, v: Refus, details: Record<string, string> = {}): NextResponse {
+  void journaliser(EVENEMENTS.adminRefus, {
+    resultat: "refus",
+    request,
+    requestId: v.requestId,
+    userId: v.userId,
+    statut: v.status,
+    details: { motif: v.motif, ...details },
+  });
+  return reponseRefus(v.status, v.motif, v.requestId);
+}
+
+/**
+ * Routes POST de /admin/auth/mfa (activation, code) : contexte de session
+ * (aal1 suffit, courriel dans ADMIN_EMAILS, moins de 24 h), ou réponse de
+ * refus (401/403/503) à renvoyer telle quelle. Contrôle d'origine (CSRF) pour
+ * POST/PUT/PATCH/DELETE. N'exige NI aal2 NI est_admin (voir verifierSessionMfa).
+ */
+export async function exigerSessionMfaRoute(
+  request: Request,
+): Promise<ContexteSessionMfa | NextResponse> {
+  const refusOrigine = refusDOrigine(request, { etape: "mfa" });
+  if (refusOrigine) return refusOrigine;
+
+  const v = await verifierSessionMfa();
+  if (!v.ok) return refusDeRoute(request, v, { etape: "mfa" });
   return v.ctx;
 }
 
@@ -278,13 +337,18 @@ const MESSAGE_403 = "Ce courriel n'est pas autorisé à accéder au tableau de b
  * Pages et layout admin : contexte, ou redirection vers la connexion.
  *  - 401 → /admin/login?next=<chemin> ;
  *  - session de plus de 24 h → /admin/login?error=session_expiree&next=<chemin> ;
+ *  - session aal1 (code manquant) → /admin/auth/mfa?next=<chemin> ;
  *  - 403 → /admin/login?error=<message>.
  * `cheminActuel` est filtré par `cheminInterne` (jamais de redirection ouverte).
  */
 export async function exigerAdminPage(cheminActuel?: string): Promise<ContexteAdmin> {
   const v = await verifierAdmin();
   if (v.ok) return v.ctx;
+  return redirigerRefusPage(v, cheminActuel);
+}
 
+/** Journal `admin.refus` + redirection d'une page refusée (ne revient jamais). */
+async function redirigerRefusPage(v: Refus, cheminActuel?: string): Promise<never> {
   void journaliser(EVENEMENTS.adminRefus, {
     resultat: "refus",
     entetes: await entetesCourants(),
@@ -296,6 +360,7 @@ export async function exigerAdminPage(cheminActuel?: string): Promise<ContexteAd
     details: { motif: v.motif },
   });
 
+  if (v.motif === "mfa_requise") redirect(urlMfa(cheminActuel));
   const next = encodeURIComponent(cheminInterne(cheminActuel));
   if (v.status === 401) {
     redirect(
@@ -305,6 +370,17 @@ export async function exigerAdminPage(cheminActuel?: string): Promise<ContexteAd
     );
   }
   redirect(`/admin/login?error=${encodeURIComponent(MESSAGE_403)}`);
+}
+
+/**
+ * Page /admin/auth/mfa : contexte de session (aal1 suffit), ou redirection
+ * vers la connexion (mêmes règles que `exigerAdminPage`). `destination` est
+ * la page demandée après le code (le `next` de la connexion).
+ */
+export async function exigerSessionMfaPage(destination?: string): Promise<ContexteSessionMfa> {
+  const v = await verifierSessionMfa();
+  if (v.ok) return v.ctx;
+  return redirigerRefusPage(v, destination);
 }
 
 // --- Tâches planifiées ------------------------------------------------------------------

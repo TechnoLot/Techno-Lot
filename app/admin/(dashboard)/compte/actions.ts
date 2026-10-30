@@ -39,3 +39,33 @@ export async function updateAdminPrenom(raw: string): Promise<PrenomResult> {
   revalidatePath("/admin", "layout");
   return { ok: true, prenom };
 }
+
+export type ChangerAppareilResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * « Changer d'appareil » (double authentification) : exige une session aal2
+ * (adminPourAction), désinscrit le ou les facteurs TOTP du compte puis
+ * rafraîchit la session (Supabase la ramène à aal1). Le navigateur est ensuite
+ * envoyé vers /admin/auth/mfa, qui propose l'activation d'un nouvel appareil.
+ */
+export async function changerAppareilMfa(): Promise<ChangerAppareilResult> {
+  const ctx = await adminPourAction();
+  if (!ctx) return REFUS_ACTION;
+
+  const facteurs = (ctx.user.factors ?? []).filter((f) => f.factor_type === "totp");
+  try {
+    for (const facteur of facteurs) {
+      const { error } = await ctx.supabase.auth.mfa.unenroll({ factorId: facteur.id });
+      if (error) return await echecAction(error, "compte.mfa_changer_appareil", ctx, "Changement d'appareil impossible.");
+    }
+    // Nouveau jeton (aal1) dans les témoins ; un échec ici n'empêche rien : la
+    // page de double authentification propose l'activation dès qu'aucun facteur
+    // vérifié n'existe.
+    await ctx.supabase.auth.refreshSession().catch(() => undefined);
+  } catch (err) {
+    return echecAction(err, "compte.mfa_changer_appareil", ctx, "Changement d'appareil impossible.");
+  }
+
+  void journaliserAction("compte.mfa_appareil_retire", ctx, { cible: ctx.user.id, facteurs: facteurs.length });
+  return { ok: true };
+}

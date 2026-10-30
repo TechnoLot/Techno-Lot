@@ -6,12 +6,18 @@
  * Isolé ici pour être testé sans Next ni Supabase (tests/securite/f4-*.test.ts).
  */
 import { cheminInterne } from "./chemin-interne";
+import { estPageMfa } from "./mfa";
 
 /** Message affiché sur /admin/login à un compte connecté qui n'est pas admin (même texte que la garde). */
 export const MESSAGE_COURRIEL_REFUSE = "Ce courriel n'est pas autorisé à accéder au tableau de bord.";
 
-/** Pages de connexion : accessibles sans session (mais avec la CSP à nonce). */
+/**
+ * Pages de connexion : accessibles sans session (mais avec la CSP à nonce).
+ * Exception : la PAGE de double authentification (`/admin/auth/mfa`) exige une
+ * session (niveau aal1 suffit) ; ses routes POST font leur propre garde.
+ */
 export function estRouteAdminPublique(pathname: string): boolean {
+  if (estPageMfa(pathname)) return false;
   return pathname === "/admin/login" || pathname.startsWith("/admin/auth/");
 }
 

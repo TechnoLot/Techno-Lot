@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import PageHeader from "@/components/admin/PageHeader";
 import ChangePasswordForm from "@/components/admin/ChangePasswordForm";
 import PrenomForm from "@/components/admin/PrenomForm";
+import ChangerAppareilMfa from "@/components/admin/ChangerAppareilMfa";
 import { exigerAdminPage } from "@/lib/securite/garde";
+import { facteursTotp } from "@/lib/securite/mfa";
 import { site } from "@/lib/site";
 import { getAdminUsernames, resolvePrenom } from "@/lib/admin/config";
+import { formatDate } from "@/lib/admin/format";
 
 export const metadata: Metadata = {
   title: "Mon compte — Admin Techno Lot",
@@ -19,6 +22,10 @@ export default async function ComptePage() {
     .map(([u]) => u);
   // Sans session (contournement local), on retombe sur le courriel de l'entreprise.
   const prenom = resolvePrenom(email || site.email, user?.user_metadata) ?? "";
+  // Facteur TOTP vérifié le plus ancien : sa date d'inscription = date d'activation.
+  const facteurMfa = facteursTotp(user.factors).verifies.sort((a, b) =>
+    a.created_at.localeCompare(b.created_at),
+  )[0];
 
   return (
     <div className="mx-auto max-w-xl px-4 py-7 sm:px-8 sm:py-9">
@@ -61,6 +68,26 @@ export default async function ComptePage() {
           <div className="mt-5">
             <ChangePasswordForm />
           </div>
+        </div>
+
+        <div className="border-t border-admin-line pt-6">
+          <h2 className="font-display text-base font-semibold text-admin-ink">
+            Double authentification
+          </h2>
+          <p className="mt-1 text-sm text-admin-muted">
+            {facteurMfa
+              ? `Activée — application d'authentification, depuis le ${formatDate(facteurMfa.created_at)}`
+              : "Pas encore activée : elle sera demandée à ta prochaine connexion."}
+          </p>
+          {facteurMfa && (
+            <div className="mt-5">
+              <ChangerAppareilMfa />
+            </div>
+          )}
+          <p className="mt-4 text-sm text-admin-muted">
+            Téléphone perdu : dans Supabase → Authentication → Users → info@technolot.ca, supprime
+            le facteur, puis reconnecte-toi pour en ajouter un nouveau.
+          </p>
         </div>
       </div>
     </div>
