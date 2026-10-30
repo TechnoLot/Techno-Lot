@@ -283,11 +283,12 @@ function PaletteItem({
   const [sx, sy, sw] = d.shadow;
   return (
     <>
-      {/* Ombre de contact, discrète, sur la surface d'appui */}
+      {/* Ombre de contact, discrète, sur la surface d'appui. Calque propre : son opacité et son
+          échelle changent à chaque image sans re-rastériser la palette ni l'ombre floutée. */}
       <span
         ref={shadowRef}
         aria-hidden="true"
-        className="absolute block rounded-[50%] bg-ink/30 blur-[3px]"
+        className="absolute block rounded-[50%] bg-ink/30 blur-[3px] will-change-transform"
         style={{
           left: pctX(sx),
           bottom: pctY(sy - 6),
