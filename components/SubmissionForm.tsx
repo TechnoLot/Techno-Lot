@@ -36,12 +36,12 @@ const PHOTO_RE = extensionsRe(EXTENSIONS_PAR_CHAMP.photos);
 const ERREURS_HTTP: Record<Locale, Partial<Record<number, string>>> = {
   fr: {
     413: "Pièces jointes trop volumineuses : au plus 10 fichiers, 10 Mo par fichier et 15 Mo au total.",
-    415: "Format de fichier non accepté. Formats permis : Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.",
+    415: "Format de fichier non accepté. Formats permis : Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC, AVIF, BMP, TIFF.",
     429: "Trop d'envois en peu de temps. Réessayez plus tard ou appelez-nous au 514-944-3939.",
   },
   en: {
     413: "Attachments are too large: at most 10 files, 10 MB per file and 15 MB in total.",
-    415: "File format not accepted. Accepted formats: Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.",
+    415: "File format not accepted. Accepted formats: Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC, AVIF, BMP, TIFF.",
     429: "Too many submissions in a short time. Please try again later or call us at 514-944-3939.",
   },
 };

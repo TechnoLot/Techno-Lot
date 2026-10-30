@@ -8,6 +8,7 @@ import {
   verifierTailles,
 } from "@/lib/securite/fichiers";
 import {
+  BMP_VALIDE,
   HEIC_VALIDE,
   JPEG_VALIDE,
   ole,
@@ -69,7 +70,38 @@ describe("détection du type réel (octets magiques)", () => {
   it("texte : UTF-8 sans octet nul, extension .csv/.txt obligatoire", () => {
     expect(detecterType(octets("a;b\n1;2\n"), "liste")).toBeNull();
     expect(detecterType(octets("a;b", [0], "c"), "liste.csv")).toBeNull();
-    expect(detecterType(octets("caf", [0xe9], "\n"), "liste.csv")).toBeNull(); // Windows-1252, pas UTF-8
+  });
+
+  it("CSV Windows-1252 (export Excel sous Windows) accepté ; binaire renommé .csv refusé", () => {
+    // « Café;Qté\nPortable;12 » avec é = 0xE9 (un octet), comme Excel l'écrit.
+    expect(detecterType(octets("Caf", [0xe9], ";Qt", [0xe9], "\r\nPortable;12\r\n"), "liste.csv")).toBe("csv");
+    expect(detecterType(octets("Prix ", [0x80], " 12\n"), "notes.txt")).toBe("txt"); // € en Windows-1252
+    expect(detecterType(octets([0x00, 0x01, 0x02, 0xff, 0xfe], "abc"), "liste.csv")).toBeNull();
+    expect(detecterType(octets("MZ", [0x90, 0x00, 0x03], new Uint8Array(32)), "liste.csv")).toBeNull();
+    // Balisage toujours refusé, même en Windows-1252.
+    expect(detecterType(octets("<html>Caf", [0xe9], "</html>"), "liste.csv")).toBeNull();
+  });
+
+  it("photos BMP, TIFF (deux boutismes) et AVIF minimales acceptées ; SVG renommé .bmp refusé", () => {
+    expect(detecterType(BMP_VALIDE(), "scan.bmp")).toBe("bmp");
+    expect(detecterType(octets([0x49, 0x49, 0x2a, 0x00], [8, 0, 0, 0], new Uint8Array(16)), "a.tif")).toBe("tiff");
+    expect(detecterType(octets([0x4d, 0x4d, 0x00, 0x2a], [0, 0, 0, 8], new Uint8Array(16)), "a.tiff")).toBe("tiff");
+    expect(detecterType(octets([0, 0, 0, 0x14], "ftypavif", [0, 0, 0, 0], "mif1"), "a.avif")).toBe("avif");
+    // AVIF dont la marque majeure est « mif1 » et la compatible « avif ».
+    expect(detecterType(octets([0, 0, 0, 0x18], "ftypmif1", [0, 0, 0, 0], "miafavif"), "a.avif")).toBe("avif");
+    expect(detecterType(octets('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), "a.bmp")).toBeNull();
+    // « BM » sans en-tête cohérent (taille fausse) : refusé.
+    const faux = BMP_VALIDE();
+    faux[2] = 0xff;
+    expect(detecterType(faux, "a.bmp")).toBeNull();
+    const r = verifierFichiers([
+      { champ: "photos", nom: "scan.BMP", taille: 0, contenu: BMP_VALIDE() },
+      { champ: "photos", nom: "a.tif", taille: 0, contenu: octets([0x49, 0x49, 0x2a, 0x00], new Uint8Array(16)) },
+    ]);
+    expect(r.ok && r.fichiers.map((f) => [f.nom, f.mime])).toEqual([
+      ["scan.bmp", "image/bmp"],
+      ["a.tif", "image/tiff"],
+    ]);
   });
 
   it("lit les entrées d'un ZIP et refuse une archive tronquée", () => {

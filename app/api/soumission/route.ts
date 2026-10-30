@@ -48,7 +48,7 @@ const messages = {
     files:
       "Pièces jointes trop volumineuses : au plus 10 fichiers, 10 Mo par fichier et 15 Mo au total.",
     fileType: (nom: string) =>
-      `Format de fichier non accepté : ${nom}. Formats permis : Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.`,
+      `Format de fichier non accepté : ${nom}. Formats permis : Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC, AVIF, BMP, TIFF.`,
     rateLimited:
       "Trop d'envois en peu de temps. Réessayez plus tard ou appelez-nous au 514-944-3939.",
     unavailable:
@@ -65,7 +65,7 @@ const messages = {
     files:
       "Attachments are too large: at most 10 files, 10 MB per file and 15 MB in total.",
     fileType: (nom: string) =>
-      `File format not accepted: ${nom}. Accepted formats: Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.`,
+      `File format not accepted: ${nom}. Accepted formats: Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC, AVIF, BMP, TIFF.`,
     rateLimited:
       "Too many submissions in a short time. Please try again later or call us at 514-944-3939.",
     unavailable:

@@ -82,6 +82,10 @@ export function ole(nomFlux: string): Uint8Array<ArrayBuffer> {
 export const PDF_VALIDE = () => octets("%PDF-1.7\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n");
 export const JPEG_VALIDE = () => octets([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10], "JFIF", new Uint8Array(32), [0xff, 0xd9]);
 export const PNG_VALIDE = () => octets([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], new Uint8Array(32));
+/** BMP 1×1 24 bits : en-tête fichier (14) + DIB BITMAPINFOHEADER (40) + 4 octets de pixels. */
+export const BMP_VALIDE = () =>
+  octets("BM", u32(58), u32(0), u32(54), u32(40), u32(1), u32(1), u16(1), u16(24), u32(0), u32(4),
+    u32(2835), u32(2835), u32(0), u32(0), [0, 0, 255, 0]);
 export const HEIC_VALIDE = () => octets(u32(0x18).reverse(), "ftypheic", new Uint8Array(16));
 
 /**

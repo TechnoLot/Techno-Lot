@@ -21,6 +21,8 @@ export type TypeFichier =
   | "gif"
   | "heic"
   | "avif"
+  | "bmp"
+  | "tiff"
   | "xlsx"
   | "docx"
   | "xls"
@@ -43,6 +45,8 @@ export const TYPES_FICHIERS: Record<TypeFichier, DescriptionType> = {
   gif: { mime: "image/gif", extensions: ["gif"] },
   heic: { mime: "image/heic", extensions: ["heic", "heif"] },
   avif: { mime: "image/avif", extensions: ["avif"] },
+  bmp: { mime: "image/bmp", extensions: ["bmp"] },
+  tiff: { mime: "image/tiff", extensions: ["tif", "tiff"] },
   xlsx: {
     mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     extensions: ["xlsx"],
@@ -63,7 +67,7 @@ export const TYPES_FICHIERS: Record<TypeFichier, DescriptionType> = {
  */
 export const TYPES_PAR_CHAMP = {
   inventaire: ["pdf", "xlsx", "xls", "csv"],
-  photos: ["jpeg", "png", "webp", "gif", "heic", "avif"],
+  photos: ["jpeg", "png", "webp", "gif", "heic", "avif", "bmp", "tiff"],
 } as const satisfies Record<string, readonly TypeFichier[]>;
 
 export type ChampFichier = keyof typeof TYPES_PAR_CHAMP;
@@ -218,9 +222,11 @@ function typeOle(o: Uint8Array): TypeFichier | null {
 const BALISAGE = /<\s*(!doctype|html|head|body|script|svg|\?xml|iframe|object|embed|meta|link|style|a\s|img\s)/i;
 
 /**
- * Texte brut : UTF-8 valide, aucun octet nul ni caractère de contrôle autre
- * que tabulation, retour chariot, saut de ligne et saut de page, et aucun
- * balisage HTML/SVG/XML dans les 8 premiers Ko.
+ * Texte brut : UTF-8 valide OU texte mono-octet (Windows-1252 / ISO-8859-1,
+ * format des CSV exportés par Excel sous Windows), avec dans les deux cas
+ * aucun octet nul ni caractère de contrôle autre que tabulation, retour
+ * chariot, saut de ligne et saut de page, et aucun balisage HTML/SVG/XML dans
+ * les 8 premiers Ko.
  */
 export function estTexte(o: Uint8Array): boolean {
   if (o.length === 0) return false;
@@ -229,14 +235,41 @@ export function estTexte(o: Uint8Array): boolean {
     if (c < 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 0x0c) return false;
     if (c === 0x7f) return false;
   }
+  const debutOctets = o.subarray(0, 8192 * 4);
   let texte: string;
   try {
     texte = new TextDecoder("utf-8", { fatal: true }).decode(o);
   } catch {
-    return false;
+    // Pas de l'UTF-8 : texte mono-octet (chaque octet ≥ 0x80 est une lettre accentuée, €…).
+    texte = new TextDecoder("windows-1252").decode(debutOctets);
   }
   const debut = texte.slice(0, 8192);
   return !BALISAGE.test(debut);
+}
+
+/**
+ * BMP : « BM », taille annoncée = taille du fichier, octets réservés nuls,
+ * en-tête DIB de taille connue et début des pixels dans le fichier.
+ */
+function estBmp(o: Uint8Array): boolean {
+  if (o.length < 26 || o[0] !== 0x42 || o[1] !== 0x4d) return false;
+  if (lireU32(o, 2) !== o.length) return false;
+  if (lireU32(o, 6) !== 0) return false;
+  const decalagePixels = lireU32(o, 10);
+  const tailleDib = lireU32(o, 14);
+  return [12, 40, 52, 56, 64, 108, 124].includes(tailleDib) && decalagePixels >= 14 + tailleDib && decalagePixels <= o.length;
+}
+
+const SIG_TIFF_LE = [0x49, 0x49, 0x2a, 0x00]; // « II*\0 » (petit-boutiste)
+const SIG_TIFF_BE = [0x4d, 0x4d, 0x00, 0x2a]; // « MM\0* » (gros-boutiste)
+
+/** Marques (majeure + compatibles) de la boîte ISO-BMFF « ftyp » en tête de fichier. */
+function marquesFtyp(o: Uint8Array): string[] {
+  const taille = ((o[0] << 24) | (o[1] << 16) | (o[2] << 8) | o[3]) >>> 0;
+  const fin = Math.min(o.length, taille >= 16 && taille <= 4096 ? taille : 16);
+  const marques = [ascii(o, 8, 12)];
+  for (let i = 16; i + 4 <= fin; i += 4) marques.push(ascii(o, i, i + 4));
+  return marques.map((m) => m.toLowerCase());
 }
 
 /**
@@ -251,11 +284,14 @@ export function detecterType(o: Uint8Array, nomDeclare = ""): TypeFichier | null
   if (ascii(o, 0, 6) === "GIF87a" || ascii(o, 0, 6) === "GIF89a") return "gif";
   if (ascii(o, 0, 4) === "RIFF" && ascii(o, 8, 12) === "WEBP") return "webp";
   if (o.length >= 12 && ascii(o, 4, 8) === "ftyp") {
-    const marque = ascii(o, 8, 12).toLowerCase();
-    if (MARQUES_HEIC.has(marque)) return "heic";
-    if (MARQUES_AVIF.has(marque)) return "avif";
+    // Marque majeure OU compatible (une AVIF peut avoir « mif1 » en majeure).
+    const marques = marquesFtyp(o);
+    if (marques.some((m) => MARQUES_AVIF.has(m))) return "avif";
+    if (marques.some((m) => MARQUES_HEIC.has(m))) return "heic";
     return null; // vidéo MP4/MOV, etc.
   }
+  if (commencePar(o, SIG_TIFF_LE) || commencePar(o, SIG_TIFF_BE)) return "tiff";
+  if (estBmp(o)) return "bmp";
   if (commencePar(o, SIG_ZIP)) return typeOffice(o);
   if (commencePar(o, SIG_OLE)) return typeOle(o);
 
