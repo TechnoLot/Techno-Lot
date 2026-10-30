@@ -6,7 +6,7 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 
 - `npm run dev` — dev sur :3000 (préférer preview_start avec `.claude/launch.json`)
 - `npm run build` — build + postbuild `scripts/inline-critical-css.mjs` (ne pas casser ce script, il corrige le LCP)
-- `npx tsc --noEmit` — type-check (à lancer avant tout commit)
+- `npx tsc --noEmit` + `npm test` (vitest) — à lancer avant tout commit ; `node scripts/verif-garde-admin.mjs` si une route/page/action admin change
 
 ## Structure
 
@@ -19,16 +19,16 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - Accueil → Chiffres : périodes d'« Aujourd'hui » à « Tout » ; sous les tuiles, graphique simple « Revenus journaliers » (calcul pur `lib/admin/revenus.ts`, dessin `components/admin/ebay/EbaySalesChart.tsx` comme la page Ventes eBay), caché quand la période tient en un jour. Mêmes règles que la tuile Ventes (lot compté à sa date d'achat) : la somme des jours égale la tuile. L'utilisateur veut ce graphique simple : pas de chandelles, de tableau ni de comparaison (retirés le 2026-10-29)
 - Pas de bouton « Écrire » sur les soumissions : on répond depuis le webmail Hostinger. « Ouvrir dans Hostinger » passe par `/api/admin/soumissions/[id]/courriel/hostinger`, qui redirige vers `https://mail.hostinger.com/0/mailboxes/{dossier}/{uid}` (repli : boîte de réception, `WEBMAIL_URL`)
 - « Voir le courriel » (onglet Soumissions) : Mail API de Hostinger (`lib/hostinger/mail.ts`, routes `/api/admin/soumissions/[id]/courriel` et `.../pieces/[pieceId]`), clé `HOSTINGER_MAIL_API_TOKEN` côté serveur seulement (hPanel → Courriels → Agentic mail → API access ; Hostinger n'offre pas de clé en lecture seule : accès complet à info@, jamais sur Vercel ni dans GitHub). Le formulaire ajoute l'en-tête `X-Technolot-Soumission: <id>` au courriel (`lib/hostinger/config.ts`) ; les anciennes demandes se retrouvent par date + courriel du client.
-- Destruction des données (`/admin/destruction-donnees`, groupe eBay du menu) : certificat remis au client (`components/admin/destruction/`, `lib/admin/destruction.ts`, actions `lib/admin/destruction-actions.ts`), dessiné dans le navigateur par html-to-image (photo PNG 300 ppp ; le PDF Lettre contient cette image). Registre `certificats_destruction`, enregistré à chaque téléchargement : numéro TL-AAAA-NNNN attribué par la base (défaut `prochain_numero_certificat()`, compteur par année `certificats_destruction_compteurs`, jamais réutilisé, non modifiable dans le formulaire) ; `company_id` → fiche client `/admin/crm/[id]` (section « Certificats de destruction », qui reprend aussi les certificats non liés au nom identique). Le champ « Nom de la compagnie » propose les compagnies du CRM (clients convertis d'abord) et remplit l'adresse (`street_address`). Politiques des deux tables réservées aux courriels admin listés (à garder alignés sur `ADMIN_EMAILS`, comme `admin_soumissions`). Texte : « données détruites et certifiées avec KillDisk », jamais de destruction physique. L'export copie l'intérieur d'un `<svg>` sans les styles de classe : poser police et couleur sur le `<svg>` lui-même ou en attributs.
-- Auth : lien magique Supabase, whitelist `ADMIN_EMAILS` (.env.local), protégé par `middleware.ts` + layout. En local, impossible de se connecter (boîte info@technolot.ca) — pour vérifier visuellement, bypass temporaire dans middleware + layout marqué `TEMP-DEV-BYPASS`, à retirer avant commit.
+- Destruction des données (`/admin/destruction-donnees`, groupe eBay du menu) : certificat remis au client (`components/admin/destruction/`, `lib/admin/destruction.ts`, actions `lib/admin/destruction-actions.ts`), dessiné dans le navigateur par html-to-image (photo PNG 300 ppp ; le PDF Lettre contient cette image). Registre `certificats_destruction`, enregistré à chaque téléchargement : numéro TL-AAAA-NNNN attribué par la base (défaut `prochain_numero_certificat()`, compteur par année `certificats_destruction_compteurs`, jamais réutilisé, non modifiable dans le formulaire) ; `company_id` → fiche client `/admin/crm/[id]` (section « Certificats de destruction », qui reprend aussi les certificats non liés au nom identique). Le champ « Nom de la compagnie » propose les compagnies du CRM (clients convertis d'abord) et remplit l'adresse (`street_address`). Politiques des deux tables : `(select public.est_admin())`. Texte : « données détruites et certifiées avec KillDisk », jamais de destruction physique. L'export copie l'intérieur d'un `<svg>` sans les styles de classe : poser police et couleur sur le `<svg>` lui-même ou en attributs.
+- Auth : mot de passe (nom d'utilisateur « Info ») ou lien magique Supabase ; liste blanche `ADMIN_EMAILS` + table `public.admins` (à garder alignées) ; `middleware.ts` + garde de chaque page/route/action ; reconnexion obligatoire après 24 h ; double authentification (TOTP) à activer à la mise en ligne. En local, impossible de se connecter (boîte info@technolot.ca) — pour vérifier visuellement, bypass temporaire dans middleware + layout marqué `TEMP-DEV-BYPASS`, à retirer avant commit.
 
 ## Supabase (projet aznelukkwitvttycwnjb)
 
-- RLS : tables CRM = `authenticated` full access → les lectures anonymes renvoient vide (pages locales vides sans session : normal).
+- RLS : toutes les tables admin n'acceptent que `(select public.est_admin())` (compte listé dans `public.admins`) → sans session admin, tout est vide (pages locales vides : normal). Schéma `securite` (secret RPC, limites, journal) non exposé à l'API.
 - Tables à NE JAMAIS modifier (schéma) : `soumissions`, `lots`, `email_logs`, `sales`. Le CRM peut seulement les lire/lier (`contacts.lot_id → lots.id`).
 - Tables CRM modifiables : `companies` (fit_score 1-10, lead_status, next_followup_on, lead_status_changed_at), `contacts` (stage new→…→converted), `outreach_activities`, `email_templates`, `daily_prospect_batches`.
-- `soumissions` n'a aucune politique de lecture : l'admin la lit via la fonction `admin_soumissions` (security definer, réservée aux courriels listés dans la fonction, à garder alignés sur `ADMIN_EMAILS`). La suppression passe par `admin_supprimer_soumission` (même liste de courriels ; supprime aussi le lead de pub `ad_leads` du même envoi ; le lot éventuel reste).
-- Migrations DDL via l'outil MCP apply_migration.
+- `soumissions` n'a aucune politique de lecture : l'admin la lit via la fonction `admin_soumissions` (security definer, réservée à `est_admin()`). La suppression passe par `admin_supprimer_soumission` (même contrôle ; supprime aussi le lead de pub `ad_leads` du même envoi ; le lot éventuel reste).
+- Migrations DDL via l'outil MCP apply_migration, toujours avec le même fichier dans `supabase/migrations/`.
 
 ## Règles CRM
 
@@ -39,11 +39,24 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 
 ## Publicités (Meta / Google Ads)
 
-- Tracking public : `lib/tracking/attribution.ts` (UTM, fbclid, gclid, ad_id… en localStorage `tl_attr`, 30 j) + `components/tracking/AdTracker.tsx` → `/api/track` → RPC SQL `track_ad_event` (SECURITY DEFINER : anon ne peut pas lire, donc pas d'upsert direct). Pixels Meta/Google chargés seulement si `NEXT_PUBLIC_*` présents.
-- Leads attribués : `/api/soumission` insère aussi dans `ad_leads` (champ caché `tl_attr` du formulaire).
+- Tracking public : `lib/tracking/attribution.ts` (UTM, fbclid, gclid, ad_id… en localStorage `tl_attr`, 30 j) + `components/tracking/AdTracker.tsx` → `/api/track` → fonction SQL à secret `suivi_pub_enregistrer` (l'ancien `track_ad_event` ouvert à anon est révoqué à la mise en ligne). Pixels Meta/Google chargés seulement si `NEXT_PUBLIC_*` présents.
+- Leads attribués : `/api/soumission` enregistre la demande (`soumission_enregistrer`) et le lead `ad_leads` (`lead_pub_enregistrer`, champ caché `tl_attr` du formulaire).
 - Stats des plateformes : `lib/ads/meta.ts`, `google.ts`, `sync.ts` → `ad_metrics_daily` via POST `/api/admin/ads-sync` (admin connecté ou `Bearer CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY`).
 - Dashboard : `/admin/pubs` et `/admin/pubs/[platform]/[adId]`, agrégations pures dans `lib/ads/queries.ts`. Guide des clés : `docs/PUBLICITES-SETUP.md`.
 - Constantes partagées serveur/client : jamais dans un fichier `"use client"` (ex. `lib/ads/platforms.ts`).
+
+## Sécurité
+
+- Dépôt GitHub PUBLIC : rapports, cartes et inventaire des secrets dans `securite/` (ignoré par Git), jamais ailleurs dans le dépôt ; aucun détail exploitable dans les commits.
+- Toute page admin commence par `exigerAdminPage`, toute route par `exigerAdminRoute`, toute action `"use server"` par `adminPourAction` (`lib/securite/garde.ts`) ; `node scripts/verif-garde-admin.mjs` doit passer.
+- Validation Zod (`lib/securite/schemas.ts`, `lib/admin/schemas.ts`) au début de chaque entrée ; corps JSON via `lireJson` (taille bornée).
+- Erreurs via `reponseErreur` (message générique + réf.) : jamais `error.message` ni texte Supabase/Resend renvoyé au client.
+- Limites de débit via `limiter` / `limiterSelon` (`lib/securite/limite.ts`) ; événements via `journaliser` (`lib/securite/journal.ts`, jamais de secret ni de mot de passe).
+- Écritures publiques seulement par les fonctions SQL à secret (`SECURITE_RPC_SECRET`, `lib/securite/rpc.ts`) : aucune politique `anon` nouvelle.
+- Toute nouvelle table : RLS activée + politiques `(select public.est_admin())`.
+- Jamais de clé secrète en `NEXT_PUBLIC_` ; tout nouveau nom de variable va dans `.env.example` (sans valeur).
+- CSP imposée : `next.config.mjs` (public) et nonce de `middleware.ts` (admin) ; aucun script en ligne sans nonce, aucun `onclick=` en attribut.
+- Demander avant d'ajouter un paquet npm (vérifier qu'il existe et est maintenu).
 
 ## Conventions
 

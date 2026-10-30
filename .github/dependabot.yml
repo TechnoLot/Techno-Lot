@@ -1,0 +1,35 @@
+# Mises à jour automatiques des dépendances npm (check 21 de la passe sécurité).
+# Les demandes visent la branche dev (jamais main) ; elles sont relues et
+# testées (npm test, build) avant fusion. Les alertes de sécurité se règlent
+# dans GitHub → Settings → Code security.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Toronto"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "Dépendances"
+    groups:
+      # Next.js et React ensemble : leurs versions doivent rester compatibles.
+      next-react:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      supabase:
+        patterns:
+          - "@supabase/*"
+      # Toutes les autres mises à jour mineures et correctifs en une seule demande ;
+      # les versions majeures restent des demandes séparées.
+      mineures-et-correctifs:
+        update-types:
+          - "minor"
+          - "patch"
