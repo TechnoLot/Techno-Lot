@@ -52,6 +52,7 @@ const maintenant = () => Math.floor(Date.now() / 1000);
 const requete = (chemin: string, init?: ConstructorParameters<typeof NextRequest>[1]) =>
   new NextRequest(new URL(chemin, "https://technolot.ca"), init);
 const ENTETE = "content-security-policy";
+const AUTRE_ENTETE = "content-security-policy-report-only";
 
 beforeEach(() => {
   vi.stubEnv("ADMIN_EMAILS", "info@technolot.ca");
@@ -173,7 +174,8 @@ describe("middleware", () => {
     // En-têtes de requête réécrits par NextResponse.next({ request: { headers } }).
     expect(r.headers.get(`x-middleware-request-${ENTETE}`)).toBe(politique);
     expect(r.headers.get("x-middleware-request-x-nonce")).toBe(nonceDe(politique));
-    expect(r.headers.get("content-security-policy")).toBeNull();
+    // Une seule politique : pas d'en-tête de l'autre mode (rapport seulement).
+    expect(r.headers.get(AUTRE_ENTETE)).toBeNull();
     expect(supa.options).toBeNull(); // aucun client Supabase créé
   });
 
@@ -187,10 +189,17 @@ describe("middleware", () => {
   it("une CSP ou un nonce envoyés par le client sont ignorés", async () => {
     const r = await middleware(
       requete("/admin/login", {
-        headers: { "content-security-policy": "script-src 'nonce-choisi'", "x-nonce": "choisi" },
+        headers: {
+          "content-security-policy": "script-src 'nonce-choisi'",
+          "content-security-policy-report-only": "script-src 'nonce-choisi'",
+          "x-nonce": "choisi",
+        },
       }),
     );
-    expect(r.headers.get("x-middleware-request-content-security-policy")).toBeNull();
+    // La politique transmise à Next est la nôtre, jamais celle du client.
+    expect(r.headers.get(`x-middleware-request-${ENTETE}`)).toBe(r.headers.get(ENTETE));
+    expect(r.headers.get(`x-middleware-request-${ENTETE}`)).not.toContain("nonce-choisi");
+    expect(r.headers.get(`x-middleware-request-${AUTRE_ENTETE}`)).toBeNull();
     expect(r.headers.get("x-middleware-request-x-nonce")).not.toBe("choisi");
   });
 
