@@ -42,7 +42,7 @@ const content: Record<
     crumb: "Politique de confidentialité",
     intro:
       "Comment Techno Lot recueille, utilise, conserve et protège vos renseignements personnels, conformément à la Loi sur la protection des renseignements personnels dans le secteur privé du Québec (Loi 25).",
-    updated: "Dernière mise à jour : 28 octobre 2026",
+    updated: "Dernière mise à jour : 30 octobre 2026",
     tocLabel: "Sommaire",
     officerTitle: "Responsable de la protection des renseignements personnels",
     blocks: [
@@ -111,6 +111,10 @@ const content: Record<
               <strong>Échanges avec notre équipe.</strong> Les courriels et appels liés à votre demande (ramassage,
               offre, paiement) sont conservés pour le suivi de notre relation d&apos;affaires.
             </p>
+            <p className="mt-5">
+              <strong>Journal de sécurité.</strong> Pour protéger le site contre la fraude et les attaques, nos serveurs
+              enregistrent certains événements techniques, avec l&apos;adresse IP et le navigateur.
+            </p>
           </>
         ),
       },
@@ -122,7 +126,7 @@ const content: Record<
             <li>évaluer votre lot et vous préparer une offre ;</li>
             <li>communiquer avec vous pour l&apos;offre, le ramassage et le paiement ;</li>
             <li>mesurer l&apos;efficacité de nos publicités et améliorer le site ;</li>
-            <li>protéger le formulaire contre les envois automatisés (pourriels) ;</li>
+            <li>protéger le site et le formulaire contre les pourriels, la fraude et les attaques ;</li>
             <li>respecter nos obligations légales, notamment comptables et fiscales.</li>
           </Ul>
         ),
@@ -151,12 +155,13 @@ const content: Record<
           <>
             <p>
               Nous ne vendons ni ne louons vos renseignements personnels. Nous les confions uniquement aux fournisseurs
-              nécessaires au fonctionnement du site, qui ne peuvent les utiliser à d&apos;autres fins :
+              nécessaires au fonctionnement du site et de nos outils, qui ne peuvent les utiliser à d&apos;autres fins :
             </p>
             <Ul>
               <li>Supabase : hébergement de notre base de données ;</li>
-              <li>Resend : envoi des courriels (votre demande et nos réponses) ;</li>
-              <li>Hostinger : hébergement du site Web ;</li>
+              <li>Resend : envoi des courriels ;</li>
+              <li>Hostinger : hébergement du site Web et de notre boîte de courriel ;</li>
+              <li>Anthropic : traitement de certains courriels par intelligence artificielle ;</li>
               <li>Meta et Google : mesure publicitaire, lorsque leurs pixels sont activés.</li>
             </Ul>
             <p className="mt-3">
@@ -181,6 +186,7 @@ const content: Record<
               fiscales (généralement six ans).
             </li>
             <li>Les données de suivi enregistrées dans votre navigateur expirent après 30 jours.</li>
+            <li>Le journal de sécurité est effacé automatiquement après 90 jours.</li>
           </Ul>
         ),
       },
@@ -232,7 +238,7 @@ const content: Record<
     crumb: "Privacy policy",
     intro:
       "How Techno Lot collects, uses, retains and protects your personal information, in accordance with Québec's Act respecting the protection of personal information in the private sector (Law 25).",
-    updated: "Last updated: October 28, 2026",
+    updated: "Last updated: October 30, 2026",
     tocLabel: "Contents",
     officerTitle: "Person in charge of the protection of personal information",
     blocks: [
@@ -296,6 +302,10 @@ const content: Record<
               <strong>Exchanges with our team.</strong> Emails and calls about your request (pickup, offer, payment)
               are kept to follow up on our business relationship.
             </p>
+            <p className="mt-5">
+              <strong>Security log.</strong> To protect the site against fraud and attacks, our servers record certain
+              technical events, along with the IP address and browser.
+            </p>
           </>
         ),
       },
@@ -307,7 +317,7 @@ const content: Record<
             <li>to assess your lot and prepare an offer;</li>
             <li>to contact you about the offer, pickup and payment;</li>
             <li>to measure the effectiveness of our ads and improve the site;</li>
-            <li>to protect the form against automated (spam) submissions;</li>
+            <li>to protect the site and the form against spam, fraud and attacks;</li>
             <li>to meet our legal obligations, including accounting and tax requirements.</li>
           </Ul>
         ),
@@ -335,12 +345,13 @@ const content: Record<
           <>
             <p>
               We do not sell or rent your personal information. We only entrust it to the service providers needed to
-              run the site, who may not use it for any other purpose:
+              run the site and our tools, who may not use it for any other purpose:
             </p>
             <Ul>
               <li>Supabase: database hosting;</li>
-              <li>Resend: email delivery (your request and our replies);</li>
-              <li>Hostinger: website hosting;</li>
+              <li>Resend: email delivery;</li>
+              <li>Hostinger: website and mailbox hosting;</li>
+              <li>Anthropic: processing of certain emails by artificial intelligence;</li>
               <li>Meta and Google: ad measurement, when their pixels are enabled.</li>
             </Ul>
             <p className="mt-3">
@@ -361,6 +372,7 @@ const content: Record<
             </li>
             <li>Information related to a completed purchase is kept as long as tax laws require (generally six years).</li>
             <li>Tracking data stored in your browser expires after 30 days.</li>
+            <li>The security log is automatically deleted after 90 days.</li>
           </Ul>
         ),
       },
