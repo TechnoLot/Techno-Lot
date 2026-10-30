@@ -190,16 +190,38 @@ describe("12 — la N+1e requête reçoit 429 sur chaque route limitée", () => 
     expect(auth.verifyOtp).not.toHaveBeenCalled();
   });
 
-  it("formulaire : 4e envoi d'une même IP → 429 (même un envoi invalide compte) ; 51e au total → 429", async () => {
-    const req = async (n: number) => requeteMultipart(`${SITE}/api/soumission`, new FormData(), ip(n));
-    for (let i = 1; i <= 3; i++) expect((await soumission(await req(3))).status).toBe(400);
-    const r = await soumission(await req(3));
-    expect(r.status).toBe(429);
-    expect(r.headers.get("retry-after")).toBeTruthy();
+  it("formulaire : par IP, même un envoi invalide compte (4e → 429) ; plafond global = 100 compté seulement sur les vraies soumissions", { timeout: 30_000 }, async () => {
+    const vide = async (n: number) => requeteMultipart(`${SITE}/api/soumission`, new FormData(), ip(n));
+    const valide = async (n: number) => {
+      const fd = new FormData();
+      fd.set("nom", "Marie Tremblay");
+      fd.set("courriel", "marie@exemple.ca");
+      fd.set("telephone", "514 555-1234");
+      return requeteMultipart(`${SITE}/api/soumission`, fd, ip(n));
+    };
 
+    // Par IP : la limite agit tôt (avant le schéma), donc même un envoi invalide compte.
+    for (let i = 1; i <= 3; i++) expect((await soumission(await vide(3))).status).toBe(400);
+    const parIp = await soumission(await vide(3));
+    expect(parIp.status).toBe(429);
+    expect(parIp.headers.get("retry-after")).toBeTruthy();
+
+    // Des envois INVALIDES depuis plein d'IP n'entament PAS le budget global…
     s.compteurs.clear();
-    for (let i = 1; i <= 50; i++) expect((await soumission(await req(100 + i))).status, `envoi ${i}`).toBe(400);
-    expect((await soumission(await req(250))).status).toBe(429);
+    for (let i = 1; i <= 60; i++) {
+      const r = await soumission(await vide(40 + i));
+      expect(r.status, `invalide ${i}`).toBe(400);
+    }
+
+    // … donc 100 vraies soumissions passent, et seule la 101e est bloquée par le plafond.
+    for (let i = 1; i <= 100; i++) {
+      const r = await soumission(await valide(100 + i));
+      expect(r.status, `valide ${i}`).toBe(200);
+    }
+    s.appels = [];
+    const centUne = await soumission(await valide(201));
+    expect(centUne.status).toBe(429);
+    // La soumission bloquée par le plafond n'écrit rien et n'envoie aucun courriel.
     expect(s.appels).not.toContain("soumission_enregistrer");
     expect(s.appels).not.toContain("resend");
   });

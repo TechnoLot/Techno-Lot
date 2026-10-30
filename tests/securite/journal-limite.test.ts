@@ -312,7 +312,7 @@ describe("limiter", () => {
   it("TABLE_LIMITES reprend le tableau approuvé (T5)", () => {
     expect(TABLE_LIMITES.soumissionIp10min).toMatchObject({ fenetreSecondes: 600, max: 3 });
     expect(TABLE_LIMITES.soumissionIpJour).toMatchObject({ fenetreSecondes: 86_400, max: 10 });
-    expect(TABLE_LIMITES.soumissionGlobaleJour).toMatchObject({ fenetreSecondes: 86_400, max: 50 });
+    expect(TABLE_LIMITES.soumissionGlobaleJour).toMatchObject({ fenetreSecondes: 86_400, max: 100 });
     expect(TABLE_LIMITES.suiviIpMinute).toMatchObject({ fenetreSecondes: 60, max: 120 });
     expect(TABLE_LIMITES.motDePasseIpMinute).toMatchObject({ fenetreSecondes: 60, max: 5 });
     expect(TABLE_LIMITES.motDePasseIpHeure).toMatchObject({ fenetreSecondes: 3_600, max: 20 });
