@@ -54,8 +54,9 @@ export default async function ComptePage() {
             Définir le mot de passe
           </h2>
           <p className="mt-1 text-sm text-admin-muted">
-            Au moins 10 caractères. Il est stocké chiffré par Supabase, jamais
-            dans le code du site.
+            Au moins 12 caractères. Ton mot de passe actuel est demandé.
+            Supabase n&apos;en garde qu&apos;une empreinte irréversible, jamais
+            le mot de passe lui-même.
           </p>
           <div className="mt-5">
             <ChangePasswordForm />
