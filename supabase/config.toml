@@ -3,3 +3,14 @@
 # dans l'URL du dashboard (https://<project_id>.supabase.co).
 
 project_id = "aznelukkwitvttycwnjb"
+
+# Fonctions Edge appelées chaque jour par pg_cron (tâches process-emails-daily
+# et process-sales-daily). pg_cron n'envoie pas de JWT Supabase : ces fonctions
+# s'authentifient elles-mêmes avec l'en-tête « Authorization: Bearer <CRON_SECRET> »
+# (comparé en temps constant dans le code). Garder verify_jwt = false pour qu'un
+# redéploiement par la CLI ne change pas le comportement en production.
+[functions.process-emails]
+verify_jwt = false
+
+[functions.process-sales]
+verify_jwt = false
