@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import SetDocumentLang from "@/components/SetDocumentLang";
+import { BarreChargement } from "@/components/site/BarreChargement";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SmoothScroll } from "@/components/site/SmoothScroll";
@@ -36,6 +37,8 @@ export default function LocaleShell({
         >
           {t.shell.skipToContent}
         </a>
+        {/* Signe d'attente pendant un changement de page (au-dessus de l'en-tête) */}
+        <BarreChargement />
         {/* framer-motion (MotionProvider) : monté par les seuls gabarits qui l'utilisent */}
         {/* Textes de la seule langue de la page (pas les dictionnaires complets côté client) */}
         <SiteHeader
