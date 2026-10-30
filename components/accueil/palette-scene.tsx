@@ -313,7 +313,8 @@ function PaletteItem({
           alt=""
           width={d.dims[0]}
           height={d.dims[1]}
-          sizes={`${Math.ceil((d.w / PAL_W) * 680)}px`}
+          // palette de 680 px au plus ; plus étroite que l'écran en dessous (même part de la largeur)
+          sizes={`(min-width: 680px) ${Math.ceil((d.w / PAL_W) * 680)}px, ${Math.ceil((d.w / PAL_W) * 100)}vw`}
           draggable={false}
           className="block h-auto w-full select-none drop-shadow-[0_5px_7px_rgba(4,30,12,0.2)]"
           style={d.clipRight ? { clipPath: `inset(0 ${d.clipRight * 100}% 0 0)` } : undefined}
