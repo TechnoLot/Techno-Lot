@@ -17,17 +17,34 @@ import {
   type Autre,
   type Quantites,
 } from "@/components/formulaire/textes";
+import { EXTENSIONS_PAR_CHAMP, LIMITES_FICHIERS, MIMES_PAR_CHAMP } from "@/lib/securite/fichiers";
 import "./formulaire.css";
 
 type Status = "idle" | "loading" | "success" | "error";
 type ChampContact = "nom" | "courriel" | "telephone";
 type Valeurs = Record<ChampContact | "entreprise" | "ville" | "message", string>;
 
-const MAX_TOTAL_SIZE = 15 * 1024 * 1024; // 15 Mo (limite des pièces jointes, comme l'API)
+const MAX_TOTAL_SIZE = LIMITES_FICHIERS.maxTotal; // 15 Mo (limite des pièces jointes, comme l'API)
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[\d\s\-().+]{7,20}$/;
-const INVENTAIRE_RE = /\.(xlsx?|csv|pdf)$/i;
-const PHOTO_RE = /\.(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?)$/i;
+// Mêmes listes que le serveur (lib/securite/fichiers.ts), qui vérifie en plus le contenu réel.
+const extensionsRe = (exts: readonly string[]) => new RegExp(`\\.(${exts.join("|")})$`, "i");
+const INVENTAIRE_RE = extensionsRe(EXTENSIONS_PAR_CHAMP.inventaire);
+const PHOTO_RE = extensionsRe(EXTENSIONS_PAR_CHAMP.photos);
+
+/** Refus du serveur avant la lecture du formulaire (sa langue n'y est pas encore connue). */
+const ERREURS_HTTP: Record<Locale, Partial<Record<number, string>>> = {
+  fr: {
+    413: "Pièces jointes trop volumineuses : au plus 10 fichiers, 10 Mo par fichier et 15 Mo au total.",
+    415: "Format de fichier non accepté. Formats permis : Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.",
+    429: "Trop d'envois en peu de temps. Réessayez plus tard ou appelez-nous au 514-944-3939.",
+  },
+  en: {
+    413: "Attachments are too large: at most 10 files, 10 MB per file and 15 MB in total.",
+    415: "File format not accepted. Accepted formats: Excel, CSV, PDF, JPG, PNG, WEBP, GIF, HEIC.",
+    429: "Too many submissions in a short time. Please try again later or call us at 514-944-3939.",
+  },
+};
 const DERNIERE = 2;
 const VIDE: Valeurs = { nom: "", courriel: "", telephone: "", entreprise: "", ville: "", message: "" };
 
@@ -186,7 +203,10 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   // ------------------------------ Fichiers ------------------------------
 
   function ajouter(kind: "inventaire" | "photos", liste: File[]) {
-    const ok = kind === "inventaire" ? (x: File) => INVENTAIRE_RE.test(x.name) : (x: File) => x.type.startsWith("image/") || PHOTO_RE.test(x.name);
+    const ok =
+      kind === "inventaire"
+        ? (x: File) => INVENTAIRE_RE.test(x.name)
+        : (x: File) => PHOTO_RE.test(x.name) || MIMES_PAR_CHAMP.photos.includes(x.type.toLowerCase());
     const acceptes = liste.filter(ok);
     const refuses = liste.filter((x) => !ok(x));
     const existants = kind === "inventaire" ? inventaire : photos;
@@ -287,7 +307,13 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(json?.error ?? f.genericError);
+        // 413 et 429 : message local (le serveur répond avant de connaître la langue) ;
+        // 415 : message du serveur (il nomme le fichier refusé), sinon message local.
+        const local = ERREURS_HTTP[locale]?.[res.status];
+        const serveur = typeof json?.error === "string" ? json.error : "";
+        throw new Error(
+          (res.status === 415 ? serveur || local : local || serveur) || f.genericError,
+        );
       }
       setStatus("success");
       trackEvent("form_submit");

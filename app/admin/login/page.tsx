@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import LoginForm from "@/components/admin/LoginForm";
 import { getAdminEmails } from "@/lib/admin/config";
+import { messageErreurConnexion } from "@/lib/admin/messages-connexion";
+import { cheminInterne } from "@/lib/securite/chemin-interne";
 
 export const metadata: Metadata = {
   title: "Connexion — Admin",
@@ -40,8 +42,8 @@ export default async function LoginPage(
           <div className="mt-7">
             <LoginForm
               email={target}
-              next={searchParams.next ?? "/admin"}
-              initialError={searchParams.error}
+              next={cheminInterne(searchParams.next)}
+              initialError={messageErreurConnexion(searchParams.error)}
             />
           </div>
         </div>

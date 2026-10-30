@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { changerMotDePasse } from "@/lib/admin/mot-de-passe-actions";
 
-const MIN_LENGTH = 10;
+// Mêmes bornes que l'action serveur (qui vérifie de toute façon).
+const MIN_LENGTH = 12;
+const MAX_LENGTH = 72;
 
 export default function ChangePasswordForm() {
+  const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -15,9 +18,20 @@ export default function ChangePasswordForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (password.length < MIN_LENGTH) {
+    if (!current) {
+      setStatus("error");
+      setError("Entre ton mot de passe actuel.");
+      return;
+    }
+    const longueur = [...password].length;
+    if (longueur < MIN_LENGTH) {
       setStatus("error");
       setError(`Le mot de passe doit contenir au moins ${MIN_LENGTH} caractères.`);
+      return;
+    }
+    if (longueur > MAX_LENGTH) {
+      setStatus("error");
+      setError(`Le mot de passe doit contenir au plus ${MAX_LENGTH} caractères.`);
       return;
     }
     if (password !== confirm) {
@@ -26,25 +40,43 @@ export default function ChangePasswordForm() {
       return;
     }
     setStatus("loading");
-    const { error: updateError } = await createClient().auth.updateUser({ password });
-    if (updateError) {
+    let resultat: Awaited<ReturnType<typeof changerMotDePasse>>;
+    try {
+      resultat = await changerMotDePasse({ actuel: current, nouveau: password });
+    } catch {
+      resultat = { ok: false, error: "Une erreur est survenue. Réessaie." };
+    }
+    if (!resultat.ok) {
       setStatus("error");
-      setError(
-        updateError.code === "same_password"
-          ? "C'est déjà ton mot de passe actuel."
-          : updateError.code === "weak_password"
-            ? "Mot de passe trop faible. Allonge-le ou ajoute des chiffres et symboles."
-            : `Supabase : ${updateError.message}`,
-      );
+      setError(resultat.error);
       return;
     }
+    setCurrent("");
     setPassword("");
     setConfirm("");
     setStatus("done");
   }
 
+  const changer = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+    if (status !== "loading") setStatus("idle");
+  };
+
   return (
     <form onSubmit={submit} className="space-y-4" noValidate>
+      <div>
+        <label htmlFor="current-password" className="mb-1.5 block text-sm font-medium text-admin-ink">
+          Mot de passe actuel
+        </label>
+        <input
+          id="current-password"
+          type="password"
+          autoComplete="current-password"
+          value={current}
+          onChange={changer(setCurrent)}
+          className="field"
+        />
+      </div>
       <div>
         <label htmlFor="new-password" className="mb-1.5 block text-sm font-medium text-admin-ink">
           Nouveau mot de passe
@@ -54,10 +86,7 @@ export default function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           value={password}
-          onChange={(e) => {
-            setPassword(e.target.value);
-            if (status !== "loading") setStatus("idle");
-          }}
+          onChange={changer(setPassword)}
           className="field"
         />
       </div>
@@ -70,10 +99,7 @@ export default function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           value={confirm}
-          onChange={(e) => {
-            setConfirm(e.target.value);
-            if (status !== "loading") setStatus("idle");
-          }}
+          onChange={changer(setConfirm)}
           className="field"
         />
       </div>
@@ -93,7 +119,10 @@ export default function ChangePasswordForm() {
           className="flex items-start gap-2 rounded-xl border border-admin-tint-green-line bg-admin-tint-green px-4 py-3 text-sm text-admin-green"
         >
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-          <span>Mot de passe enregistré. Utilise-le à ta prochaine connexion.</span>
+          <span>
+            Mot de passe enregistré. Tes autres appareils ont été déconnectés ; utilise-le à ta
+            prochaine connexion.
+          </span>
         </div>
       )}
 
