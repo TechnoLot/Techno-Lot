@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import NewLotTabs, { type FromSoumission } from "@/components/admin/NewLotTabs";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import { fetchSoumission, type Soumission } from "@/lib/admin/soumissions";
 import type { CalcLotSummary } from "@/components/admin/SavedCalcLots";
 
@@ -48,12 +48,13 @@ function depuisSoumission(s: Soumission): FromSoumission {
   };
 }
 
-export default async function NewLotPage({
-  searchParams,
-}: {
-  searchParams: { soumission?: string };
-}) {
-  const supabase = createClient();
+export default async function NewLotPage(
+  props: {
+    searchParams: Promise<{ soumission?: string }>;
+  }
+) {
+  const { supabase } = await exigerAdminPage("/admin/lots/nouveau");
+  const searchParams = await props.searchParams;
   const { data: savedLotsRaw } = await supabase
     .from("saved_lots")
     .select("id, name, data, updated_at")

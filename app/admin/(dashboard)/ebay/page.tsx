@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 
 export const metadata: Metadata = {
   title: "Description eBay — Admin",
@@ -7,7 +8,8 @@ export const metadata: Metadata = {
 
 const embedSrc = "/admin/ebay/embed";
 
-export default function EbayDescriptionPage() {
+export default async function EbayDescriptionPage() {
+  await exigerAdminPage("/admin/ebay");
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <header className="flex flex-wrap items-end justify-between gap-3">

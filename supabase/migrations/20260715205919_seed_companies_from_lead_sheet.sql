@@ -1,0 +1,8 @@
+-- Récupéré de supabase_migrations.schema_migrations le 2026-10-30 (appliquée sans fichier).
+-- Version en base : 20260715205919 · nom : seed_companies_from_lead_sheet.
+--
+-- Données retirées (97 lignes, table public.companies) — non versionnées : dépôt public (Loi 25).
+-- La migration appliquée était une seule instruction « insert into public.companies (...) values ... »
+-- contenant les compagnies prospectées (coordonnées et notes d'affaires). Aucune instruction de schéma
+-- n'en a été retirée. Ces lignes se restaurent depuis la copie manuelle de la base
+-- (scripts/sauvegarde-base.ps1 → donnees.dump), jamais depuis le dépôt.

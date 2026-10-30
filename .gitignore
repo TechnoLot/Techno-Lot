@@ -31,3 +31,12 @@ scrollcraft/builds/*/lab/en/
 scrollcraft/builds/*/lab/maq/
 scrollcraft/builds/*/lab/proto/*.png
 scrollcraft/builds/*/lab/proto/*.jpg
+
+# Passe sécurité : rapports et cartes de l'app (dépôt public → jamais versionnés).
+# Ancré à la racine : lib/securite/ et tests/securite/ (code et tests) restent versionnés.
+/securite/
+
+# Copies de la base (scripts/sauvegarde-base.ps1) : données personnelles, jamais versionnées,
+# même si une copie est déposée dans le dépôt par erreur
+*.dump
+Sauvegardes-TechnoLot/

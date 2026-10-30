@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { reponseErreur } from "@/lib/securite/erreurs";
+import { lireJson } from "@/lib/securite/requete";
+import { champsEnErreur, journaliserAction } from "@/lib/admin/erreurs-admin";
+import { PRIVE } from "@/lib/admin/requete-admin";
+import { analyseCourrielSchema } from "@/lib/admin/schemas";
+
+/** Corps JSON au plus (courriel de 50 000 caractères, échappements compris). */
+const MAX_OCTETS = 300_000;
 
 export const runtime = "nodejs";
 
@@ -27,14 +34,27 @@ Règles :
 - Confidence < 0.5 = incertain, l'utilisateur devra vérifier`;
 
 export async function POST(request: Request) {
-  // Authentification et whitelist
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  // Garde admin : origine, session, rôle (avant toute lecture du corps)
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+
+  const lu = await lireJson<unknown>(request, MAX_OCTETS);
+  if (!lu.ok) return lu.reponse;
+  const parse = analyseCourrielSchema.safeParse(lu.donnees);
+  if (!parse.success) {
+    const champs = champsEnErreur(parse.error);
+    const tropLong = parse.error.issues.some((i) => i.code === "too_big");
+    return NextResponse.json(
+      {
+        error: tropLong
+          ? "Courriel trop long pour l'analyse (50 000 caractères au plus)."
+          : "Colle un courriel un peu plus long pour l'analyse.",
+        champs,
+      },
+      { status: 400, headers: PRIVE },
+    );
   }
+  const email = parse.data.email;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -43,16 +63,7 @@ export async function POST(request: Request) {
         error:
           "L'analyse par IA n'est pas configurée. Ajoute ANTHROPIC_API_KEY dans les variables d'environnement.",
       },
-      { status: 503 },
-    );
-  }
-
-  const body = await request.json().catch(() => ({}));
-  const email = String(body?.email ?? "").trim();
-  if (email.length < 20) {
-    return NextResponse.json(
-      { error: "Colle un courriel un peu plus long pour l'analyse." },
-      { status: 400 },
+      { status: 503, headers: PRIVE },
     );
   }
 
@@ -74,15 +85,15 @@ export async function POST(request: Request) {
     }
     const parsed = JSON.parse(match[0]);
 
-    return NextResponse.json({ ok: true, extracted: parsed });
+    void journaliserAction("lot.courriel_analyse", garde, { caracteres: email.length }, request);
+    return NextResponse.json({ ok: true, extracted: parsed }, { headers: PRIVE });
   } catch (err) {
-    console.error("[parse-email]", err);
-    return NextResponse.json(
-      {
-        error:
-          "L'analyse a échoué. Réessaie ou saisis les informations à la main.",
-      },
-      { status: 502 },
-    );
+    // Détail de l'erreur (SDK Anthropic) au journal seulement.
+    return reponseErreur(502, "L'analyse a échoué. Réessaie ou saisis les informations à la main.", {
+      request,
+      err,
+      requestId: garde.requestId,
+      userId: garde.user.id,
+    });
   }
 }

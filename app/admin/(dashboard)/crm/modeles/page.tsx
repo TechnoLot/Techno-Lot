@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import TemplateEditor from "@/components/admin/crm/TemplateEditor";
 import type { EmailTemplate } from "@/lib/crm/types";
 
@@ -16,7 +16,7 @@ const TYPE_ORDER = [
 
 /** Modèles de courriels de prospection — modifiables sans redéployer. */
 export default async function ModelesPage() {
-  const supabase = createClient();
+  const { supabase } = await exigerAdminPage("/admin/crm/modeles");
 
   const { data: templatesRaw } = await supabase
     .from("email_templates")

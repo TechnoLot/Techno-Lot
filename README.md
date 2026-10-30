@@ -1,6 +1,6 @@
 # Techno Lot — Site web
 
-Site officiel de **Techno Lot**, le spécialiste de l'achat de lots informatiques et électroniques au Québec. Construit avec Next.js 14 (App Router), TypeScript, Tailwind CSS et Framer Motion.
+Site officiel de **Techno Lot**, le spécialiste de l'achat de lots informatiques et électroniques au Québec. Construit avec Next.js 15 (App Router), TypeScript, Tailwind CSS et Framer Motion.
 
 ## Lancer le projet en local
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ChevronRight, Trophy } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import StatusPill from "@/components/admin/StatusPill";
 import { formatDate, formatMoney } from "@/lib/admin/format";
 import type { Lot } from "@/lib/admin/types";
@@ -26,7 +27,8 @@ type ClientRow = Contact & {
  * de prospection.
  */
 export default async function ClientsPage() {
-  const supabase = createClient();
+  const ctx = await exigerAdminPage("/admin/crm/clients");
+  const { supabase } = ctx;
 
   const { data: rowsRaw, error } = await supabase
     .from("contacts")
@@ -36,6 +38,8 @@ export default async function ClientsPage() {
     .eq("stage", "converted")
     .order("updated_at", { ascending: false });
   const rows = (rowsRaw ?? []) as unknown as ClientRow[];
+  // Message brut de la base : au journal seulement, la référence à l'écran.
+  const ref = error ? await journaliserErreur(error, "crm.clients_lire", ctx) : null;
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
@@ -62,7 +66,7 @@ export default async function ClientsPage() {
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {error.message}
+          Impossible de charger les données. Réf. : {ref}
         </div>
       )}
 

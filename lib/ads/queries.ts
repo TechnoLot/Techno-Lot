@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { isGoogleConfigured, isMetaConfigured } from "@/lib/ads/sync";
 import { averageCpl } from "@/lib/ads/verdict";
 import {
@@ -627,7 +628,7 @@ export function analyze(raw: RawAdsData, clients: ClientIndex, opts: AnalyzeOpti
 /* Accès Supabase                                                      */
 /* ================================================================== */
 
-type Supa = ReturnType<typeof createClient>;
+type Supa = Awaited<ReturnType<typeof createClient>>;
 const PAGE = 1000;
 const MAX_PAGES = 50;
 
@@ -715,8 +716,9 @@ export async function fetchClientIndex(supabase: Supa): Promise<ClientIndex> {
 /** Dernière synchronisation (toutes plateformes, ou une seule). */
 export async function getLastSync(
   platform?: AdPlatform | null,
-  supabase: Supa = createClient(),
+  supabase?: Supa,
 ): Promise<LastSync> {
+  supabase ??= await createClient();
   let query = supabase
     .from("ad_sync_runs")
     .select("created_at, platform, ok, rows_upserted, message")
@@ -732,8 +734,9 @@ export async function getLastSync(
 
 /** État de la synchro automatique de Meta et de Google (pastilles « Synchro auto »). */
 export async function getAdsSyncState(
-  supabase: Supa = createClient(),
+  supabase?: Supa,
 ): Promise<Record<AdPlatform, AdsSyncState>> {
+  supabase ??= await createClient();
   const config = getConfigStatus();
   const [meta, google] = await Promise.all([getLastSync("meta", supabase), getLastSync("google", supabase)]);
   const state = (configured: boolean, last: LastSync): AdsSyncState => ({
@@ -758,15 +761,17 @@ export function parsePlatformFilter(v: string | undefined): PlatformFilter {
 async function loadPeriod(
   range: DateRange,
 ): Promise<{ raw: RawAdsData; clients: ClientIndex; error: string | null }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const [raw, clients] = await Promise.all([fetchRaw(supabase, range), fetchClientIndex(supabase)]);
     return { raw, clients, error: null };
   } catch (e) {
+    // Message brut de la base : au journal seulement ; l'écran reçoit la référence (check 20).
+    const ref = await journaliserErreur(e, "pubs.lecture");
     return {
       raw: { sessions: [], events: [], leads: [], metrics: [] },
       clients: emptyClientIndex(),
-      error: e instanceof Error ? e.message : String(e),
+      error: `lecture impossible. Réf. : ${ref}`,
     };
   }
 }
@@ -828,7 +833,7 @@ export async function getTrackingCoverage(params: {
   attributedLeads: number;
 }): Promise<TrackingCoverage> {
   const { range, platform } = params;
-  const supabase = createClient();
+  const supabase = await createClient();
   const startIso = torontoStartUtc(range.from);
   const endIso = torontoStartUtc(addDays(range.to, 1));
 

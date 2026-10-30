@@ -1,0 +1,45 @@
+# Tests de sécurité (check 27) : à chaque envoi sur dev ou main et à chaque
+# demande de fusion. Aucun secret requis : les tests simulent Supabase,
+# Resend et Anthropic, et ne joignent aucun service.
+name: securite
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: securite-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Dépendances
+        run: npm ci
+
+      - name: Types
+        run: npx tsc --noEmit
+
+      - name: Tests (dont tests/securite)
+        run: npm test
+
+      - name: Garde admin sur chaque page, route et action
+        run: node scripts/verif-garde-admin.mjs
+
+      - name: Dépendances vulnérables (production, niveau élevé)
+        run: npm audit --omit=dev --audit-level=high

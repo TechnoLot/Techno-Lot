@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
 import type { Lot } from "@/lib/admin/types";
-import { bornesPeriode, parsePeriode } from "@/lib/admin/periodes";
+import { bornesPeriode, legendeDates, nomAnneeFiscale, parsePeriode } from "@/lib/admin/periodes";
+import { revenusJournaliers } from "@/lib/admin/revenus";
 import { pageDepuisParam, paginer } from "@/lib/admin/pagination";
 import { fusionnerVentes, type LotVendu, type VenteManuelle } from "@/lib/admin/dernieres-ventes";
 import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
@@ -30,7 +33,8 @@ const SOUMISSIONS_PAR_PAGE = 10;
 const NB_VENTES = 8;
 
 type Sale = { sale_price: number | string; sold_at: string };
-type SupabaseServer = ReturnType<typeof createClient>;
+type LotPeriode = Pick<Lot, "purchase_price" | "sale_price" | "purchased_at">;
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
 /** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
 function torontoToday(now: Date): string {
@@ -59,15 +63,14 @@ async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
   return count;
 }
 
-export default async function AccueilPage({
-  searchParams,
-}: {
-  searchParams: { periode?: string | string[]; sp?: string | string[] };
-}) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export default async function AccueilPage(
+  props: {
+    searchParams: Promise<{ periode?: string | string[]; sp?: string | string[] }>;
+  }
+) {
+  const ctx = await exigerAdminPage("/admin");
+  const { supabase, user } = ctx;
+  const searchParams = await props.searchParams;
   // Prénom : user_metadata.prenom, sinon table par défaut (lib/admin/config.ts).
   // Sans session (contournement local), on retombe sur le courriel de l'entreprise.
   const prenom = resolvePrenom(user?.email ?? site.email, user?.user_metadata);
@@ -83,7 +86,7 @@ export default async function AccueilPage({
   const { from, to } = bornesPeriode(periode, todayIso);
 
   // Lots achetés dans la période (purchased_at) + ventes manuelles (sold_at)
-  let lotsQuery = supabase.from("lots").select("purchase_price, sale_price");
+  let lotsQuery = supabase.from("lots").select("purchase_price, sale_price, purchased_at");
   if (from) lotsQuery = lotsQuery.gte("purchased_at", from);
   if (to) lotsQuery = lotsQuery.lte("purchased_at", to);
 
@@ -164,16 +167,23 @@ export default async function AccueilPage({
 
   let achats = 0;
   let ventesLots = 0;
-  const lotsPeriode = (lotsRaw ?? []) as Pick<Lot, "purchase_price" | "sale_price">[];
+  const lotsPeriode = (lotsRaw ?? []) as LotPeriode[];
   for (const l of lotsPeriode) {
     achats += Number(l.purchase_price);
     if (l.sale_price != null) ventesLots += Number(l.sale_price);
   }
+  const ventesPeriode = (salesRaw ?? []) as Sale[];
   let ventesManuelles = 0;
-  for (const s of (salesRaw ?? []) as Sale[]) ventesManuelles += Number(s.sale_price);
+  for (const s of ventesPeriode) ventesManuelles += Number(s.sale_price);
   const ventesEbay = ebay.revenue;
   const ventes = ventesLots + ventesManuelles + ventesEbay;
   const profit = ventes - achats - (ebay.fees ?? 0);
+
+  // Graphique « Revenus journaliers » : les ventes de la tuile, jour par jour
+  const revenus = revenusJournaliers(from, to ?? todayIso, lotsPeriode, ventesPeriode, ebay.rows);
+  const dates = legendeDates(from, to);
+  const legende =
+    periode === "annee" ? `Année fiscale ${nomAnneeFiscale(todayIso)} · ${dates.charAt(0).toLowerCase()}${dates.slice(1)}` : dates;
 
   const dernieresVentes = fusionnerVentes(
     ebayRecentes,
@@ -215,7 +225,7 @@ export default async function AccueilPage({
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {error.message}
+          Impossible de charger les données. Réf. : {await journaliserErreur(error, "accueil.lots_lire", ctx)}
         </div>
       )}
 
@@ -245,6 +255,8 @@ export default async function AccueilPage({
 
         <ChiffresTiles
           periode={periode}
+          legende={legende}
+          revenus={revenus}
           data={{
             ventes,
             ventesLots,

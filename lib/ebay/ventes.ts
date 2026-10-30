@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { sumEbayOrders, torontoRangeUtc, type EbayCountable, type EbayOrderRow } from "@/lib/ebay/totaux";
 
@@ -35,7 +36,7 @@ export async function getEbayOrderRows<K extends keyof EbayOrderRow>(
   to: string | null,
   columns: readonly K[],
 ): Promise<Array<Pick<EbayOrderRow, K>>> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { gte, lt } = torontoRangeUtc(from, to);
   const out: Array<Pick<EbayOrderRow, K>> = [];
   for (let offset = 0; offset < 200_000; offset += PAGE) {
@@ -67,7 +68,7 @@ function normalizeRow(r: Record<string, unknown>): Record<string, unknown> {
 
 /** Dernière synchronisation (réussie et tentée) et accès aux frais. */
 export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const [{ data: lastOk }, { data: last }] = await Promise.all([
     supabase
       .from("ebay_sync_runs")
@@ -102,13 +103,13 @@ export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
 
 /** Dernières commandes (toutes, y compris annulées) pour l'affichage. */
 export async function getRecentEbayOrders(limit = 20): Promise<EbayOrderRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("ebay_orders")
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) console.error("[ebay] Lecture des dernières commandes impossible :", error.message);
+  if (error) await journaliserErreur(error, "ebay.dernieres_commandes", {}, { durable: false });
   return (data ?? []).map((r) => normalizeRow(r) as unknown as EbayOrderRow);
 }
 
@@ -124,7 +125,7 @@ export async function getEbayOrdersPage(
   page: number,
   parPage: number,
 ): Promise<{ rows: EbayOrderRow[]; total: number; page: number; pageCount: number }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { gte, lt } = torontoRangeUtc(from, to);
   const taille = Math.max(1, Math.floor(parPage) || 1);
   const nbPages = (total: number) => Math.max(1, Math.ceil(total / taille));
@@ -166,22 +167,33 @@ export async function getEbayOrdersPage(
 
 /**
  * Totaux des ventes eBay d'une période, pour les tuiles « Ventes » et
- * « Profit » du tableau de bord. Jours inclusifs « YYYY-MM-DD » à l'heure de
- * Toronto ; null = sans borne.
+ * « Profit » du tableau de bord, avec les commandes elles-mêmes (graphique
+ * « Évolution »). Jours inclusifs « YYYY-MM-DD » à l'heure de Toronto ;
+ * null = sans borne.
  *
  * Lit la table `ebay_orders` (remplie par POST /api/admin/ebay-sync).
  * Les commandes annulées ou entièrement remboursées ne comptent pas.
  */
-export async function getEbayTotals(from: string | null, to: string | null): Promise<EbayTotals> {
+export async function getEbayTotals(
+  from: string | null,
+  to: string | null,
+): Promise<EbayTotals & { rows: Array<EbayCountable & { created_at: string }> }> {
   const configured = isEbayConfigured();
   try {
     const [rows, status] = await Promise.all([
-      getEbayOrderRows<keyof EbayCountable>(from, to, ["total", "refunded", "fees", "cancelled", "payment_status"]),
+      getEbayOrderRows<keyof EbayCountable | "created_at">(from, to, [
+        "created_at",
+        "total",
+        "refunded",
+        "fees",
+        "cancelled",
+        "payment_status",
+      ]),
       getEbaySyncStatus(),
     ]);
     const sums = sumEbayOrders(rows);
-    return { configured, revenue: sums.revenue, fees: sums.fees, orders: sums.orders, lastSync: status.lastSync };
+    return { configured, revenue: sums.revenue, fees: sums.fees, orders: sums.orders, lastSync: status.lastSync, rows };
   } catch {
-    return { configured, revenue: 0, fees: null, orders: 0, lastSync: null };
+    return { configured, revenue: 0, fees: null, orders: 0, lastSync: null, rows: [] };
   }
 }

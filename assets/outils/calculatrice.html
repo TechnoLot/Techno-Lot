@@ -867,10 +867,10 @@ function rendre(){
     return `
     <tr>
       <td>${it.cat ? '<span class="cat">' + echap(it.cat) + '</span>' : ''}<input type="text" class="desc" value="${echap(it.desc)}" onchange="maj(${i},'desc',this.value)" title="Clique pour modifier"></td>
-      <td><input type="number" class="qte" min="1" value="${it.qte}" onchange="maj(${i},'qte',this.value)"></td>
-      <td><a class="btn-ebay" href="${lienEbay(it.desc)}" target="_blank" rel="noopener" title="Ventes réussies sur eBay.ca">Vendus ↗</a></td>
-      <td class="num-cel"><input type="number" class="prix ${it.bas != null ? 'rempli' : ''}" step="0.01" min="0" placeholder="?" value="${it.bas ?? ''}" onchange="maj(${i},'bas',this.value)"></td>
-      <td class="num-cel"><input type="number" class="prix ${it.moyen != null ? 'rempli' : ''}" step="0.01" min="0" placeholder="?" value="${it.moyen ?? ''}" onchange="maj(${i},'moyen',this.value)"></td>
+      <td><input type="number" class="qte" min="1" value="${echap(it.qte)}" onchange="maj(${i},'qte',this.value)"></td>
+      <td><a class="btn-ebay" href="${echap(lienEbay(it.desc))}" target="_blank" rel="noopener" title="Ventes réussies sur eBay.ca">Vendus ↗</a></td>
+      <td class="num-cel"><input type="number" class="prix ${it.bas != null ? 'rempli' : ''}" step="0.01" min="0" placeholder="?" value="${echap(it.bas ?? '')}" onchange="maj(${i},'bas',this.value)"></td>
+      <td class="num-cel"><input type="number" class="prix ${it.moyen != null ? 'rempli' : ''}" step="0.01" min="0" placeholder="?" value="${echap(it.moyen ?? '')}" onchange="maj(${i},'moyen',this.value)"></td>
       <td class="num-cel" id="tb${i}">—</td>
       <td class="num-cel" id="tm${i}">—</td>
       <td><button class="btn-suppr" title="Enlever" onclick="supprimer(${i})">✕</button></td>
@@ -879,7 +879,8 @@ function rendre(){
   calculer();
 }
 
-function echap(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+/* Échappement complet pour du HTML (texte et attributs entre guillemets simples ou doubles). */
+function echap(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function maj(i, champ, val){
   if (champ === 'desc') items[i].desc = val;
@@ -979,11 +980,29 @@ function restaurer(){
   } catch {}
 }
 
+/* Prix lu d'un lot enregistré : nombre >= 0, ou null (vide). */
+function prixOuNul(v){
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.max(0, n) : null;
+}
+
 function chargerLot(d, silencieux){
-  items = (d.items || []).map(it => ({ desc: it.desc || '', qte: it.qte || 1, cat: it.cat || '', bas: it.bas ?? null, moyen: it.moyen ?? null }));
+  // Types forcés : un lot enregistré (table saved_lots ou localStorage) n'est jamais inséré tel quel dans la page.
+  items = (Array.isArray(d.items) ? d.items : []).map(it => {
+    const o = it && typeof it === 'object' ? it : {};
+    return {
+      desc: o.desc == null ? '' : String(o.desc),
+      qte: Math.max(1, parseInt(o.qte, 10) || 1),
+      cat: o.cat == null ? '' : String(o.cat),
+      bas: prixOuNul(o.bas),
+      moyen: prixOuNul(o.moyen)
+    };
+  });
   document.getElementById('nomLot').value = d.nom === 'Lot sans nom' ? '' : (d.nom || '');
   document.getElementById('modeUSD').checked = !!d.usd;
-  if (d.taux) document.getElementById('taux').value = d.taux;
+  const taux = parseFloat(d.taux);
+  if (Number.isFinite(taux) && taux > 0) document.getElementById('taux').value = taux;
   rendre();
   if (!silencieux) toast('Lot « ' + (d.nom || 'sans nom') + ' » chargé', 'vert');
 }

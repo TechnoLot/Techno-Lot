@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import PageHeader from "@/components/admin/PageHeader";
 import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import NotificationsFeed from "@/components/admin/notifications/NotificationsFeed";
@@ -9,6 +9,7 @@ import { getEbaySyncStatus } from "@/lib/ebay/ventes";
 import { getNotificationsFeed } from "@/lib/admin/notifications";
 import { FILTRES_NOTIFICATIONS, type FiltreNotifications } from "@/lib/admin/notifications-types";
 import { periodeNotifications } from "@/lib/admin/notifications-regles";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 
 export const dynamic = "force-dynamic";
 
@@ -19,16 +20,13 @@ export const dynamic = "force-dynamic";
  * zéro ; le fil se recharge seul quand quelque chose arrive (et la synchro
  * eBay tourne pendant la visite).
  */
-export default async function NotificationsPage({
-  searchParams,
-}: {
-  searchParams: { filtre?: string; periode?: string };
-}) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+export default async function NotificationsPage(
+  props: {
+    searchParams: Promise<{ filtre?: string; periode?: string }>;
+  }
+) {
+  const { supabase, user } = await exigerAdminPage("/admin/notifications");
+  const searchParams = await props.searchParams;
 
   const periode = periodeNotifications(searchParams.periode);
   const ebayConfigured = isEbayConfigured();
@@ -76,6 +74,7 @@ export default async function NotificationsPage({
         clearedAt={feed.clearedAt}
         periode={periode}
         filtreInitial={filtre}
+        courrielApi={isMailApiConfigured()}
       />
     </div>
   );

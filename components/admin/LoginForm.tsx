@@ -12,6 +12,7 @@ import {
   TriangleAlert,
   User,
 } from "lucide-react";
+import { cheminInterne } from "@/lib/securite/chemin-interne";
 
 export default function LoginForm({
   email,
@@ -42,12 +43,14 @@ export default function LoginForm({
     try {
       const res = await fetch("/admin/auth/password", {
         method: "POST",
-        body: new URLSearchParams({ username, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? "Une erreur est survenue.");
       // Rechargement complet : le middleware lit les nouveaux cookies.
-      window.location.assign(next);
+      // Défense en profondeur : `next` est déjà filtré par la page (serveur).
+      window.location.assign(cheminInterne(next));
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "Une erreur est survenue.");
@@ -61,7 +64,7 @@ export default function LoginForm({
     try {
       const res = await fetch("/admin/auth/request", {
         method: "POST",
-        body: new URLSearchParams({ next }),
+        body: new URLSearchParams({ next: cheminInterne(next) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json?.error ?? "Une erreur est survenue.");
@@ -95,7 +98,16 @@ export default function LoginForm({
   const busy = status === "loading" || status === "sending-link";
 
   return (
-    <form onSubmit={submit} className="space-y-5" noValidate>
+    // method/action : sans JavaScript (ou avant l'hydratation), l'envoi natif
+    // reste un POST vers la route — le mot de passe n'est jamais dans l'URL.
+    <form
+      method="post"
+      action="/admin/auth/password"
+      onSubmit={submit}
+      className="space-y-5"
+      noValidate
+    >
+      <input type="hidden" name="next" value={cheminInterne(next)} />
       <div>
         <label
           htmlFor="admin-username"

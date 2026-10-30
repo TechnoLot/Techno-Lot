@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { bearerCronValide, estRefus, exigerAdminRoute, type ContexteAdmin } from "@/lib/securite/garde";
+import { reponseErreur } from "@/lib/securite/erreurs";
+import { clientServiceCron, reponseServiceManquant, signalerCronRefuse } from "@/lib/admin/cron";
+import { journaliserAction } from "@/lib/admin/erreurs-admin";
+import { lireJsonFacultatif, PRIVE, reponseInvalide } from "@/lib/admin/requete-admin";
+import { synchroPubsSchema } from "@/lib/admin/schemas";
 import {
   adsSyncedRecently,
   getLastAdsRunsByPlatform,
@@ -16,28 +19,17 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-async function getAdminClient(): Promise<SupabaseClient | null> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user && isAdminEmail(user.email) ? supabase : null;
-}
-
-/** GET : statut de configuration (admin seulement), sans aucun secret. */
-export async function GET() {
-  if (!(await getAdminClient())) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
-  return NextResponse.json({
-    meta: isMetaConfigured(),
-    google: isGoogleConfigured(),
-  });
+/** GET : statut de configuration (admin seulement, lecture seule), sans aucun secret. */
+export async function GET(request: Request) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  return NextResponse.json({ meta: isMetaConfigured(), google: isGoogleConfigured() }, { headers: PRIVE });
 }
 
 /**
- * POST : synchronise les stats pub. Auth : admin connecté, ou
- * `Authorization: Bearer $CRON_SECRET` (cron). Corps optionnel : { days }.
+ * POST : synchronise les stats pub. Auth : `Authorization: Bearer $CRON_SECRET`
+ * (cron), sinon admin connecté (garde : origine, session, rôle). Corps JSON
+ * facultatif et strict : { days?: 1-365, auto?: boolean }.
  * `{ auto: true }` (pages admin ouvertes) : sauté si une synchro a eu lieu il
  * y a moins de 50 s ; sinon aujourd'hui et hier, ou, à la première synchro du
  * jour, depuis la dernière synchro réussie (30 à 365 jours, voir joursSynchroAuto).
@@ -45,53 +37,62 @@ export async function GET() {
  * (dernière tentative par plateforme), ou { skipped: true, lastSync }
  */
 export async function POST(request: Request) {
-  let body: { days?: unknown; auto?: unknown } = {};
-  try {
-    body = (await request.json()) as { days?: unknown; auto?: unknown };
-  } catch {
-    // corps absent ou invalide : valeurs par défaut
-  }
-  const auto = body?.auto === true;
-  const manualDays = typeof body?.days === "number" ? body.days : 30;
+  const cron = bearerCronValide(request);
+  let supabase: SupabaseClient;
+  let ctx: ContexteAdmin | null = null;
 
-  const cronSecret = process.env.CRON_SECRET;
-  const bearer = request.headers.get("authorization");
-  let supabase: SupabaseClient | null;
-
-  if (cronSecret && bearer === `Bearer ${cronSecret}`) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
-      return NextResponse.json(
-        {
-          error:
-            "SUPABASE_SERVICE_ROLE_KEY est requis côté serveur pour la synchronisation par cron.",
-        },
-        { status: 503 },
-      );
-    }
-    supabase = createServiceClient(url, serviceKey, {
-      auth: { persistSession: false },
-    });
+  if (cron) {
+    const service = clientServiceCron();
+    if (!service) return reponseServiceManquant();
+    supabase = service;
   } else {
-    supabase = await getAdminClient();
-    if (!supabase) {
-      return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+    const garde = await exigerAdminRoute(request);
+    if (estRefus(garde)) {
+      if (request.headers.has("authorization")) signalerCronRefuse(request);
+      return garde;
     }
+    ctx = garde;
+    supabase = garde.supabase;
   }
+
+  const lu = await lireJsonFacultatif(request, 2_000, { exigerType: !cron });
+  if (!lu.ok) return lu.reponse;
+  const parse = synchroPubsSchema.safeParse(lu.donnees);
+  if (!parse.success) return reponseInvalide(parse.error, ctx?.requestId);
+  const auto = parse.data.auto === true;
 
   if (!isMetaConfigured() && !isGoogleConfigured()) {
     return NextResponse.json(
       { error: "Aucune plateforme publicitaire n'est configurée.", results: [] },
-      { status: 400 },
+      { status: 400, headers: PRIVE },
     );
   }
 
-  if (auto && (await adsSyncedRecently(supabase))) {
-    return NextResponse.json({ skipped: true, results: [], lastSync: await getLastAdsRunsByPlatform(supabase) });
-  }
+  try {
+    if (auto && (await adsSyncedRecently(supabase))) {
+      return NextResponse.json(
+        { skipped: true, results: [], lastSync: await getLastAdsRunsByPlatform(supabase) },
+        { headers: PRIVE },
+      );
+    }
 
-  const days = auto ? await joursSynchroAuto(supabase) : manualDays;
-  const results = await syncAds({ days, supabase });
-  return NextResponse.json({ results, lastSync: await getLastAdsRunsByPlatform(supabase) });
+    const days = auto ? await joursSynchroAuto(supabase) : (parse.data.days ?? 30);
+    const results = await syncAds({ days, supabase });
+    if (ctx && !auto) {
+      void journaliserAction(
+        "pubs.synchro",
+        ctx,
+        { jours: days, reussies: results.filter((r) => r.ok).length, echouees: results.filter((r) => !r.ok).length },
+        request,
+      );
+    }
+    return NextResponse.json({ results, lastSync: await getLastAdsRunsByPlatform(supabase) }, { headers: PRIVE });
+  } catch (err) {
+    return reponseErreur(500, "Synchronisation impossible. Réessayez plus tard.", {
+      request,
+      err,
+      requestId: ctx?.requestId,
+      userId: ctx?.user.id ?? null,
+    });
+  }
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import {
   getAdsOverview,
   getAdsSyncState,
@@ -12,11 +13,13 @@ import PubsOverview from "@/components/admin/ads/PubsOverview";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Publicités — Admin Techno Lot" };
 
-export default async function PubsPage({
-  searchParams,
-}: {
-  searchParams: { period?: string; from?: string; to?: string; platform?: string };
-}) {
+export default async function PubsPage(
+  props: {
+    searchParams: Promise<{ period?: string; from?: string; to?: string; platform?: string }>;
+  }
+) {
+  await exigerAdminPage("/admin/pubs");
+  const searchParams = await props.searchParams;
   const platform = parsePlatformFilter(searchParams.platform);
   const [data, lastSync, liveSync] = await Promise.all([
     getAdsOverview(searchParams),

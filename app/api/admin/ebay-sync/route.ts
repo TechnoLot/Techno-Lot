@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { bearerCronValide, estRefus, exigerAdminRoute, type ContexteAdmin } from "@/lib/securite/garde";
+import { reponseErreur } from "@/lib/securite/erreurs";
+import { clientServiceCron, reponseServiceManquant, signalerCronRefuse } from "@/lib/admin/cron";
+import { journaliserAction } from "@/lib/admin/erreurs-admin";
+import { lireJsonFacultatif, PRIVE, reponseInvalide } from "@/lib/admin/requete-admin";
+import { synchroEbaySchema } from "@/lib/admin/schemas";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { syncEbayOrders, type EbaySyncResult } from "@/lib/ebay/sync";
 
@@ -57,70 +60,51 @@ function runSync(supabase: SupabaseClient): Promise<SyncOutcome> {
   return inFlight;
 }
 
-async function readAutoFlag(request: Request): Promise<boolean> {
-  try {
-    const text = await request.text();
-    if (!text) return false;
-    const body = JSON.parse(text) as { auto?: unknown };
-    return body?.auto === true;
-  } catch {
-    return false;
-  }
-}
-
-async function getAdminClient(): Promise<SupabaseClient | null> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user && isAdminEmail(user.email) ? supabase : null;
-}
-
-/** GET : statut de configuration (admin seulement), sans aucun secret. */
-export async function GET() {
-  if (!(await getAdminClient())) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
-  return NextResponse.json({ configured: isEbayConfigured() });
+/** GET : statut de configuration (admin seulement, lecture seule), sans aucun secret. */
+export async function GET(request: Request) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  return NextResponse.json({ configured: isEbayConfigured() }, { headers: PRIVE });
 }
 
 /**
- * POST : synchronise les commandes eBay dans `ebay_orders`. Auth : admin
- * connecté, ou `Authorization: Bearer $CRON_SECRET` (cron, écrit avec
- * SUPABASE_SERVICE_ROLE_KEY).
- * Corps facultatif `{ auto: true }` (admin connecté) : synchro de fond,
- * sautée si la dernière tentative a moins de 50 s.
+ * POST : synchronise les commandes eBay dans `ebay_orders`. Auth :
+ * `Authorization: Bearer $CRON_SECRET` (cron, écrit avec
+ * SUPABASE_SERVICE_ROLE_KEY), sinon admin connecté (garde : origine, session, rôle).
+ * Corps JSON facultatif et strict `{ auto?: boolean }` (admin connecté) :
+ * synchro de fond, sautée si la dernière tentative a moins de 50 s.
  * Réponse : { ok, configured, mode, orders, feesAvailable, feesUpdated, message, lastSync }
  * ou, en mode auto sauté : { ok: true, configured: true, skipped: true, lastSync }
  */
 export async function POST(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-  const bearer = request.headers.get("authorization");
-  let supabase: SupabaseClient | null;
+  const cron = bearerCronValide(request);
+  let supabase: SupabaseClient;
+  let ctx: ContexteAdmin | null = null;
   let auto = false;
 
-  if (cronSecret && bearer === `Bearer ${cronSecret}`) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
-      return NextResponse.json(
-        { ok: false, message: "SUPABASE_SERVICE_ROLE_KEY est requis côté serveur pour la synchronisation par cron." },
-        { status: 503 },
-      );
-    }
-    supabase = createServiceClient(url, serviceKey, { auth: { persistSession: false } });
+  if (cron) {
+    const service = clientServiceCron();
+    if (!service) return reponseServiceManquant();
+    supabase = service;
   } else {
-    supabase = await getAdminClient();
-    if (!supabase) {
-      return NextResponse.json({ ok: false, message: "Non autorisé." }, { status: 401 });
+    const garde = await exigerAdminRoute(request);
+    if (estRefus(garde)) {
+      if (request.headers.has("authorization")) signalerCronRefuse(request);
+      return garde;
     }
+    ctx = garde;
+    supabase = garde.supabase;
     // Mode auto : réservé à l'admin connecté (synchro de fond des pages admin)
-    auto = await readAutoFlag(request);
+    const lu = await lireJsonFacultatif(request, 1_000);
+    if (!lu.ok) return lu.reponse;
+    const parse = synchroEbaySchema.safeParse(lu.donnees);
+    if (!parse.success) return reponseInvalide(parse.error, ctx.requestId);
+    auto = parse.data.auto === true;
   }
 
   if (!isEbayConfigured()) {
     if (auto) {
-      return NextResponse.json({ ok: false, configured: false, skipped: true });
+      return NextResponse.json({ ok: false, configured: false, skipped: true }, { headers: PRIVE });
     }
     return NextResponse.json(
       {
@@ -129,7 +113,7 @@ export async function POST(request: Request) {
         message:
           "eBay n'est pas encore connecté : ajoute EBAY_APP_ID, EBAY_CERT_ID et EBAY_REFRESH_TOKEN dans .env.local et chez l'hébergeur, puis redémarre le site.",
       },
-      { status: 400 },
+      { status: 400, headers: PRIVE },
     );
   }
 
@@ -139,16 +123,30 @@ export async function POST(request: Request) {
       const lastRunAt = await getLastRunAt(supabase);
       if (lastRunAt && Date.now() - new Date(lastRunAt).getTime() < AUTO_MIN_INTERVAL_MS) {
         const lastSync = await getLastOkRun(supabase);
-        return NextResponse.json({ ok: true, configured: true, skipped: true, lastSync });
+        return NextResponse.json({ ok: true, configured: true, skipped: true, lastSync }, { headers: PRIVE });
       }
     }
 
     const { result, lastSync } = await runSync(supabase);
-    return NextResponse.json({ configured: true, ...result, lastSync }, { status: result.ok ? 200 : 502 });
-  } catch (e) {
+    if (ctx && !auto) {
+      void journaliserAction("ebay.synchro", ctx, { reussie: result.ok, commandes: result.orders }, request);
+    }
     return NextResponse.json(
-      { ok: false, configured: true, message: e instanceof Error ? e.message.slice(0, 400) : "Erreur inconnue" },
-      { status: 500 },
+      { configured: true, ...result, lastSync },
+      { status: result.ok ? 200 : 502, headers: PRIVE },
+    );
+  } catch (err) {
+    const reponse = reponseErreur(500, "Synchronisation eBay impossible. Réessayez plus tard.", {
+      request,
+      err,
+      requestId: ctx?.requestId,
+      userId: ctx?.user.id ?? null,
+    });
+    // Les pages eBay lisent `message` : même texte générique, avec la référence.
+    const corps = (await reponse.clone().json()) as { error: string; ref: string };
+    return NextResponse.json(
+      { ok: false, configured: true, message: `${corps.error} (réf. ${corps.ref})`, ...corps },
+      { status: 500, headers: reponse.headers },
     );
   }
 }

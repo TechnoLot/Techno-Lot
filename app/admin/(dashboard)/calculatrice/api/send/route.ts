@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute, type ContexteAdmin } from "@/lib/securite/garde";
+import { limiter, reponse429 } from "@/lib/securite/limite";
+import { lireJson } from "@/lib/securite/requete";
+import { avecRef, champsEnErreur, journaliserAction, journaliserErreur } from "@/lib/admin/erreurs-admin";
+import { PRIVE } from "@/lib/admin/requete-admin";
+import { devisSchema } from "@/lib/admin/schemas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/** Corps JSON au plus (message de 10 000 caractères, échappements compris). */
+const MAX_OCTETS = 100_000;
+
+/** Envois de devis : 20 par heure et par admin. */
+const LIMITE_DEVIS = { route: "devis:admin:heure", fenetreSecondes: 3_600, max: 20 } as const;
 
 function escapeHtml(value: string): string {
   return value
@@ -69,43 +79,28 @@ function signatureHtml(): string {
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Garde admin : origine (CSRF), session, rôle — avant toute lecture du corps.
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  const { user, requestId } = garde;
 
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-  }
-
-  let body: {
-    to?: string;
-    nomClient?: string;
-    nomLot?: string;
-    offre?: string;
-    message?: string;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
-  }
-
-  const to = String(body.to ?? "").trim();
-  const message = String(body.message ?? "").trim();
-  const nomLot = String(body.nomLot ?? "").trim() || "votre lot";
-
-  if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+  const lu = await lireJson<unknown>(request, MAX_OCTETS);
+  if (!lu.ok) return lu.reponse;
+  const parse = devisSchema.safeParse(lu.donnees);
+  if (!parse.success) {
+    const champs = champsEnErreur(parse.error);
     return NextResponse.json(
-      { error: "Courriel du client invalide." },
-      { status: 400 },
+      { error: messageDevisInvalide(parse.error.issues), champs },
+      { status: 400, headers: PRIVE },
     );
   }
-  if (!message) {
-    return NextResponse.json(
-      { error: "Le message est vide." },
-      { status: 400 },
-    );
+  const { to, message } = parse.data;
+  const nomLot = parse.data.nomLot || "votre lot";
+
+  // Au plus 20 devis par heure et par admin (courriel au nom de Techno Lot).
+  const limite = await limiter(LIMITE_DEVIS.route, user.id, LIMITE_DEVIS.fenetreSecondes, LIMITE_DEVIS.max);
+  if (!limite.permis) {
+    return reponse429(limite.attente, "Trop de devis envoyés dans la dernière heure. Réessayez plus tard.");
   }
 
   const apiKey = process.env.RESEND_API_KEY;
@@ -115,7 +110,7 @@ export async function POST(request: Request) {
         error:
           "Service de courriel non configuré (RESEND_API_KEY manquante).",
       },
-      { status: 503 },
+      { status: 503, headers: PRIVE },
     );
   }
 
@@ -192,19 +187,31 @@ Demander une soumission : https://technolot.ca/soumission
       html,
       text,
     });
-    if (error) {
-      console.error("[devis] Erreur Resend :", error);
-      return NextResponse.json(
-        { error: "L'envoi a échoué : " + (error.message ?? "erreur inconnue") },
-        { status: 502 },
-      );
-    }
-    return NextResponse.json({ ok: true, id: data?.id });
+    if (error) return await echecEnvoi(request, error, garde, "L'envoi a échoué.");
+    // Identifiant de l'envoi seulement : jamais le destinataire ni le message.
+    void journaliserAction("devis.envoye", garde, { envoi: data?.id ?? null }, request);
+    return NextResponse.json({ ok: true, id: data?.id }, { headers: PRIVE });
   } catch (err) {
-    console.error("[devis] Erreur d'envoi :", err);
-    return NextResponse.json(
-      { error: "Erreur inattendue à l'envoi." },
-      { status: 502 },
-    );
+    return echecEnvoi(request, err, garde, "Erreur inattendue à l'envoi.");
   }
+}
+
+/** Échec de Resend : détail au journal, message générique + référence (affiché par la calculatrice). */
+async function echecEnvoi(request: Request, err: unknown, ctx: ContexteAdmin, message: string) {
+  const ref = await journaliserErreur(err, "devis.envoi", ctx, { request });
+  return NextResponse.json(
+    { error: avecRef(message, ref), ref },
+    { status: 502, headers: { ...PRIVE, "X-Request-Id": ref } },
+  );
+}
+
+/** Message affiché par la calculatrice pour un devis refusé à la validation. */
+function messageDevisInvalide(issues: readonly { path: PropertyKey[]; code: string }[]): string {
+  const champ = String(issues[0]?.path[0] ?? "");
+  const tropLong = issues[0]?.code === "too_big";
+  if (champ === "to") return "Courriel du client invalide.";
+  if (champ === "message") return tropLong ? "Message trop long (10 000 caractères au plus)." : "Le message est vide.";
+  if (champ === "nomLot") return "Nom du lot trop long (120 caractères au plus).";
+  if (champ === "nomClient") return "Nom du client trop long (160 caractères au plus).";
+  return "Requête invalide.";
 }

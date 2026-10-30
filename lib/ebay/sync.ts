@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EBAY_SCOPES, EbayApiError, ebayFetch, isEbayConfigured } from "@/lib/ebay/client";
 import { mapApiOrder, type EbayApiOrder, type EbayOrderRow } from "@/lib/ebay/totaux";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 
 /**
  * Synchronisation des commandes eBay vers la table `ebay_orders`.
@@ -94,8 +95,15 @@ async function logRun(
   });
 }
 
-function errText(e: unknown): string {
-  return e instanceof Error ? e.message.slice(0, 400) : "Erreur inconnue";
+/**
+ * Message d'échec affiché (et gardé dans ebay_sync_runs) : jamais le texte
+ * brut d'eBay ou de Supabase (check 20) ; seulement le code HTTP d'eBay et la
+ * référence du détail, qui va au journal (sortie standard : échecs répétitifs).
+ */
+async function echecJournalise(message: string, e: unknown, operation: string): Promise<string> {
+  const statut = e instanceof EbayApiError ? ` (eBay ${e.status})` : "";
+  const ref = await journaliserErreur(e, operation, {}, { durable: false });
+  return avecRef(`${message}${statut}`, ref);
 }
 
 export async function syncEbayOrders(supabase: SupabaseClient): Promise<EbaySyncResult> {
@@ -140,7 +148,7 @@ export async function syncEbayOrders(supabase: SupabaseClient): Promise<EbaySync
     const permission = e instanceof EbayApiError && e.isPermissionError;
     const message = permission
       ? "eBay refuse la lecture des commandes : le jeton doit inclure le droit sell.fulfillment (ou sell.fulfillment.readonly)."
-      : `Lecture des commandes eBay impossible : ${errText(e)}`;
+      : await echecJournalise("Lecture des commandes eBay impossible", e, "ebay.synchro.commandes");
     await logRun(supabase, { ok: false, mode, orders: 0, feesAvailable: null, message });
     return { ok: false, mode, orders: 0, feesAvailable: null, feesUpdated: 0, message };
   }
@@ -180,7 +188,7 @@ export async function syncEbayOrders(supabase: SupabaseClient): Promise<EbaySync
       feesAvailable = false;
       feesNote = " Frais eBay non accessibles (droit sell.finances manquant).";
     } else {
-      feesNote = ` Frais eBay non lus : ${errText(e)}`;
+      feesNote = ` ${await echecJournalise("Frais eBay non lus", e, "ebay.synchro.frais")}.`;
     }
   }
 
@@ -204,7 +212,7 @@ export async function syncEbayOrders(supabase: SupabaseClient): Promise<EbaySync
   for (let i = 0; i < rows.length; i += 500) {
     const { error } = await supabase.from("ebay_orders").upsert(rows.slice(i, i + 500), { onConflict: "order_id" });
     if (error) {
-      const message = `Enregistrement des commandes impossible : ${error.message}`;
+      const message = await echecJournalise("Enregistrement des commandes impossible", error, "ebay.synchro.enregistrement");
       await logRun(supabase, { ok: false, mode, orders: i, feesAvailable, message });
       return { ok: false, mode, orders: i, feesAvailable, feesUpdated: 0, message };
     }

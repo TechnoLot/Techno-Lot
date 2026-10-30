@@ -4,7 +4,7 @@ import BlogIndexPage, { nombrePagesBlog } from "@/components/pages/BlogIndexPage
 import { getListedBlogFeed } from "@/lib/posts";
 import { absoluteUrl } from "@/lib/seo/routes";
 
-type Props = { params: { n: string } };
+type Props = { params: Promise<{ n: string }> };
 
 // Liste des articles Soro relue au plus toutes les heures ; les nouvelles pages sont rendues à la demande.
 export const revalidate = 3600;
@@ -18,7 +18,8 @@ export async function generateStaticParams() {
   return Array.from({ length: Math.max(0, total - 1) }, (_, i) => ({ n: String(i + 2) }));
 }
 
-export function generateMetadata({ params }: Props): Metadata {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   return {
     title: `Blog, page ${params.n}`,
     description:
@@ -28,7 +29,8 @@ export function generateMetadata({ params }: Props): Metadata {
   };
 }
 
-export default function Page({ params }: Props) {
+export default async function Page(props: Props) {
+  const params = await props.params;
   // /en/blog/page/1 ferait doublon avec /en/blog
   if (params.n === "1") permanentRedirect("/en/blog");
   const n = numero(params.n);

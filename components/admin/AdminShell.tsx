@@ -4,7 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { Bell, CornerDownLeft, LogOut, Menu, Search, UserRound, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CornerDownLeft,
+  LogOut,
+  Menu,
+  Search,
+  UserRound,
+  X,
+} from "lucide-react";
 import AdminNav, { ADMIN_ROUTES } from "@/components/admin/AdminNav";
 import ThemeToggle, { writeAdminThemeCookie, type AdminTheme } from "@/components/admin/ThemeToggle";
 import { getAdminPrenom } from "@/app/admin/(dashboard)/compte/actions";
@@ -29,11 +38,14 @@ const EASE = [0.21, 0.47, 0.32, 0.98] as const;
 export default function AdminShell({
   email,
   theme = "light",
+  configurationIncomplete = [],
   children,
 }: {
   email: string;
   /** Thème lu côté serveur dans le témoin tl_admin_theme (pas de flash au chargement) */
   theme?: "light" | "dark";
+  /** NOMS des variables de sécurité manquantes sur le serveur (lib/securite/env.ts) ; bandeau si non vide */
+  configurationIncomplete?: string[];
   children: React.ReactNode;
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -152,7 +164,12 @@ export default function AdminShell({
               </div>
             </header>
 
-            <main id="admin-main">{children}</main>
+            <main id="admin-main">
+              {configurationIncomplete.length > 0 && (
+                <BandeauConfiguration noms={configurationIncomplete} />
+              )}
+              {children}
+            </main>
           </div>
         </div>
 
@@ -210,6 +227,28 @@ export default function AdminShell({
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       </div>
     </MotionConfig>
+  );
+}
+
+/**
+ * Bandeau en haut de toutes les pages admin quand des variables de sécurité
+ * manquent chez l'hébergeur (noms seulement, jamais de valeur).
+ */
+function BandeauConfiguration({ noms }: { noms: string[] }) {
+  return (
+    <div className="mx-auto w-full max-w-[1400px] px-4 pt-4 sm:px-8 lg:px-10">
+      <p
+        role="alert"
+        className="flex gap-2 rounded-2xl border border-admin-tint-amber-line bg-admin-tint-amber px-4 py-3 text-sm text-admin-warning"
+      >
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <span className="min-w-0 break-words">
+          Configuration de sécurité incomplète sur le serveur : {noms.join(", ")}. Les limites de
+          débit, le journal de sécurité ou les actions admin peuvent être désactivés. Ajoute ces
+          variables chez l&apos;hébergeur puis redéploie.
+        </span>
+      </p>
+    </div>
   );
 }
 

@@ -32,9 +32,12 @@ function longMonth(iso: string): string {
 export default function EbaySalesChart({
   data,
   granularite = "jour",
+  label = "Ventes",
 }: {
   data: Point[];
   granularite?: "jour" | "mois";
+  /** Nom de la série dans l'infobulle */
+  label?: string;
 }) {
   const mois = granularite === "mois";
   return (
@@ -71,7 +74,7 @@ export default function EbaySalesChart({
             formatter={(v, _name, item) => {
               const orders = (item?.payload as Point | undefined)?.orders;
               const suffix = orders ? ` · ${orders} commande${orders > 1 ? "s" : ""}` : "";
-              return [`${formatMoney(Number(v), true)}${suffix}`, "Ventes"];
+              return [`${formatMoney(Number(v), true)}${suffix}`, label];
             }}
           />
           <Area

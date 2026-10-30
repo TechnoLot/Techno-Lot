@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ArrowRight, Phone, Plus } from "lucide-react";
+import { ArrowRight, ExternalLink, Phone, Plus } from "lucide-react";
 import Pagination from "@/components/admin/Pagination";
-import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
+import { WEBMAIL_URL } from "@/lib/admin/config";
 import { resumePage } from "@/lib/admin/pagination";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 
 export type SoumissionRow = {
   id: string;
@@ -43,6 +44,7 @@ export default function DernieresSoumissions({
   parPage: number;
   total: number;
 }) {
+  const courrielApi = isMailApiConfigured();
   return (
     <section
       id="soumissions"
@@ -85,9 +87,16 @@ export default function DernieresSoumissions({
               )}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {s.courriel && (
-                <EcrireHostinger courriel={s.courriel} />
-              )}
+              <a
+                href={courrielApi ? `/api/admin/soumissions/${s.id}/courriel/hostinger` : WEBMAIL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="admin-btn"
+                title="Ouvre le courriel dans le webmail Hostinger (info@technolot.ca), dans un nouvel onglet"
+              >
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Ouvrir dans Hostinger
+              </a>
               {s.telephone && (
                 <a href={`tel:${s.telephone}`} className="admin-btn" title={s.telephone}>
                   <Phone className="h-3.5 w-3.5" aria-hidden />

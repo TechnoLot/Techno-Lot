@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
+import { ErreurAffichable, texteDetail } from "@/lib/admin/erreur-affichable";
 import { fetchGoogleInsights, isGoogleConfigured } from "./google";
 import { fetchMetaInsights, isMetaConfigured, type AdMetricRow } from "./meta";
 
@@ -25,6 +27,25 @@ function torontoDate(offsetDays = 0): string {
   }).format(d);
 }
 
+/**
+ * Message d'échec affiché (et gardé dans ad_sync_runs) : seulement nos messages
+ * français (ErreurAffichable) ; le détail brut de Meta, Google ou Supabase va
+ * au journal, et l'écran reçoit la référence (check 20).
+ */
+async function messageEchec(platform: "meta" | "google", e: unknown): Promise<string> {
+  const nom = platform === "meta" ? "Meta" : "Google Ads";
+  if (e instanceof ErreurAffichable && e.detail === undefined) return e.message;
+  const message = e instanceof ErreurAffichable ? e.message : `Synchronisation ${nom} impossible.`;
+  const detail = e instanceof ErreurAffichable ? texteDetail(e.detail) : texteDetail(e);
+  const ref = await journaliserErreur(
+    { name: "SynchroPubs", message: `${message} | ${detail}` },
+    `pubs.synchro.${platform}`,
+    {},
+    { durable: false },
+  );
+  return avecRef(message, ref);
+}
+
 async function syncOne(
   platform: "meta" | "google",
   fetcher: (r: { since: string; until: string }) => Promise<AdMetricRow[]>,
@@ -42,7 +63,7 @@ async function syncOne(
       const { error } = await supabase
         .from("ad_metrics_daily")
         .upsert(chunk, { onConflict: "platform,date,ad_id,publisher" });
-      if (error) throw new Error(`Écriture Supabase échouée : ${error.message}`);
+      if (error) throw new ErreurAffichable("Écriture des statistiques dans la base impossible.", error);
     }
     result = {
       platform,
@@ -51,12 +72,7 @@ async function syncOne(
       message: `${rows.length} ligne(s) synchronisée(s) du ${range.since} au ${range.until}.`,
     };
   } catch (e) {
-    result = {
-      platform,
-      ok: false,
-      rows: 0,
-      message: e instanceof Error ? e.message : "Erreur inconnue.",
-    };
+    result = { platform, ok: false, rows: 0, message: await messageEchec(platform, e) };
   }
   // Journal : ne doit jamais faire échouer la synchronisation
   try {

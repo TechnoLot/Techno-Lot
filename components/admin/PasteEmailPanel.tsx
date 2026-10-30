@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, Sparkles, TriangleAlert } from "lucide-react";
 import type { LotFormInitial } from "@/components/admin/LotForm";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type ExtractedData = {
   client_name?: string;
@@ -33,7 +34,7 @@ export default function PasteEmailPanel({
         body: JSON.stringify({ email }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json?.error ?? "Erreur inconnue.");
+      if (!res.ok) throw new Error(messageErreurApi(json, res.status));
       const ex: ExtractedData = json.extracted ?? {};
       onExtracted(
         {

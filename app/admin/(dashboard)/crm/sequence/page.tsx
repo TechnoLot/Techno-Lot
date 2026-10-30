@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Mail, Send } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import {
   ACTIVITY_LABELS,
   contactName,
@@ -38,7 +39,8 @@ function formatDateTime(iso: string): string {
  * en haut pour repérer qui a besoin d'une relance.
  */
 export default async function SequencePage() {
-  const supabase = createClient();
+  const ctx = await exigerAdminPage("/admin/crm/sequence");
+  const { supabase } = ctx;
 
   const { data: contactsRaw, error: contactsError } = await supabase
     .from("contacts")
@@ -111,7 +113,7 @@ export default async function SequencePage() {
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {contactsError.message}
+          Impossible de charger les données. Réf. : {await journaliserErreur(contactsError, "crm.sequence_lire", ctx)}
         </div>
       )}
 

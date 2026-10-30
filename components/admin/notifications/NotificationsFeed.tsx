@@ -15,6 +15,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { WEBMAIL_URL } from "@/lib/admin/config";
 import { formatCount, formatMoney } from "@/lib/admin/format";
 import {
   FILTRES_NOTIFICATIONS,
@@ -33,9 +34,9 @@ import { paginer } from "@/lib/admin/pagination";
 import { PlatformIcon } from "@/components/admin/ads/PlatformBadge";
 import PeriodeSelect from "@/components/admin/PeriodeSelect";
 import Pagination from "@/components/admin/Pagination";
-import EcrireHostinger from "@/components/admin/soumissions/EcrireHostinger";
 import { PastilleIcone } from "./apparence";
 import { useNotifications } from "./NotificationsProvider";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 const TZ = "America/Toronto";
 /** Recalcul des « il y a X min ». */
@@ -112,8 +113,7 @@ async function poster(body: unknown): Promise<void> {
     body: JSON.stringify(body),
   });
   if (!r.ok) {
-    const data = (await r.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? `Erreur ${r.status}.`);
+    throw new Error(messageErreurApi(await r.json().catch(() => ({})), r.status));
   }
 }
 
@@ -133,6 +133,7 @@ export default function NotificationsFeed({
   clearedAt,
   periode,
   filtreInitial,
+  courrielApi,
 }: {
   items: NotificationItem[];
   counts: NotifCounts;
@@ -144,6 +145,8 @@ export default function NotificationsFeed({
   clearedAt: string | null;
   periode: PeriodeKey;
   filtreInitial: FiltreNotifications;
+  /** Mail API Hostinger branchée : « Ouvrir dans Hostinger » arrive sur le courriel de la demande */
+  courrielApi: boolean;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion() ?? false;
@@ -422,6 +425,7 @@ export default function NotificationsFeed({
                                 s={it}
                                 nouveau={enAvant.has(it.key)}
                                 now={now}
+                                courrielApi={courrielApi}
                                 onRetirer={() => void retirer(it)}
                               />
                             )}
@@ -586,11 +590,13 @@ function Soumission({
   s,
   nouveau,
   now,
+  courrielApi,
   onRetirer,
 }: {
   s: NotifSoumission;
   nouveau: boolean;
   now: number;
+  courrielApi: boolean;
   onRetirer: () => void;
 }) {
   const pub = s.pub;
@@ -642,8 +648,21 @@ function Soumission({
             Appeler
           </a>
         )}
-        {s.courriel && (
-          <EcrireHostinger courriel={s.courriel} />
+        {(s.soumissionId || s.courriel) && (
+          <a
+            href={
+              courrielApi && s.soumissionId
+                ? `/api/admin/soumissions/${s.soumissionId}/courriel/hostinger`
+                : WEBMAIL_URL
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="admin-btn"
+            title="Ouvre le courriel dans le webmail Hostinger (info@technolot.ca), dans un nouvel onglet"
+          >
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+            Ouvrir dans Hostinger
+          </a>
         )}
         {s.soumissionId &&
           (s.lotId ? (

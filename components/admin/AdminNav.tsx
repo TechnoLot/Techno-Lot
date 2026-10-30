@@ -17,6 +17,7 @@ import {
   Package,
   Plus,
   Send,
+  ShieldCheck,
   ShoppingBag,
   Tag,
   Target,
@@ -80,6 +81,7 @@ const items: NavItem[] = [
     icon: Tag,
     children: [
       { href: "/admin/ventes-ebay", label: "Ventes eBay", icon: TrendingUp },
+      { href: "/admin/destruction-donnees", label: "Destruction des données", icon: ShieldCheck },
       { href: "/admin/ebay", label: "Description eBay", icon: ShoppingBag },
     ],
   },
@@ -207,7 +209,7 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
 
 function rowClass(active: boolean, nested = false) {
   return `nav-focus group relative flex w-full items-center rounded-[12px] text-left font-medium transition-colors duration-150 ${
-    nested ? "h-9 gap-2.5 px-2.5 text-[14px]" : "h-11 gap-3 px-1.5 text-[15px]"
+    nested ? "h-9 gap-2 px-2 text-[14px]" : "h-11 gap-3 px-1.5 text-[15px]"
   } ${active ? "text-[#0a0a0a]" : "text-[#cbd5e1] hover:bg-white/[0.05] hover:text-white"}`;
 }
 
@@ -236,7 +238,7 @@ function RowInner({
     : "motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-[3px]";
   if (nested) {
     return (
-      <span className={`relative flex min-w-0 flex-1 items-center gap-2.5 ${shift}`}>
+      <span className={`relative flex min-w-0 flex-1 items-center gap-2 ${shift}`}>
         <Icon
           className={`h-4 w-4 shrink-0 transition-colors duration-150 ${
             active ? "text-[#0a0a0a]" : "text-[#7c8aa3] group-hover:text-[#6bd63b]"
@@ -411,7 +413,7 @@ function NavGroup({
             transition={{ duration: 0.24, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="overflow-hidden"
           >
-            <ul className="relative ml-[21px] flex flex-col gap-0.5 py-1 pl-3 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:rounded-full before:bg-gradient-to-b before:from-white/15 before:via-white/10 before:to-transparent">
+            <ul className="relative ml-[21px] flex flex-col gap-0.5 py-1 pl-2 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:rounded-full before:bg-gradient-to-b before:from-white/15 before:via-white/10 before:to-transparent">
               {children.map((child) => (
                 <li key={child.href}>
                   <NavLink

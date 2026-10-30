@@ -1,10 +1,12 @@
 import { Inbox } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import PageHeader from "@/components/admin/PageHeader";
 import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
 import SoumissionsList from "@/components/admin/soumissions/SoumissionsList";
 import { formatCount } from "@/lib/admin/format";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { pageDepuisParam, paginer, resumePage } from "@/lib/admin/pagination";
 import {
   FILTRES_SOUMISSIONS,
@@ -38,12 +40,14 @@ function correspond(s: Soumission, q: string): boolean {
  * soumissions, remplie à chaque envoi en même temps que le courriel), avec
  * leur état (à traiter, lot créé) et les actions pour y répondre.
  */
-export default async function SoumissionsPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; statut?: string; page?: string };
-}) {
-  const { error, rows } = await fetchSoumissions(createClient());
+export default async function SoumissionsPage(
+  props: {
+    searchParams: Promise<{ q?: string; statut?: string; page?: string }>;
+  }
+) {
+  const ctx = await exigerAdminPage("/admin/soumissions");
+  const searchParams = await props.searchParams;
+  const { error, rows } = await fetchSoumissions(ctx.supabase);
 
   const now = new Date();
   const q = searchParams.q?.trim() ?? "";
@@ -82,7 +86,7 @@ export default async function SoumissionsPage({
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de lire les soumissions : {error}
+          Impossible de lire les soumissions. Réf. : {await journaliserErreur(error, "soumissions.lire", ctx)}
         </div>
       )}
 
@@ -107,7 +111,11 @@ export default async function SoumissionsPage({
             </div>
           ) : (
             <>
-              <SoumissionsList rows={pagination.items} now={now} />
+              <SoumissionsList
+                rows={pagination.items}
+                now={now}
+                courrielApi={isMailApiConfigured()}
+              />
               <div className="mt-8 flex flex-col items-center gap-2">
                 <Pagination page={pagination.page} pageCount={pagination.pageCount} />
                 <p className="text-[13px] text-admin-muted tabular-nums">

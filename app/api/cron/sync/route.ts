@@ -1,6 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { bearerCronValide } from "@/lib/securite/garde";
+import { clientServiceCron, refusCron, reponseServiceManquant } from "@/lib/admin/cron";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 import {
   adsSyncedRecently,
   isGoogleConfigured,
@@ -43,19 +46,16 @@ async function pruneLogs(supabase: SupabaseClient) {
  * personne n'est sur le site : commandes eBay (incrémentale) et stats pub
  * (aujourd'hui et hier ; `?days=30` pour la passe horaire). Chaque source est
  * sautée si elle a déjà été synchronisée il y a moins de 50 s (pages ouvertes).
- * Auth : `Authorization: Bearer $CRON_SECRET`. Écrit avec SUPABASE_SERVICE_ROLE_KEY.
+ * Auth : `Authorization: Bearer $CRON_SECRET` (comparé en temps constant ;
+ * refus journalisé `cron.refus`). Écrit avec SUPABASE_SERVICE_ROLE_KEY.
+ * POST seulement (pg_cron appelle `net.http_post`) : un GET ne doit jamais
+ * modifier l'état (synchros, ménage des journaux).
  */
-async function handle(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret || request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey) {
-    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY est requis côté serveur." }, { status: 503 });
-  }
-  const supabase = createServiceClient(url, serviceKey, { auth: { persistSession: false } });
+export async function POST(request: Request) {
+  if (!bearerCronValide(request)) return refusCron(request);
+  const supabase = clientServiceCron();
+  if (!supabase) return reponseServiceManquant();
+  const requestId = randomUUID();
 
   const daysParam = Number(new URL(request.url).searchParams.get("days"));
   const days = Number.isFinite(daysParam) && daysParam > 0 ? Math.min(Math.floor(daysParam), 365) : LIVE_DAYS;
@@ -77,10 +77,15 @@ async function handle(request: Request) {
 
   if (full) await pruneLogs(supabase);
 
-  const out = (r: PromiseSettledResult<unknown>) =>
-    r.status === "fulfilled" ? r.value : { ok: false, message: String(r.reason).slice(0, 300) };
-  return NextResponse.json({ days, ebay: out(ebay), ads: out(ads) });
+  // Raison d'un échec inattendu : au journal seulement (la réponse est copiée
+  // dans net._http_response par pg_cron).
+  const out = async (r: PromiseSettledResult<unknown>, source: string) => {
+    if (r.status === "fulfilled") return r.value;
+    const ref = await journaliserErreur(r.reason, `cron.sync.${source}`, { requestId }, { request, durable: false });
+    return { ok: false, message: avecRef("Synchronisation impossible.", ref) };
+  };
+  return NextResponse.json(
+    { days, ebay: await out(ebay, "ebay"), ads: await out(ads, "pubs") },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
-
-export const GET = handle;
-export const POST = handle;

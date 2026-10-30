@@ -1,0 +1,36 @@
+import { NextResponse } from "next/server";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { WEBMAIL_URL } from "@/lib/admin/config";
+import { fetchSoumission } from "@/lib/admin/soumissions";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
+import { lienWebmail } from "@/lib/hostinger/courriel-regles";
+import { trouverCourrielSoumission } from "@/lib/hostinger/mail";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function rediriger(url: string) {
+  return NextResponse.redirect(url, { status: 302, headers: { "Cache-Control": "no-store" } });
+}
+
+/**
+ * GET : « Ouvrir dans Hostinger » → redirection vers le webmail, ouvert
+ * directement sur le courriel de cette demande. Clé absente, demande ou
+ * courriel introuvable, erreur de Hostinger : boîte de réception.
+ */
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  const { supabase } = garde;
+  const params = await props.params;
+
+  if (!isMailApiConfigured()) return rediriger(WEBMAIL_URL);
+  try {
+    const soumission = await fetchSoumission(supabase, params.id);
+    if (!soumission) return rediriger(WEBMAIL_URL);
+    const lieu = await trouverCourrielSoumission(soumission);
+    return rediriger(lieu ? lienWebmail(lieu.dossier, lieu.uid) : WEBMAIL_URL);
+  } catch {
+    return rediriger(WEBMAIL_URL);
+  }
+}

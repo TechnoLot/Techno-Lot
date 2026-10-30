@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import LotForm from "@/components/admin/LotForm";
 import DeleteLotButton from "@/components/admin/DeleteLotButton";
 import StatusPill from "@/components/admin/StatusPill";
@@ -10,12 +10,13 @@ import type { Lot } from "@/lib/admin/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditLotPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const supabase = createClient();
+export default async function EditLotPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const { supabase } = await exigerAdminPage("/admin/lots");
+  const params = await props.params;
   const { data, error } = await supabase
     .from("lots")
     .select("*")

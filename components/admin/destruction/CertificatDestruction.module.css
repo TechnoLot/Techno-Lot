@@ -1,0 +1,368 @@
+/* Certificat de destruction des données : feuille Lettre 8,5 × 11 po (816 × 1056 px CSS).
+   Couleurs fixes, indépendantes du thème clair/sombre de l'admin : c'est le papier remis au client. */
+
+.page {
+  --ink: #0a0a0a;
+  --texte: #1d2420;
+  --muted: #536058;
+  --faint: #7f8b84;
+  --ligne: #d9e3d5;
+  --emerald: #2b7a10;
+  --leaf: #2e8b14;
+  --deep: #0e3a20;
+  --vivid: #6bd63b;
+  --mint: #e8f5e0;
+  --encre: #1b2b63;
+  --display: var(--font-display), "Chakra Petch", sans-serif;
+
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 816px;
+  height: 1056px;
+  overflow: hidden;
+  padding: 46px 56px 30px;
+  background: #fff;
+  color: var(--texte);
+  font: 400 13px/1.55 var(--font-sans), Inter, system-ui, sans-serif;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.page * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Bande verte en tête, comme le certificat illustré sur l'accueil */
+.bande {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 10px;
+  background: linear-gradient(90deg, var(--deep) 0%, var(--leaf) 55%, var(--vivid) 100%);
+}
+
+/* Rosace guillochée (motif de papier de sécurité), très pâle, en haut à droite */
+.guilloche {
+  position: absolute;
+  z-index: -1;
+  top: -40px;
+  right: -250px;
+  width: 640px;
+  height: 640px;
+}
+
+.etiquette {
+  font: 600 10.5px/1.2 var(--display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--emerald);
+}
+
+/* « no » : le o reste minuscule et surélevé, même dans une étiquette en capitales */
+.page sup {
+  font-size: 0.75em;
+  line-height: 0;
+  vertical-align: 0.4em;
+  text-transform: none;
+}
+
+/* Valeur pas encore saisie (aperçu seulement : le téléchargement exige les champs requis) */
+.vide {
+  color: #b4bfb8;
+}
+
+/* En-tête : logo + numéro */
+.entete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.logo {
+  display: block;
+  width: auto;
+  height: 46px;
+}
+.numero {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 4px;
+  text-align: right;
+}
+.numeroValeur {
+  font: 700 19px/1.15 var(--display);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+/* Titre */
+.titre {
+  margin-top: 52px;
+}
+.titre h1 {
+  font: 700 66px/0.95 var(--display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.titre p {
+  margin-top: 10px;
+  font: 600 21px/1.2 var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--emerald);
+}
+.titreBarre {
+  display: block;
+  width: 56px;
+  height: 4px;
+  margin-top: 20px;
+  border-radius: 2px;
+  background: var(--vivid);
+}
+
+.intro {
+  max-width: 640px;
+  margin-top: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* Client + date de la destruction */
+.haut {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 20px;
+  align-items: stretch;
+  margin-top: 32px;
+}
+.client {
+  min-width: 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--ligne);
+}
+.compagnie {
+  margin-top: 8px;
+  font: 700 28px/1.12 var(--display);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.adresse {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.materiel {
+  margin-top: 10px;
+  font-size: 13px;
+}
+.cle {
+  color: var(--muted);
+}
+.date {
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--mint);
+}
+.jour {
+  margin-top: 12px;
+  font: 700 34px/1 var(--display);
+  color: var(--deep);
+}
+.jourDate {
+  margin-top: 6px;
+  font: 600 18px/1.2 var(--display);
+  color: var(--ink);
+}
+
+/* Appareils traités : nombre + certification KillDisk */
+.preuve {
+  margin-top: 30px;
+  padding: 26px 30px 28px;
+  border-radius: 14px;
+  background: var(--deep);
+  color: #fff;
+}
+.preuveTete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.preuve .etiquette {
+  color: var(--vivid);
+}
+.ico {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: var(--vivid);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.preuveCorps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 28px;
+  margin-top: 16px;
+}
+.compte {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.chiffre {
+  font: 700 84px/1 var(--display);
+  letter-spacing: -0.01em;
+  color: var(--vivid);
+}
+.quoi {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.certif {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-left: 28px;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+.coche {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--vivid);
+}
+.coche svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--deep);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.certif strong {
+  display: block;
+  font: 700 17px/1.25 var(--display);
+  color: #fff;
+}
+.certif small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* Bas de page : déclaration, signature, sceau */
+.bas {
+  margin-top: auto;
+  padding-top: 22px;
+  border-top: 1px solid var(--ligne);
+}
+.declaration {
+  max-width: 640px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.signature {
+  display: grid;
+  grid-template-columns: 350px 1fr auto;
+  align-items: end;
+  gap: 24px;
+  margin-top: 8px;
+}
+.script {
+  margin: 0 0 -8px 10px;
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--encre);
+  white-space: nowrap;
+  transform: rotate(-4deg);
+  transform-origin: left bottom;
+}
+.trait {
+  display: block;
+  height: 1px;
+  background: rgba(10, 10, 10, 0.45);
+}
+.nom {
+  margin-top: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fonction {
+  font-size: 12px;
+  color: var(--muted);
+}
+.role {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--faint);
+}
+.emis {
+  padding-bottom: 6px;
+}
+.emisDate {
+  margin-top: 6px;
+  font: 600 16px var(--display);
+  color: var(--ink);
+}
+/* Police et couleur du texte du sceau posées sur le <svg> lui-même : l'export copie
+   l'intérieur d'un SVG tel quel, sans les styles de classe de ses éléments. */
+.sceau {
+  display: block;
+  width: 146px;
+  height: 146px;
+  margin: 0 -4px -4px 0;
+  transform: rotate(-9deg);
+  font-family: var(--display);
+  font-weight: 700;
+  fill: #e8f5e0;
+}
+
+/* Microtexte : ligne de texte minuscule, qui se lit comme un filet */
+.microtexte {
+  height: 7px;
+  margin-top: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+  font: 600 5.6px/7px var(--display);
+  letter-spacing: 0.14em;
+  color: var(--leaf);
+  opacity: 0.7;
+}
+.pied {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.pied strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+.droite {
+  text-align: right;
+}

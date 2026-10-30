@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import LoginForm from "@/components/admin/LoginForm";
 import { getAdminEmails } from "@/lib/admin/config";
+import { messageErreurConnexion } from "@/lib/admin/messages-connexion";
+import { cheminInterne } from "@/lib/securite/chemin-interne";
 
 export const metadata: Metadata = {
   title: "Connexion — Admin",
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: { next?: string; error?: string };
-}) {
+export default async function LoginPage(
+  props: {
+    searchParams: Promise<{ next?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const adminEmails = getAdminEmails();
   const target = adminEmails[0] ?? "info@technolot.ca";
 
@@ -39,8 +42,8 @@ export default function LoginPage({
           <div className="mt-7">
             <LoginForm
               email={target}
-              next={searchParams.next ?? "/admin"}
-              initialError={searchParams.error}
+              next={cheminInterne(searchParams.next)}
+              initialError={messageErreurConnexion(searchParams.error)}
             />
           </div>
         </div>
