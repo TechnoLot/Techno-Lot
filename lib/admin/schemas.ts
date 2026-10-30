@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { courriel, dateIso, montant, telephone, texte, urlHttps, uuid } from "@/lib/securite/schemas";
+import {
+  MAX_CORPS,
+  MAX_DESTINATAIRES,
+  MAX_OBJET,
+  MAX_TEXTE_DESTINATAIRES,
+} from "@/lib/crm/envoi-en-gros";
 
 /**
  * Schémas de validation serveur de l'admin (check 06) : lots, CRM,
@@ -164,6 +170,55 @@ export const LIBELLES_CRM: Record<string, string> = {
   subject: "Sujet",
   body: "Corps",
   is_active: "Actif",
+};
+
+// --- Envoi en gros (CRM) ----------------------------------------------------------
+
+/**
+ * Texte brut des destinataires (collé ou CSV importé), 100 000 caractères au
+ * plus ; le serveur le réanalyse en entier (lib/crm/envoi-en-gros.ts), qui
+ * borne aussi les lignes utiles (1 000) et les destinataires (500).
+ */
+const texteDestinataires = z
+  .string()
+  .max(MAX_TEXTE_DESTINATAIRES, "Liste trop longue (100 000 caractères au plus) : découpe-la.")
+  .refine((v) => v.trim() !== "", "Colle une liste d'adresses ou importe un CSV.");
+
+/** Objet sur une seule ligne (sauts de ligne ramenés à une espace), 1 à 200 caractères. */
+const objetEnvoi = z
+  .string()
+  .max(2_000)
+  .transform((v) => v.replace(/\s+/g, " ").trim())
+  .pipe(z.string().min(1, "Objet requis.").max(MAX_OBJET, `Objet trop long (${MAX_OBJET} caractères au plus).`));
+
+const champsEnvoiEnGros = {
+  destinataires: texteDestinataires,
+  objet: objetEnvoi,
+  corps: texte(1, MAX_CORPS),
+};
+
+/** « Vérifier la liste » (lecture seule). */
+export const verificationEnGrosSchema = z.strictObject(champsEnvoiEnGros);
+
+/**
+ * Un lot de l'envoi en gros. `nombre` = destinataires confirmés à la saisie ;
+ * `dejaEnvoyes` = envoyés par les lots précédents de ce même envoi (le serveur
+ * exige prêts + déjà envoyés = nombre).
+ */
+export const lotEnGrosSchema = z.strictObject({
+  ...champsEnvoiEnGros,
+  confirme: z.literal(true, "Coche la case de confirmation avant d'envoyer."),
+  nombre: z.number().int().min(1).max(MAX_DESTINATAIRES),
+  dejaEnvoyes: z.number().int().min(0).max(MAX_DESTINATAIRES),
+});
+
+export const LIBELLES_ENVOI_EN_GROS: Record<string, string> = {
+  destinataires: "Destinataires",
+  objet: "Objet",
+  corps: "Message",
+  confirme: "Confirmation",
+  nombre: "Nombre de destinataires",
+  dejaEnvoyes: "Progression",
 };
 
 // --- Calculatrice ---------------------------------------------------------------

@@ -14,6 +14,7 @@ import {
   type Contact,
   type OutreachActivity,
 } from "@/lib/crm/types";
+import { OUTCOME_ENVOI_EN_GROS } from "@/lib/crm/envoi-en-gros";
 
 const ICONS: Record<ActivityType, LucideIcon> = {
   call_logged: PhoneCall,
@@ -66,10 +67,14 @@ export default function ActivityTimeline({
   return (
     <ol className="flex flex-col">
       {activities.map((a, i) => {
-        const Icon = ICONS[a.activity_type];
+        // Envoi en gros : note technique (manual_note) affichée comme un courriel envoyé.
+        const enGros = a.activity_type === "manual_note" && a.outcome === OUTCOME_ENVOI_EN_GROS;
+        const Icon = enGros ? ICONS.intro_email_sent : ICONS[a.activity_type];
+        const iconStyle = enGros ? ICON_STYLES.intro_email_sent : ICON_STYLES[a.activity_type];
         const contact = contactsById?.[a.contact_id];
-        const label =
-          a.activity_type === "followup_sent" && a.sequence_step
+        const label = enGros
+          ? "Courriel envoyé (envoi en gros)"
+          : a.activity_type === "followup_sent" && a.sequence_step
             ? `Relance ${a.sequence_step} envoyée`
             : ACTIVITY_LABELS[a.activity_type];
         return (
@@ -81,7 +86,7 @@ export default function ActivityTimeline({
               />
             )}
             <span
-              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${ICON_STYLES[a.activity_type]}`}
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${iconStyle}`}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />
             </span>
@@ -97,7 +102,7 @@ export default function ActivityTimeline({
                   Objet : {a.subject}
                 </p>
               )}
-              {a.outcome && (
+              {a.outcome && !enGros && (
                 <p className="mt-0.5 text-xs text-admin-muted">{a.outcome}</p>
               )}
               <p className="mt-0.5 text-xs text-admin-faint">

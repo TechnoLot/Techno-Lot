@@ -1,5 +1,11 @@
-import { Resend } from "resend";
+import { createHash } from "node:crypto";
+import { Resend, type CreateEmailOptions } from "resend";
 import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
+import { decouperEnLots, TAILLE_LOT } from "@/lib/crm/envoi-en-gros";
+
+// Moteur des variables : module pur (aussi utilisé par le navigateur pour
+// l'envoi en gros), ré-exporté ici pour les appelants existants.
+export { renderTemplate } from "@/lib/crm/envoi-en-gros";
 
 function escapeHtml(value: string): string {
   return value
@@ -7,33 +13,6 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-/**
- * Remplace les variables {{prenom}}, {{nom}}, {{compagnie}}, {{titre}}
- * d'un modèle par les valeurs du contact. Insensible aux espaces
- * ({{ prenom }}) et aux accents manquants.
- */
-export function renderTemplate(
-  text: string,
-  vars: { prenom: string; nom: string; compagnie: string; titre: string },
-): string {
-  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, key: string) => {
-    switch (key.toLowerCase()) {
-      case "prenom":
-      case "prénom":
-        return vars.prenom;
-      case "nom":
-        return vars.nom;
-      case "compagnie":
-      case "entreprise":
-        return vars.compagnie;
-      case "titre":
-        return vars.titre;
-      default:
-        return match;
-    }
-  });
 }
 
 /**
@@ -177,6 +156,53 @@ Demander une soumission : https://technolot.ca/soumission
 ${mention}`;
 }
 
+type AdressesEnvoi = { fromAddress: string; bccAddress: string };
+
+function adressesEnvoi(): AdressesEnvoi {
+  return {
+    fromAddress: process.env.FROM_EMAIL ?? "info@technolot.ca",
+    bccAddress: process.env.CONTACT_EMAIL ?? "info@technolot.ca",
+  };
+}
+
+/**
+ * Éléments d'un courriel de prospection, identiques pour l'envoi unitaire
+ * (sendProspectEmail) et l'envoi groupé (sendProspectBatch) : expéditeur,
+ * destinataire seul dans `to`, reply-to, signature, mention de désabonnement
+ * et en-tête List-Unsubscribe. Copie cachée à la boîte générale seulement si
+ * `copieCachee` : Resend compte chaque copie comme un envoi de plus dans son
+ * quota, d'où son absence dans l'envoi en gros.
+ */
+function courrielProspect(
+  opts: { to: string; subject: string; body: string; replyTo?: string | null },
+  { fromAddress, bccAddress }: AdressesEnvoi,
+  copieCachee: boolean,
+): CreateEmailOptions {
+  // LCAP : les demandes de désabonnement arrivent dans la boîte générale
+  // (en-tête List-Unsubscribe, plus la mention sous la signature si le
+  // modèle n'a pas déjà la sienne).
+  const desabonnement = mentionneDesabonnement(opts.body) ? null : bccAddress;
+  return {
+    from: `Techno Lot <${fromAddress}>`,
+    to: [opts.to],
+    bcc: copieCachee && bccAddress !== opts.to ? [bccAddress] : undefined,
+    replyTo: opts.replyTo ? [opts.replyTo] : undefined,
+    subject: opts.subject,
+    html: wrapHtml(opts.body, opts.subject, desabonnement),
+    text: wrapText(opts.body, desabonnement),
+    headers: { "List-Unsubscribe": `<mailto:${bccAddress}?subject=desabonner>` },
+  };
+}
+
+/**
+ * Version texte d'un message, telle qu'envoyée (signature et mention de
+ * désabonnement comprises) : aperçu de l'envoi en gros.
+ */
+export function apercuTexteProspect(body: string): string {
+  const { bccAddress } = adressesEnvoi();
+  return wrapText(body, mentionneDesabonnement(body) ? null : bccAddress);
+}
+
 /**
  * Envoie un courriel de prospection (modèle rendu) via Resend, avec la
  * signature Techno Lot et la mention de désabonnement (LCAP) ajoutées
@@ -191,6 +217,8 @@ export async function sendProspectEmail(opts: {
   replyTo?: string | null;
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
+  /** Copie cachée à la boîte générale (oui par défaut ; non pour le test de l'envoi en gros). */
+  copieCachee?: boolean;
 }): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -200,25 +228,11 @@ export async function sendProspectEmail(opts: {
     };
   }
 
-  const fromAddress = process.env.FROM_EMAIL ?? "info@technolot.ca";
-  const bccAddress = process.env.CONTACT_EMAIL ?? "info@technolot.ca";
-  // LCAP : les demandes de désabonnement arrivent dans la boîte générale
-  // (en-tête List-Unsubscribe, plus la mention sous la signature si le
-  // modèle n'a pas déjà la sienne).
-  const desabonnement = mentionneDesabonnement(opts.body) ? null : bccAddress;
+  const adresses = adressesEnvoi();
 
   try {
     const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send({
-      from: `Techno Lot <${fromAddress}>`,
-      to: [opts.to],
-      bcc: bccAddress !== opts.to ? [bccAddress] : undefined,
-      replyTo: opts.replyTo ? [opts.replyTo] : undefined,
-      subject: opts.subject,
-      html: wrapHtml(opts.body, opts.subject, desabonnement),
-      text: wrapText(opts.body, desabonnement),
-      headers: { "List-Unsubscribe": `<mailto:${bccAddress}?subject=desabonner>` },
-    });
+    const { data, error } = await resend.emails.send(courrielProspect(opts, adresses, opts.copieCachee ?? true));
     if (error) {
       // Détail de Resend au journal seulement (check 20).
       const ref = await journaliserErreur(error, "crm.resend", { requestId: opts.requestId });
@@ -229,4 +243,142 @@ export async function sendProspectEmail(opts: {
     const ref = await journaliserErreur(err, "crm.envoi", { requestId: opts.requestId });
     return { ok: false, error: avecRef("Erreur inattendue à l'envoi.", ref) };
   }
+}
+
+// --- Envoi groupé (envoi en gros du CRM) ------------------------------------------------
+
+export type CourrielGroupe = { to: string; subject: string; body: string };
+
+/** Pourquoi un envoi groupé s'est arrêté avant la fin. */
+export type MotifArret = "quota_quotidien" | "quota_mensuel" | "debit" | "configuration" | "erreur";
+
+export type BilanEnvoiGroupe = {
+  /** Courriels acceptés par Resend ; `index` = position dans `courriels`. */
+  envoyes: { index: number; to: string; id: string | null }[];
+  /** Lots acceptés (100 courriels au plus chacun). */
+  lotsEnvoyes: number;
+  /** Arrêt avant la fin : lot refusé en entier, lots suivants jamais tentés. */
+  arret: { motif: MotifArret; message: string; ref?: string } | null;
+};
+
+const MESSAGES_ARRET: Record<MotifArret, string> = {
+  quota_quotidien:
+    "Quota quotidien de Resend atteint : l'envoi s'est arrêté. Relance demain avec la même liste ; les adresses qui ont déjà reçu ce courriel seront exclues automatiquement.",
+  quota_mensuel:
+    "Quota mensuel de Resend atteint : l'envoi s'est arrêté. Relance après le renouvellement du forfait (ou augmente-le), avec la même liste ; les adresses déjà servies seront exclues.",
+  debit: "Resend limite le nombre d'envois à la seconde : l'envoi s'est arrêté. Réessaie dans une minute avec la même liste.",
+  configuration: "Service de courriel non configuré (RESEND_API_KEY manquante).",
+  erreur: "L'envoi du lot a échoué.",
+};
+
+/**
+ * Motif d'une erreur de Resend. Le type (`name`, ex. « daily_quota_exceeded »,
+ * HTTP 429) n'est pas dans les types du SDK : lu à l'exécution, avec repli sur
+ * le statut et le message pour un 429 sans type reconnu.
+ */
+export function motifErreurResend(erreur: unknown): Exclude<MotifArret, "configuration"> {
+  const e = (erreur && typeof erreur === "object" ? erreur : {}) as {
+    name?: unknown;
+    message?: unknown;
+    statusCode?: unknown;
+  };
+  const nom = typeof e.name === "string" ? e.name : "";
+  if (nom === "daily_quota_exceeded") return "quota_quotidien";
+  if (nom === "monthly_quota_exceeded") return "quota_mensuel";
+  if (nom === "rate_limit_exceeded") return "debit";
+  if (e.statusCode === 429) {
+    const message = typeof e.message === "string" ? e.message : "";
+    if (/daily|quotidien/i.test(message)) return "quota_quotidien";
+    if (/month|mensuel/i.test(message)) return "quota_mensuel";
+    return "debit";
+  }
+  return "erreur";
+}
+
+/**
+ * Clé d'idempotence d'un lot (en-tête Idempotency-Key, gardée 24 h par
+ * Resend) : même lot, même jour UTC (remise à zéro du quota) → même clé, et
+ * Resend renvoie la réponse d'origine sans renvoyer les courriels (requête
+ * rejouée après une coupure réseau). Deux envois simultanés du même lot :
+ * le second est refusé (409).
+ */
+function cleIdempotence(lot: readonly CreateEmailOptions[]): string {
+  const jour = new Date().toISOString().slice(0, 10);
+  const empreinte = createHash("sha256").update(JSON.stringify(lot)).digest("hex");
+  return `envoi-en-gros/${jour}/${empreinte}`;
+}
+
+const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Envoie des courriels de prospection par l'envoi groupé de Resend, par
+ * tranches de 100 (une requête par tranche). Chaque courriel a les éléments
+ * de sendProspectEmail (courrielProspect) : son propre destinataire (aucun ne
+ * voit les autres), signature, mention et en-tête de désabonnement. Pas de
+ * copie cachée à la boîte générale : chaque copie compterait comme un envoi
+ * de plus dans le quota de Resend (la trace de l'envoi est dans la fiche du
+ * CRM). Pas de pièce jointe (non prise en charge par l'envoi groupé).
+ *
+ * Le SDK (resend 4.8) n'offre pas la validation permissive : une seule
+ * adresse refusée fait échouer toute la tranche, d'où la validation préalable
+ * de chaque adresse (lib/crm/envoi-en-gros.ts). Une tranche refusée arrête
+ * l'envoi : les suivantes ne sont jamais tentées (quota quotidien ou mensuel
+ * compris) ; une limite de débit est réessayée une fois. Détail de Resend au
+ * journal seulement. Vérifier les désabonnements avant d'appeler.
+ */
+export async function sendProspectBatch(opts: {
+  courriels: readonly CourrielGroupe[];
+  replyTo?: string | null;
+  /** Référence de la requête (journal) ; une nouvelle sinon. */
+  requestId?: string;
+  /** Pause avant de réessayer après une limite de débit, en ms (tests : 0). */
+  pauseDebitMs?: number;
+}): Promise<BilanEnvoiGroupe> {
+  const bilan: BilanEnvoiGroupe = { envoyes: [], lotsEnvoyes: 0, arret: null };
+  if (opts.courriels.length === 0) return bilan;
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    bilan.arret = { motif: "configuration", message: MESSAGES_ARRET.configuration };
+    return bilan;
+  }
+
+  const adresses = adressesEnvoi();
+  const resend = new Resend(apiKey);
+  const lots = decouperEnLots(
+    opts.courriels.map((courriel, index) => ({ courriel, index })),
+    TAILLE_LOT,
+  );
+
+  for (const lot of lots) {
+    let erreur: unknown = null;
+    let ids: ({ id?: string } | undefined)[] = [];
+    try {
+      const charge = lot.map(({ courriel }) => courrielProspect({ ...courriel, replyTo: opts.replyTo }, adresses, false));
+      const options = { idempotencyKey: cleIdempotence(charge) };
+      let reponse = await resend.batch.send(charge, options);
+      if (reponse.error && motifErreurResend(reponse.error) === "debit") {
+        await pause(opts.pauseDebitMs ?? 1_100);
+        reponse = await resend.batch.send(charge, options);
+      }
+      if (reponse.error) erreur = reponse.error;
+      else ids = reponse.data?.data ?? [];
+    } catch (err) {
+      erreur = err ?? new Error("Échec de l'envoi groupé.");
+    }
+
+    if (erreur) {
+      const motif = motifErreurResend(erreur);
+      // Détail de Resend au journal seulement (check 20).
+      const ref = await journaliserErreur(erreur, "crm.envoi_gros.resend", { requestId: opts.requestId });
+      bilan.arret = { motif, message: avecRef(MESSAGES_ARRET[motif], ref), ref };
+      return bilan;
+    }
+
+    lot.forEach(({ courriel, index }, i) => {
+      bilan.envoyes.push({ index, to: courriel.to, id: ids[i]?.id ?? null });
+    });
+    bilan.lotsEnvoyes++;
+  }
+  return bilan;
 }
