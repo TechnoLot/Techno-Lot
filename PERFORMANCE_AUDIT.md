@@ -137,7 +137,7 @@ Entre parenthèses : le nombre de pages conformes sur 13, avant → après.
 Pendant la phase 3, `dev` a reçu 34 commits d'une autre session : Next 15.5 et React 19, une politique de sécurité du contenu (CSP) imposée, la double authentification de l'admin et des tests de sécurité. Les optimisations ont été fusionnées dans cette version, puis tout a été vérifié de nouveau avec la même base des deux côtés : `dev` (`051decf`) contre `dev` avec les optimisations (`d41ab3f`).
 
 - **Fusion** : un seul conflit (`lib/posts.ts`), réglé en reportant P34 dans le nouveau `lib/blog-sanitize.ts`. Une correction de type pour React 19 dans la barre de chargement (P48). Types, tests de `dev` (590), contrôle des gardes de l'admin et build : OK.
-- **Commit arrivé pendant les mesures** : le plafond quotidien du formulaire (`b1f0f34`) a été fusionné ensuite. Il ne touche que le serveur, aucune page mesurée.
+- **Commits arrivés pendant les mesures** : le plafond quotidien du formulaire (`b1f0f34`) et la nouvelle présentation du courriel des soumissions (`13b5d8f`) ont été fusionnés ensuite, types et tests repassés. Ils ne touchent que le serveur, aucune page mesurée.
 - **Captures** : 50 adresses en 3 formats (113 contrôles), **0 anomalie** avec les optimisations. Les écarts visuels sont exactement ceux de la campagne principale : mêmes captures, mêmes zones, mêmes pourcentages (héros à l'horizontale P50, images du blogue, étapes de Prise en charge). L'accueil sur ordinateur, en français et en anglais, est identique au pixel près (écart maximal 0,005 %)⁶.
 - **Mesures**, `dev` → **`dev` avec les optimisations** :
 
