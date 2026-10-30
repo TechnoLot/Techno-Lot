@@ -400,17 +400,46 @@ export async function POST(request: Request) {
     }
   }
 
-  // 7. Courriel à info@ : chaque valeur échappée, sujet sur une seule ligne.
-  const html = `
-    <h2>Nouvelle soumission — technolot.ca</h2>
-    <p><strong>Nom :</strong> ${escapeHtml(nom)}</p>
-    <p><strong>Courriel :</strong> ${escapeHtml(courriel)}</p>
-    <p><strong>Téléphone :</strong> ${escapeHtml(telephone)}</p>
-    <p><strong>Message :</strong><br/>${escapeHtml(message || "(aucun message)").replace(/\n/g, "<br/>")}</p>
-    <p><strong>Pièces jointes :</strong> ${
-      pieces.length > 0 ? pieces.map((p) => escapeHtml(p.nom)).join(", ") : "aucune"
-    }</p>
-  `;
+  // 7. Courriel à info@ : mise en page soignée, compatible clients courriel
+  //    (tableaux + styles en ligne). Chaque valeur utilisateur est échappée ;
+  //    le logo est servi par le site (SITE_URL), le téléphone et le courriel
+  //    sont cliquables (tel: / mailto:), avec un bouton « Répondre au client ».
+  const baseSite = (process.env.SITE_URL || "https://www.technolot.ca").replace(/\/$/, "");
+  const telLien = telephone.replace(/[^\d+]/g, "");
+  const piecesHtml =
+    pieces.length > 0
+      ? pieces
+          .map(
+            (p) =>
+              `<span style="display:inline-block;background:#eaf6e3;color:#1f5f0c;border-radius:6px;padding:4px 10px;margin:2px 4px 2px 0;font-size:14px">📎 ${escapeHtml(p.nom)}</span>`,
+          )
+          .join("")
+      : '<span style="color:#5f6b62">aucune</span>';
+  const rangee = (etiquette: string, valeur: string, haut = false) =>
+    `<tr><td style="padding:11px 0;border-top:1px solid #e3eadf;color:#5f6b62;font-size:13px;width:116px;vertical-align:${haut ? "top" : "middle"}">${etiquette}</td>` +
+    `<td style="padding:11px 0;border-top:1px solid #e3eadf;color:#0a0a0a;font-size:15px;vertical-align:${haut ? "top" : "middle"}">${valeur}</td></tr>`;
+  const html =
+    `<div style="background:#f4f7f2;padding:24px 12px;font-family:Arial,Helvetica,sans-serif">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto">` +
+    `<tr><td style="background:#257a10;height:6px;line-height:6px;font-size:0;border-radius:12px 12px 0 0">&nbsp;</td></tr>` +
+    `<tr><td style="background:#ffffff;border:1px solid #e3eadf;border-top:0;border-radius:0 0 12px 12px;padding:28px">` +
+    `<p style="margin:0 0 16px;text-align:center"><img src="${baseSite}/logo-clair.png" alt="Techno Lot" height="40" style="height:40px;width:auto"></p>` +
+    `<h1 style="margin:0 0 4px;font-size:21px;color:#0a0a0a;text-align:center">Nouvelle soumission</h1>` +
+    `<p style="margin:0 0 20px;font-size:13px;color:#5f6b62;text-align:center">Reçue depuis technolot.ca</p>` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">` +
+    rangee("Nom", `<strong>${escapeHtml(nom)}</strong>`) +
+    rangee("Courriel", `<a href="mailto:${escapeHtml(courriel)}" style="color:#257a10;text-decoration:none">${escapeHtml(courriel)}</a>`) +
+    rangee("Téléphone", `<a href="tel:${telLien}" style="color:#257a10;text-decoration:none">${escapeHtml(telephone)}</a>`) +
+    rangee("Message", escapeHtml(message || "(aucun message)").replace(/\n/g, "<br/>"), true) +
+    `<tr><td style="padding:11px 0;border-top:1px solid #e3eadf;border-bottom:1px solid #e3eadf;color:#5f6b62;font-size:13px;vertical-align:top">Pièces jointes</td>` +
+    `<td style="padding:11px 0;border-top:1px solid #e3eadf;border-bottom:1px solid #e3eadf;vertical-align:top">${piecesHtml}</td></tr>` +
+    `</table>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px auto 2px"><tr>` +
+    `<td style="background:#257a10;border-radius:999px"><a href="mailto:${escapeHtml(courriel)}" style="display:inline-block;padding:13px 30px;color:#ffffff;font-size:15px;font-weight:bold;text-decoration:none">Répondre au client →</a></td>` +
+    `</tr></table>` +
+    `</td></tr>` +
+    `<tr><td style="padding:14px 8px 0;text-align:center;font-size:12px;color:#8c99ad">Techno Lot · Rachat de lots informatiques au Québec</td></tr>` +
+    `</table></div>`;
 
   try {
     const resend = new Resend(apiKey);
