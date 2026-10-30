@@ -8,13 +8,13 @@ const content = {
   fr: {
     title: "Obtenez une offre pour votre lot",
     intro:
-      "Décrivez votre matériel en trois étapes. Nous vous répondons dans un délai de 24 heures, et le ramassage est gratuit partout au Québec.",
+      "Décrivez votre matériel en deux étapes. Nous vous répondons dans un délai de 24 heures, et le ramassage est gratuit partout au Québec.",
     formLabel: "Formulaire de soumission",
   },
   en: {
     title: "Get an offer for your lot",
     intro:
-      "Describe your equipment in three steps. We get back to you within 24 hours, and pickup is free anywhere in Québec.",
+      "Describe your equipment in two steps. We get back to you within 24 hours, and pickup is free anywhere in Québec.",
     formLabel: "Quote request form",
   },
 };

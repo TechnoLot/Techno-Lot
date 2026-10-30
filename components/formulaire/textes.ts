@@ -48,7 +48,7 @@ const categoriesEn: Record<CategorieId, string> = {
 
 const fr = {
   categories: categoriesFr,
-  steps: ["Votre matériel", "Vos coordonnées", "Envoi"],
+  steps: ["Votre matériel", "Vos coordonnées"],
   stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`,
   progressLabel: "Progression de la soumission",
   next: "Continuer",
@@ -145,7 +145,7 @@ export type TextesFormulaire = typeof fr;
 
 const en: TextesFormulaire = {
   categories: categoriesEn,
-  steps: ["Your equipment", "Your details", "Send"],
+  steps: ["Your equipment", "Your details"],
   stepOf: (n, total) => `Step ${n} of ${total}`,
   progressLabel: "Request progress",
   next: "Continue",

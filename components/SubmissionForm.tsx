@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, CircleAlert, Loader2, Pencil, Send, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, CircleAlert, Loader2, Send, TriangleAlert } from "lucide-react";
 import { getDict, type Locale } from "@/lib/i18n";
 import { getAttribution, trackEvent } from "@/lib/tracking/attribution";
 import { trackLeadConversion } from "@/components/formulaire/conversion";
@@ -45,16 +45,16 @@ const ERREURS_HTTP: Record<Locale, Partial<Record<number, string>>> = {
     429: "Too many submissions in a short time. Please try again later or call us at 514-944-3939.",
   },
 };
-const DERNIERE = 2;
+const DERNIERE = 1;
 const VIDE: Valeurs = { nom: "", courriel: "", telephone: "", entreprise: "", ville: "", message: "" };
 
 /**
- * Formulaire de soumission en trois étapes (matériel → coordonnées → envoi).
+ * Formulaire de soumission en deux étapes (matériel → coordonnées + envoi).
  * Contrat inchangé avec /api/soumission : nom, courriel, telephone, message,
  * inventaire, photos, locale, tl_verif (piège à robots) et tl_attr
  * (attribution publicitaire, ajoutée au moment de l'envoi). Les catégories,
  * l'entreprise et la ville sont ajoutées au début de `message`.
- * Sans JavaScript, les trois étapes restent visibles et le formulaire se poste
+ * Sans JavaScript, les deux étapes restent visibles et le formulaire se poste
  * directement à l'API.
  */
 export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
@@ -193,21 +193,13 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   }
 
   function suivant() {
-    if (step === 0) {
-      if (tropLourd) {
-        filesInputRef.current?.querySelector<HTMLInputElement>("input[type=file]")?.focus();
-        return;
-      }
-      allerA(1);
-    } else if (step === 1) {
-      const bad = validerContact();
-      if (bad) {
-        // Focus après le rendu : le message d'erreur est alors lié au champ et lu avec lui.
-        setFocusChamp(bad);
-        return;
-      }
-      allerA(2);
+    // Une seule avancée : matériel → coordonnées (l'étape des coordonnées envoie directement).
+    if (step !== 0) return;
+    if (tropLourd) {
+      filesInputRef.current?.querySelector<HTMLInputElement>("input[type=file]")?.focus();
+      return;
     }
+    allerA(1);
   }
 
   // ------------------------------ Fichiers ------------------------------
@@ -590,84 +582,9 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
             {champ("entreprise", t.companyLabel, { autoComplete: "organization", placeholder: t.companyPlaceholder }, false)}
             {champ("ville", t.cityLabel, { autoComplete: "address-level2", placeholder: t.cityPlaceholder }, false)}
           </div>
-        </section>
-
-        {/* ----------------------------- 3. Envoi ----------------------------- */}
-        <section
-          aria-labelledby={id("h2")}
-          hidden={!visible(2)}
-          className="tlf-stage mt-8"
-          data-dir={enhanced && step === 2 ? dir : undefined}
-        >
-          <h2 id={id("h2")} ref={(el) => void (headingRefs.current[2] = el)} tabIndex={-1} className="tlf-stage-title">
-            {t.reviewTitle}
-          </h2>
-          <p className="tlf-stage-hint">{t.reviewHint}</p>
-
-          {enhanced && (
-            <dl className="tlf-review mt-6">
-              <div>
-                <dt>
-                  {t.reviewMaterial}
-                  <EditButton label={t.edit} section={t.reviewMaterial} onClick={() => allerA(0)} disabled={loading} />
-                </dt>
-                <dd>
-                  {choisies.length > 0 || autres.length > 0 ? (
-                    <ul className="space-y-0.5">
-                      {choisies.map((c) => (
-                        <li key={c}>
-                          {t.categories[c]} <span className="text-moss">·</span>{" "}
-                          <span className="font-semibold tabular-nums">{quantites[c] ?? t.qtyUnknown}</span>
-                        </li>
-                      ))}
-                      {autres.map((a) => (
-                        <li key={a.id}>
-                          {a.nom.trim() || t.otherUnnamed} <span className="text-moss">·</span>{" "}
-                          <span className="font-semibold tabular-nums">{a.qte ?? t.qtyUnknown}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="text-moss">{t.reviewNoMaterial}</span>
-                  )}
-                </dd>
-              </div>
-              {values.message.trim() && (
-                <div>
-                  <dt>{t.reviewDescription}</dt>
-                  <dd className="tlf-clamp">{values.message.trim()}</dd>
-                </div>
-              )}
-              <div>
-                <dt>{t.reviewFiles}</dt>
-                <dd>
-                  {fichiers.length > 0 ? (
-                    `${t.filesCount(fichiers.length)} · ${taille(totalTaille)}`
-                  ) : (
-                    <span className="text-moss">{t.reviewNoFiles}</span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt>
-                  {t.reviewContact}
-                  <EditButton label={t.edit} section={t.reviewContact} onClick={() => allerA(1)} disabled={loading} />
-                </dt>
-                <dd>
-                  <span className="font-semibold">{values.nom.trim()}</span>
-                  {values.entreprise.trim() && <span className="text-moss"> · {values.entreprise.trim()}</span>}
-                  <br />
-                  {values.courriel.trim()}
-                  <br />
-                  {values.telephone.trim()}
-                  {values.ville.trim() && <span className="text-moss"> · {values.ville.trim()}</span>}
-                </dd>
-              </div>
-            </dl>
-          )}
 
           {status === "error" && serverError && (
-            <div className="tlf-alert mt-5" role="alert">
+            <div className="tlf-alert mt-6" role="alert">
               <TriangleAlert className="h-4 w-4" aria-hidden="true" />
               <span>{serverError}</span>
             </div>
@@ -686,7 +603,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
           )}
           {/* Clés distinctes : React crée un autre bouton au lieu de passer le même de
               type=button à type=submit pendant le clic (le navigateur envoyait alors le
-              formulaire dès « Continuer », sans montrer le récapitulatif). */}
+              formulaire dès « Continuer », avant l'étape des coordonnées). */}
           {enhanced && step < DERNIERE ? (
             <button key="suivant" type="button" onClick={suivant} className="tl-btn tl-btn-md tl-btn-primary tlf-btn">
               {t.next}
@@ -730,25 +647,5 @@ function ErrorText({ id, children }: { id: string; children: ReactNode }) {
       <CircleAlert className="h-3.5 w-3.5" aria-hidden="true" />
       <span>{children}</span>
     </p>
-  );
-}
-
-function EditButton({
-  label,
-  section,
-  onClick,
-  disabled,
-}: {
-  label: string;
-  section: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button type="button" onClick={onClick} disabled={disabled} className="tlf-link normal-case tracking-normal">
-      <Pencil className="h-3 w-3" aria-hidden="true" />
-      {label}
-      <span className="sr-only"> — {section}</span>
-    </button>
   );
 }
