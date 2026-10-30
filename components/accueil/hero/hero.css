@@ -702,6 +702,33 @@
     display: none;
   }
 }
+/* Téléphone tenu à l'horizontale : le héros a la hauteur de l'écran (sans hauteur minimale) et
+   titre, sous-titre et boutons tiennent sous l'en-tête : espacements resserrés, logo réduit,
+   indicateur de défilement retiré (comme sur les petits écrans). Course d'épinglage inchangée. */
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  .hero-tl-sticky {
+    min-height: 0;
+  }
+  .hero-tl-stage {
+    padding-top: calc(var(--site-header-h, 112px) + 0.5rem);
+    padding-bottom: 0.75rem;
+  }
+  .hero-tl-logo {
+    width: 5rem;
+  }
+  .hero-tl-title {
+    margin-top: 0.625rem;
+  }
+  .hero-tl-sub {
+    margin-top: 0.5rem;
+  }
+  .hero-tl-ctas {
+    margin-top: 0.875rem;
+  }
+  .hero-tl-scroll {
+    display: none;
+  }
+}
 
 /* ───────────── Mouvement réduit : composition fixe ───────────── */
 
