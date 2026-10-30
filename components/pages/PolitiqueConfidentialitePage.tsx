@@ -161,7 +161,10 @@ const content: Record<
               <li>Supabase : hébergement de notre base de données ;</li>
               <li>Resend : envoi des courriels ;</li>
               <li>Hostinger : hébergement du site Web et de notre boîte de courriel ;</li>
-              <li>Anthropic : traitement de certains courriels par intelligence artificielle ;</li>
+              <li>
+                Anthropic : traitement de certains courriels par intelligence artificielle, pour en extraire les
+                informations utiles (ces données ne servent pas à entraîner ses modèles) ;
+              </li>
               <li>Meta et Google : mesure publicitaire, lorsque leurs pixels sont activés.</li>
             </Ul>
             <p className="mt-3">
@@ -179,7 +182,8 @@ const content: Record<
           <Ul>
             <li>
               Les demandes de soumission sont conservées le temps de traiter votre demande et de suivre notre relation
-              d&apos;affaires, puis détruites ou anonymisées lorsqu&apos;elles ne sont plus utiles.
+              d&apos;affaires, puis détruites ou anonymisées lorsqu&apos;elles ne sont plus utiles, au plus deux ans
+              après notre dernier échange si aucune transaction n&apos;a lieu.
             </li>
             <li>
               Les renseignements liés à un achat conclu sont conservés aussi longtemps que l&apos;exigent les lois
@@ -351,7 +355,10 @@ const content: Record<
               <li>Supabase: database hosting;</li>
               <li>Resend: email delivery;</li>
               <li>Hostinger: website and mailbox hosting;</li>
-              <li>Anthropic: processing of certain emails by artificial intelligence;</li>
+              <li>
+                Anthropic: processing of certain emails by artificial intelligence, to extract the useful information
+                (this data is not used to train its models);
+              </li>
               <li>Meta and Google: ad measurement, when their pixels are enabled.</li>
             </Ul>
             <p className="mt-3">
@@ -368,7 +375,8 @@ const content: Record<
           <Ul>
             <li>
               Quote requests are kept for as long as needed to handle your request and follow up on our business
-              relationship, then destroyed or anonymized once they are no longer useful.
+              relationship, then destroyed or anonymized once they are no longer useful, at most two years after our
+              last exchange if no transaction takes place.
             </li>
             <li>Information related to a completed purchase is kept as long as tax laws require (generally six years).</li>
             <li>Tracking data stored in your browser expires after 30 days.</li>

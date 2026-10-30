@@ -6,6 +6,7 @@ import { lireJson } from "@/lib/securite/requete";
 import { champsEnErreur, journaliserAction } from "@/lib/admin/erreurs-admin";
 import { PRIVE } from "@/lib/admin/requete-admin";
 import { analyseCourrielSchema } from "@/lib/admin/schemas";
+import { masquerDonneesSensibles } from "@/lib/securite/masquage";
 
 /** Corps JSON au plus (courriel de 50 000 caractères, échappements compris). */
 const MAX_OCTETS = 300_000;
@@ -54,7 +55,8 @@ export async function POST(request: Request) {
       { status: 400, headers: PRIVE },
     );
   }
-  const email = parse.data.email;
+  // Loi 25 : numéros de carte et NAS masqués avant l'envoi à l'IA.
+  const { texte: email, masques } = masquerDonneesSensibles(parse.data.email);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
     }
     const parsed = JSON.parse(match[0]);
 
-    void journaliserAction("lot.courriel_analyse", garde, { caracteres: email.length }, request);
+    void journaliserAction("lot.courriel_analyse", garde, { caracteres: email.length, masques }, request);
     return NextResponse.json({ ok: true, extracted: parsed }, { headers: PRIVE });
   } catch (err) {
     // Détail de l'erreur (SDK Anthropic) au journal seulement.
