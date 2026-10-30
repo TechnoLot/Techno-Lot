@@ -19,13 +19,14 @@
 /* ---- Stats : cartes « Nos engagements » (engagements-cartes.tsx) ----
    Trois cartes de couleur cliquables. Variables par carte : --eng-accent (lien),
    --eng-chiffre, --eng-unite, --eng-doux (texte secondaire), --eng-lueur (halo
-   qui suit le curseur). Inclinaison : --eng-rx / --eng-ry posées par le JS (souris). */
+   qui suit le curseur). Inclinaison : --eng-rx / --eng-ry, position de la lueur : --eng-dx / --eng-dy
+   (px), posées par le JS (souris). */
 .eng-carte {
   --eng-rx: 0deg;
   --eng-ry: 0deg;
   --eng-lift: 0px;
-  --eng-mx: 50%;
-  --eng-my: 0%;
+  --eng-dx: 0px;
+  --eng-dy: 0px;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -92,17 +93,26 @@
   color: #ffffff;
 }
 
-/* Halo qui suit le curseur (visible au survol) */
+/* Halo qui suit le curseur (visible au survol) : disque de 560 px portant le dégradé, centré
+   par défaut sur le milieu du bord haut, déplacé en transform (--eng-dx / --eng-dy) sans repeindre la carte */
 .eng-lueur {
   position: absolute;
-  inset: 0;
+  left: 50%;
+  top: 0;
   z-index: 0;
+  width: 560px;
+  height: 560px;
+  margin: -280px 0 0 -280px;
   pointer-events: none;
-  background: radial-gradient(280px circle at var(--eng-mx) var(--eng-my), var(--eng-lueur), transparent 65%);
+  background: radial-gradient(280px circle at 50% 50%, var(--eng-lueur), transparent 65%);
   opacity: 0;
+  transform: translate3d(var(--eng-dx), var(--eng-dy), 0);
   transition: opacity 0.35s ease;
 }
 @media (hover: hover) {
+  .eng-lueur {
+    will-change: transform;
+  }
   .eng-carte:hover .eng-lueur {
     opacity: 1;
   }

@@ -116,8 +116,11 @@ export function EngagementsCartes({
     const r = el.getBoundingClientRect();
     const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
     const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-    el.style.setProperty("--eng-mx", `${(x * 100).toFixed(1)}%`);
-    el.style.setProperty("--eng-my", `${(y * 100).toFixed(1)}%`);
+    // lueur : décalage (px) depuis sa place par défaut (milieu du bord haut), sur la taille de la carte
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    el.style.setProperty("--eng-dx", `${((x - 0.5) * w).toFixed(1)}px`);
+    el.style.setProperty("--eng-dy", `${(y * h).toFixed(1)}px`);
     el.style.setProperty("--eng-rx", `${((0.5 - y) * 6).toFixed(2)}deg`);
     el.style.setProperty("--eng-ry", `${((x - 0.5) * 8).toFixed(2)}deg`);
   };
