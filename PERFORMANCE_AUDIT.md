@@ -4,6 +4,222 @@
 - Version auditée : branche `dev`, commit `93a61fb`. Les deux commits poussés depuis ne touchent que l'admin.
 - Ce rapport décrit la **prochaine mise en ligne**, pas le site actuellement en ligne. Celui-ci (branche `main`, chez Hostinger) a 54 commits de retard sur `dev`.
 - Aucune modification du site n'a été faite pendant cet audit. Les corrections sont proposées à la section 9 ; celles qui changent quoi que ce soit de perceptible attendent votre accord.
+- **Mise à jour du 30 octobre 2026** : les corrections approuvées (phase 2) sont faites et mesurées de nouveau (phase 3). Le bilan suit ; les sections 1 à 10 décrivent l'état de départ.
+
+---
+
+## Bilan après optimisation (phases 2 et 3)
+
+- Version mesurée : branche `performance-optimization`, commit `ffa2866` (55 commits sur `93a61fb`). Même banc, mêmes 13 pages, mêmes profils et mêmes réglages qu'à l'audit (section 2).
+- Les optimisations ont ensuite été fusionnées dans la nouvelle version de `dev` (Next 15, React 19), puis vérifiées de nouveau : voir « Vérification sur la nouvelle version de `dev` (Next 15) ».
+- Rien n'est en ligne : les changements sont sur `dev` et attendent votre « mets en ligne ».
+
+### En bref
+
+- **Ordinateur rapide** : déjà excellent, il le reste. Lighthouse 100 sur les 13 pages (99–100 avant), LCP de 0,27 à 0,80 s.
+- **Ordinateur lent (processeur 6×)** :
+  - défilement de 16–46 à **28–53 images par seconde (i/s)** ;
+  - réactivité au clic (INP) de 216–408 ms à **40–232 ms** : 11 pages sur 13 répondent en moins de 200 ms, contre aucune avant ;
+  - plus aucun décalage pendant le défilement (accueil 0,110 → 0 ; Estimation 0,115 → 0,007).
+- **Téléphone (Android milieu de gamme émulé)** :
+  - score PageSpeed de 82–100 à **88–100** : 11 pages sur 13 à 90 ou plus, contre 4 ;
+  - Lighthouse en conditions réelles de 72–91 à **79–95** : 9 pages sur 13 à 90 ou plus, contre 3 ;
+  - temps de blocage au chargement (TBT) de 152–1 492 ms à **103–817 ms** ;
+  - défilement de 31–54 à **40–57 i/s** ;
+  - réactivité au toucher : **toutes les pages sous 200 ms** sur Android (80–168 ms ; avant 144–232 ms) ;
+  - décalages de l'accueil supprimés : 0,141 → **0** (0,228 → **0** pour l'accueil anglais).
+- **Moins de données** (chargement mobile réel, total transféré) : accueil 531 → 412 Ko, blogue 704 → 437 Ko, Contact 414 → 360 Ko, FAQ 393 → 335 Ko. Les 4 feuilles CSS ne sont plus retéléchargées après l'affichage.
+- **Apparence inchangée**, hors changements approuvés : voir « Vérification visuelle et fonctionnelle » plus bas.
+- **Objectifs du banc** : 201 atteints sur 273 (176 avant).
+
+### Tableaux AVANT → APRÈS
+
+Lecture : « avant → **après** ». Mêmes définitions qu'aux sections 3, 5 et 7. INP = clic ou toucher le plus lent du scénario de la page.
+
+#### Ordinateur
+
+| Page | Lighthouse (sur 100) | LCP | INP 1× | INP 6× | Défilement 6× (i/s) | Images ratées 6× | CLS au défilement 6× |
+|---|---|---|---|---|---|---|---|
+| Accueil | 100 → **100** | 0,82 s → **0,80 s** | 56 ms → **64 ms** | 408 ms → **216 ms** | 16,4 → **28,1** | 70,0 % → **52,4 %** | 0,110 → **0,000** |
+| Accueil EN | 100 → **100** | 0,82 s → **0,80 s** | 56 ms → **48 ms** | 288 ms → **96 ms** | 20,4 → **33,6** | 59,5 % → **42,7 %** | 0,124 → **0,000** |
+| À propos | 100 → **100** | 0,76 s → **0,72 s** | 56 ms → **56 ms** | 216 ms → **96 ms** | 22,7 → **33,8** | 61,1 % → **42,7 %** | 0,019 → **0,002** |
+| Contact | 100 → **100** | 0,75 s → **0,64 s** | 32 ms → **32 ms** | 272 ms → **48 ms** | 33,7 → **52,7** | 20,0 % → **12,6 %** | 0,000 → **0,000** |
+| Soumission⁴ | 99 → **100** | 0,90 s → **0,59 s** | 40 ms → **52 ms** | 256 ms → **232 ms** | 30,1 → **49,9** | 34,8 % → **16,0 %** | 0,000 → **0,000** |
+| FAQ | 100 → **100** | 0,82 s → **0,27 s** | 32 ms → **24 ms** | 272 ms → **120 ms** | 36,2 → **46,0** | 24,3 % → **28,4 %** | 0,000 → **0,000** |
+| Blogue | 99 → **100** | 0,86 s → **0,62 s** | 40 ms → **32 ms** | 248 ms → **48 ms** | 24,7 → **44,2** | 45,8 % → **25,7 %** | 0,000 → **0,000** |
+| Article¹ | 100 → **100** | 0,77 s → **0,69 s** | 24 ms → **16 ms** | 256 ms → **40 ms** | 45,8 → **52,8** | 15,8 % → **12,6 %** | 0,000 → **0,000** |
+| Estimation | 100 → **100** | 0,73 s → **0,71 s** | 40 ms → **48 ms** | 240 ms → **176 ms** | 22,3 → **33,5** | 52,3 % → **34,6 %** | 0,115 → **0,007** |
+| Ce que nous rachetons | 100 → **100** | 0,73 s → **0,71 s** | 48 ms → **56 ms** | 240 ms → **56 ms** | 38,2 → **41,1** | 33,0 % → **38,0 %** | 0,000 → **0,000** |
+| Prise en charge | 100 → **100** | 0,80 s → **0,72 s** | 56 ms → **72 ms** | 232 ms → **96 ms** | 19,8 → **33,5** | 64,4 % → **34,1 %** | 0,004 → **0,002** |
+| Catégorie (serveurs) | 99 → **100** | 0,89 s → **0,59 s** | 48 ms → **48 ms** | 296 ms → **72 ms** | 42,6 → **42,7** | 24,0 % → **31,5 %** | 0,000 → **0,000** |
+| Ville (Montréal) | 100 → **100** | 0,73 s → **0,61 s** | 48 ms → **48 ms** | 280 ms → **80 ms** | 41,2 → **41,2** | 25,1 % → **33,5 %** | 0,000 → **0,000** |
+
+Défilement en ordinateur rapide (1×) : 56,1–60 → 56,7–60 i/s ; l'accueil reste juste sous l'objectif (56,7 i/s, 4,7 % d'images ratées).
+
+#### Mobile (Android milieu de gamme émulé : 4G lent + processeur 4×)
+
+| Page | PageSpeed (simulé) | Lighthouse réel | LCP réel | TBT réel | INP Android | INP iPhone² | Défilement Android (i/s) | Images ratées | CLS au défilement |
+|---|---|---|---|---|---|---|---|---|---|
+| Accueil | 82 → **89** | 72 → **83** | 2,02 s → **1,81 s** | 1419 ms → **635 ms** | 216 ms → **144 ms** | 224 ms → **200 ms** | 33,6 → **42,0** | 38,0 % → **27,5 %** | 0,141 → **0,000** |
+| Accueil EN | 82 → **88** | 73 → **79** | 1,91 s → **1,86 s** | 1492 ms → **817 ms** | 208 ms → **160 ms** | 232 ms → **200 ms** | 31,4 → **39,9** | 44,7 % → **29,9 %** | 0,228 → **0,000** |
+| À propos | 88 → **91** | 85 → **90** | 1,71 s → **1,66 s** | 549 ms → **385 ms** | 144 ms → **144 ms** | 144 ms → **152 ms** | 37,8 → **48,6** | 31,7 % → **18,5 %** | 0,007 → **0,003** |
+| Contact | 92 → **95** | 90 → **93** | 1,93 s → **1,93 s** | 387 ms → **291 ms** | 152 ms → **152 ms** | 152 ms → **128 ms** | 51,5 → **55,7** | 11,4 % → **7,3 %** | 0,000 → **0,000** |
+| Soumission⁴ | 90 → **95** | 91 → **93** | 1,62 s → **1,56 s** | 363 ms → **295 ms** | 168 ms → **156 ms** | 176 ms → **152 ms** | 49,3 → **55,9** | 13,3 % → **6,9 %** | 0,000 → **0,000** |
+| FAQ | 89 → **96** | 88 → **92** | 1,92 s → **1,88 s** | 455 ms → **323 ms** | 168 ms → **168 ms** | 160 ms → **184 ms** | 45,4 → **55,8** | 17,5 % → **6,8 %** | 0,000 → **0,000** |
+| Blogue | 87 → **94** | 88 → **95³** | 2,62 s → **1,71 s** | 362 ms → **244 ms** | 160 ms → **120 ms** | 176 ms → **104 ms** | 47,5 → **56,6** | 16,5 % → **6,0 %** | 0,000 → **0,000** |
+| Article¹ | 100 → **100** | 90 → **82³** | 2,75 s → **4,08 s** | 152 ms → **103 ms** | 232 ms → **80 ms** | 168 ms → **96 ms** | 53,8 → **56,7** | 9,1 % → **5,8 %** | 0,000 → **0,000** |
+| Estimation | 89 → **92** | 86 → **92** | 1,63 s → **1,66 s** | 521 ms → **330 ms** | 144 ms → **112 ms** | 144 ms → **112 ms** | 37,2 → **46,8** | 34,8 % → **18,4 %** | 0,008 → **0,005** |
+| Ce que nous rachetons | 91 → **93** | 87 → **90** | 1,68 s → **1,67 s** | 495 ms → **399 ms** | 152 ms → **120 ms** | 160 ms → **112 ms** | 48,3 → **52,5** | 17,7 % → **14,3 %** | 0,000 → **0,000** |
+| Prise en charge | 87 → **92** | 81 → **88** | 1,62 s → **1,53 s** | 749 ms → **480 ms** | 144 ms → **112 ms** | 144 ms → **136 ms** | 36,9 → **46,1** | 37,9 % → **24,2 %** | 0,060 → **0,062** |
+| Catégorie (serveurs) | 87 → **96** | 80 → **90** | 1,91 s → **1,91 s** | 821 ms → **366 ms** | 168 ms → **120 ms** | 176 ms → **128 ms** | 51,6 → **53,3** | 12,7 % → **12,4 %** | 0,000 → **0,000** |
+| Ville (Montréal) | 87 → **96** | 79 → **90** | 1,91 s → **2,02 s** | 889 ms → **374 ms** | 192 ms → **112 ms** | 176 ms → **128 ms** | 49,5 → **54,3** | 14,9 % → **9,7 %** | 0,000 → **0,000** |
+
+Changement de page au clic sur Android, après 30 s sur le site : 1 016–1 236 ms → **358–860 ms** (P56). Au premier passage, les temps sont semblables (431–2 380 ms → 492–2 145 ms).
+
+Notes :
+1. **Article** : la page mesurée est le premier article de la liste du blogue. De nouveaux articles Soro ont été publiés depuis l'audit : ce n'est donc plus le même. L'article d'avant n'avait pas d'image vedette (son LCP était un paragraphe) ; celui d'après en a une, qui devient l'élément LCP. La comparaison n'est qu'indicative.
+2. **iPhone** : gabarit d'iPhone simulé dans Chrome, pas Safari.
+3. **Blogue et article** : mesurés de nouveau sur un build neuf. La campagne a tourné plus d'une heure après le build ; le blogue avait alors été régénéré (ISR) sans son CSS intégré. C'est le problème P28, qui touchera aussi la production (voir plus bas).
+4. **Soumission** : INP après = médiane de 4 passages. La campagne a mesuré une seule fois 152 ms en 1× ; 3 reprises ont donné 48, 56 et 48 ms. En 6× : 328, 224, 240 et 216 ms.
+
+### Objectifs : atteints et manqués
+
+Entre parenthèses : le nombre de pages conformes sur 13, avant → après.
+
+| Objectif | Seuil | Ordinateur lent (6×) | Téléphone (Android 4×) |
+|---|---|---|---|
+| Score Lighthouse | ≥ 90 | ✓ 100 partout (13 → 13)⁵ | ✗ PageSpeed 88–100 (4 → 11) ; réel 79–95 (3 → 9) |
+| LCP | < 2,5 s | ✓ 0,27–0,80 s (13 → 13)⁵ | ✗ PageSpeed 2,80–3,76 s, article 1,06 s (1 → 1) ; ✗ réel 1,53–2,02 s, article 4,08 s (11 → 12) |
+| CLS (chargement et défilement) | < 0,1 | ✓ ≤ 0,016 (10 → 13) | ✓ ≤ 0,062 (11 → 13) |
+| INP | < 200 ms | ✗ 40–232 ms (0 → 11) | ✓ Android 80–168 ms (10 → 13) ; ✗ iPhone simulé 96–200 ms (11 → 11) |
+| TBT | < 200 ms | ✓ 0–4 ms (13 → 13)⁵ | ✗ réel 103–817 ms (1 → 1) |
+| Défilement fluide | 60 i/s | ✗ 28–53 i/s (0 → 0) | ✗ 40–57 i/s (0 → 0) |
+
+5. Lighthouse en configuration ordinateur ne ralentit pas le processeur : ces trois lignes valent pour un ordinateur ordinaire.
+
+### Objectifs non atteints, et pourquoi
+
+1. **Défilement à 60 i/s sur appareil lent (aucune page, ni avant ni après).**
+   - Gain net partout sur téléphone : +2 à +11 i/s ; les pages simples atteignent 53–57 i/s.
+   - Le banc lui-même plafonne autour de 57 i/s sur Android : l'article, page la plus légère, fait 56,7 i/s avec 5,8 % d'images ratées.
+   - Le reste du coût vient surtout des ciels étoilés qui scintillent en permanence, et des scènes animées de l'accueil (palette, destruction, héros). Les leviers suivants changent ce qu'on voit : ciel à 30 i/s au repos (Q4, « attendre »), variantes allégées sur appareils lents (Q12, « attendre »).
+   - Ordinateur 4× et 6× : voir « Défilement lissé (P2) » ci-dessous.
+2. **Score mobile sous 90 : accueil (89 ; 83 en conditions réelles), accueil anglais (88 ; 79), Prise en charge (88 en réel), article (82 en réel).**
+   - L'accueil reste la page la plus animée. Son TBT réel a diminué de moitié (1 419 → 635 ms), mais il reste au-dessus de 200 ms. La cause : le ciel du héros et le réveil (hydratation) des scènes interactives pendant le chargement.
+   - Leviers restants, tous perceptibles : ciel à 30 i/s ou démarré après le chargement (Q4) ; catalogue d'étoiles et scènes chargés à l'approche (P21, P23, Q9) ; variantes allégées (Q12).
+3. **LCP simulé (PageSpeed) au-dessus de 2,5 s sur 12 pages.**
+   - Le retéléchargement du CSS est corrigé (P27). Le LCP réel est bon : 1,53 à 2,02 s sur 12 pages sur 13.
+   - La simulation de PageSpeed place encore sur le chemin de l'affichage tout le JavaScript demandé avant le LCP. L'écart entre le simulé et le réel est un effet de la méthode de calcul.
+4. **Article : LCP réel de 4,08 s.**
+   - Les articles sont rendus à la demande : ils n'ont pas le CSS intégré (3 feuilles bloquantes, premier affichage à 2,65 s).
+   - Leur image vedette apparaît ensuite en fondu, une fois la page réveillée.
+   - Le correctif est P28 (Q7, « plus tard »). Le même problème touchera le blogue en production, une heure après chaque déploiement : il est régénéré sans CSS intégré, et son LCP passe alors de 1,71 s à environ 3,7 s, d'après la mesure faite pendant la campagne.
+5. **INP sur ordinateur lent : accueil 216 ms et soumission 232 ms.**
+   - Accueil : étape 3 de « Comment ça marche » (408 → 216 ms ; le camion est préparé hors du clic, P6).
+   - Soumission : cocher la première catégorie (256 → 232 ms en médiane), c'est-à-dire le nouveau rendu du formulaire par React.
+   - Sur téléphone, toutes les pages sont sous 200 ms sur Android. L'iPhone simulé est à 200 ms pile sur l'accueil (ouverture du menu), ce qui manque l'objectif de justesse.
+6. **TBT réel sur téléphone au-dessus de 200 ms (12 pages).** Même cause que le point 2 : les ciels animés et le réveil des pages. Il a baissé de 20 à 59 % selon la page.
+
+### Vérification visuelle et fonctionnelle
+
+- 50 adresses (toutes les pages publiques, en français et en anglais) capturées sur ordinateur, téléphone et téléphone à l'horizontale (282 captures), puis comparées pixel à pixel avec l'état de départ.
+- **0 régression fonctionnelle** : mêmes titres, mêmes codes de réponse, aucune erreur.
+- **234 captures identiques au pixel près.** Les 48 autres sont toutes expliquées :
+  - héros de l'accueil tenu dans l'écran sur téléphone à l'horizontale (P50, approuvé) ;
+  - images du blogue recompressées par l'optimiseur (Q6, approuvé) ;
+  - objets de la palette servis à la bonne taille sur téléphone (P36), d'où quelques pixels de rééchantillonnage ;
+  - étapes épinglées de Prise en charge décalées d'un pixel sur téléphone (P7) ;
+  - écarts minimes (≤ 0,3 %) : lissage des textes et des pastilles.
+- Les ciels étoilés redessinés autrement (P16) donnent exactement les mêmes pixels (388 canevas comparés).
+
+### Vérification sur la nouvelle version de `dev` (Next 15)
+
+Pendant la phase 3, `dev` a reçu 34 commits d'une autre session : Next 15.5 et React 19, une politique de sécurité du contenu (CSP) imposée, la double authentification de l'admin et des tests de sécurité. Les optimisations ont été fusionnées dans cette version, puis tout a été vérifié de nouveau avec la même base des deux côtés : `dev` (`051decf`) contre `dev` avec les optimisations (`d41ab3f`).
+
+- **Fusion** : un seul conflit (`lib/posts.ts`), réglé en reportant P34 dans le nouveau `lib/blog-sanitize.ts`. Une correction de type pour React 19 dans la barre de chargement (P48). Types, tests de `dev` (590), contrôle des gardes de l'admin et build : OK.
+- **Commit arrivé pendant les mesures** : le plafond quotidien du formulaire (`b1f0f34`) a été fusionné ensuite. Il ne touche que le serveur, aucune page mesurée.
+- **Captures** : 50 adresses en 3 formats (113 contrôles), **0 anomalie** avec les optimisations. Les écarts visuels sont exactement ceux de la campagne principale : mêmes captures, mêmes zones, mêmes pourcentages (héros à l'horizontale P50, images du blogue, étapes de Prise en charge). L'accueil sur ordinateur, en français et en anglais, est identique au pixel près (écart maximal 0,005 %)⁶.
+- **Mesures**, `dev` → **`dev` avec les optimisations** :
+
+| Mesure | Ordinateur | Téléphone (Android 4×) |
+|---|---|---|
+| Lighthouse (13 pages) | 99–100 → **100** | PageSpeed 82–100 → **88–100** ; pages à 90 ou plus : 8 → **11**⁷ |
+| Accueil | TBT 18 → **0** ms ; anglais 73 → **0** ms | PageSpeed 82 → **89** ; anglais 82 → **91** ; TBT 277 → **138** ms |
+| Défilement (6 pages) | 6× : 22,0–45,5 → **26,3–51,4** i/s | 34,2–53,1 → **39,5–56,9** i/s |
+| INP (accueil, Soumission, FAQ, blogue) | 6× : 256–312 → **40–200** ms | 168–208 → **96–168** ms ; iPhone simulé 168–240 → **64–168** ms |
+| Changement de page (clic → titre affiché, 6 trajets) | 1× : −18 à −27 % ; 6× : −6 à −9 % | égal au premier passage, −8 % au second |
+| Accueil en conditions réelles (6 chargements) | — | score 71–72 → **74–77** ; TBT 2,10 → **1,44** s (anglais 2,50 → **1,36** s) ; LCP 1,74 → **1,78** s (anglais 1,68 → **1,76** s)⁸ |
+
+- **Objectifs du banc** (série réduite) : 106 → **116** atteints sur 144. Les gains de la campagne principale se retrouvent sous Next 15. L'iPhone simulé passe même sous 200 ms sur l'accueil (168 ms, contre 200 ms pile sous Next 14).
+- **Restent manqués**, pour les mêmes raisons que plus haut : défilement à 60 i/s, PageSpeed de l'accueil (89), INP de Soumission en 6× (200 ms pile, l'objectif est sous 200 ms).
+- **Safari en local** : la nouvelle CSP contient `upgrade-insecure-requests`. Safari demande alors tous les fichiers du site en https ; en `http://localhost`, plus rien ne se charge (« SSL connect error »). C'est sans effet en ligne, où le site est en https. Pour la mesure WebKit, la règle a été retirée de la page servie, des deux côtés.
+
+6. La série complète a dépassé le délai de 120 s sur l'accueil ordinateur de `dev` (première page lancée, 3 onglets en parallèle). Reprise seule, la page s'ouvre en 31 s, sans anomalie : c'est un incident du banc, pas du site.
+7. Blogue : 91 → 88 au passage médian. Des trois passages, un a échoué (erreur « NO_NAVSTART » de Lighthouse) ; un autre a eu lieu avant que l'optimiseur ait l'image du premier article en cache. Avec le cache chaud : 95. D'où le réchauffement du cache d'images à la mise en ligne (P42).
+8. LCP réel : médianes de 6 chargements, en 2 tours alternés. L'écart (+45 et +79 ms) est du même ordre que la variation entre deux tours d'une même version (jusqu'à 90 ms). Côté réseau, rien ne change avant l'affichage : mêmes fichiers, aux mêmes moments. Après l'affichage, `dev` retélécharge encore ses 4 feuilles CSS (33 Ko) ; la version optimisée, non (P27 fonctionne aussi sous Next 15). Sous Next 14, ce même LCP avait baissé (2,02 → 1,81 s) ; Next 15 l'a amélioré de lui-même. L'objectif (< 2,5 s) reste largement atteint.
+
+### Ce qui a été fait
+
+| Problème | Changement | Effet mesuré |
+|---|---|---|
+| P3, P13 | Une seule lecture de la position de défilement par image, partagée (en-tête, ruban, apparitions, héros) | Mises en page forcées de l'en-tête et du ruban au défilement : 0 |
+| P16, P15 | Ciels : mêmes pixels avec 2 fois moins d'opérations de dessin ; boucle du héros arrêtée au repos en mode allégé | 983 → 424 opérations de dessin par image ; image identique |
+| P1 | Destruction des données : seule la zone qui change est recopiée | −93 % de pixels recopiés |
+| P39 | Liens villes et catégories du pied de page et du ruban préchargés à l'intention (survol, toucher, focus) | 23 → 0 préchargements au défilement ; ≈ 80 Ko au lieu de 356 Ko sur téléphone |
+| P27 | Le CSS intégré n'est plus retéléchargé au réveil de la page | 4 → 0 feuilles retéléchargées ; PageSpeed +2 à +9 |
+| P7 | Accordéon de l'accueil et étapes de l'Estimation animés en transformations | CLS au défilement 0,14–0,23 → 0 |
+| P6 | Camion de l'étape 3 préparé hors du clic | Travail dans le clic en 6× : 915 → 72 ms |
+| P18, P56, P37, P20 | Menus animés en CSS ; pages « Services » préchargées à l'inactivité ; menu principal préchargé en entier ; textes d'une seule langue dans l'en-tête | 1er clic « Services » en 6× : 216–320 → 40–96 ms ; −34 à −41 Ko de JS sur les pages sans animation framer |
+| P22, P49 | Défilement lissé (Lenis) chargé à la demande, jamais sur téléphone ; inertie arrêtée au changement de page | −5,35 Ko de JS sur téléphone |
+| P33, P34, P47, P14 | Images Soro via l'optimiseur de Next ; dimensions conservées ; liens internes des articles en navigation douce ; barre de lecture écrite seulement si elle change | Images du blogue 306 → 93 Ko ; LCP réel du blogue 2,62 → 1,71 s |
+| P19, P24, P25, P46 | Compteurs sans framer ; carte du Québec rendue par le serveur ; conversion du formulaire sans `next/script` ; recherche de la FAQ précalculée | −8 Ko sur l'accueil ; JS plus léger sur Contact et Soumission |
+| P45 | Formulaire : rendu limité à l'étape qui change, mesures faites à l'image suivante | INP 6× : 256 → 232 ms ; Android : 168 → 156 ms |
+| P29, P30, P38 | CSS de l'admin séparé du site public ; CSS mort retiré ; icône recompressée sans perte | HTML −5,7 à −5,8 Ko compressés par page |
+| P35, P12, P4, P8, P11 | Vraies dimensions des objets de héros ; animations des héros en pause hors de l'écran ; calques pour les ombres de la palette ; lueur des cartes et reflet du trait en transformations | Ombres repeintes 54 → 24 fois ; peinture de la lueur 33 → 10 ms |
+| P32, P36 | Image du disque dur en AVIF, chargée à l'approche ; tailles des objets de la palette adaptées au téléphone | 87 → 46 Ko ; −36 % sur les images de la palette au téléphone |
+| P48 | Fine barre verte en haut de l'écran si un changement de page dure plus de 150 ms (Q10) | Rien ne s'affiche sur les changements rapides |
+| P50, P51, P52 | Héros tenu dans l'écran à l'horizontale ; champ « Autre » à 16 px sur iOS ; zones de toucher de 44 px, invisibles | — (confort et accessibilité) |
+| Formulaire | Correction du bouton « Continuer » : l'étape de vérification s'affiche enfin avant l'envoi | — (bogue de départ) |
+
+**Défilement lissé (P2) : annulé.** Pendant la campagne, Lenis était coupé sur ordinateur lent. Trois pages simples (Ce que nous rachetons, Catégorie, Ville) y défilaient alors un peu moins bien qu'avant en 4× : 53–55 → 49–52 i/s, ce qu'une reprise a confirmé. Un test A/B sur le même build a ensuite comparé Lenis coupé et Lenis actif (images par seconde au défilement) :
+
+| Page (ordinateur) | 4× : coupé → actif | 6× : coupé → actif |
+|---|---|---|
+| Accueil | 39,1 → 40,3 | 26,6 → 27,1 |
+| Accueil EN | 40,3 → 41,8 | 26,0 → 24,3 |
+| À propos | 44,0 → 38,7 | 31,8 → 37,0 |
+| Ce que nous rachetons | 49,9 → **55,4** | 38,5 → **45,8** |
+| Catégorie (serveurs) | 50,7 → **58,8** | 40,4 → **47,1** |
+| Ville (Montréal) | 49,0 → **57,2** | 38,4 → **46,0** |
+
+Couper Lenis n'améliore pas les chiffres : P2 est annulé, conformément à votre règle. Lenis reste actif sur tous les ordinateurs, comme avant ; il est seulement téléchargé à la demande (P22). Pour les trois pages simples, le défilement en 6× est donc de 46–47 i/s, et non les 41–43 i/s du tableau, mesurés avec Lenis coupé.
+
+**Annulé faute de gain** (règle : une optimisation qui n'améliore pas les chiffres est retirée) :
+- P2, défilement lissé coupé sur les appareils lents (Q5) : voir le test A/B ci-dessus ;
+- vignettes réduites des photos du formulaire : l'aperçu était plus lent (806 ms au lieu de 415 ms sur téléphone 4×), l'aperçu d'origine est revenu ;
+- touche Entrée « Suivant » sur les coordonnées (P55) : la touche ne faisait rien, l'indication était trompeuse ;
+- réglage de l'ordre des images de Lenis : aucun gain mesuré.
+
+**Pas fait** :
+- P5 (calques de la scène Prise en charge) : la camionnette devenait floue sur téléphone ;
+- P26 (pixels publicitaires) : gain faible (≈ 4 Ko) contre 1 à 2 requêtes de plus, gardé en réserve ;
+- en attente de votre décision (« attendre » ou « plus tard ») : Q4 ciel à 30 i/s, Q7/P28 CSS intégré du blogue et des articles, Q12 variantes allégées ;
+- refusés : Q8 police Chakra, Q14 masque de la destruction, P53 halo du formulaire ;
+- petits points sans gain mesurable ici : P41, P44, P54.
+
+**Effet secondaire assumé** : sur ordinateur, le processeur travaille un peu plus dans les 4 premières secondes. Les pages « Services » et le menu principal sont préchargés pendant l'inactivité ; c'est ce qui rend les clics de menu immédiats.
+
+**WebKit (moteur de Safari, sous Windows)** : aucun écart mesurable. Défilement de l'iPhone 13 émulé, sous Next 15 : accueil 26,6 → 25,9 i/s, À propos 32,1 → 32,1, Soumission 15,2 → 14,7, Ce que nous rachetons 30,8 → 31,6. Cela fait −3 à +3 %, le niveau du bruit. Sous Next 14, la même série avait donné −3 à −10 %, avec une seule mesure par page ; la reprise ne confirme pas cette baisse. Ce WebKit sous Windows est d'ailleurs bien plus lent qu'un iPhone (5 à 11 i/s au repos, 15 à 32 i/s au défilement) : seul un vrai iPhone peut trancher.
+
+### À faire de votre côté
+
+- **Sur la prévisualisation** (techno-lot-dev.vercel.app), sans envoyer : essayer le formulaire jusqu'à l'étape de vérification.
+- **Sur un vrai iPhone**, si possible : le champ « Autre » du formulaire ne doit plus zoomer au focus (P51).
+- **À la mise en ligne** :
+  - réchauffer le cache d'images (P42) ;
+  - demander à Hostinger si LiteSpeed peut compresser en Brotli (P40) ;
+  - relancer PageSpeed Insights sur technolot.ca ;
+  - une heure après le déploiement, vérifier si `/blog` a gardé son CSS intégré (P28, Q7).
 
 ---
 
