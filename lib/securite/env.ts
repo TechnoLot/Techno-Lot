@@ -67,6 +67,23 @@ export function variableValide(nom: string): boolean {
   return true;
 }
 
+/**
+ * Variables dont l'absence désactive des protections SANS que les visiteurs
+ * le voient : sans SECURITE_RPC_SECRET, les limites de débit s'ouvrent et le
+ * journal durable s'arrête ; sans SITE_URL, les actions admin répondent 503
+ * (contrôle d'origine). Signalées par un bandeau dans l'admin.
+ */
+export const VARIABLES_SECURITE_ADMIN = ["SITE_URL", "SECURITE_RPC_SECRET"] as const;
+
+/**
+ * NOMS des variables de sécurité absentes ou invalides (SITE_URL : URL
+ * http(s) ; SECURITE_RPC_SECRET : 32 caractères ou plus). Jamais de valeur.
+ * Liste vide = configuration complète.
+ */
+export function configurationSecuriteIncomplete(): string[] {
+  return VARIABLES_SECURITE_ADMIN.filter((nom) => !variableValide(nom));
+}
+
 export type BilanEnvironnement = {
   indispensablesManquantes: string[];
   fonctionManquantes: string[];

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { exigerAdminPage, verifierAdmin } from "@/lib/securite/garde";
 import { EVENEMENTS, journaliser } from "@/lib/securite/journal";
 import { isEbayConfigured } from "@/lib/ebay/client";
+import { configurationSecuriteIncomplete } from "@/lib/securite/env";
 
 export const metadata: Metadata = {
   title: "Admin — Techno Lot",
@@ -63,10 +64,16 @@ export default async function DashboardLayout({
   const { user } = verdict.ok ? verdict.ctx : await exigerAdminPage("/admin");
 
   const theme = (await cookies()).get("tl_admin_theme")?.value === "dark" ? "dark" : "light";
+  // Noms seulement (jamais de valeur) : bandeau d'avertissement si non vide.
+  const configurationIncomplete = configurationSecuriteIncomplete();
 
   return (
     <NotificationsProvider ebayConfigured={isEbayConfigured()}>
-      <AdminShell email={user.email ?? ""} theme={theme}>
+      <AdminShell
+        email={user.email ?? ""}
+        theme={theme}
+        configurationIncomplete={configurationIncomplete}
+      >
         {children}
       </AdminShell>
     </NotificationsProvider>
