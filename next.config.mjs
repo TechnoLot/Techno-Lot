@@ -13,6 +13,10 @@ const nextConfig = {
     // N'importe que les icônes/animations réellement utilisées au lieu de
     // charger tout le paquet — allège le JavaScript envoyé au navigateur.
     optimizePackageImports: ["lucide-react", "framer-motion"],
+    // Next 15 ne réutilise plus les pages dynamiques déjà visitées (0 s) :
+    // on garde les 30 s de Next 14 pour que l'admin ne recharge pas tout
+    // à chaque clic (les actions serveur invalident déjà ce cache).
+    staleTimes: { dynamic: 30 },
   },
   async headers() {
     // Headers de sécurité appliqués à toutes les réponses.
