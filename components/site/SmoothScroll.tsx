@@ -2,7 +2,6 @@
 
 import type Lenis from "lenis";
 import { useEffect } from "react";
-import { appareilLent } from "@/lib/appareil";
 
 declare global {
   interface Window {
@@ -12,9 +11,7 @@ declare global {
 
 /**
  * Défilement lissé (Lenis) pour la souris et le pavé tactile d'ordinateur.
- * Le tactile garde le défilement natif ; désactivé en mouvement réduit et sur
- * les appareils lents (lib/appareil), où le défilement natif, porté par le
- * compositeur, reste fluide même quand le fil principal est chargé.
+ * Le tactile garde le défilement natif ; désactivé en mouvement réduit.
  * Lenis n'est téléchargé que si ces conditions sont réunies (import dynamique).
  * Monté uniquement par la coque du site public (LocaleShell).
  */
@@ -28,7 +25,6 @@ export function SmoothScroll() {
     let rafId = 0;
 
     (async () => {
-      if ((await appareilLent()) || annule) return;
       const { default: Lenis } = await import("lenis");
       if (annule) return;
 
