@@ -210,6 +210,14 @@ export function dossiersAFouiller(dossiers: readonly DossierApi[] | null | undef
 }
 
 /**
+ * Pièce ouverte dans le navigateur (`inline`) : document en bac à sable
+ * (origine opaque, ni script ni formulaire), aucune ressource externe.
+ * `object-src 'self'` laisse le lecteur PDF du navigateur afficher le fichier.
+ */
+export const CSP_PIECE_AFFICHEE =
+  "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; object-src 'self'";
+
+/**
  * En-têtes d'une pièce jointe servie par l'admin : affichée dans le
  * navigateur pour les images et les PDF (sauf SVG, qui peut contenir du
  * script), téléchargée sinon.
@@ -228,5 +236,6 @@ export function entetesPiece(nom: string, type: string): Record<string, string> 
     "Content-Disposition": `${affichable ? "inline" : "attachment"}; filename="${ascii}"; filename*=UTF-8''${encode}`,
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "private, max-age=300",
+    ...(affichable ? { "Content-Security-Policy": CSP_PIECE_AFFICHEE } : {}),
   };
 }

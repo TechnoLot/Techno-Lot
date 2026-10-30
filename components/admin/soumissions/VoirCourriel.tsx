@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ExternalLink, FileText, MailOpen, RotateCw, X } from "lucide-react";
+import { ExternalLink, FileText, Image as ImageIcon, MailOpen, RotateCw, X } from "lucide-react";
 import type { CourrielSoumission, PieceJointe, ReponseCourriel } from "@/lib/admin/courriel-types";
+import { contientImagesDistantes, srcDocApercu } from "@/lib/admin/apercu-courriel";
 
 const TZ = "America/Toronto";
 
@@ -301,17 +302,32 @@ function Contenu({ soumissionId, courriel }: { soumissionId: string; courriel: C
     `/api/admin/soumissions/${encodeURIComponent(soumissionId)}/courriel/pieces/${encodeURIComponent(p.id)}`;
   const images = courriel.piecesJointes.filter(estImage);
   const fichiers = courriel.piecesJointes.filter((p) => !estImage(p));
+  // Images distantes bloquées à chaque ouverture (état non mémorisé : le panneau
+  // démonte ce composant à la fermeture).
+  const [imagesPermises, setImagesPermises] = useState(false);
+  const distantes = useMemo(() => contientImagesDistantes(courriel.html), [courriel.html]);
 
   return (
     <div className="flex flex-col gap-6">
       {courriel.html ? (
-        // Fond blanc même en thème sombre : les courriels sont faits pour un fond blanc.
-        <iframe
-          sandbox=""
-          srcDoc={courriel.html}
-          title="Contenu du courriel"
-          className="block h-[55vh] w-full rounded-xl border border-admin-line bg-white [color-scheme:light]"
-        />
+        <div className="flex flex-col gap-3">
+          {distantes && !imagesPermises && (
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-xl border border-admin-line bg-admin-subtle px-4 py-3">
+              <p className="text-[13px] text-admin-muted">Images distantes bloquées pour protéger ta vie privée.</p>
+              <button type="button" onClick={() => setImagesPermises(true)} className="admin-btn">
+                <ImageIcon className="h-3.5 w-3.5" aria-hidden />
+                Afficher les images
+              </button>
+            </div>
+          )}
+          {/* Fond blanc même en thème sombre : les courriels sont faits pour un fond blanc. */}
+          <iframe
+            sandbox=""
+            srcDoc={srcDocApercu(courriel.html, imagesPermises)}
+            title="Contenu du courriel"
+            className="block h-[55vh] w-full rounded-xl border border-admin-line bg-white [color-scheme:light]"
+          />
+        </div>
       ) : courriel.texte ? (
         <div className="whitespace-pre-wrap break-words rounded-xl border border-admin-line bg-admin-subtle px-4 py-3 text-[14px] text-admin-ink">
           {courriel.texte}

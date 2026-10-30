@@ -1,3 +1,4 @@
+import JsonLd from "@/components/seo/JsonLd";
 import { PageHero } from "@/components/site/PageHero";
 import { HeroCrumbs } from "@/components/seo/Breadcrumbs";
 import { CtaBanner } from "@/components/site/CtaBanner";
@@ -44,7 +45,7 @@ export default function FaqPage({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <JsonLd data={faqJsonLd} />
 
       <PageHero
         title={t.title}

@@ -1,6 +1,16 @@
 import { localePath, type Locale } from "@/lib/i18n";
+import {
+  decodeEntities,
+  sanitizeArticleHtml,
+  slugifyHeading,
+  type ArticleHeading,
+} from "@/lib/blog-sanitize";
 import { LANG_OVERRIDES, isIndexable } from "@/lib/blog-seo";
 import { LOCAL_REWRITES, getLocalRewrite, type LocalRewrite } from "@/lib/blog-articles/rewrites";
+
+// Désinfectant du blogue : lib/blog-sanitize.ts (réexporté pour les imports existants).
+export { sanitizeArticleHtml, slugifyHeading };
+export type { ArticleHeading };
 
 export type PostSection = {
   heading?: string;
@@ -568,8 +578,6 @@ export async function legacyPostTarget(from: Locale, slug: string | null): Promi
   return localePath(from, "/blog");
 }
 
-export type ArticleHeading = { id: string; text: string };
-
 export type SoroArticle = {
   summary: PostSummary;
   html: string;
@@ -600,117 +608,4 @@ export async function getSoroArticle(
   if (!content) return null;
   const { html, headings, words } = sanitizeArticleHtml(content, locale);
   return { summary: soroSummary(entry, locale), html, headings, minutes: words / 220 };
-}
-
-export function slugifyHeading(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-}
-
-const ALLOWED_TAGS = new Set([
-  "p", "h2", "h3", "h4", "ul", "ol", "li", "a", "strong", "em", "b", "i",
-  "blockquote", "br", "hr", "table", "thead", "tbody", "tr", "th", "td",
-  "img", "figure", "figcaption", "code", "pre", "sup", "sub",
-]);
-
-function decodeEntities(s: string): string {
-  return s
-    .replace(/&nbsp;/g, " ")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&#x27;|&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
-}
-
-function escapeAttr(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
-}
-
-function getAttr(attrs: string, name: string): string | null {
-  const m = attrs.match(new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
-  if (!m) return null;
-  return decodeEntities(m[2] ?? m[3] ?? m[4] ?? "");
-}
-
-/**
- * Assainit le HTML venu de Soro (liste blanche de balises, attributs
- * reconstruits), rend relatifs les liens vers technolot.ca, ouvre les liens
- * externes dans un nouvel onglet et donne un id aux intertitres h2 (sommaire).
- */
-export function sanitizeArticleHtml(
-  input: string,
-  locale: Locale,
-): { html: string; headings: ArticleHeading[]; words: number } {
-  let s = input.replace(/<!--[\s\S]*?-->/g, "");
-  s = s.replace(
-    /<(script|style|iframe|object|embed|form|noscript|template|svg|math|textarea|select)\b[\s\S]*?<\/\1\s*>/gi,
-    "",
-  );
-  // Le h1 de la page est le titre : un éventuel h1 du corps devient h2
-  s = s.replace(/<(\/?)h1\b/gi, "<$1h2");
-
-  const headings: ArticleHeading[] = [];
-  const used = new Set<string>();
-  s = s.replace(/<h2\b[^>]*>([\s\S]*?)<\/h2\s*>/gi, (_m, inner: string) => {
-    const text = decodeEntities(inner.replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim();
-    const base = slugifyHeading(text) || "section";
-    let id = base;
-    let n = 2;
-    while (used.has(id)) id = `${base}-${n++}`;
-    used.add(id);
-    headings.push({ id, text });
-    return `<h2 data-anchor="${id}">${inner}</h2>`;
-  });
-
-  s = s.replace(
-    /<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
-    (_m, close: string, rawTag: string, attrs: string) => {
-      const tag = rawTag.toLowerCase();
-      if (!ALLOWED_TAGS.has(tag)) return "";
-      if (close) return tag === "br" || tag === "hr" || tag === "img" ? "" : `</${tag}>`;
-      if (tag === "h2") {
-        const id = getAttr(attrs, "data-anchor");
-        return id ? `<h2 id="${escapeAttr(id)}">` : "<h2>";
-      }
-      if (tag === "a") {
-        let href = (getAttr(attrs, "href") ?? "").trim();
-        const own = href.match(/^https?:\/\/(?:www\.)?technolot\.ca(\/[^\s"'<>]*)?$/i);
-        if (own) {
-          const path = own[1] && own[1] !== "/" ? own[1] : "/";
-          href = /^\/en(\/|$)/.test(path) ? path : localePath(locale, path);
-          return `<a href="${escapeAttr(href)}">`;
-        }
-        if (/^https?:\/\//i.test(href)) {
-          return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">`;
-        }
-        if (/^(\/(?!\/)|#|mailto:|tel:)/i.test(href)) return `<a href="${escapeAttr(href)}">`;
-        return "<a>";
-      }
-      if (tag === "img") {
-        const src = (getAttr(attrs, "src") ?? "").trim();
-        if (!/^https:\/\//i.test(src)) return "";
-        const alt = getAttr(attrs, "alt") ?? "";
-        return `<img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" loading="lazy" decoding="async">`;
-      }
-      if (tag === "th" || tag === "td") {
-        const span = getAttr(attrs, "colspan");
-        return span && /^\d{1,2}$/.test(span) ? `<${tag} colspan="${span}">` : `<${tag}>`;
-      }
-      return `<${tag}>`;
-    },
-  );
-  // Balise non fermée en fin de texte : supprimée ; tout autre « < » isolé est neutralisé
-  s = s.replace(/<[^>]*$/, "");
-  s = s.replace(/<(?!\/?(?:p|h2|h3|h4|ul|ol|li|a|strong|em|b|i|blockquote|br|hr|table|thead|tbody|tr|th|td|img|figure|figcaption|code|pre|sup|sub)\b)/g, "&lt;");
-
-  const words = decodeEntities(s.replace(/<[^>]+>/g, " "))
-    .split(/\s+/)
-    .filter(Boolean).length;
-  return { html: s, headings, words };
 }

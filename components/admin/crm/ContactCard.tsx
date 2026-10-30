@@ -42,9 +42,12 @@ import {
   type TemplateType,
 } from "@/lib/crm/types";
 import { formatDate } from "@/lib/admin/format";
+import { urlHttpExterne } from "@/lib/securite/url-externe";
 
 export default function ContactCard({ contact }: { contact: Contact }) {
   const router = useRouter();
+  // Lien LinkedIn cliquable seulement s'il est http(s) (« https:// » ajouté sans schéma).
+  const linkedin = urlHttpExterne(contact.linkedin_url);
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -236,14 +239,19 @@ export default function ContactCard({ contact }: { contact: Contact }) {
         {contact.linkedin_url && (
           <div className="flex items-center gap-2">
             <Linkedin className="h-3.5 w-3.5 shrink-0 text-admin-muted" aria-hidden />
-            <a
-              href={contact.linkedin_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-admin-muted hover:text-admin-green"
-            >
-              Profil LinkedIn
-            </a>
+            {linkedin ? (
+              <a
+                href={linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-admin-muted hover:text-admin-green"
+              >
+                Profil LinkedIn
+              </a>
+            ) : (
+              // Pas un lien http(s) : affiché comme texte, jamais cliquable.
+              <span className="break-all text-admin-muted">{contact.linkedin_url}</span>
+            )}
           </div>
         )}
         {contact.notes && (
