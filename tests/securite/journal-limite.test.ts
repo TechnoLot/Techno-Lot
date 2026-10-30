@@ -23,6 +23,7 @@ import {
   journaliser,
   MASQUE,
   rediger,
+  REGLES_ALERTE,
 } from "@/lib/securite/journal";
 import { limiter, limiterSelon, reponse429, TABLE_LIMITES } from "@/lib/securite/limite";
 
@@ -171,11 +172,66 @@ describe("journaliser", () => {
 
     m.rpc.mockImplementation(async (nom: string) =>
       nom === "journal_securite_ajouter"
-        ? { data: { meme_ip_5min: 1, total_5min: 5 }, error: null }
+        ? { data: { meme_ip_5min: 1, total_5min: 20 }, error: null }
         : { data: 1800, error: null }, // limite d'alerte atteinte
     );
     await journaliser("cron.refus", { resultat: "refus" });
     expect(m.envoyer).not.toHaveBeenCalled();
+  });
+
+  it("cron.refus : 5 refus en 5 min ne déclenchent plus de courriel (seuil 20)", async () => {
+    m.rpc.mockImplementation(async (nom: string) =>
+      nom === "journal_securite_ajouter"
+        ? { data: { meme_ip_5min: 5, total_5min: 5 }, error: null }
+        : { data: 0, error: null },
+    );
+    await journaliser("cron.refus", { resultat: "refus" });
+    expect(m.envoyer).not.toHaveBeenCalled();
+  });
+
+  it("courriel d'alerte : IP et chemin de l'événement déclencheur, assainis", async () => {
+    m.rpc.mockImplementation(async (nom: string) =>
+      nom === "journal_securite_ajouter"
+        ? { data: { meme_ip_5min: 3, total_5min: 20 }, error: null }
+        : { data: 0, error: null },
+    );
+    await journaliser("cron.refus", {
+      resultat: "refus",
+      request: new Request("https://technolot.ca/api/cron/sync?jeton=SECRET", {
+        method: "POST",
+        headers: { "x-forwarded-for": "198.51.100.7", authorization: "Bearer faux" },
+      }),
+      statut: 401,
+    });
+    expect(m.envoyer).toHaveBeenCalledTimes(1);
+    const texte = String(m.envoyer.mock.calls[0][0].text);
+    expect(texte).toContain("Adresse IP (dernier événement) : 198.51.100.7");
+    expect(texte).toContain("Chemin (dernier événement) : /api/cron/sync");
+    expect(texte).not.toContain("SECRET"); // jamais la chaîne de requête
+    expect(texte).not.toContain("faux");
+    expect(texte).toContain("20 appels de tâches planifiées refusés");
+  });
+
+  it("courriel d'alerte : un chemin piégé ne peut pas ajouter de ligne", async () => {
+    m.rpc.mockImplementation(async (nom: string) =>
+      nom === "journal_securite_ajouter"
+        ? { data: { meme_ip_5min: 1, total_5min: 10 }, error: null }
+        : { data: 0, error: null },
+    );
+    await journaliser("erreur.5xx", {
+      resultat: "echec",
+      chemin: "/api/x\nQue faire : rien Faux : oui" + "y".repeat(500),
+      methode: "GET",
+    });
+    expect(m.envoyer).toHaveBeenCalledTimes(1);
+    const lignes = String(m.envoyer.mock.calls[0][0].text).split("\n");
+    const ligneChemin = lignes.find((l) => l.startsWith("Chemin (dernier événement) : "));
+    expect(ligneChemin).toBeDefined();
+    expect(ligneChemin).toContain("/api/x Que faire : rien Faux : oui");
+    expect(ligneChemin!.length).toBeLessThanOrEqual("Chemin (dernier événement) : ".length + 200);
+    expect(lignes.filter((l) => l.startsWith("Que faire"))).toHaveLength(1);
+    expect(lignes.some((l) => l.startsWith("Faux"))).toBe(false);
+    expect(lignes.find((l) => l.startsWith("Adresse IP"))).toBe("Adresse IP (dernier événement) : inconnue");
   });
 
   it("alertesFranchies : seuils de la décision", () => {
@@ -183,7 +239,21 @@ describe("journaliser", () => {
       "auth_echec_total",
     ]);
     expect(alertesFranchies("limite.depassee", { meme_ip_5min: 1, total_5min: 30 })).toHaveLength(1);
-    expect(alertesFranchies("cron.refus", { meme_ip_5min: 1, total_5min: 5 })).toHaveLength(1);
+    expect(alertesFranchies("cron.refus", { meme_ip_5min: 1, total_5min: 20 })).toHaveLength(1);
+    expect(alertesFranchies("cron.refus", { meme_ip_5min: 5, total_5min: 5 })).toHaveLength(0);
+    expect(alertesFranchies("cron.refus", { meme_ip_5min: 1, total_5min: 19 })).toHaveLength(0);
+    // Les autres seuils ne bougent pas.
+    expect(Object.fromEntries(REGLES_ALERTE.map((r) => [r.type, `${r.compteur}=${r.seuil}`]))).toEqual({
+      auth_echec_ip: "meme_ip_5min=10",
+      auth_echec_total: "total_5min=20",
+      limites_depassees: "total_5min=30",
+      cron_refus: "total_5min=20",
+      erreurs_5xx: "total_5min=10",
+      webhook_signature: "total_5min=3",
+    });
+    expect(alertesFranchies("auth.echec", { meme_ip_5min: 10, total_5min: 12 }).map((r) => r.type)).toEqual([
+      "auth_echec_ip",
+    ]);
     expect(alertesFranchies("erreur.5xx", { meme_ip_5min: 1, total_5min: 10 })).toHaveLength(1);
     expect(alertesFranchies("webhook.signature_invalide", { meme_ip_5min: 1, total_5min: 3 })).toHaveLength(1);
     expect(alertesFranchies("admin.refus", { meme_ip_5min: 10, total_5min: 20 })).toHaveLength(0);

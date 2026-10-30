@@ -227,7 +227,8 @@ export const REGLES_ALERTE: readonly RegleAlerte[] = [
   { type: "auth_echec_ip", evenement: "auth.echec", compteur: "meme_ip_5min", seuil: 10, libelle: "échecs de connexion depuis une même adresse IP" },
   { type: "auth_echec_total", evenement: "auth.echec", compteur: "total_5min", seuil: 20, libelle: "échecs de connexion au total" },
   { type: "limites_depassees", evenement: "limite.depassee", compteur: "total_5min", seuil: 30, libelle: "requêtes refusées par les limites de débit (429)" },
-  { type: "cron_refus", evenement: "cron.refus", compteur: "total_5min", seuil: 5, libelle: "appels de tâches planifiées refusés (mauvais secret)" },
+  // 20 (et non 5) : un balayage automatique isolé des routes cron ne doit pas suffire.
+  { type: "cron_refus", evenement: "cron.refus", compteur: "total_5min", seuil: 20, libelle: "appels de tâches planifiées refusés (mauvais secret)" },
   { type: "erreurs_5xx", evenement: "erreur.5xx", compteur: "total_5min", seuil: 10, libelle: "erreurs serveur (5xx)" },
   { type: "webhook_signature", evenement: "webhook.signature_invalide", compteur: "total_5min", seuil: 3, libelle: "webhooks à signature invalide" },
 ];
@@ -257,7 +258,9 @@ async function envoyerAlerte(regle: RegleAlerte, ligne: LigneJournal): Promise<v
     `Type : ${regle.seuil} ${regle.libelle} en 5 minutes.`,
     `Événement : ${ligne.evenement}`,
     `Fenêtre : 5 minutes, jusqu'à ${ligne.ts} (UTC)`,
-    ...(regle.compteur === "meme_ip_5min" ? [`Adresse IP : ${ligne.ip}`] : []),
+    // Événement déclencheur (le dernier compté) : valeurs assainies, sur une ligne.
+    `Adresse IP${regle.compteur === "meme_ip_5min" ? "" : " (dernier événement)"} : ${nettoyer(ligne.ip || IP_INCONNUE, 64)}`,
+    `Chemin (dernier événement) : ${nettoyer(ligne.chemin || "inconnu", 200)}`,
     "",
     `Que faire : voir le runbook « ${RUNBOOK} » (journal : table securite.journal, événement ${ligne.evenement}).`,
     "Ce courriel est envoyé au plus une fois par heure pour ce type d'alerte.",
