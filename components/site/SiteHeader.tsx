@@ -23,11 +23,6 @@ export type TextesEntete = {
   shell: Pick<Dict["shell"], "topbar" | "nav" | "services" | "cta">;
 };
 
-/** En dessous de cette position (px), l'en-tête reste toujours affiché. */
-const TOUJOURS_VISIBLE = 140;
-/** Déplacement minimal (px) avant de cacher ou de réafficher l'en-tête. */
-const SEUIL = 6;
-
 /**
  * Liens du menu avant et après « Services » (ordinateur et mobile).
  * Tous les liens du menu sont en préchargement complet (`prefetch`) : dans Next 14.2, la page
@@ -192,17 +187,15 @@ const LiensMobiles = memo(function LiensMobiles({
  * FR/EN) + barre de navigation noire #0a0a0a (logo horizontal foncé, liens
  * blancs, menu Services déroulant bleu nuit, bouton « Faire une soumission »),
  * menu mobile sombre. Hauteur totale fixe : 112 px (40 + 72) — voir --site-header-h.
- * Sur ordinateur (≥ 1024 px), il reste toujours affiché. Sur mobile et tablette
- * (< 1024 px), il glisse hors de l'écran quand on descend et revient dès qu'on
- * remonte un peu ; il reste affiché en haut de page, menu ouvert ou focus clavier dedans
- * (:focus-within, sans rendu React).
+ * Toujours affiché, sur ordinateur comme sur mobile et tablette (on sait toujours où on est) :
+ * aucune animation au défilement, seule l'ombre apparaît après 24 px. Calque composité
+ * permanent (will-change) : le défilement ne repeint pas l'en-tête.
  * Les deux menus s'animent en CSS (useApparition) : framer-motion n'est plus chargé pour eux.
  */
 export function SiteHeader({ locale, textes }: { locale: Locale; textes: TextesEntete }) {
   const t = textes;
   const s = t.shell;
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   /** Menu mobile monté (masqué) d'avance, à l'inactivité : son ouverture ne crée plus rien. */
@@ -215,34 +208,11 @@ export function SiteHeader({ locale, textes }: { locale: Locale; textes: TextesE
   const menuMobile = useApparition<HTMLElement>(mobileOpen, 220);
 
   useEffect(() => {
-    let lastY = Math.max(0, lirePositionDefilement());
-    const bureau = window.matchMedia("(min-width: 1024px)");
-    // Appelé une fois par image avec la position partagée (lib/defilement) : aucune lecture du DOM
-    const update = (pos: number) => {
-      const y = Math.max(0, pos);
-      setScrolled(y > 24);
-      if (bureau.matches || y < TOUJOURS_VISIBLE) {
-        setHidden(false);
-        lastY = y;
-        return;
-      }
-      // Les petits écarts s'accumulent jusqu'au seuil (défilement lissé, tremblements du tactile)
-      const dy = y - lastY;
-      if (Math.abs(dy) < SEUIL) return;
-      setHidden(dy > 0);
-      lastY = y;
-    };
-    // Passage à la largeur ordinateur : réaffiche l'en-tête s'il était caché
-    const onBureau = () => {
-      if (bureau.matches) setHidden(false);
-    };
-    update(lastY);
-    const desabonner = abonnerDefilement(update);
-    bureau.addEventListener("change", onBureau);
-    return () => {
-      desabonner();
-      bureau.removeEventListener("change", onBureau);
-    };
+    // Appelé une fois par image avec la position partagée (lib/defilement) : aucune lecture du DOM.
+    // Même valeur qu'avant : React ne refait pas le rendu.
+    const update = (pos: number) => setScrolled(pos > 24);
+    update(lirePositionDefilement());
+    return abonnerDefilement(update);
   }, []);
 
   // À l'inactivité : sur ordinateur, précharge les 4 pages « Services » (le panneau ne monte ses
@@ -263,8 +233,6 @@ export function SiteHeader({ locale, textes }: { locale: Locale; textes: TextesE
       else window.clearTimeout(idleId);
     };
   }, [locale, router, s.services]);
-
-  const hide = hidden && !mobileOpen && !servicesOpen;
 
   // Ferme les menus à chaque navigation
   useEffect(() => {
@@ -332,22 +300,11 @@ export function SiteHeader({ locale, textes }: { locale: Locale; textes: TextesE
       active ? "text-[#6bd63b]" : "text-white/80 hover:text-white"
     }`;
 
-  // Ombre de la barre : défilement (en-tête affiché) ou menu mobile ouvert ; en-tête caché mais
-  // réaffiché par le focus clavier : par CSS (classes écrites en entier pour Tailwind)
-  const ombre =
-    (scrolled && !hide) || mobileOpen
-      ? "shadow-[0_14px_30px_-18px_rgba(0,0,0,0.9)]"
-      : scrolled
-        ? "group-focus-within/entete:shadow-[0_14px_30px_-18px_rgba(0,0,0,0.9)]"
-        : "";
+  // Ombre de la barre : page défilée ou menu mobile ouvert
+  const ombre = scrolled || mobileOpen ? "shadow-[0_14px_30px_-18px_rgba(0,0,0,0.9)]" : "";
 
   return (
-    <div
-      data-hidden={hide || undefined}
-      className={`group/entete fixed inset-x-0 top-0 z-50 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform motion-reduce:transition-none ${
-        hide ? "-translate-y-full focus-within:translate-y-0" : "translate-y-0"
-      }`}
-    >
+    <div className="fixed inset-x-0 top-0 z-50 will-change-transform">
       {/* Barre du haut — noire */}
       <div className="bg-black">
         <div className="mx-auto flex h-10 w-full max-w-6xl items-center justify-between gap-4 px-5 text-xs sm:px-8">
