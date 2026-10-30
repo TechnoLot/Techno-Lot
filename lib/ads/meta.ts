@@ -6,6 +6,8 @@
 import { ErreurAffichable } from "@/lib/admin/erreur-affichable";
 
 const GRAPH_VERSION = "v21.0";
+/** Seul hôte que la synchro Meta appelle. */
+const HOTE_GRAPH = "graph.facebook.com";
 
 export type AdMetricRow = {
   platform: "meta" | "google";
@@ -121,10 +123,11 @@ export async function fetchMetaInsights(range: {
       "campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,impressions,reach,clicks,inline_link_clicks,spend,actions,account_currency,date_start",
     time_range: JSON.stringify({ since: range.since, until: range.until }),
     limit: "500",
-    access_token: token,
   });
 
-  let url: string | undefined = `https://graph.facebook.com/${GRAPH_VERSION}/act_${accountId}/insights?${params.toString()}`;
+  // Jeton dans l'en-tête Authorization (jamais dans l'URL : évite sa présence
+  // dans d'éventuels journaux de requêtes).
+  let url: string | null = `https://${HOTE_GRAPH}/${GRAPH_VERSION}/act_${accountId}/insights?${params.toString()}`;
   const rows: AdMetricRow[] = [];
   let pages = 0;
 
@@ -132,7 +135,10 @@ export async function fetchMetaInsights(range: {
     pages += 1;
     let res: Response;
     try {
-      res = await fetch(url, { cache: "no-store" });
+      res = await fetch(url, {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      });
     } catch {
       throw new ErreurAffichable("Impossible de joindre l'API Meta (erreur réseau).");
     }
@@ -167,9 +173,44 @@ export async function fetchMetaInsights(range: {
         currency: r.account_currency ?? null,
       });
     }
-    url = json.paging?.next;
+    const suivante = json.paging?.next;
+    url = suivante ? pageSuivanteMeta(suivante) : null;
+    if (suivante && !url) {
+      // Réponse inattendue : on n'appelle jamais un autre hôte que l'API Graph.
+      // Seuls le protocole et l'hôte vont au journal (jamais l'URL complète).
+      let origine = "illisible";
+      try {
+        const u = new URL(String(suivante));
+        origine = `${u.protocol}//${u.hostname}${u.port ? `:${u.port}` : ""}`;
+      } catch {
+        // URL illisible.
+      }
+      console.warn(
+        `[ads/meta] Pagination arrêtée : page suivante hors de https://${HOTE_GRAPH} (${origine.slice(0, 100)}). Données partielles (${rows.length} lignes).`,
+      );
+    }
   }
   return rows;
+}
+
+/**
+ * URL de la page suivante (`paging.next`) à suivre, ou null si elle ne pointe
+ * pas EXACTEMENT vers https://graph.facebook.com (port par défaut, sans
+ * identifiants). Un éventuel `access_token` renvoyé par Meta dans l'URL est
+ * retiré : le jeton passe toujours par l'en-tête Authorization.
+ */
+export function pageSuivanteMeta(next: unknown): string | null {
+  if (typeof next !== "string" || next.length === 0 || next.length > 8000) return null;
+  let u: URL;
+  try {
+    u = new URL(next);
+  } catch {
+    return null;
+  }
+  if (u.protocol !== "https:" || u.hostname !== HOTE_GRAPH) return null;
+  if (u.port !== "" || u.username !== "" || u.password !== "") return null;
+  u.searchParams.delete("access_token");
+  return u.toString();
 }
 
 /** Présence (jamais la valeur) de chaque variable Meta, pour l'écran de connexion. */
