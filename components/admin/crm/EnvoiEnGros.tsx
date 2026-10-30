@@ -76,6 +76,15 @@ const LIBELLES_SEPARATEURS: Record<string, string> = {
 const nombre = formaterNombre;
 const pluriel = (n: number, mot: string, motPluriel = `${mot}s`) => `${nombre(n)} ${n > 1 ? motPluriel : mot}`;
 
+/** Heure de la remise à zéro du quota de Resend (minuit UTC), à l'heure du Québec (ex. « 20 h »). */
+function heureRemiseQuota(): string {
+  const maintenant = new Date();
+  const minuitUtc = Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), maintenant.getUTCDate() + 1);
+  return new Intl.DateTimeFormat("fr-CA", { timeZone: "America/Toronto", hour: "numeric", hourCycle: "h23" }).format(
+    minuitUtc,
+  );
+}
+
 /**
  * Texte d'un fichier importé, lu dans le navigateur : UTF-8 (avec ou sans
  * BOM), UTF-16 (« Texte Unicode » d'Excel, tabulations) ou, à défaut,
@@ -145,13 +154,15 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     objet.trim() !== "" &&
     corps.trim() !== "";
   const prets = verification?.prets ?? 0;
+  /** Part du jour : les prêts, dans la limite du quota de Resend (le reste attend demain). */
+  const aujourdhui = verification?.aujourdhui ?? 0;
   const peutEnvoyer =
     verificationAJour &&
     bilan === null &&
     !envoiEnCours &&
-    prets > 0 &&
+    aujourdhui > 0 &&
     confirme &&
-    nombreSaisi.trim() === String(prets);
+    nombreSaisi.trim() === String(aujourdhui);
 
   /** Toute modification après la vérification l'annule (il faudra revérifier). */
   function apresModification() {
@@ -257,7 +268,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     setEnvoiEnCours(true);
 
     const v = verification;
-    const total = v.prets;
+    const total = v.aujourdhui;
     const lots = nombreDeLots(total);
     let envoyes = 0;
     let echecs = 0;
@@ -514,7 +525,11 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                 ton={verification.desabonnes.nombre + verification.dejaRecus.nombre > 0 ? "ambre" : "neutre"}
               />
               <Tuile libelle="Fiches à créer" valeur={verification.nouvellesFiches} ton="neutre" />
-              <Tuile libelle={`Lots de ${TAILLE_LOT}`} valeur={verification.lots} ton="neutre" />
+              <Tuile
+                libelle="Possibles aujourd'hui"
+                valeur={verification.aujourdhui}
+                ton={verification.aujourdhui < verification.prets ? "ambre" : "neutre"}
+              />
             </div>
             <ul className="mt-3 space-y-1 text-xs text-admin-muted">
               <li>
@@ -528,7 +543,24 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
               {verification.nouvellesFiches > 0 && (
                 <li>Les adresses inconnues du CRM y deviendront des contacts (étape « Contacté » après l&apos;envoi).</li>
               )}
+              <li>
+                Quota Resend du jour : {nombre(verification.quota.utilises)} sur {nombre(verification.quota.quota)} déjà
+                utilisés, {nombre(verification.quota.disponibles)} encore permis à l&apos;envoi en gros (
+                {nombre(verification.quota.reserve)} gardés pour les avis de soumission et les devis). Remise à zéro à{" "}
+                {heureRemiseQuota()} (minuit UTC).
+              </li>
             </ul>
+            {verification.prets > verification.aujourdhui && (
+              <Alerte ton="ambre">
+                {verification.aujourdhui > 0
+                  ? `Aujourd'hui, ${pluriel(verification.aujourdhui, "destinataire peut", "destinataires peuvent")} recevoir le courriel (${pluriel(verification.lots, "lot")} de ${TAILLE_LOT} au plus). ${
+                      verification.prets - verification.aujourdhui > 1
+                        ? `Les ${nombre(verification.prets - verification.aujourdhui)} autres`
+                        : "Le dernier"
+                    } : relance la même liste demain, après ${heureRemiseQuota()} ; les adresses déjà servies seront exclues.`
+                  : `La part du jour de l'envoi en gros est épuisée (le reste du quota est gardé pour les avis de soumission et les devis). Relance la même liste demain, après ${heureRemiseQuota()}.`}
+              </Alerte>
+            )}
 
             {verification.apercu ? (
               <div className="mt-4 rounded-xl border border-admin-line bg-admin-subtle p-4">
@@ -551,7 +583,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                     <button
                       type="button"
                       className="btn-secondary !px-4 !py-2"
-                      disabled={testEnCours || envoiEnCours}
+                      disabled={testEnCours || envoiEnCours || verification.quota.disponibles <= 0}
                       onClick={envoyerTest}
                     >
                       {testEnCours ? (
@@ -585,7 +617,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
       </Etape>
 
       {/* 4. Envoi */}
-      {verification && verificationAJour && prets > 0 && (
+      {verification && verificationAJour && aujourdhui > 0 && (
         <Etape n={4} titre="Envoi" description="Les courriels partent aussitôt, lot par lot : impossible de les rappeler.">
           <label className="flex items-start gap-3 text-sm text-admin-ink">
             <input
@@ -600,7 +632,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
 
           <label className="mt-4 block max-w-xs">
             <span className="mb-1.5 block text-sm font-medium text-admin-ink">
-              Tape le nombre exact de destinataires ({nombre(prets)})
+              Tape le nombre exact de destinataires ({nombre(aujourdhui)})
             </span>
             <input
               type="text"
@@ -614,14 +646,18 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
           </label>
 
           <p className="mt-3 text-xs text-admin-muted">
-            Chaque destinataire compte pour un envoi dans le quota de Resend (aucune copie à la boîte générale :
-            l&apos;envoi reste noté dans la fiche du CRM de chaque contact). Si le quota du jour est atteint,
-            l&apos;envoi s&apos;arrête proprement et reprend le lendemain avec la même liste.
+            Quota de Resend : {nombre(verification.quota.quota)} courriels par jour, remis à zéro à {heureRemiseQuota()}{" "}
+            (minuit UTC). L&apos;envoi en gros s&apos;arrête à {nombre(verification.quota.quota - verification.quota.reserve)}{" "}
+            par jour pour en garder {nombre(verification.quota.reserve)} aux avis du formulaire de soumission et aux
+            devis. Chaque destinataire compte pour un envoi (aucune copie à la boîte générale : l&apos;envoi reste noté
+            dans la fiche du CRM de chaque contact).
+            {prets > aujourdhui &&
+              ` Aujourd'hui : ${nombre(aujourdhui)} sur ${nombre(prets)} ; relance la même liste demain pour les autres.`}
           </p>
 
           <button type="button" className="btn-primary mt-4" disabled={!peutEnvoyer} onClick={envoyer}>
             {envoiEnCours ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Send className="h-4 w-4" aria-hidden />}
-            Envoyer à {pluriel(prets, "destinataire")}
+            Envoyer à {pluriel(aujourdhui, "destinataire")}
           </button>
 
           <div aria-live="polite">
@@ -657,7 +693,16 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                   </p>
                 )}
                 {bilan.arret && (
-                  <Alerte ton={bilan.arret.motif === "quota_quotidien" || bilan.arret.motif === "quota_mensuel" || bilan.arret.motif === "debit" ? "ambre" : "rouge"}>
+                  <Alerte
+                    ton={
+                      bilan.arret.motif === "quota_quotidien" ||
+                      bilan.arret.motif === "quota_mensuel" ||
+                      bilan.arret.motif === "debit" ||
+                      bilan.arret.motif === "reserve"
+                        ? "ambre"
+                        : "rouge"
+                    }
+                  >
                     {bilan.arret.message}
                   </Alerte>
                 )}

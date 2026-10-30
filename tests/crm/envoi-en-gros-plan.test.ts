@@ -5,12 +5,16 @@ vi.mock("resend", () => ({ Resend: class {} }));
 
 import { renderTemplate as renderTemplateCrm } from "@/lib/crm/email";
 import {
+  aEnvoyerAujourdhui,
   cleCompagnie,
+  debutJourUtc,
   decouperEnLots,
   formaterNombre,
+  messageReserve,
   nombreDeLots,
   normaliserObjet,
   planifierEnvoi,
+  quotaDuJour,
   renderTemplate,
   variablesDestinataire,
   type ContactConnu,
@@ -178,5 +182,34 @@ describe("petits utilitaires", () => {
     expect(cleCompagnie("  Acme   INC. ")).toBe("acme inc.");
     expect(formaterNombre(10_000)).toBe(`10${String.fromCharCode(0xa0)}000`);
     expect(formaterNombre(500)).toBe("500");
+  });
+});
+
+describe("quota du jour (forfait gratuit de Resend)", () => {
+  it("un par envoi en gros, deux par courriel du CRM, un par avis de soumission ; réserve de 20 déduite", () => {
+    expect(quotaDuJour({ enGros: 10, crm: 5, soumissions: 3 })).toEqual({
+      utilises: 23,
+      disponibles: 57,
+      quota: 100,
+      reserve: 20,
+    });
+    expect(quotaDuJour({ enGros: 0, crm: 0, soumissions: 0 }).disponibles).toBe(80);
+  });
+
+  it("jamais négatif, même au-delà du quota", () => {
+    expect(quotaDuJour({ enGros: 70, crm: 10, soumissions: 5 }).disponibles).toBe(0);
+  });
+
+  it("part du jour : les prêts, dans la limite du disponible", () => {
+    const quota = quotaDuJour({ enGros: 50, crm: 0, soumissions: 0 }); // 30 disponibles
+    expect(aEnvoyerAujourdhui(10, quota)).toBe(10);
+    expect(aEnvoyerAujourdhui(150, quota)).toBe(30);
+    expect(aEnvoyerAujourdhui(0, quota)).toBe(0);
+    expect(messageReserve(quota)).toMatch(/80 courriels par jour au plus, pour garder 20 envois/);
+  });
+
+  it("jour civil UTC : 23 h 30 à Montréal le 30 octobre = déjà le 31 en UTC", () => {
+    expect(debutJourUtc(new Date("2026-10-30T23:30:00-04:00"))).toBe("2026-10-31T00:00:00.000Z");
+    expect(debutJourUtc(new Date("2026-10-30T12:00:00Z"))).toBe("2026-10-30T00:00:00.000Z");
   });
 });

@@ -14,11 +14,14 @@ import {
 import { LIBELLES_ENVOI_EN_GROS, lotEnGrosSchema, verificationEnGrosSchema } from "@/lib/admin/schemas";
 import { apercuTexteProspect, sendProspectEmail } from "@/lib/crm/email";
 import {
+  aEnvoyerAujourdhui,
   analyserListe,
+  messageReserve,
   nombreDeLots,
   problemeBloquant,
   TAILLE_LOT,
   type Destinataire,
+  type QuotaJour,
 } from "@/lib/crm/envoi-en-gros";
 import {
   executerLot,
@@ -53,13 +56,18 @@ export type ResultatVerification = {
   valides: number;
   invalides: number;
   doublons: number;
-  /** Destinataires qui recevront le courriel. */
+  /** Destinataires à servir (aujourd'hui ou les jours suivants). */
   prets: number;
   desabonnes: { nombre: number; exemples: string[] };
   dejaRecus: { nombre: number; exemples: string[] };
   /** Adresses inconnues du CRM : une fiche sera créée à l'envoi. */
   nouvellesFiches: number;
+  /** Lots de 100 pour la part du jour. */
   lots: number;
+  /** Quota de Resend du jour : déjà utilisé, encore permis à l'envoi en gros, réserve. */
+  quota: QuotaJour;
+  /** Destinataires servis aujourd'hui (prêts, dans la limite du quota) ; le reste attend demain. */
+  aujourdhui: number;
   /** Courriel rendu pour le premier destinataire prêt (version texte envoyée). */
   apercu: { a: string; objet: string; texte: string } | null;
 };
@@ -68,9 +76,9 @@ export type ResultatLotEnGros = {
   ok: true;
   envoyes: number;
   echecs: number;
-  /** Destinataires prêts restants après ce lot (lots suivants). */
+  /** Destinataires encore à servir aujourd'hui après ce lot (lots suivants). */
   restants: number;
-  /** Plus rien à envoyer pour cette liste et cet objet. */
+  /** Plus rien à envoyer aujourd'hui (liste finie, ou part du jour épuisée : arrêt « réserve »). */
   termine: boolean;
   arret: ArretLot | null;
 };
@@ -128,8 +136,9 @@ export async function verifierEnvoiEnGros(entree: {
   try {
     const prep = await preparerEnvoi(ctx.supabase, analyse, v.objet, v.corps);
     if (!prep.ok) return await echecAction(prep.erreur, prep.operation, ctx, "Lecture du CRM impossible : vérification interrompue.");
-    const { plan } = prep;
+    const { plan, quota } = prep;
     const premier = plan.prets[0];
+    const aujourdhui = aEnvoyerAujourdhui(plan.prets.length, quota);
     return {
       ok: true,
       valides: analyse.destinataires.length,
@@ -139,7 +148,9 @@ export async function verifierEnvoiEnGros(entree: {
       desabonnes: { nombre: plan.desabonnes.length, exemples: exemples(plan.desabonnes) },
       dejaRecus: { nombre: plan.dejaRecus.length, exemples: exemples(plan.dejaRecus) },
       nouvellesFiches: plan.prets.filter((c) => !c.contact).length,
-      lots: nombreDeLots(plan.prets.length),
+      lots: nombreDeLots(aujourdhui),
+      quota,
+      aujourdhui,
       apercu: premier
         ? { a: premier.destinataire.email, objet: premier.objet, texte: apercuTexteProspect(premier.corps) }
         : null,
@@ -183,6 +194,12 @@ export async function envoyerTestEnGros(entree: {
     const premier = prep.plan.prets[0];
     if (!premier) {
       return { ok: false, error: "Aucun destinataire à servir (tous sont exclus) : rien à tester." };
+    }
+    if (prep.quota.disponibles <= 0) {
+      return {
+        ok: false,
+        error: "Le quota du jour qui reste est gardé pour les avis de soumission et les devis : test impossible avant demain.",
+      };
     }
 
     const envoi = await sendProspectEmail({
@@ -241,28 +258,37 @@ export async function envoyerLotEnGros(entree: {
   try {
     const prep = await preparerEnvoi(ctx.supabase, analyse, v.objet, v.corps);
     if (!prep.ok) return await echecAction(prep.erreur, prep.operation, ctx, "Lecture du CRM impossible : aucun envoi.");
-    const { plan } = prep;
+    const { plan, quota } = prep;
 
-    const attendu = plan.prets.length + v.dejaEnvoyes;
+    // Part du jour : les prêts, dans la limite du quota de Resend (réserve gardée au reste du site).
+    // Chaque courriel envoyé quitte les prêts et entre dans le quota : prêts + déjà envoyés reste constant.
+    const aujourdhui = aEnvoyerAujourdhui(plan.prets.length, quota);
+    const attendu = aujourdhui + v.dejaEnvoyes;
     if (attendu !== v.nombre) {
       return {
         ok: false,
-        error: `Le nombre confirmé (${v.nombre}) ne correspond plus à la liste (${attendu} destinataires). Vérifie la liste de nouveau avant d'envoyer.`,
+        error: `Le nombre confirmé (${v.nombre}) ne correspond plus à la liste (${attendu} destinataires) : la liste ou le quota du jour a changé. Vérifie la liste de nouveau avant d'envoyer.`,
       };
     }
-    if (plan.prets.length === 0) {
-      return { ok: true, envoyes: 0, echecs: 0, restants: 0, termine: true, arret: null };
+    if (aujourdhui === 0) {
+      // Rien à servir aujourd'hui : liste finie, ou part du jour épuisée (le reste attend demain).
+      const arret: ArretLot | null = plan.prets.length > 0 ? { motif: "reserve", message: messageReserve(quota) } : null;
+      return { ok: true, envoyes: 0, echecs: 0, restants: 0, termine: true, arret };
     }
 
-    const lot = plan.prets.slice(0, TAILLE_LOT);
+    const lot = plan.prets.slice(0, Math.min(TAILLE_LOT, aujourdhui));
     const resultat = await executerLot(ctx, lot);
-    const restants = plan.prets.length - resultat.envoyes;
+    const restants = aujourdhui - resultat.envoyes;
+    // Part du jour servie, liste pas finie : arrêt « réserve », le reste repart demain.
+    const arret: ArretLot | null =
+      resultat.arret ??
+      (restants === 0 && plan.prets.length > aujourdhui ? { motif: "reserve", message: messageReserve(quota) } : null);
 
     void journaliserAction("crm.envoi_en_gros_lot", ctx, {
       envoyes: resultat.envoyes,
       echecs: resultat.echecs,
       restants,
-      arret: resultat.arret?.motif ?? null,
+      arret: arret?.motif ?? null,
     });
     if (resultat.envoyes > 0) {
       revalidatePath("/admin/crm");
@@ -274,7 +300,7 @@ export async function envoyerLotEnGros(entree: {
       echecs: resultat.echecs,
       restants,
       termine: restants === 0,
-      arret: resultat.arret,
+      arret,
     };
   } catch (err) {
     return echecAction(err, "crm.envoi_gros.lot", ctx, "L'envoi du lot a échoué. Vérifie la liste de nouveau avant de relancer.");

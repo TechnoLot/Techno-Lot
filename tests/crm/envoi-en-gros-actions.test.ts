@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 type Ligne = Record<string, unknown>;
-type Filtre = [op: "eq" | "in" | "pas_null" | "is", colonne: string, valeur: unknown];
+type Filtre = [op: "eq" | "in" | "pas_null" | "is" | "gte", colonne: string, valeur: unknown];
 type Ecriture = { table: string; op: "insert" | "update"; donnees: unknown; filtres: Filtre[] };
 type ReponseResend = { data: unknown; error: unknown } | null;
 
@@ -30,6 +30,8 @@ const etat = vi.hoisted(() => ({
   retenue: null as Promise<void> | null,
   limitePermise: true,
   compteur: 0,
+  /** Avis du formulaire de soumission reçus aujourd'hui (fonction admin_soumissions). */
+  soumissionsDuJour: 0,
 }));
 
 vi.mock("@/lib/securite/garde", () => ({ adminPourAction: async () => etat.ctx }));
@@ -69,6 +71,7 @@ function filtrer(lignes: Ligne[], filtres: Filtre[]): Ligne[] {
       if (op === "eq") return v === valeur;
       if (op === "in") return (valeur as unknown[]).includes(v);
       if (op === "pas_null") return v !== null;
+      if (op === "gte") return v !== null && String(v) >= String(valeur);
       return v === valeur;
     }),
   );
@@ -76,20 +79,29 @@ function filtrer(lignes: Ligne[], filtres: Filtre[]): Ligne[] {
 
 function fauxSupabase() {
   return {
+    rpc(nom: string) {
+      const data =
+        nom === "admin_soumissions" ? Array.from({ length: etat.soumissionsDuJour }, (_, i) => ({ id: `s-${i}` })) : [];
+      return Promise.resolve({ data, error: null });
+    },
     from(table: string) {
       let op: "select" | "insert" | "update" = "select";
       let donnees: unknown;
       let colonnes = "*";
       let plage: [number, number] | null = null;
       let unique = false;
+      let compter = false;
+      let tete = false;
       const filtres: Filtre[] = [];
 
       const executer = () => {
         const lignesTable = (etat.tables[table] ??= []);
         if (op === "insert") {
           etat.ecritures.push({ table, op, donnees, filtres: [...filtres] });
+          // created_at : défaut de la base (now()).
           const nouvelles = (Array.isArray(donnees) ? donnees : [donnees]).map((l) => ({
             id: `${table}-${++etat.compteur}`,
+            created_at: new Date().toISOString(),
             ...(l as Ligne),
           }));
           lignesTable.push(...nouvelles);
@@ -102,6 +114,7 @@ function fauxSupabase() {
           return { data: visees, error: null };
         }
         let lignes = filtrer(lignesTable, filtres);
+        if (compter) return { data: tete ? null : lignes, count: lignes.length, error: null };
         if (plage) lignes = lignes.slice(plage[0], plage[1] + 1);
         if (table === "contacts" && colonnes.includes("companies(")) {
           lignes = lignes.map((l) => ({
@@ -115,8 +128,14 @@ function fauxSupabase() {
       };
 
       const requete = {
-        select(c?: string) {
+        select(c?: string, options?: { count?: string; head?: boolean }) {
           colonnes = c ?? "*";
+          compter = options?.count === "exact";
+          tete = options?.head === true;
+          return requete;
+        },
+        gte(c: string, v: unknown) {
+          filtres.push(["gte", c, v]);
           return requete;
         },
         insert(d: unknown) {
@@ -221,12 +240,14 @@ beforeEach(() => {
   etat.reponsesResend = [];
   etat.retenue = null;
   etat.limitePermise = true;
+  etat.soumissionsDuJour = 0;
   etat.ctx = { supabase: fauxSupabase(), user: ADMIN, requestId: "req-test" };
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 const destinatairesEnvoyes = () => etat.envois.flat().map((c) => c.to[0]);
@@ -417,15 +438,40 @@ describe("Envoi d'un lot", () => {
     expect(etat.envois).toEqual([]);
   });
 
-  it("150 adresses : un lot de 100, puis le lot suivant de 50", async () => {
+  it("150 adresses, 80 permises par jour : 80 aujourd'hui, arrêt « réserve », les 70 autres le lendemain", async () => {
+    // Jour fixe (midi UTC) : jamais de passage de minuit pendant le test.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T15:00:00Z"));
     const liste = Array.from({ length: 150 }, (_, i) => `contact${i}@exemple.ca`).join("\n");
-    const premier = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 150 }));
-    expect(premier).toMatchObject({ ok: true, envoyes: 100, restants: 50, termine: false, arret: null });
-    expect(etat.envois[0]).toHaveLength(100);
 
-    const second = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 150, dejaEnvoyes: 100 }));
-    expect(second).toMatchObject({ ok: true, envoyes: 50, restants: 0, termine: true, arret: null });
-    expect(etat.envois[1]).toHaveLength(50);
+    const verif = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
+    expect(verif.ok && verif.prets).toBe(150);
+    expect(verif.ok && verif.aujourdhui).toBe(80);
+    expect(verif.ok && verif.lots).toBe(1);
+
+    // Seule la part du jour (80, pas 150) est acceptée à la confirmation.
+    const refus = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 150 }));
+    expect(refus.ok).toBe(false);
+    expect(etat.envois).toEqual([]);
+
+    const premier = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 80 }));
+    expect(premier).toMatchObject({ ok: true, envoyes: 80, restants: 0, termine: true });
+    expect(premier.ok && premier.arret?.motif).toBe("reserve");
+    expect(premier.ok && premier.arret?.message).toMatch(/Relance la même liste demain/);
+    expect(etat.envois[0]).toHaveLength(80);
+
+    // Même jour : la part de l'envoi en gros est épuisée, la réserve de 20 reste.
+    const memeJour = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
+    expect(memeJour.ok && memeJour.quota).toEqual({ utilises: 80, disponibles: 0, quota: 100, reserve: 20 });
+    expect(memeJour.ok && memeJour.aujourdhui).toBe(0);
+
+    // Lendemain (minuit UTC passé) : les 70 autres, sans renvoyer les 80 premiers.
+    vi.setSystemTime(new Date("2026-11-03T15:00:00Z"));
+    const lendemain = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
+    expect(lendemain.ok && lendemain.prets).toBe(70);
+    expect(lendemain.ok && lendemain.aujourdhui).toBe(70);
+    const second = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 70 }));
+    expect(second).toMatchObject({ ok: true, envoyes: 70, restants: 0, termine: true, arret: null });
     expect(new Set(destinatairesEnvoyes()).size).toBe(150);
   });
 
@@ -443,6 +489,64 @@ describe("Envoi d'un lot", () => {
     liberer();
     expect((await premier).ok).toBe(true);
     expect(etat.envois).toHaveLength(1);
+  });
+});
+
+describe("Quota du jour (forfait gratuit de Resend)", () => {
+  const champs = { destinataires: LISTE, objet: OBJET, corps: CORPS };
+  /** Courriels du CRM envoyés aujourd'hui : deux envois chacun (copie cachée). */
+  const courrielsCrmDuJour = (n: number) => {
+    const maintenant = new Date().toISOString();
+    for (let i = 0; i < n; i++) {
+      etat.tables.outreach_activities.push({
+        id: `crm-${i}`,
+        contact_id: "c-nina",
+        activity_type: i % 2 ? "followup_sent" : "intro_email_sent",
+        created_at: maintenant,
+      });
+    }
+  };
+
+  it("compte l'envoi en gros, les courriels du CRM (deux chacun) et les soumissions du jour ; réserve de 20", async () => {
+    courrielsCrmDuJour(30); // 60
+    etat.soumissionsDuJour = 5; // 5
+    const r = await verifierEnvoiEnGros(champs);
+    expect(r.ok && r.quota).toEqual({ utilises: 65, disponibles: 15, quota: 100, reserve: 20 });
+    expect(r.ok && r.aujourdhui).toBe(4);
+  });
+
+  it("2 envois permis pour 4 prêts : seuls les 2 premiers partent, arrêt « réserve »", async () => {
+    courrielsCrmDuJour(39); // 78 → 2 permis
+    const r = await verifierEnvoiEnGros(champs);
+    expect(r.ok && r.aujourdhui).toBe(2);
+
+    const lot = await envoyerLotEnGros({ ...champs, confirme: true, nombre: 2, dejaEnvoyes: 0 });
+    expect(lot).toMatchObject({ ok: true, envoyes: 2, restants: 0, termine: true });
+    expect(lot.ok && lot.arret?.motif).toBe("reserve");
+    expect(destinatairesEnvoyes()).toEqual(["jean@exemple.ca", "nina@exemple.ca"]);
+  });
+
+  it("part du jour épuisée : rien n'est envoyé, le test est refusé", async () => {
+    courrielsCrmDuJour(40); // 80 → plus rien de permis
+    const r = await verifierEnvoiEnGros(champs);
+    expect(r.ok && r.aujourdhui).toBe(0);
+
+    const test = await envoyerTestEnGros(champs);
+    expect(test.ok).toBe(false);
+    if (!test.ok) expect(test.error).toMatch(/test impossible avant demain/);
+    expect(etat.unitaires).toEqual([]);
+    expect(etat.envois).toEqual([]);
+  });
+
+  it("envois d'avant minuit UTC : pas comptés", async () => {
+    etat.tables.outreach_activities.push({
+      id: "ancien",
+      contact_id: "c-nina",
+      activity_type: "intro_email_sent",
+      created_at: "2020-01-01T00:00:00.000Z",
+    });
+    const r = await verifierEnvoiEnGros(champs);
+    expect(r.ok && r.quota.utilises).toBe(0);
   });
 });
 

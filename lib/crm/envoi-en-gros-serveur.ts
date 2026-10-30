@@ -5,14 +5,17 @@ import { courrielsDesabonnes } from "@/lib/crm/desabonnement";
 import { sendProspectBatch, type MotifArret } from "@/lib/crm/email";
 import {
   cleCompagnie,
+  debutJourUtc,
   normaliserCourriel,
   normaliserObjet,
   OUTCOME_ENVOI_EN_GROS,
   planifierEnvoi,
+  quotaDuJour,
   type AnalyseListe,
   type ContactConnu,
   type CourrielPrevu,
   type PlanEnvoi,
+  type QuotaJour,
 } from "@/lib/crm/envoi-en-gros";
 import type { ContactStage } from "@/lib/crm/types";
 
@@ -146,14 +149,48 @@ export async function chargerObjetsRecus(
   return { ok: true, recus };
 }
 
+/**
+ * Quota de Resend du jour (depuis minuit UTC) d'après les envois notés en
+ * base : traces de l'envoi en gros, courriels du CRM (intro et relances,
+ * manuels ou automatiques) et avis du formulaire de soumission (fonction
+ * admin_soumissions). Compte seulement (`head`), aucune ligne lue.
+ */
+export async function chargerQuotaDuJour(supabase: Client): Promise<{ ok: true; quota: QuotaJour } | Echec> {
+  const depuis = debutJourUtc();
+  const [enGros, crm, soumissions] = await Promise.all([
+    supabase
+      .from("outreach_activities")
+      .select("id", { count: "exact", head: true })
+      .eq("activity_type", "manual_note")
+      .eq("outcome", OUTCOME_ENVOI_EN_GROS)
+      .gte("created_at", depuis),
+    supabase
+      .from("outreach_activities")
+      .select("id", { count: "exact", head: true })
+      .in("activity_type", ["intro_email_sent", "followup_sent"])
+      .gte("created_at", depuis),
+    supabase.rpc("admin_soumissions", { p_since: depuis, p_limit: 500 }),
+  ]);
+  const erreur = enGros.error ?? crm.error ?? soumissions.error;
+  if (erreur) return { ok: false, erreur };
+  return {
+    ok: true,
+    quota: quotaDuJour({
+      enGros: enGros.count ?? 0,
+      crm: crm.count ?? 0,
+      soumissions: Array.isArray(soumissions.data) ? soumissions.data.length : 0,
+    }),
+  };
+}
+
 export type Preparation =
-  | { ok: true; plan: PlanEnvoi }
+  | { ok: true; plan: PlanEnvoi; quota: QuotaJour }
   | { ok: false; erreur: unknown; operation: string };
 
 /**
  * Plan d'envoi de la liste (lectures seulement) : désabonnements relus
- * (courrielsDesabonnes + unsubscribed_at des fiches) et envois déjà faits.
- * Lecture impossible → aucun envoi.
+ * (courrielsDesabonnes + unsubscribed_at des fiches), envois déjà faits et
+ * quota de Resend du jour. Lecture impossible → aucun envoi.
  */
 export async function preparerEnvoi(
   supabase: Client,
@@ -174,6 +211,9 @@ export async function preparerEnvoi(
   );
   if (!recus.ok) return { ok: false, erreur: recus.erreur, operation: "crm.envoi_gros.deja_recus" };
 
+  const quota = await chargerQuotaDuJour(supabase);
+  if (!quota.ok) return { ok: false, erreur: quota.erreur, operation: "crm.envoi_gros.quota" };
+
   const plan = planifierEnvoi({
     destinataires: analyse.destinataires,
     contacts: fiches.parCourriel,
@@ -182,7 +222,7 @@ export async function preparerEnvoi(
     objet,
     corps,
   });
-  return { ok: true, plan };
+  return { ok: true, plan, quota: quota.quota };
 }
 
 // --- Exécution d'un lot ------------------------------------------------------------------
@@ -310,7 +350,7 @@ async function assurerFiches(ctx: ContexteLot, lot: readonly CourrielPrevu[]): P
   return fiches;
 }
 
-export type ArretLot = { motif: MotifArret | "fiches" | "trace"; message: string };
+export type ArretLot = { motif: MotifArret | "fiches" | "trace" | "reserve"; message: string };
 
 export type ResultatLot = {
   envoyes: number;
