@@ -180,6 +180,7 @@ Pendant la phase 3, `dev` a reçu 34 commits d'une autre session : Next 15.5 et 
 | P48 | Fine barre verte en haut de l'écran si un changement de page dure plus de 150 ms (Q10) | Rien ne s'affiche sur les changements rapides |
 | P50, P51, P52 | Héros tenu dans l'écran à l'horizontale ; champ « Autre » à 16 px sur iOS ; zones de toucher de 44 px, invisibles | — (confort et accessibilité) |
 | Formulaire | Correction du bouton « Continuer » : l'étape de vérification s'affiche enfin avant l'envoi | — (bogue de départ) |
+| Héros (30 oct., à votre demande) | Recul et effacement du titre, de l'indicateur, de la lueur et de la poussière suivis par le navigateur (animations liées au défilement) ; plus de recalcul des styles de tout le héros à chaque image | Images où le texte est en retard sur le doigt : 100 % → 0 % ; recalcul des styles au glissement −17 à −20 % sur téléphone, −51 % sur ordinateur lent ; mêmes valeurs qu'avant (Chrome et WebKit) |
 
 **Défilement lissé (P2) : annulé.** Pendant la campagne, Lenis était coupé sur ordinateur lent. Trois pages simples (Ce que nous rachetons, Catégorie, Ville) y défilaient alors un peu moins bien qu'avant en 4× : 53–55 → 49–52 i/s, ce qu'une reprise a confirmé. Un test A/B sur le même build a ensuite comparé Lenis coupé et Lenis actif (images par seconde au défilement) :
 

@@ -29,7 +29,8 @@ import {
  * et poser des variables CSS et des attributs data-* sur la section [data-hero-tl] :
  *   --hx / --hy  pointeur lissé (-1..1)       → inclinaison et reflet du logo
  *   --gx / --gy  pointeur très lissé (-1..1)  → parallaxe lente de la lueur d'horizon
- *   --hp         progression de l'épinglage (0..1) → recul du logo et des titres
+ *   --hp         progression de l'épinglage (0..1) → recul du logo et des titres ; seulement sans
+ *                animations liées au défilement (sinon hero.css suit la course du héros lui-même)
  *   --hero-logo-url, data-fx  image du logo pour les calques masqués (reflet, glitch)
  *   data-glitch (sur le logo), data-pointer, data-warp, data-paused
  *   data-lite  ordinateur ou téléphone lent : canevas en 1x, moins de poussière, sans scintillation,
@@ -561,6 +562,11 @@ export function HeroFx() {
     /* ───────────── Défilement : épinglage et hyperespace ───────────── */
 
     let writtenP = -1;
+    /**
+     * Recul du texte, indicateur, lueur et poussière suivis par le navigateur (hero.css, @supports) :
+     * --hp n'est plus écrit, ce qui évite de recalculer les styles de tout le héros à chaque image.
+     */
+    const reculCss = CSS.supports("animation-timeline: view()");
     /** Lecture de la position du héros et du canevas (aucune écriture) ; rend la progression de l'épinglage */
     const lirePosition = () => {
       scrollQueued = false;
@@ -571,10 +577,10 @@ export function HeroFx() {
       box.top = c.top;
       return range > 1 ? clamp(-r.top / range, 0, 1) : 0;
     };
-    /** Écritures qui suivent la lecture : --hp et data-warp */
+    /** Écritures qui suivent la lecture : --hp (sans recul CSS) et data-warp */
     const appliquerPosition = (p: number) => {
       scrollP = p;
-      if (Math.abs(p - writtenP) > 0.0005 || (p === 0 && writtenP !== 0)) {
+      if (!reculCss && (Math.abs(p - writtenP) > 0.0005 || (p === 0 && writtenP !== 0))) {
         writtenP = p;
         root.style.setProperty("--hp", p.toFixed(4));
       }

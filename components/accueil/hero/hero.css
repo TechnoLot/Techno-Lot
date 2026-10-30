@@ -633,6 +633,105 @@
   scroll-margin-top: var(--site-header-h, 112px);
 }
 
+/* ───────────── Épinglage suivi par le navigateur ───────────── */
+/* Navigateurs avec animations liées au défilement (Chrome, Edge, Safari 26) : le recul du
+   logo et des titres, l'effacement de l'indicateur, de la lueur et de la poussière suivent
+   la course du héros sans JavaScript. Le compositeur les calcule à chaque image, au rythme
+   du doigt, même quand le fil principal dessine les étoiles ; HeroFx n'écrit plus --hp.
+   Course « contain » du héros = progression de l'épinglage (0 : haut du héros en haut de
+   l'écran ; 1 : bas du héros en bas de l'écran). Mêmes valeurs que les formules en --hp
+   ci-dessus, images clés linéaires (opacité nulle atteinte à 1/1,4 et 1/5 de la course). */
+@supports (animation-timeline: view()) {
+  .hero-tl-root {
+    view-timeline-name: --hero-tl;
+    view-timeline-axis: block;
+    view-timeline-inset: 0;
+  }
+  .hero-tl-content {
+    animation: hero-tl-recul linear both;
+    animation-timeline: --hero-tl;
+    animation-range: contain 0% contain 100%;
+  }
+  .hero-tl-scroll {
+    animation: hero-tl-indicateur linear both;
+    animation-timeline: --hero-tl;
+    animation-range: contain 0% contain 100%;
+  }
+  .hero-tl-airglow {
+    animation: hero-tl-lueur linear both;
+    animation-timeline: --hero-tl;
+    animation-range: contain 0% contain 100%;
+  }
+  .hero-tl-canvas--fond {
+    animation: hero-tl-fond-zoom linear both;
+    animation-timeline: --hero-tl;
+    animation-range: contain 0% contain 100%;
+  }
+  /* Le fondu d'apparition (dans le temps) passe en dernier : il part de 0 vers la valeur suivie */
+  .hero-tl-canvas--fond.is-on {
+    animation:
+      hero-tl-fond-zoom linear both,
+      hero-tl-fond-fondu linear both,
+      hero-tl-fade 1.4s ease backwards;
+    animation-timeline: --hero-tl, --hero-tl, auto;
+    animation-range:
+      contain 0% contain 100%,
+      contain 0% contain 100%,
+      normal;
+  }
+}
+/* 1 − 1,4 p ; translate3d(0, −6vh × p) ; scale(1 − 0,3 p) */
+@keyframes hero-tl-recul {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  71.4286% {
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, -6vh, 0) scale(0.7);
+    opacity: 0;
+  }
+}
+/* 1 − 5 p */
+@keyframes hero-tl-indicateur {
+  from {
+    opacity: 1;
+  }
+  20%,
+  to {
+    opacity: 0;
+  }
+}
+/* 1 − 0,3 p */
+@keyframes hero-tl-lueur {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.7;
+  }
+}
+/* scale(1 + 0,06 p) */
+@keyframes hero-tl-fond-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+/* 1 − 0,45 p */
+@keyframes hero-tl-fond-fondu {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+  }
+}
+
 /* Hors écran : animations décoratives en pause */
 .hero-tl-root[data-paused] .hero-tl-airglow > span,
 .hero-tl-root[data-paused] .hero-tl-sheen-sweep,
