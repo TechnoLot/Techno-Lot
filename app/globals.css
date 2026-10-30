@@ -42,12 +42,6 @@
   --a-tint-cyan: 236 253 255;       /* #ecfdff */
   --a-tint-cyan-ink: 14 112 144;    /* #0e7090 */
   --a-tint-gray: 238 241 236;       /* #eef1ec */
-  /* Graphique « Évolution » : hausse / baisse, écart de clarté vérifié pour
-     les daltoniens ; -ink = texte posé sur l'aplat */
-  --a-chart-up: 31 106 12;          /* #1f6a0c */
-  --a-chart-up-ink: 255 255 255;
-  --a-chart-down: 236 91 82;        /* #ec5b52 */
-  --a-chart-down-ink: 10 10 10;
 }
 
 /* Mode sombre de l'admin : le bleu nuit de la marque */
@@ -83,10 +77,6 @@
   --a-tint-cyan: 12 48 60;          /* #0c303c */
   --a-tint-cyan-ink: 125 211 252;   /* #7dd3fc */
   --a-tint-gray: 28 37 56;          /* #1c2538 */
-  --a-chart-up: 83 173 44;          /* #53ad2c */
-  --a-chart-up-ink: 10 10 10;
-  --a-chart-down: 196 56 45;        /* #c4382d */
-  --a-chart-down-ink: 255 255 255;
 }
 html:has([data-admin-theme="dark"]) body {
   background-color: #060a14;

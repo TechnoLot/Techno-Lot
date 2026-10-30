@@ -3,10 +3,10 @@ import { ArrowRight } from "lucide-react";
 import PeriodeSelect from "@/components/admin/PeriodeSelect";
 import { formatMoney } from "@/lib/admin/format";
 import type { PeriodeKey } from "@/lib/admin/periodes";
-import type { SerieEvolution } from "@/lib/admin/evolution";
+import type { RevenuJour } from "@/lib/admin/revenus";
 import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
 import AdsAutoSync from "@/components/admin/ads/AdsAutoSync";
-import ChiffresGraphique from "@/components/admin/accueil/ChiffresGraphique";
+import EbaySalesChart from "@/components/admin/ebay/EbaySalesChart";
 
 export type Chiffres = {
   /** Ventes totales = lots + ventes manuelles + eBay */
@@ -29,23 +29,33 @@ export type Chiffres = {
 };
 
 /** Périodes proposées sur l'accueil (paramètre d'URL `periode`). */
-export const CHIFFRES_OPTIONS: PeriodeKey[] = ["hier", "semaine", "7j", "30j", "mois", "moisdernier", "annee", "tout"];
+export const CHIFFRES_OPTIONS: PeriodeKey[] = [
+  "aujourdhui",
+  "hier",
+  "semaine",
+  "7j",
+  "30j",
+  "mois",
+  "moisdernier",
+  "annee",
+  "tout",
+];
 
 /**
  * « Chiffres » : 3 grands nombres (Ventes, Profit, Pubs), le sélecteur de
- * période et le graphique « Évolution » du profit.
+ * période et le graphique « Revenus journaliers ».
  */
 export default function ChiffresTiles({
   periode,
   legende,
-  evolution,
+  revenus,
   data,
 }: {
   periode: PeriodeKey;
   /** Dates de la période (« Année fiscale 2026-2027 · du 1er avr. au 29 oct. 2026 ») */
   legende: string;
-  /** Série du graphique ; null quand la période tient en un jour */
-  evolution: SerieEvolution | null;
+  /** Revenus de chaque jour (graphique) ; null quand la période tient en un jour */
+  revenus: RevenuJour[] | null;
   data: Chiffres;
 }) {
   const profitNegatif = data.profit < 0;
@@ -119,7 +129,12 @@ export default function ChiffresTiles({
         )}
       </div>
 
-      <ChiffresGraphique periode={periode} serie={evolution} />
+      {revenus && (
+        <div className="mt-3 rounded-2xl border border-admin-line bg-admin-card p-4 sm:mt-4 sm:p-5">
+          <h3 className="font-display text-sm font-semibold text-admin-ink">Revenus journaliers</h3>
+          <EbaySalesChart data={revenus} label="Revenus" />
+        </div>
+      )}
     </section>
   );
 }

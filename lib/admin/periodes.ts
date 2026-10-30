@@ -32,14 +32,14 @@ const DUREES: Partial<Record<PeriodeKey, number>> = {
 };
 
 /** Lundi de la semaine du jour donné (calcul sur la date seule, sans fuseau). */
-export function lundi(day: string): string {
+function lundi(day: string): string {
   const [y, m, d] = day.split("-").map(Number);
   const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = dimanche
   return addDays(day, -((dow + 6) % 7));
 }
 
 /** Premier jour du mois du jour donné. */
-export function debutMois(day: string): string {
+function debutMois(day: string): string {
   return `${day.slice(0, 7)}-01`;
 }
 
