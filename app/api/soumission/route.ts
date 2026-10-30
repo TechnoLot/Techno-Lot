@@ -230,17 +230,14 @@ export async function POST(request: Request) {
     return taille.reponse;
   }
 
-  // 2. Limites de débit (par IP, puis plafond global sous le quota Resend).
+  // 2. Limites de débit par IP, AVANT de lire le corps (coupe tout de suite
+  //    quelqu'un qui martèle depuis une même adresse). Le plafond global
+  //    quotidien est vérifié plus bas, seulement sur les soumissions valides.
   const ip = ipClient(request);
   for (const regle of [TABLE_LIMITES.soumissionIp10min, TABLE_LIMITES.soumissionIpJour]) {
     const v = await limiterSelon(regle, ip, { request, requestId });
     if (!v.permis) return reponse429(v.attente, t.rateLimited);
   }
-  const global = await limiterSelon(TABLE_LIMITES.soumissionGlobaleJour, "global", {
-    request,
-    requestId,
-  });
-  if (!global.permis) return reponse429(global.attente, t.rateLimited);
 
   // 3. Lecture du corps (borné par Content-Length) et champs connus seulement.
   let data: FormData;
@@ -308,6 +305,16 @@ export async function POST(request: Request) {
       : refuser(413, t.files, { motif: verdict.motif });
   }
   const pieces = verdict.fichiers;
+
+  // Plafond global quotidien : vérifié ICI, une fois la soumission validée (pot
+  // de miel, schéma et fichiers déjà passés) — les robots et les envois invalides
+  // n'entament jamais le budget des vraies demandes. Protège le quota de courriels
+  // (Resend) contre un afflux distribué (plusieurs IP).
+  const global = await limiterSelon(TABLE_LIMITES.soumissionGlobaleJour, "global", {
+    request,
+    requestId,
+  });
+  if (!global.permis) return reponse429(global.attente, t.rateLimited);
 
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {

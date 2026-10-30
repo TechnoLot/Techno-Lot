@@ -40,8 +40,12 @@ export const TABLE_LIMITES = {
   soumissionIp10min: { route: "soumission:ip:10min", fenetreSecondes: 600, max: 3 },
   /** POST /api/soumission, par IP : 10 / 24 h. */
   soumissionIpJour: { route: "soumission:ip:jour", fenetreSecondes: 86_400, max: 10 },
-  /** POST /api/soumission, global (clé « global ») : 50 / 24 h, sous le quota Resend. */
-  soumissionGlobaleJour: { route: "soumission:global:jour", fenetreSecondes: 86_400, max: 50 },
+  /**
+   * POST /api/soumission, global (clé « global ») : 100 / 24 h, sous le quota
+   * Resend. Compté SEULEMENT sur les soumissions valides (après le pot de miel
+   * et la validation), jamais sur les robots : voir app/api/soumission/route.ts.
+   */
+  soumissionGlobaleJour: { route: "soumission:global:jour", fenetreSecondes: 86_400, max: 100 },
   /** POST /api/track, par IP : 120 / min (au-delà : 204 silencieux, rien d'enregistré). */
   suiviIpMinute: { route: "track:ip:min", fenetreSecondes: 60, max: 120 },
   /** POST /admin/auth/password, par IP : 5 / min. */
