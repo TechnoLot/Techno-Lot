@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute, type ContexteAdmin } from "@/lib/securite/garde";
+import { reponseErreur } from "@/lib/securite/erreurs";
+import { lireJsonFacultatif, PRIVE } from "@/lib/admin/requete-admin";
 import {
   effacerNotifications,
   getNotificationsPoll,
@@ -12,19 +13,14 @@ import { lireActionNotifications } from "@/lib/admin/notifications-regles";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const NO_STORE = { "Cache-Control": "no-store" };
-
-async function getAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user && isAdminEmail(user.email) ? { supabase, user } : null;
-}
-
-function erreur(e: unknown) {
-  const message = e instanceof Error ? e.message : "Erreur inconnue";
-  return NextResponse.json({ error: message }, { status: 500, headers: NO_STORE });
+/** Erreur interne : message générique + référence ; détail au journal. */
+function erreur(request: Request, ctx: ContexteAdmin, err: unknown) {
+  return reponseErreur(500, "Lecture des notifications impossible. Réessayez plus tard.", {
+    request,
+    err,
+    requestId: ctx.requestId,
+    userId: ctx.user.id,
+  });
 }
 
 /**
@@ -35,19 +31,19 @@ function erreur(e: unknown) {
  * Réponse : { unseen, latest, nouveaux, now }
  */
 export async function GET(request: Request) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
   const depuis = new URL(request.url).searchParams.get("depuis");
   try {
-    const poll = await getNotificationsPoll(admin.supabase, admin.user, depuis);
-    return NextResponse.json(poll, { headers: NO_STORE });
+    const poll = await getNotificationsPoll(garde.supabase, garde.user, depuis);
+    return NextResponse.json(poll, { headers: PRIVE });
   } catch (e) {
-    return erreur(e);
+    return erreur(request, garde, e);
   }
 }
 
 /**
- * POST :
+ * POST (JSON exigé, origine vérifiée par la garde) :
  * - { action: "vu", upTo } (ou sans action) : l'onglet a été vu jusqu'à cet
  *   instant, la pastille retombe à zéro → { ok, seenAt }
  * - { action: "retirer", keys } : retire 1 à 200 éléments du fil → { ok, retirees }
@@ -55,32 +51,28 @@ export async function GET(request: Request) {
  * Entrée invalide : 400 { error }.
  */
 export async function POST(request: Request) {
-  const admin = await getAdmin();
-  if (!admin) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  let body: unknown = {};
-  try {
-    const text = await request.text();
-    if (text.trim()) body = JSON.parse(text);
-  } catch {
-    return NextResponse.json({ error: "Requête illisible." }, { status: 400, headers: NO_STORE });
-  }
-  const lu = lireActionNotifications(body);
-  if (!lu.ok) return NextResponse.json({ error: lu.message }, { status: 400, headers: NO_STORE });
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
 
-  const { supabase, user } = admin;
+  const lu = await lireJsonFacultatif(request, 20_000);
+  if (!lu.ok) return lu.reponse;
+  const action = lireActionNotifications(lu.donnees);
+  if (!action.ok) return NextResponse.json({ error: action.message }, { status: 400, headers: PRIVE });
+
+  const { supabase, user } = garde;
   try {
-    const a = lu.value;
+    const a = action.value;
     if (a.action === "retirer") {
       const retirees = await retirerNotifications(supabase, user.id, a.keys);
-      return NextResponse.json({ ok: true, retirees }, { headers: NO_STORE });
+      return NextResponse.json({ ok: true, retirees }, { headers: PRIVE });
     }
     if (a.action === "effacer") {
       const { clearedAt, seenAt } = await effacerNotifications(supabase, user.id, a.upTo);
-      return NextResponse.json({ ok: true, clearedAt, seenAt }, { headers: NO_STORE });
+      return NextResponse.json({ ok: true, clearedAt, seenAt }, { headers: PRIVE });
     }
     const seenAt = await markNotificationsSeen(supabase, user.id, a.upTo);
-    return NextResponse.json({ ok: true, seenAt }, { headers: NO_STORE });
+    return NextResponse.json({ ok: true, seenAt }, { headers: PRIVE });
   } catch (e) {
-    return erreur(e);
+    return erreur(request, garde, e);
   }
 }

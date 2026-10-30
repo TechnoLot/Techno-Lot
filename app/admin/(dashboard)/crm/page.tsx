@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DollarSign, PhoneCall } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import AddCompanyButton from "@/components/admin/crm/AddCompanyButton";
 import CompaniesFilters from "@/components/admin/crm/CompaniesFilters";
 import CompaniesTable from "@/components/admin/crm/CompaniesTable";
@@ -60,8 +61,9 @@ export default async function CrmPage(
     }>;
   }
 ) {
+  const ctx = await exigerAdminPage("/admin/crm");
+  const { supabase } = ctx;
   const searchParams = await props.searchParams;
-  const supabase = await createClient();
 
   const [{ data: companiesRaw, error }, { data: contactsRaw }] =
     await Promise.all([
@@ -200,7 +202,7 @@ export default async function CrmPage(
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {error.message}
+          Impossible de charger les données. Réf. : {await journaliserErreur(error, "crm.liste_lire", ctx)}
         </div>
       )}
 

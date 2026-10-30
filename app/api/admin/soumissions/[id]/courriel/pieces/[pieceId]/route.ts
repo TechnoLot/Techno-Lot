@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { fetchSoumission } from "@/lib/admin/soumissions";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { ErreurHostinger, telechargerPiece, trouverCourrielSoumission } from "@/lib/hostinger/mail";
@@ -20,17 +20,13 @@ function erreur(error: string, status: number) {
  * pièce doit lui appartenir, sinon 404.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   props: { params: Promise<{ id: string; pieceId: string }> }
 ) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  const { supabase } = garde;
   const params = await props.params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
 
   const soumission = await fetchSoumission(supabase, params.id);
   if (!soumission) return erreur("Soumission introuvable.", 404);
@@ -42,7 +38,9 @@ export async function GET(
     const fichier = await telechargerPiece(lieu.dossier, lieu.uid, params.pieceId);
     return fichier ?? erreur("Pièce jointe introuvable.", 404);
   } catch (e) {
-    if (e instanceof ErreurHostinger) return erreur(e.message, 502);
-    return erreur("Erreur inattendue en lisant la pièce jointe.", 500);
+    // Messages d'ErreurHostinger : rédigés par nous en français ; détail au journal.
+    const ref = await journaliserErreur(e, "soumission.piece", garde, { request, durable: false });
+    if (e instanceof ErreurHostinger) return erreur(avecRef(e.message, ref), 502);
+    return erreur(avecRef("Erreur inattendue en lisant la pièce jointe.", ref), 500);
   }
 }

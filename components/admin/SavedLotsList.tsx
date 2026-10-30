@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Calculator, Loader2, Trash2 } from "lucide-react";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type SavedLot = {
   id: string;
@@ -45,7 +46,7 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
       setBusy(null);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(`Suppression échouée : ${body.error ?? res.statusText}`);
+        setError(`Suppression échouée : ${messageErreurApi(body, res.status)}`);
         return;
       }
       router.refresh();

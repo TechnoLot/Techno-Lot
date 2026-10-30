@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import LotForm from "@/components/admin/LotForm";
 import DeleteLotButton from "@/components/admin/DeleteLotButton";
 import StatusPill from "@/components/admin/StatusPill";
@@ -15,8 +15,8 @@ export default async function EditLotPage(
     params: Promise<{ id: string }>;
   }
 ) {
+  const { supabase } = await exigerAdminPage("/admin/lots");
   const params = await props.params;
-  const supabase = await createClient();
   const { data, error } = await supabase
     .from("lots")
     .select("*")

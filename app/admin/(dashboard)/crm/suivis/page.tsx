@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BellRing } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import FollowupDoneButton from "@/components/admin/crm/FollowupDoneButton";
 import {
   LEAD_STATUS_LABELS,
@@ -25,7 +26,8 @@ function formatFollowupDate(iso: string): string {
  * « À venir » pour les rappels futurs.
  */
 export default async function SuivisPage() {
-  const supabase = await createClient();
+  const ctx = await exigerAdminPage("/admin/crm/suivis");
+  const { supabase } = ctx;
 
   const { data: companiesRaw, error } = await supabase
     .from("companies")
@@ -81,7 +83,7 @@ export default async function SuivisPage() {
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {error.message}
+          Impossible de charger les données. Réf. : {await journaliserErreur(error, "crm.suivis_lire", ctx)}
         </div>
       )}
 

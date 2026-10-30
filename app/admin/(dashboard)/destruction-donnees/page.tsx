@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import PageHeader from "@/components/admin/PageHeader";
 import DestructionDonnees from "@/components/admin/destruction/DestructionDonnees";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import {
   COLONNES_CERTIFICAT,
   prochainNumero,
@@ -29,8 +30,9 @@ export default async function DestructionDonneesPage(
     searchParams: Promise<{ certificat?: string; client?: string }>;
   }
 ) {
+  const ctx = await exigerAdminPage("/admin/destruction-donnees");
+  const { supabase } = ctx;
   const searchParams = await props.searchParams;
-  const supabase = await createClient();
   const aujourdhui = torontoDay();
   const annee = aujourdhui.slice(0, 4);
   const idCertificat = searchParams.certificat && UUID.test(searchParams.certificat) ? searchParams.certificat : null;
@@ -87,7 +89,11 @@ export default async function DestructionDonneesPage(
           ((numeros.data ?? []) as { numero: string }[]).map((n) => n.numero),
         )}
         aujourdhui={aujourdhui}
-        erreurListe={liste.error?.message ?? null}
+        erreurListe={
+          liste.error
+            ? `lecture impossible. Réf. : ${await journaliserErreur(liste.error, "certificat.liste_lire", ctx)}`
+            : null
+        }
         certificatInitial={certificatInitial}
         clientInitial={clientInitial}
       />

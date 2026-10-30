@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
+import { echapperLike } from "@/lib/admin/destruction";
 import LotsFilters from "@/components/admin/LotsFilters";
 import LotsTable from "@/components/admin/LotsTable";
 import PageHeader from "@/components/admin/PageHeader";
@@ -21,8 +23,9 @@ export default async function LotsListPage(
     searchParams: Promise<{ q?: string; status?: string }>;
   }
 ) {
+  const ctx = await exigerAdminPage("/admin/lots");
+  const { supabase } = ctx;
   const searchParams = await props.searchParams;
-  const supabase = await createClient();
   const q = searchParams.q?.trim() ?? "";
   const statusParam = searchParams.status;
   const status = VALID_STATUSES.includes(statusParam as LotStatus)
@@ -36,7 +39,8 @@ export default async function LotsListPage(
     .limit(200);
 
   if (status) query = query.eq("status", status);
-  if (q) query = query.ilike("client_name", `%${q}%`);
+  // Recherche bornée, jokers % et _ saisis pris littéralement.
+  if (q) query = query.ilike("client_name", `%${echapperLike(q.slice(0, 80))}%`);
 
   const { data, error } = await query;
   const lots = (data ?? []) as Lot[];
@@ -73,7 +77,7 @@ export default async function LotsListPage(
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Erreur : {error.message}
+          Erreur de lecture. Réf. : {await journaliserErreur(error, "lots.liste_lire", ctx)}
         </div>
       )}
 

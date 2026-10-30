@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail, WEBMAIL_URL } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { WEBMAIL_URL } from "@/lib/admin/config";
 import { fetchSoumission } from "@/lib/admin/soumissions";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { lienWebmail } from "@/lib/hostinger/courriel-regles";
@@ -18,15 +18,11 @@ function rediriger(url: string) {
  * directement sur le courriel de cette demande. Clé absente, demande ou
  * courriel introuvable, erreur de Hostinger : boîte de réception.
  */
-export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  const { supabase } = garde;
   const params = await props.params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
 
   if (!isMailApiConfigured()) return rediriger(WEBMAIL_URL);
   try {

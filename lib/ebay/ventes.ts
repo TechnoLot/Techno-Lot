@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { sumEbayOrders, torontoRangeUtc, type EbayCountable, type EbayOrderRow } from "@/lib/ebay/totaux";
 
@@ -108,7 +109,7 @@ export async function getRecentEbayOrders(limit = 20): Promise<EbayOrderRow[]> {
     .select("*")
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) console.error("[ebay] Lecture des dernières commandes impossible :", error.message);
+  if (error) await journaliserErreur(error, "ebay.dernieres_commandes", {}, { durable: false });
   return (data ?? []).map((r) => normalizeRow(r) as unknown as EbayOrderRow);
 }
 

@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import type { createClient } from "@/lib/supabase/server";
 import { fetchSoumissions, type Soumission } from "@/lib/admin/soumissions";
 import { adHref, isPaid, normPlatform, publisherOf, PUBLISHER_LABELS, resolveAdId } from "@/lib/ads/queries";
@@ -208,7 +209,8 @@ async function getRetirees(supabase: Supa, userId: string): Promise<{ keys: Set<
     .limit(MAX_RETIREES);
   return {
     keys: new Set(((data ?? []) as { item_key: string }[]).map((r) => r.item_key)),
-    error: error ? `retraits : ${error.message}` : null,
+    // Message brut de la base : au journal seulement (check 20).
+    error: error ? `retraits (réf. ${await journaliserErreur(error, "notifications.retraits")})` : null,
   };
 }
 
@@ -255,11 +257,17 @@ async function fetchRows(supabase: Supa, f: Fenetre): Promise<Rows> {
     ordersQ.order("created_at", { ascending: false }).limit(MAX_ROWS),
     fetchSoumissions(supabase, { since: f.depuis ?? undefined, limit: MAX_ROWS }),
   ]);
-  const errors = [
-    leads.error && `leads : ${leads.error.message}`,
-    orders.error && `ventes eBay : ${orders.error.message}`,
-    soumissions.error && `soumissions : ${soumissions.error}`,
-  ].filter((e): e is string => Boolean(e));
+  // Messages bruts (base, fonction admin_soumissions) : au journal seulement ;
+  // l'écran ne montre que la source et la référence (check 20).
+  const sources: [string, unknown][] = [
+    ["leads", leads.error],
+    ["ventes eBay", orders.error],
+    ["soumissions", soumissions.error],
+  ];
+  const errors: string[] = [];
+  for (const [source, erreur] of sources) {
+    if (erreur) errors.push(`${source} (réf. ${await journaliserErreur(erreur, `notifications.${source}`)})`);
+  }
   return {
     soumissions: soumissions.rows,
     leads: (leads.data ?? []) as unknown as LeadRaw[],

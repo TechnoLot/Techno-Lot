@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import {
   getAdsOverview,
   getAdsSyncState,
@@ -17,6 +18,7 @@ export default async function PubsPage(
     searchParams: Promise<{ period?: string; from?: string; to?: string; platform?: string }>;
   }
 ) {
+  await exigerAdminPage("/admin/pubs");
   const searchParams = await props.searchParams;
   const platform = parsePlatformFilter(searchParams.platform);
   const [data, lastSync, liveSync] = await Promise.all([

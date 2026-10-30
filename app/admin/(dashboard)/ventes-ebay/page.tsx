@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import { Suspense } from "react";
 import EbaySalesView from "@/components/admin/ebay/EbaySalesView";
 import EbayLivePanel, { EbayLiveSkeleton } from "@/components/admin/ebay/EbayLivePanel";
@@ -23,6 +24,7 @@ export default async function VentesEbayPage(
     searchParams: Promise<{ periode?: string; page?: string }>;
   }
 ) {
+  await exigerAdminPage("/admin/ventes-ebay");
   const searchParams = await props.searchParams;
   const configured = isEbayConfigured();
   const today = torontoDay();

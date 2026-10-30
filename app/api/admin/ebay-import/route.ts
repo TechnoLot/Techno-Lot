@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { reponseErreur } from "@/lib/securite/erreurs";
+import { lireJson } from "@/lib/securite/requete";
+import { journaliserAction } from "@/lib/admin/erreurs-admin";
+import { PRIVE, reponseInvalide } from "@/lib/admin/requete-admin";
+import { importEbaySchema } from "@/lib/admin/schemas";
+
+/** Corps JSON au plus (texte de 200 000 caractères, échappements compris). */
+const MAX_OCTETS = 1_000_000;
 
 export const runtime = "nodejs";
 
@@ -45,26 +52,22 @@ const str = (v: unknown, max: number) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+
+  // Taille bornée AVANT la lecture complète du corps (411/413), JSON exigé (415).
+  const lu = await lireJson<unknown>(request, MAX_OCTETS);
+  if (!lu.ok) return lu.reponse;
+  const parse = importEbaySchema.safeParse(lu.donnees);
+  if (!parse.success) return reponseInvalide(parse.error, garde.requestId);
+  const text = parse.data.text;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "ANTHROPIC_API_KEY manquante." },
-      { status: 503 },
+      { status: 503, headers: PRIVE },
     );
-  }
-
-  const body = await request.json().catch(() => ({}));
-  const text = String(body?.text ?? "").trim().slice(0, 60000);
-  if (text.length < 20) {
-    return NextResponse.json({ error: "Texte trop court." }, { status: 400 });
   }
 
   try {
@@ -100,19 +103,28 @@ export async function POST(request: Request) {
           .slice(0, 20)
       : [];
 
-    return NextResponse.json({
-      ok: true,
-      listing: {
-        type: TYPES.includes(raw.type) ? raw.type : "",
-        cond: CONDS.includes(raw.cond) ? raw.cond : "",
-        title: str(raw.title, 80),
-        model: str(raw.model, 80),
-        desc: str(raw.desc, 600),
-        specs,
+    void journaliserAction("ebay.import_analyse", garde, { caracteres: text.length }, request);
+    return NextResponse.json(
+      {
+        ok: true,
+        listing: {
+          type: TYPES.includes(raw.type) ? raw.type : "",
+          cond: CONDS.includes(raw.cond) ? raw.cond : "",
+          title: str(raw.title, 80),
+          model: str(raw.model, 80),
+          desc: str(raw.desc, 600),
+          specs,
+        },
       },
-    });
+      { headers: PRIVE },
+    );
   } catch (err) {
-    console.error("[ebay-import]", err);
-    return NextResponse.json({ error: "L'analyse a échoué." }, { status: 502 });
+    // Détail de l'erreur (SDK Anthropic) au journal seulement.
+    return reponseErreur(502, "L'analyse a échoué.", {
+      request,
+      err,
+      requestId: garde.requestId,
+      userId: garde.user.id,
+    });
   }
 }

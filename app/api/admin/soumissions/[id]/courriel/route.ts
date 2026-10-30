@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin/config";
+import { estRefus, exigerAdminRoute } from "@/lib/securite/garde";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { fetchSoumission } from "@/lib/admin/soumissions";
 import type { ReponseCourriel } from "@/lib/admin/courriel-types";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
@@ -20,15 +20,11 @@ function repondre(corps: ReponseCourriel, status = 200) {
  * lu par la Mail API de Hostinger → ReponseCourriel. Demande introuvable :
  * 404 ; erreur de Hostinger : 502 { etat: "erreur", message }.
  */
-export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, props: { params: Promise<{ id: string }> }) {
+  const garde = await exigerAdminRoute(request);
+  if (estRefus(garde)) return garde;
+  const { supabase } = garde;
   const params = await props.params;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-  }
 
   const soumission = await fetchSoumission(supabase, params.id);
   if (!soumission) {
@@ -42,7 +38,10 @@ export async function GET(_request: Request, props: { params: Promise<{ id: stri
     const courriel = await lireCourriel(lieu.dossier, lieu.uid);
     return repondre({ etat: "trouve", courriel });
   } catch (e) {
-    if (e instanceof ErreurHostinger) return repondre({ etat: "erreur", message: e.message }, 502);
-    return repondre({ etat: "erreur", message: "Erreur inattendue en lisant le courriel." }, 500);
+    // Messages d'ErreurHostinger : rédigés par nous en français (lib/hostinger/courriel-regles.ts),
+    // jamais le texte brut de la Mail API ; le détail va au journal avec la référence.
+    const ref = await journaliserErreur(e, "soumission.courriel", garde, { request, durable: false });
+    if (e instanceof ErreurHostinger) return repondre({ etat: "erreur", message: avecRef(e.message, ref) }, 502);
+    return repondre({ etat: "erreur", message: avecRef("Erreur inattendue en lisant le courriel.", ref) }, 500);
   }
 }

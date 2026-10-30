@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Calculator } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import SavedLotsList from "@/components/admin/SavedLotsList";
 
 export const dynamic = "force-dynamic";
@@ -19,13 +20,16 @@ type SavedLotRow = {
  * Supabase). Cliquer « Ouvrir » recharge le lot dans la calculatrice.
  */
 export default async function LotsEnregistresPage() {
-  const supabase = await createClient();
+  const ctx = await exigerAdminPage("/admin/calculatrice/enregistres");
+  const { supabase } = ctx;
   const { data, error } = await supabase
     .from("saved_lots")
     .select("id, name, data, created_at, updated_at, created_by_email")
     .order("updated_at", { ascending: false });
 
   const lots = (data ?? []) as SavedLotRow[];
+  // Message brut de la base : au journal seulement, la référence à l'écran.
+  const ref = error ? await journaliserErreur(error, "calculatrice.lots_lire", ctx) : null;
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -61,7 +65,7 @@ export default async function LotsEnregistresPage() {
           role="alert"
           className="rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les lots : {error.message}
+          Impossible de charger les lots. Réf. : {ref}
         </div>
       )}
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type SyncResponse = {
   ok?: boolean;
@@ -9,6 +10,8 @@ type SyncResponse = {
   skipped?: boolean;
   lastSync?: string | null;
   message?: string;
+  error?: string;
+  ref?: string;
 };
 
 /** Intervalle de la synchro de fond quand l'onglet est visible. */
@@ -70,7 +73,7 @@ export default function EbayAutoSync({
         if (data.ok || data.skipped) {
           setError(null);
         } else {
-          setError(data.message ?? `Erreur ${r.status}.`);
+          setError(data.message ?? messageErreurApi(data, r.status));
         }
         if (data.lastSync && data.lastSync !== lastSyncRef.current) {
           startTransition(() => router.refresh());

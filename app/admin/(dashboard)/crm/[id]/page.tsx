@@ -12,7 +12,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import { dateLongue, echapperLike, type CertificatDestruction } from "@/lib/admin/destruction";
 import FitScoreBadge from "@/components/admin/crm/FitScoreBadge";
 import LeadQuickActions from "@/components/admin/crm/LeadQuickActions";
@@ -34,8 +34,8 @@ export default async function CompanyPage(
     params: Promise<{ id: string }>;
   }
 ) {
+  const { supabase } = await exigerAdminPage("/admin/crm");
   const params = await props.params;
-  const supabase = await createClient();
 
   const { data: companyRaw } = await supabase
     .from("companies")

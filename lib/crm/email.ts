@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 
 function escapeHtml(value: string): string {
   return value
@@ -188,6 +189,8 @@ export async function sendProspectEmail(opts: {
   subject: string;
   body: string;
   replyTo?: string | null;
+  /** Référence de la requête (journal) ; une nouvelle sinon. */
+  requestId?: string;
 }): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -217,12 +220,13 @@ export async function sendProspectEmail(opts: {
       headers: { "List-Unsubscribe": `<mailto:${bccAddress}?subject=desabonner>` },
     });
     if (error) {
-      console.error("[crm] Erreur Resend :", error);
-      return { ok: false, error: error.message ?? "erreur inconnue" };
+      // Détail de Resend au journal seulement (check 20).
+      const ref = await journaliserErreur(error, "crm.resend", { requestId: opts.requestId });
+      return { ok: false, error: avecRef("L'envoi du courriel a échoué.", ref) };
     }
     return { ok: true, id: data?.id ?? null };
   } catch (err) {
-    console.error("[crm] Erreur d'envoi :", err);
-    return { ok: false, error: "Erreur inattendue à l'envoi." };
+    const ref = await journaliserErreur(err, "crm.envoi", { requestId: opts.requestId });
+    return { ok: false, error: avecRef("Erreur inattendue à l'envoi.", ref) };
   }
 }

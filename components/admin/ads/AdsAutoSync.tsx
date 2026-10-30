@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type SyncResponse = {
   skipped?: boolean;
   error?: string;
+  ref?: string;
   results?: { platform: AdPlatform; ok: boolean; message: string }[];
   lastSync?: Partial<Record<AdPlatform, string | null>>;
 };
@@ -85,7 +87,7 @@ export default function AdsAutoSync({
         if (r.status === 401) {
           setErrors({ meta: "session expirée", google: "session expirée" });
         } else if (!r.ok && !data.results?.length) {
-          const msg = data.error ?? `erreur ${r.status}`;
+          const msg = messageErreurApi(data, r.status);
           setErrors({ meta: msg, google: msg });
         } else if (!data.skipped) {
           const next: Partial<Record<AdPlatform, string>> = {};

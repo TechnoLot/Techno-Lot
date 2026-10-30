@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import FollowupActions from "@/components/admin/crm/FollowupActions";
 import VerifiedBadge from "@/components/admin/crm/VerifiedBadge";
 import {
@@ -30,7 +30,7 @@ function daysSince(iso: string): number {
  * au plus récent (les plus « dus » en premier).
  */
 export default async function RelancesPage() {
-  const supabase = await createClient();
+  const { supabase } = await exigerAdminPage("/admin/crm/relances");
 
   const { data: contactsRaw } = await supabase
     .from("contacts")

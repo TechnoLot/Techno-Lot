@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PageHeader from "@/components/admin/PageHeader";
 import ChangePasswordForm from "@/components/admin/ChangePasswordForm";
 import PrenomForm from "@/components/admin/PrenomForm";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import { site } from "@/lib/site";
 import { getAdminUsernames, resolvePrenom } from "@/lib/admin/config";
 
@@ -12,10 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ComptePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await exigerAdminPage("/admin/compte");
   const email = user?.email?.toLowerCase() ?? "";
   const usernames = Object.entries(getAdminUsernames())
     .filter(([, e]) => e === email)

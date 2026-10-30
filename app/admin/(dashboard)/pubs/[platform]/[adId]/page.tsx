@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import { getAdDetail, getAdsSyncState, getConfigStatus } from "@/lib/ads/queries";
 import type { AdPlatform } from "@/lib/ads/types";
 import AdDetailView from "@/components/admin/ads/AdDetailView";
@@ -21,6 +22,7 @@ export default async function AdDetailPage(
     searchParams: Promise<{ period?: string; from?: string; to?: string }>;
   }
 ) {
+  await exigerAdminPage("/admin/pubs");
   const searchParams = await props.searchParams;
   const params = await props.params;
   if (params.platform !== "meta" && params.platform !== "google") notFound();

@@ -1,5 +1,5 @@
 import { AlertTriangle } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import PageHeader from "@/components/admin/PageHeader";
 import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import NotificationsFeed from "@/components/admin/notifications/NotificationsFeed";
@@ -25,12 +25,8 @@ export default async function NotificationsPage(
     searchParams: Promise<{ filtre?: string; periode?: string }>;
   }
 ) {
+  const { supabase, user } = await exigerAdminPage("/admin/notifications");
   const searchParams = await props.searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
 
   const periode = periodeNotifications(searchParams.periode);
   const ebayConfigured = isEbayConfigured();

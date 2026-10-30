@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { exigerAdminPage } from "@/lib/securite/garde";
 import Link from "next/link";
 import { FolderOpen } from "lucide-react";
 
@@ -12,6 +13,7 @@ export default async function CalculatricePage(
     searchParams: Promise<{ lot?: string }>;
   }
 ) {
+  await exigerAdminPage("/admin/calculatrice");
   const searchParams = await props.searchParams;
   // Le paramètre `?lot=<id>` est passé au route handler de l'iframe : le
   // script client de la calculatrice le lit et charge le lot depuis Supabase.

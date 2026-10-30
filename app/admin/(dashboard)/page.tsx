@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import type { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
 import type { Lot } from "@/lib/admin/types";
@@ -66,11 +68,9 @@ export default async function AccueilPage(
     searchParams: Promise<{ periode?: string | string[]; sp?: string | string[] }>;
   }
 ) {
+  const ctx = await exigerAdminPage("/admin");
+  const { supabase, user } = ctx;
   const searchParams = await props.searchParams;
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   // Prénom : user_metadata.prenom, sinon table par défaut (lib/admin/config.ts).
   // Sans session (contournement local), on retombe sur le courriel de l'entreprise.
   const prenom = resolvePrenom(user?.email ?? site.email, user?.user_metadata);
@@ -225,7 +225,7 @@ export default async function AccueilPage(
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données : {error.message}
+          Impossible de charger les données. Réf. : {await journaliserErreur(error, "accueil.lots_lire", ctx)}
         </div>
       )}
 

@@ -8,6 +8,7 @@
  */
 import { createSign } from "crypto";
 import type { AdMetricRow } from "./meta";
+import { ErreurAffichable } from "@/lib/admin/erreur-affichable";
 
 const API_VERSION = "v26";
 const ADWORDS_SCOPE = "https://www.googleapis.com/auth/adwords";
@@ -59,7 +60,7 @@ async function postToken(url: string, body: URLSearchParams): Promise<string> {
       cache: "no-store",
     });
   } catch {
-    throw new Error("Impossible de joindre Google OAuth (erreur réseau).");
+    throw new ErreurAffichable("Impossible de joindre Google OAuth (erreur réseau).");
   }
   const json = (await res.json().catch(() => ({}))) as {
     access_token?: string;
@@ -68,13 +69,15 @@ async function postToken(url: string, body: URLSearchParams): Promise<string> {
   };
   if (!res.ok || !json.access_token) {
     if (json.error === "invalid_grant") {
-      throw new Error(
+      throw new ErreurAffichable(
         "Identifiants Google refusés (invalid_grant) : clé du compte de service supprimée, ou refresh token expiré/révoqué.",
       );
     }
-    throw new Error(
-      `Authentification Google refusée : ${json.error_description ?? json.error ?? res.status}`,
-    );
+    // Description brute de Google : au journal seulement.
+    throw new ErreurAffichable(`Authentification Google refusée (${res.status}).`, {
+      error: json.error,
+      error_description: json.error_description,
+    });
   }
   return json.access_token;
 }
@@ -90,7 +93,7 @@ async function getServiceAccountToken(sa: ServiceAccount): Promise<string> {
   try {
     signature = createSign("RSA-SHA256").update(unsigned).sign(sa.private_key, "base64url");
   } catch {
-    throw new Error("Clé privée du compte de service Google illisible (GOOGLE_ADS_SERVICE_ACCOUNT_JSON).");
+    throw new ErreurAffichable("Clé privée du compte de service Google illisible (GOOGLE_ADS_SERVICE_ACCOUNT_JSON).");
   }
   return postToken(
     tokenUri,
@@ -149,12 +152,13 @@ function googleErrorMessage(status: number, payload: unknown): string {
     return "Jeton Google Ads refusé (401). Vérifie la clé du compte de service (ou le refresh token).";
   }
   if (status === 403) {
-    return `Accès Google Ads refusé (403) : vérifie que l'API Google Ads est activée dans le projet Cloud (niveau Explorateur ou plus), que le compte de service est utilisateur du compte Google Ads, et GOOGLE_ADS_LOGIN_CUSTOMER_ID. ${detail}`.trim();
+    return `Accès Google Ads refusé (403) : vérifie que l'API Google Ads est activée dans le projet Cloud (niveau Explorateur ou plus), que le compte de service est utilisateur du compte Google Ads, et GOOGLE_ADS_LOGIN_CUSTOMER_ID.`;
   }
   if (status === 429) {
     return "Limite de requêtes Google Ads atteinte. Réessaie plus tard.";
   }
-  return `Erreur Google Ads (${status}) : ${detail || "réponse inconnue"}`;
+  // Détail brut de Google : au journal seulement (detail de ErreurAffichable).
+  return `Erreur Google Ads (${status}).`;
 }
 
 export async function fetchGoogleInsights(range: {
@@ -164,7 +168,7 @@ export async function fetchGoogleInsights(range: {
   const customerId = getGoogleCustomerId();
   const devToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN?.trim();
   if (!customerId || !isGoogleConfigured()) {
-    throw new Error("Google Ads n'est pas configuré.");
+    throw new ErreurAffichable("Google Ads n'est pas configuré.");
   }
   const accessToken = await getAccessToken();
 
@@ -194,10 +198,10 @@ export async function fetchGoogleInsights(range: {
       },
     );
   } catch {
-    throw new Error("Impossible de joindre l'API Google Ads (erreur réseau).");
+    throw new ErreurAffichable("Impossible de joindre l'API Google Ads (erreur réseau).");
   }
   const payload: unknown = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(googleErrorMessage(res.status, payload));
+  if (!res.ok) throw new ErreurAffichable(googleErrorMessage(res.status, payload), payload);
 
   const chunks = (Array.isArray(payload) ? payload : []) as GoogleChunk[];
   const rows: AdMetricRow[] = [];

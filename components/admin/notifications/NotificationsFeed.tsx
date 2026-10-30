@@ -36,6 +36,7 @@ import PeriodeSelect from "@/components/admin/PeriodeSelect";
 import Pagination from "@/components/admin/Pagination";
 import { PastilleIcone } from "./apparence";
 import { useNotifications } from "./NotificationsProvider";
+import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 const TZ = "America/Toronto";
 /** Recalcul des « il y a X min ». */
@@ -112,8 +113,7 @@ async function poster(body: unknown): Promise<void> {
     body: JSON.stringify(body),
   });
   if (!r.ok) {
-    const data = (await r.json().catch(() => ({}))) as { error?: string };
-    throw new Error(data.error ?? `Erreur ${r.status}.`);
+    throw new Error(messageErreurApi(await r.json().catch(() => ({})), r.status));
   }
 }
 

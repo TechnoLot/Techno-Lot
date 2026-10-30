@@ -3,6 +3,8 @@
  * via la Graph API. Niveau annonce, une ligne par jour et par placement.
  */
 
+import { ErreurAffichable } from "@/lib/admin/erreur-affichable";
+
 const GRAPH_VERSION = "v21.0";
 
 export type AdMetricRow = {
@@ -81,7 +83,8 @@ function metaErrorMessage(
   ) {
     return "Limite de requêtes Meta atteinte. Réessaie dans quelques minutes.";
   }
-  return `Erreur Meta${code ? ` (code ${code})` : ""} : ${err.message ?? "réponse inconnue"}`;
+  // Message brut de Meta : au journal seulement (detail de ErreurAffichable).
+  return `Erreur Meta${code ? ` (code ${code})` : ""}.`;
 }
 
 /** Prospects : 'lead' s'il existe, sinon le max des autres types (évite le double compte). */
@@ -105,7 +108,7 @@ export async function fetchMetaInsights(range: {
   const token = process.env.META_ACCESS_TOKEN?.trim();
   const accountId = getMetaAccountId();
   if (!token || !accountId) {
-    throw new Error(
+    throw new ErreurAffichable(
       "Meta n'est pas configuré (META_ACCESS_TOKEN / META_AD_ACCOUNT_ID).",
     );
   }
@@ -131,14 +134,15 @@ export async function fetchMetaInsights(range: {
     try {
       res = await fetch(url, { cache: "no-store" });
     } catch {
-      throw new Error("Impossible de joindre l'API Meta (erreur réseau).");
+      throw new ErreurAffichable("Impossible de joindre l'API Meta (erreur réseau).");
     }
     const json = (await res.json().catch(() => ({}))) as MetaPage;
     if (!res.ok || json.error) {
-      throw new Error(
+      throw new ErreurAffichable(
         json.error
           ? metaErrorMessage(json.error, res.status)
           : `Erreur Meta HTTP ${res.status}.`,
+        json.error ?? { statut: res.status },
       );
     }
     for (const r of json.data ?? []) {

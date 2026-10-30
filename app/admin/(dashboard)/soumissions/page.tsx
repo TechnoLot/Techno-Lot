@@ -1,5 +1,6 @@
 import { Inbox } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { exigerAdminPage } from "@/lib/securite/garde";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import PageHeader from "@/components/admin/PageHeader";
 import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
@@ -44,8 +45,9 @@ export default async function SoumissionsPage(
     searchParams: Promise<{ q?: string; statut?: string; page?: string }>;
   }
 ) {
+  const ctx = await exigerAdminPage("/admin/soumissions");
   const searchParams = await props.searchParams;
-  const { error, rows } = await fetchSoumissions(await createClient());
+  const { error, rows } = await fetchSoumissions(ctx.supabase);
 
   const now = new Date();
   const q = searchParams.q?.trim() ?? "";
@@ -84,7 +86,7 @@ export default async function SoumissionsPage(
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de lire les soumissions : {error}
+          Impossible de lire les soumissions. Réf. : {await journaliserErreur(error, "soumissions.lire", ctx)}
         </div>
       )}
 

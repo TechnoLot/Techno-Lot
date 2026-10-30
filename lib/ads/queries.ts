@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { isGoogleConfigured, isMetaConfigured } from "@/lib/ads/sync";
 import { averageCpl } from "@/lib/ads/verdict";
 import {
@@ -765,10 +766,12 @@ async function loadPeriod(
     const [raw, clients] = await Promise.all([fetchRaw(supabase, range), fetchClientIndex(supabase)]);
     return { raw, clients, error: null };
   } catch (e) {
+    // Message brut de la base : au journal seulement ; l'écran reçoit la référence (check 20).
+    const ref = await journaliserErreur(e, "pubs.lecture");
     return {
       raw: { sessions: [], events: [], leads: [], metrics: [] },
       clients: emptyClientIndex(),
-      error: e instanceof Error ? e.message : String(e),
+      error: `lecture impossible. Réf. : ${ref}`,
     };
   }
 }

@@ -3,6 +3,8 @@
  * Cache l'access token en mémoire pour éviter de le re-générer à chaque appel.
  */
 
+import { journaliserErreur } from "@/lib/admin/erreurs-admin";
+
 const MARKETPLACE_ID = process.env.EBAY_MARKETPLACE_ID || "EBAY_CA";
 const EBAY_BASE = "https://api.ebay.com";
 const EBAY_BASE_Z = "https://apiz.ebay.com"; // commerce APIs
@@ -271,7 +273,8 @@ export async function getFeedbackSummary() {
       uniquePositive: parseInt(xmlField(xml, "UniquePositiveFeedbackCount") ?? "0", 10)
     };
   } catch (e) {
-    console.warn("[eBay] getFeedbackSummary failed:", e);
+    // Détail (réponse d'eBay) au journal rédigé, pas d'objet brut sur la console.
+    await journaliserErreur(e, "ebay.feedback", {}, { durable: false });
     return { score: 0, positivePercent: 0, uniqueNegative: 0, uniqueNeutral: 0, uniquePositive: 0 };
   }
 }
@@ -302,7 +305,7 @@ export async function getTrafficReport(days = 90) {
     }
     return { views, impressions };
   } catch (e) {
-    console.warn("[eBay] getTrafficReport failed:", e);
+    await journaliserErreur(e, "ebay.trafic", {}, { durable: false });
     return { views: 0, impressions: 0 };
   }
 }
