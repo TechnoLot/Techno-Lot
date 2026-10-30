@@ -5,7 +5,7 @@
  * Même principe que la constante MODE_CSP de middleware.ts (CSP à nonce de
  * l'admin) : passer à "enforce" après une tournée des pages sans violation.
  */
-const MODE_CSP = "report-only";
+const MODE_CSP = "enforce";
 
 const ENTETE_CSP =
   MODE_CSP === "enforce" ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only";

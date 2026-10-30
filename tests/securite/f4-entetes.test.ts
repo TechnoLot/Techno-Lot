@@ -60,11 +60,11 @@ describe("next.config.mjs — en-têtes de sécurité", () => {
     });
   }
 
-  it("CSP publique en Report-Only sur le site public, jamais sur /admin", async () => {
+  it("CSP publique imposée sur le site public, jamais posée par next.config sur /admin", async () => {
     for (const chemin of ["/", "/en", "/blog", "/blog/un-article", "/en/blog", "/soumission", "/administration-x"]) {
       const e = await entetesPour(chemin);
-      expect(e["content-security-policy-report-only"], chemin).toBeTruthy();
-      expect(e["content-security-policy"], chemin).toBeUndefined();
+      expect(e["content-security-policy"], chemin).toBeTruthy();
+      expect(e["content-security-policy-report-only"], chemin).toBeUndefined();
     }
     for (const chemin of ["/admin", "/admin/login", "/admin/soumissions", "/admin/calculatrice/embed"]) {
       const e = await entetesPour(chemin);
@@ -74,7 +74,7 @@ describe("next.config.mjs — en-têtes de sécurité", () => {
   });
 
   it("CSP publique : directives attendues, repli Soro et pixels autorisés", async () => {
-    const csp = (await entetesPour("/blog"))["content-security-policy-report-only"];
+    const csp = (await entetesPour("/blog"))["content-security-policy"];
     const directives = Object.fromEntries(
       csp.split(";").map((d) => {
         const [nom, ...valeurs] = d.trim().split(/\s+/);

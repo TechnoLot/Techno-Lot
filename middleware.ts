@@ -18,7 +18,7 @@ import {
  * Passer à "enforce" après une tournée des pages admin sans violation.
  * La CSP publique (next.config.mjs) a sa propre constante MODE_CSP.
  */
-const MODE_CSP = "report-only" as "report-only" | "enforce";
+const MODE_CSP = "enforce" as "report-only" | "enforce";
 
 const ENTETE_CSP =
   MODE_CSP === "enforce" ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only";

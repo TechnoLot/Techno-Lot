@@ -51,7 +51,7 @@ const ADMIN = { id: "11111111-2222-4333-8444-555555555555", email: "info@technol
 const maintenant = () => Math.floor(Date.now() / 1000);
 const requete = (chemin: string, init?: ConstructorParameters<typeof NextRequest>[1]) =>
   new NextRequest(new URL(chemin, "https://technolot.ca"), init);
-const ENTETE = "content-security-policy-report-only";
+const ENTETE = "content-security-policy";
 
 beforeEach(() => {
   vi.stubEnv("ADMIN_EMAILS", "info@technolot.ca");
@@ -166,7 +166,7 @@ function nonceDe(politique: string | null): string | null {
 }
 
 describe("middleware", () => {
-  it("/admin/login : CSP Report-Only à nonce dans la requête transmise ET la réponse, sans vérifier la session", async () => {
+  it("/admin/login : CSP imposée à nonce dans la requête transmise ET la réponse, sans vérifier la session", async () => {
     const r = await middleware(requete("/admin/login"));
     const politique = r.headers.get(ENTETE);
     expect(politique).toMatch(/script-src 'self' 'nonce-[A-Za-z0-9+/=]+' 'strict-dynamic'/);
