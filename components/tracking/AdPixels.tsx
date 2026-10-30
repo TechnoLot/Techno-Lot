@@ -4,7 +4,6 @@ import Script from "next/script";
 
 const META_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 const GOOGLE_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
-const GOOGLE_LEAD_LABEL = process.env.NEXT_PUBLIC_GOOGLE_ADS_LEAD_LABEL;
 // GA4 (désactivé par défaut) : partage le même gtag que Google Ads.
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
 // Identifiant utilisé pour charger gtag.js (Google Ads en priorité).
@@ -12,28 +11,7 @@ const GTAG_ID = GOOGLE_ID || GA4_ID;
 // En local (npm run dev), pas de pixels : les visites de test iraient à Meta et Google.
 const EN_LOCAL = process.env.NODE_ENV === "development";
 
-type PixelWindow = Window & {
-  fbq?: (...args: unknown[]) => void;
-  gtag?: (...args: unknown[]) => void;
-};
-
-/** Déclenche la conversion « Lead » sur les pixels configurés. */
-export function trackLeadConversion(): void {
-  try {
-    const w = window as PixelWindow;
-    if (META_ID && w.fbq) w.fbq("track", "Lead");
-    if (GOOGLE_ID && GOOGLE_LEAD_LABEL && w.gtag) {
-      w.gtag("event", "conversion", {
-        send_to: `${GOOGLE_ID}/${GOOGLE_LEAD_LABEL}`,
-      });
-    }
-    if (GA4_ID && w.gtag) {
-      w.gtag("event", "generate_lead", { send_to: GA4_ID });
-    }
-  } catch {
-    /* ne jamais bloquer le formulaire */
-  }
-}
+// La conversion « Lead » du formulaire est dans components/formulaire/conversion.ts.
 
 /**
  * Charge Meta Pixel / Google tag (Ads, GA4) seulement si les variables d'env

@@ -1,6 +1,6 @@
 // Conversion « Lead » des pixels publicitaires, sans next/script : le formulaire
-// n'embarque plus AdPixels (déjà chargé par le layout) dans son propre fichier JS.
-// Même logique et mêmes variables que trackLeadConversion de components/tracking/AdPixels.tsx.
+// n'embarque plus AdPixels (chargé par le layout) dans son propre fichier JS.
+// Mêmes variables d'environnement que components/tracking/AdPixels.tsx.
 
 const META_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 const GOOGLE_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID;
