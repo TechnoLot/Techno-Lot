@@ -38,7 +38,7 @@ export function BarreChargement() {
   const cheminActuel = useRef(pathname);
   const minuteries = useRef<{ debut?: number; max?: number; fin?: number }>({});
   const visible = useRef(false);
-  const arreter = useRef<() => void>();
+  const arreter = useRef<(() => void) | undefined>(undefined);
 
   useEffect(() => {
     const el = barre.current;
