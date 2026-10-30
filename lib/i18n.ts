@@ -225,7 +225,7 @@ const fr = {
       `${n} photo${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""}`,
     genericError:
       "Une erreur est survenue lors de l'envoi. Veuillez réessayer.",
-    submit: "Envoyer ma soumission",
+    submit: "Obtenir mon offre gratuite",
     submitting: "Envoi en cours…",
     successTitle: "Soumission envoyée !",
     successText:
@@ -448,7 +448,7 @@ const en: Dict = {
     photosHint: "Multiple images accepted",
     photosSelected: (n: number) => `${n} photo${n > 1 ? "s" : ""} selected`,
     genericError: "Something went wrong while sending. Please try again.",
-    submit: "Send my request",
+    submit: "Get my free offer",
     submitting: "Sending…",
     successTitle: "Request sent!",
     successText:

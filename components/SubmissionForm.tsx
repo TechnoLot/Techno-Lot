@@ -370,6 +370,13 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
   const visible = (i: number) => !enhanced || step === i;
   const loading = status === "loading";
   const choisies = CATEGORIES.filter((c) => c !== "autre" && quantites[c] !== undefined);
+  // Incitation à décrire modèle + état : adaptée aux catégories choisies.
+  const materiauxChoisis = [
+    ...choisies.map((c) => t.categories[c].toLowerCase()),
+    ...autres.map((a) => a.nom.trim()).filter(Boolean),
+  ];
+  const descHelp =
+    materiauxChoisis.length > 0 ? t.descriptionHelpCats(joindreListe(materiauxChoisis, locale)) : t.descriptionHelp;
   const fichiers = [...inventaire, ...photos];
   const filesErrId = id("fichiers-err");
   const filesDescribedBy = [tropLourd ? filesErrId : "", rejet ? id("rejet") : ""].filter(Boolean).join(" ") || undefined;
@@ -474,6 +481,7 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
               {t.descriptionLabel}
               <span className="tlf-label-note">({t.descriptionOptional})</span>
             </label>
+            <p className="mb-2 mt-1 text-sm text-moss">{descHelp}</p>
             <textarea
               id={id("message")}
               name="message"
@@ -708,6 +716,12 @@ export default function SubmissionForm({ locale = "fr" }: { locale?: Locale }) {
       </form>
     </div>
   );
+}
+
+function joindreListe(items: string[], locale: Locale): string {
+  if (items.length <= 1) return items[0] ?? "";
+  const lien = locale === "en" ? "and" : "et";
+  return `${items.slice(0, -1).join(", ")} ${lien} ${items[items.length - 1]}`;
 }
 
 function ErrorText({ id, children }: { id: string; children: ReactNode }) {

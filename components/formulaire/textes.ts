@@ -77,11 +77,15 @@ const fr = {
   otherAdded: "Ligne « Autre » ajoutée : écrivez le matériel.",
   otherRemoved: "Ligne « Autre » retirée.",
   descriptionLabel: "Description du lot",
-  descriptionOptional: "facultatif",
+  descriptionOptional: "recommandé",
   descriptionPlaceholder:
     "Modèles, état, année, accessoires, lieu du ramassage… tout ce qui nous aide à évaluer votre lot.",
+  descriptionHelp:
+    "Indiquez les modèles, l'état et l'âge — ex. « 10 Dell Latitude 5420, bon état ». Plus votre description est précise, plus votre offre sera élevée et rapide.",
+  descriptionHelpCats: (cats: string) =>
+    `Pour vos ${cats}, indiquez les modèles et l'état — ex. « 10 Dell Latitude 5420, bon état ». Plus c'est précis, plus votre offre sera élevée et rapide.`,
   filesTitle: "Inventaire et photos",
-  filesHint: "Facultatif, mais une liste ou quelques photos accélèrent l'évaluation.",
+  filesHint: "Facultatif, mais une liste ou quelques photos accélèrent l'évaluation et valorisent votre offre.",
   dropInventoryTitle: "Inventaire",
   dropInventoryText: "Glissez votre fichier ici ou cliquez pour le choisir",
   dropInventoryFormats: "Excel, CSV ou PDF",
@@ -169,11 +173,15 @@ const en: TextesFormulaire = {
   otherAdded: "“Other” line added: type the equipment.",
   otherRemoved: "“Other” line removed.",
   descriptionLabel: "Lot description",
-  descriptionOptional: "optional",
+  descriptionOptional: "recommended",
   descriptionPlaceholder:
     "Models, condition, year, accessories, pickup location… anything that helps us appraise your lot.",
+  descriptionHelp:
+    "Add the models, condition and age — e.g. “10 Dell Latitude 5420, good condition”. The more precise your description, the higher and faster your offer.",
+  descriptionHelpCats: (cats) =>
+    `For your ${cats}, add the models and condition — e.g. “10 Dell Latitude 5420, good condition”. The more precise it is, the higher and faster your offer.`,
   filesTitle: "Inventory and photos",
-  filesHint: "Optional, but a list or a few photos speed up the appraisal.",
+  filesHint: "Optional, but a list or a few photos speed up the appraisal and improve your offer.",
   dropInventoryTitle: "Inventory",
   dropInventoryText: "Drop your file here or click to choose it",
   dropInventoryFormats: "Excel, CSV or PDF",
