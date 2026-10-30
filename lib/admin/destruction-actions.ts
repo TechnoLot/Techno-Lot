@@ -15,7 +15,7 @@ const PAGE = "/admin/destruction-donnees";
 const FICHES = "/admin/crm/[id]";
 
 async function adminConnecte() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

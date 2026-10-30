@@ -30,7 +30,7 @@ function daysSince(iso: string): number {
  * au plus récent (les plus « dus » en premier).
  */
 export default async function RelancesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: contactsRaw } = await supabase
     .from("contacts")

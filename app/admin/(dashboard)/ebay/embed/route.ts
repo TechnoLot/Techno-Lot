@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  * Le fichier vit hors de /public pour qu'il ne soit pas accessible sans auth.
  */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

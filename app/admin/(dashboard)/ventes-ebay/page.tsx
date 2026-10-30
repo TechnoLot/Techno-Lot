@@ -18,11 +18,12 @@ export const dynamic = "force-dynamic";
 const OPTIONS: PeriodeKey[] = ["aujourdhui", "hier", "semaine", "7j", "30j", "90j", "annee", "tout"];
 const PAR_PAGE = 25;
 
-export default async function VentesEbayPage({
-  searchParams,
-}: {
-  searchParams: { periode?: string; page?: string };
-}) {
+export default async function VentesEbayPage(
+  props: {
+    searchParams: Promise<{ periode?: string; page?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const configured = isEbayConfigured();
   const today = torontoDay();
   const lue = parsePeriode(searchParams.periode, "30j");

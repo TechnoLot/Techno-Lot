@@ -69,7 +69,7 @@ async function readAutoFlag(request: Request): Promise<boolean> {
 }
 
 async function getAdminClient(): Promise<SupabaseClient | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

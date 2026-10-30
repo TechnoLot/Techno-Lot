@@ -16,12 +16,13 @@ const VALID_STATUSES: LotStatus[] = [
   "cancelled",
 ];
 
-export default async function LotsListPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; status?: string };
-}) {
-  const supabase = createClient();
+export default async function LotsListPage(
+  props: {
+    searchParams: Promise<{ q?: string; status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const q = searchParams.q?.trim() ?? "";
   const statusParam = searchParams.status;
   const status = VALID_STATUSES.includes(statusParam as LotStatus)

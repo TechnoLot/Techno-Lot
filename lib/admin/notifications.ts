@@ -26,7 +26,7 @@ import {
   selectionnerNouveaux,
 } from "@/lib/admin/notifications-regles";
 
-type Supa = ReturnType<typeof createClient>;
+type Supa = Awaited<ReturnType<typeof createClient>>;
 
 const DAY_MS = 86_400_000;
 /** Pastille et alertes : les ventes passées il y a plus de 30 jours (synchronisées très en retard) sont ignorées. */

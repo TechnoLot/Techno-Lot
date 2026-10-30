@@ -45,7 +45,7 @@ const str = (v: unknown, max: number) =>
   typeof v === "string" ? v.trim().slice(0, max) : "";
 
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       ? rawNext
       : "/admin";
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const origin = getRequestOrigin(request);
   const redirectTo = `${origin}/admin/auth/callback?next=${encodeURIComponent(next)}`;
 

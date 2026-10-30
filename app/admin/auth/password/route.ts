@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: INVALID }, { status: 401 });
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {

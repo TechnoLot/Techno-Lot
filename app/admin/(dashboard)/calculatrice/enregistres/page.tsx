@@ -19,7 +19,7 @@ type SavedLotRow = {
  * Supabase). Cliquer « Ouvrir » recharge le lot dans la calculatrice.
  */
 export default async function LotsEnregistresPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("saved_lots")
     .select("id, name, data, created_at, updated_at, created_by_email")

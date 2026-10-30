@@ -48,12 +48,13 @@ function depuisSoumission(s: Soumission): FromSoumission {
   };
 }
 
-export default async function NewLotPage({
-  searchParams,
-}: {
-  searchParams: { soumission?: string };
-}) {
-  const supabase = createClient();
+export default async function NewLotPage(
+  props: {
+    searchParams: Promise<{ soumission?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const { data: savedLotsRaw } = await supabase
     .from("saved_lots")
     .select("id, name, data, updated_at")

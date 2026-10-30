@@ -35,7 +35,7 @@ function FacebookGlyph({ className = "h-3.5 w-3.5" }: { className?: string }) {
   );
 }
 
-const STYLES: Record<string, { label: string; cls: string; Icon: (p: { className?: string }) => JSX.Element }> = {
+const STYLES: Record<string, { label: string; cls: string; Icon: (p: { className?: string }) => React.JSX.Element }> = {
   meta: { label: "Meta", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: MetaGlyph },
   facebook: { label: "Facebook", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: FacebookGlyph },
   instagram: { label: "Instagram", cls: "border-admin-line bg-admin-page text-admin-ink", Icon: InstagramGlyph },

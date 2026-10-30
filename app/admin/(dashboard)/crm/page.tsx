@@ -45,22 +45,23 @@ export const dynamic = "force-dynamic";
  * filtres région / score min / statut de recherche, partenaires exclus
  * par défaut (case à cocher pour les inclure).
  */
-export default async function CrmPage({
-  searchParams,
-}: {
-  searchParams: {
-    q?: string;
-    score?: string;
-    region?: string;
-    status?: string;
-    suivi?: string;
-    partenaires?: string;
-    appel?: string;
-    ordre?: string;
-    seed?: string;
-  };
-}) {
-  const supabase = createClient();
+export default async function CrmPage(
+  props: {
+    searchParams: Promise<{
+      q?: string;
+      score?: string;
+      region?: string;
+      status?: string;
+      suivi?: string;
+      partenaires?: string;
+      appel?: string;
+      ordre?: string;
+      seed?: string;
+    }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
 
   const [{ data: companiesRaw, error }, { data: contactsRaw }] =
     await Promise.all([

@@ -35,7 +35,7 @@ export async function getEbayOrderRows<K extends keyof EbayOrderRow>(
   to: string | null,
   columns: readonly K[],
 ): Promise<Array<Pick<EbayOrderRow, K>>> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { gte, lt } = torontoRangeUtc(from, to);
   const out: Array<Pick<EbayOrderRow, K>> = [];
   for (let offset = 0; offset < 200_000; offset += PAGE) {
@@ -67,7 +67,7 @@ function normalizeRow(r: Record<string, unknown>): Record<string, unknown> {
 
 /** Dernière synchronisation (réussie et tentée) et accès aux frais. */
 export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const [{ data: lastOk }, { data: last }] = await Promise.all([
     supabase
       .from("ebay_sync_runs")
@@ -102,7 +102,7 @@ export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
 
 /** Dernières commandes (toutes, y compris annulées) pour l'affichage. */
 export async function getRecentEbayOrders(limit = 20): Promise<EbayOrderRow[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("ebay_orders")
     .select("*")
@@ -124,7 +124,7 @@ export async function getEbayOrdersPage(
   page: number,
   parPage: number,
 ): Promise<{ rows: EbayOrderRow[]; total: number; page: number; pageCount: number }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { gte, lt } = torontoRangeUtc(from, to);
   const taille = Math.max(1, Math.floor(parPage) || 1);
   const nbPages = (total: number) => Math.max(1, Math.ceil(total / taille));

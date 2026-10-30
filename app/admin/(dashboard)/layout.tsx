@@ -25,8 +25,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const theme = cookies().get("tl_admin_theme")?.value === "dark" ? "dark" : "light";
-  const supabase = createClient();
+  const theme = (await cookies()).get("tl_admin_theme")?.value === "dark" ? "dark" : "light";
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

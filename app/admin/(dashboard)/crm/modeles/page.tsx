@@ -16,7 +16,7 @@ const TYPE_ORDER = [
 
 /** Modèles de courriels de prospection — modifiables sans redéployer. */
 export default async function ModelesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: templatesRaw } = await supabase
     .from("email_templates")

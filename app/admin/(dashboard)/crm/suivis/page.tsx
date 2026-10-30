@@ -25,7 +25,7 @@ function formatFollowupDate(iso: string): string {
  * « À venir » pour les rappels futurs.
  */
 export default async function SuivisPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: companiesRaw, error } = await supabase
     .from("companies")

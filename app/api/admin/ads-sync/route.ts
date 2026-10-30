@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 async function getAdminClient(): Promise<SupabaseClient | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

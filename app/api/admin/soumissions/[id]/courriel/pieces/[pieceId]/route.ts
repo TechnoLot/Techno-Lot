@@ -19,8 +19,12 @@ function erreur(error: string, status: number) {
  * retrouvé ici à partir de la demande (jamais d'uid venu du navigateur) et la
  * pièce doit lui appartenir, sinon 404.
  */
-export async function GET(_request: Request, { params }: { params: { id: string; pieceId: string } }) {
-  const supabase = createClient();
+export async function GET(
+  _request: Request,
+  props: { params: Promise<{ id: string; pieceId: string }> }
+) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

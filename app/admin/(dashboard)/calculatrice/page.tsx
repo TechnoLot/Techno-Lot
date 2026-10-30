@@ -7,11 +7,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function CalculatricePage({
-  searchParams,
-}: {
-  searchParams: { lot?: string };
-}) {
+export default async function CalculatricePage(
+  props: {
+    searchParams: Promise<{ lot?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   // Le paramètre `?lot=<id>` est passé au route handler de l'iframe : le
   // script client de la calculatrice le lit et charge le lot depuis Supabase.
   const embedSrc = searchParams.lot

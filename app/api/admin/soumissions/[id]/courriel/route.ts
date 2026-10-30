@@ -20,8 +20,9 @@ function repondre(corps: ReponseCourriel, status = 200) {
  * lu par la Mail API de Hostinger → ReponseCourriel. Demande introuvable :
  * 404 ; erreur de Hostinger : 502 { etat: "erreur", message }.
  */
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

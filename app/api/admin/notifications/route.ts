@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "no-store" };
 
 async function getAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

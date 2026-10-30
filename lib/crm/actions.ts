@@ -18,7 +18,7 @@ import type {
 type Result = { ok: true } | { ok: false; error: string };
 
 async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -395,7 +395,7 @@ export async function logActivity(input: {
 }
 
 async function loadContactWithCompany(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   contactId: string,
 ): Promise<
   | { ok: true; contact: Contact; company: Company | null }
@@ -416,7 +416,7 @@ async function loadContactWithCompany(
 }
 
 async function loadActiveTemplate(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   type: TemplateType,
 ): Promise<EmailTemplate | null> {
   const { data } = await supabase

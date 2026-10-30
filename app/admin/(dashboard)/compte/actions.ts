@@ -6,7 +6,7 @@ import { isAdminEmail, PRENOM_MAX_LENGTH } from "@/lib/admin/config";
 
 /** Prénom enregistré dans user_metadata.prenom (null si absent ou sans session). */
 export async function getAdminPrenom(): Promise<string | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,7 +27,7 @@ export async function updateAdminPrenom(raw: string): Promise<PrenomResult> {
     };
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

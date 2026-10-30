@@ -32,7 +32,7 @@ const NB_VENTES = 8;
 
 type Sale = { sale_price: number | string; sold_at: string };
 type LotPeriode = Pick<Lot, "purchase_price" | "sale_price" | "purchased_at">;
-type SupabaseServer = ReturnType<typeof createClient>;
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
 /** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
 function torontoToday(now: Date): string {
@@ -61,12 +61,13 @@ async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
   return count;
 }
 
-export default async function AccueilPage({
-  searchParams,
-}: {
-  searchParams: { periode?: string | string[]; sp?: string | string[] };
-}) {
-  const supabase = createClient();
+export default async function AccueilPage(
+  props: {
+    searchParams: Promise<{ periode?: string | string[]; sp?: string | string[] }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

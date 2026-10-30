@@ -8,7 +8,7 @@ export const runtime = "nodejs";
  * Ferme la session Supabase courante et redirige vers la page de login.
  */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   return NextResponse.redirect(new URL("/admin/login", request.url), {
     status: 303,

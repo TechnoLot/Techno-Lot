@@ -24,12 +24,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * certificats_destruction). Depuis la fiche client : ?client=<id> prépare un
  * certificat pour cette compagnie, ?certificat=<id> rouvre un certificat.
  */
-export default async function DestructionDonneesPage({
-  searchParams,
-}: {
-  searchParams: { certificat?: string; client?: string };
-}) {
-  const supabase = createClient();
+export default async function DestructionDonneesPage(
+  props: {
+    searchParams: Promise<{ certificat?: string; client?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const aujourdhui = torontoDay();
   const annee = aujourdhui.slice(0, 4);
   const idCertificat = searchParams.certificat && UUID.test(searchParams.certificat) ? searchParams.certificat : null;

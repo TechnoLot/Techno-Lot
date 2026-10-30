@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return noContent();
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Fonction SQL track_ad_event (SECURITY DEFINER) : crée la session si
     // nouvelle puis ajoute l'événement — anon n'a aucun droit de lecture,

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   const soumissionId = crypto.randomUUID();
   let soumissionEnregistree = false;
   try {
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const { error: dbError } = await supabase.from("soumissions").insert({
       id: soumissionId,
       nom,
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
     const platforms = ["meta", "google", "organic", "referral", "direct", "email", "other"];
     const sid = typeof attr.id === "string" ? attr.id : "";
-    const supabase = createSupabaseClient();
+    const supabase = await createSupabaseClient();
     const lead = {
       session_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sid)
         ? sid

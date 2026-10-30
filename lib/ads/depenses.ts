@@ -17,7 +17,7 @@ export type AdSpend = {
  */
 export async function getAdSpend(from: string | null, to: string | null): Promise<AdSpend> {
   const status = getConfigStatus();
-  const supabase = createClient();
+  const supabase = await createClient();
   let query = supabase
     .from("ad_metrics_daily")
     .select(

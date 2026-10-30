@@ -18,8 +18,9 @@ function rediriger(url: string) {
  * directement sur le courriel de cette demande. Clé absente, demande ou
  * courriel introuvable, erreur de Hostinger : boîte de réception.
  */
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient();
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

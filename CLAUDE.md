@@ -1,6 +1,6 @@
 # Techno Lot — technolot.ca
 
-Site vitrine Next.js 14 (App Router, Tailwind, Supabase) + dashboard admin + CRM de prospection. Rachat de lots informatiques au Québec. Tout le contenu utilisateur est en français (Québec).
+Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM de prospection. Rachat de lots informatiques au Québec. Tout le contenu utilisateur est en français (Québec).
 
 ## Commandes
 

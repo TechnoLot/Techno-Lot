@@ -15,13 +15,14 @@ function safeDecode(v: string): string {
   }
 }
 
-export default async function AdDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { platform: string; adId: string };
-  searchParams: { period?: string; from?: string; to?: string };
-}) {
+export default async function AdDetailPage(
+  props: {
+    params: Promise<{ platform: string; adId: string }>;
+    searchParams: Promise<{ period?: string; from?: string; to?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (params.platform !== "meta" && params.platform !== "google") notFound();
   const platform = params.platform as AdPlatform;
   const adId = safeDecode(params.adId);

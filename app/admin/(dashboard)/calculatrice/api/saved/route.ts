@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // — Flow PKCE : ?code=xxx
   if (code) {

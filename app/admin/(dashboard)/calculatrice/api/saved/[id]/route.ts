@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -15,10 +15,8 @@ async function requireAdmin() {
 }
 
 /** GET /api/saved/[id] — récupère un lot enregistré (pour le rouvrir dans la calculatrice). */
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await requireAdmin();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -38,10 +36,8 @@ export async function GET(
 }
 
 /** DELETE : supprime un lot enregistré. */
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const ctx = await requireAdmin();
   if (!ctx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

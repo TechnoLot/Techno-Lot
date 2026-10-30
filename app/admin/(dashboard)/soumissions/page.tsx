@@ -39,12 +39,13 @@ function correspond(s: Soumission, q: string): boolean {
  * soumissions, remplie à chaque envoi en même temps que le courriel), avec
  * leur état (à traiter, lot créé) et les actions pour y répondre.
  */
-export default async function SoumissionsPage({
-  searchParams,
-}: {
-  searchParams: { q?: string; statut?: string; page?: string };
-}) {
-  const { error, rows } = await fetchSoumissions(createClient());
+export default async function SoumissionsPage(
+  props: {
+    searchParams: Promise<{ q?: string; statut?: string; page?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const { error, rows } = await fetchSoumissions(await createClient());
 
   const now = new Date();
   const q = searchParams.q?.trim() ?? "";

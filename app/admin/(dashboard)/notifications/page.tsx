@@ -20,12 +20,13 @@ export const dynamic = "force-dynamic";
  * zéro ; le fil se recharge seul quand quelque chose arrive (et la synchro
  * eBay tourne pendant la visite).
  */
-export default async function NotificationsPage({
-  searchParams,
-}: {
-  searchParams: { filtre?: string; periode?: string };
-}) {
-  const supabase = createClient();
+export default async function NotificationsPage(
+  props: {
+    searchParams: Promise<{ filtre?: string; periode?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

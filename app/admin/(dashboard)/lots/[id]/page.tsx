@@ -10,12 +10,13 @@ import type { Lot } from "@/lib/admin/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditLotPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const supabase = createClient();
+export default async function EditLotPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("lots")
     .select("*")

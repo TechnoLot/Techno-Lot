@@ -38,7 +38,7 @@ function formatDateTime(iso: string): string {
  * en haut pour repérer qui a besoin d'une relance.
  */
 export default async function SequencePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: contactsRaw, error: contactsError } = await supabase
     .from("contacts")

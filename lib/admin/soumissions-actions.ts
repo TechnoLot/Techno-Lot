@@ -16,7 +16,7 @@ export async function supprimerSoumission(
     return { ok: false, error: "Demande introuvable." };
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

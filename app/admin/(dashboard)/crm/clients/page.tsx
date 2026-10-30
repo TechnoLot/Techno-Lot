@@ -26,7 +26,7 @@ type ClientRow = Contact & {
  * de prospection.
  */
 export default async function ClientsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: rowsRaw, error } = await supabase
     .from("contacts")
