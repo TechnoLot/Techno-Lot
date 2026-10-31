@@ -192,3 +192,18 @@ export function counterpartPath(path: string, toLocale: Locale): string {
   const bare = p.replace(/^\/en(?=\/|$)/, "") || "/";
   return prefixed(toLocale, bare);
 }
+
+/**
+ * Anciens liens de l'ancien site (pub Google anglaise, résultats de
+ * recherche) : la langue passait par ?lang=en-US. Renvoie la page de la
+ * langue demandée (counterpartPath), ou null si le lien est déjà dans la
+ * bonne langue ou si le paramètre est absent ou inconnu.
+ */
+export function cheminAncienneLangue(path: string, lang: string | null): string | null {
+  const code = /^(en|fr)(?:[-_]|$)/i.exec(lang?.trim() ?? "")?.[1]?.toLowerCase();
+  if (!code) return null;
+  const enAnglais = /^\/en(?:\/|$)/.test(normalize(path));
+  if (code === "en" && !enAnglais) return counterpartPath(path, "en");
+  if (code === "fr" && enAnglais) return counterpartPath(path, "fr");
+  return null;
+}

@@ -271,4 +271,26 @@ describe("middleware", () => {
     const accueil = await middleware(requete("/"));
     expect(accueil.headers.get(ENTETE)).toBeNull();
   });
+
+  it("anciens liens ?lang= de l'ancien site → page de l'autre langue, suivi des pubs conservé", async () => {
+    const cas: [string, string | null][] = [
+      ["/?lang=en-US&utm_source=google&gclid=abc", "https://technolot.ca/en?utm_source=google&gclid=abc"],
+      ["/contact?lang=en-US", "https://technolot.ca/en/contact"],
+      ["/rachat-materiel-informatique-montreal?lang=en", "https://technolot.ca/en/it-equipment-buyback-montreal"],
+      // Page en français seulement : accueil anglais.
+      ["/rachat-materiel-informatique-laval?lang=en_CA", "https://technolot.ca/en"],
+      ["/politique-de-confidentialite?lang=EN-us", "https://technolot.ca/en/privacy-policy"],
+      ["/en/faq?lang=fr-FR", "https://technolot.ca/faq"],
+      // Déjà dans la bonne langue, ou valeur inconnue : rien à faire.
+      ["/en/contact?lang=en-US", null],
+      ["/faq?lang=fr", null],
+      ["/?lang=es", null],
+      ["/admin/login?lang=en-US", null],
+    ];
+    for (const [chemin, attendu] of cas) {
+      const r = await middleware(requete(chemin));
+      if (attendu) expect(r.status, chemin).toBe(308);
+      expect(r.headers.get("location"), chemin).toBe(attendu);
+    }
+  });
 });

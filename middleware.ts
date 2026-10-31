@@ -4,6 +4,7 @@ import { isAdminEmail } from "@/lib/admin/config";
 import { OPTIONS_COOKIES } from "@/lib/supabase/options-cookies";
 import { derniereAuthentification, sessionExpiree } from "@/lib/securite/age-session";
 import { doitPasserParMfa, niveauAal, urlMfa } from "@/lib/securite/mfa";
+import { cheminAncienneLangue } from "@/lib/seo/routes";
 import {
   cspAdmin,
   estRouteAdminPublique,
@@ -31,7 +32,9 @@ const ENTETE_CSP =
  *    ?token_hash=… sur n'importe quelle route non-admin (typiquement /
  *    en cas de fallback Site URL), on redirige vers le vrai callback.
  *
- * 2. Anciens liens ?post= du blogue (widget Soro).
+ * 2. Anciens liens ?post= du blogue (widget Soro), puis anciens liens de
+ *    langue ?lang=en-US de l'ancien site (pub Google anglaise) : redirection
+ *    vers la page de l'autre langue.
  *
  * 3. /admin/* :
  *    - CSP à nonce sur les pages (en-tête de la REQUÊTE pour que Next pose le
@@ -73,8 +76,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(target);
   }
 
-  // Hors /admin, on laisse tout passer (le matcher couvre "/", "/blog" et
-  // "/en/blog" pour les filets ci-dessus, mais rien d'autre à vérifier ici).
+  // — Anciens liens de langue de l'ancien site : /?lang=en-US (pub Google
+  // anglaise, résultats de recherche) ouvrait l'anglais. Redirection
+  // permanente vers la page équivalente de l'autre langue ; les autres
+  // paramètres (utm, gclid…) sont conservés pour le suivi des pubs.
+  const autreLangue = pathname.startsWith("/admin")
+    ? null
+    : cheminAncienneLangue(pathname, searchParams.get("lang"));
+  if (autreLangue) {
+    const target = request.nextUrl.clone();
+    target.pathname = autreLangue;
+    target.searchParams.delete("lang");
+    return NextResponse.redirect(target, 308);
+  }
+
+  // Hors /admin, on laisse tout passer (le matcher couvre "/", "/blog",
+  // "/en/blog" et les pages avec ?lang= pour les filets ci-dessus, mais rien
+  // d'autre à vérifier ici).
   if (!pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
@@ -197,6 +215,14 @@ export async function middleware(request: NextRequest) {
 export const config = {
   // "/" est ajouté pour attraper les redirections d'auth qui atterrissent
   // par erreur sur la racine (fallback Supabase Site URL) ; "/blog" et
-  // "/en/blog" pour les anciens liens ?post=<slug>.
-  matcher: ["/", "/blog", "/en/blog", "/admin/:path*"],
+  // "/en/blog" pour les anciens liens ?post=<slug> ; toute page publique avec
+  // ?lang= pour les anciens liens de langue (le middleware ne tourne pas sur
+  // les autres pages publiques).
+  matcher: [
+    "/",
+    "/blog",
+    "/en/blog",
+    "/admin/:path*",
+    { source: "/((?!_next/|api/|admin).*)", has: [{ type: "query", key: "lang" }] },
+  ],
 };
