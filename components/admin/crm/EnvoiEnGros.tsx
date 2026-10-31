@@ -76,15 +76,6 @@ const LIBELLES_SEPARATEURS: Record<string, string> = {
 const nombre = formaterNombre;
 const pluriel = (n: number, mot: string, motPluriel = `${mot}s`) => `${nombre(n)} ${n > 1 ? motPluriel : mot}`;
 
-/** Heure de la remise à zéro du quota de Resend (minuit UTC), à l'heure du Québec (ex. « 20 h »). */
-function heureRemiseQuota(): string {
-  const maintenant = new Date();
-  const minuitUtc = Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), maintenant.getUTCDate() + 1);
-  return new Intl.DateTimeFormat("fr-CA", { timeZone: "America/Toronto", hour: "numeric", hourCycle: "h23" }).format(
-    minuitUtc,
-  );
-}
-
 /**
  * Texte d'un fichier importé, lu dans le navigateur : UTF-8 (avec ou sans
  * BOM), UTF-16 (« Texte Unicode » d'Excel, tabulations) ou, à défaut,
@@ -154,7 +145,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     objet.trim() !== "" &&
     corps.trim() !== "";
   const prets = verification?.prets ?? 0;
-  /** Part du jour : les prêts, dans la limite du quota de Resend (le reste attend demain). */
+  /** Part du jour : les prêts, dans la limite du jour de l'envoi en gros (le reste attend demain). */
   const aujourdhui = verification?.aujourdhui ?? 0;
   const peutEnvoyer =
     verificationAJour &&
@@ -544,10 +535,9 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                 <li>Les adresses inconnues du CRM y deviendront des contacts (étape « Contacté » après l&apos;envoi).</li>
               )}
               <li>
-                Quota Resend du jour : {nombre(verification.quota.utilises)} sur {nombre(verification.quota.quota)} déjà
-                utilisés, {nombre(verification.quota.disponibles)} encore permis à l&apos;envoi en gros (
-                {nombre(verification.quota.reserve)} gardés pour les avis de soumission et les devis). Remise à zéro à{" "}
-                {heureRemiseQuota()} (minuit UTC).
+                Limite du jour : {nombre(verification.quota.utilises)} sur {nombre(verification.quota.plafond)} déjà
+                envoyés aujourd&apos;hui par l&apos;envoi en gros, {nombre(verification.quota.disponibles)} encore permis.
+                Remise à zéro à minuit.
               </li>
             </ul>
             {verification.prets > verification.aujourdhui && (
@@ -557,8 +547,8 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                       verification.prets - verification.aujourdhui > 1
                         ? `Les ${nombre(verification.prets - verification.aujourdhui)} autres`
                         : "Le dernier"
-                    } : relance la même liste demain, après ${heureRemiseQuota()} ; les adresses déjà servies seront exclues.`
-                  : `La part du jour de l'envoi en gros est épuisée (le reste du quota est gardé pour les avis de soumission et les devis). Relance la même liste demain, après ${heureRemiseQuota()}.`}
+                    } : relance la même liste demain ; les adresses déjà servies seront exclues.`
+                  : `La limite du jour de l'envoi en gros est atteinte (${nombre(verification.quota.plafond)} courriels par jour). Relance la même liste demain ; les adresses déjà servies seront exclues.`}
               </Alerte>
             )}
 
@@ -583,7 +573,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                     <button
                       type="button"
                       className="btn-secondary !px-4 !py-2"
-                      disabled={testEnCours || envoiEnCours || verification.quota.disponibles <= 0}
+                      disabled={testEnCours || envoiEnCours}
                       onClick={envoyerTest}
                     >
                       {testEnCours ? (
@@ -594,8 +584,8 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                       M&apos;envoyer un test
                     </button>
                     <span className="min-w-0 text-xs text-admin-muted">
-                      Ce courriel, à ton adresse seulement, avec « [Test] » devant l&apos;objet. Rien n&apos;est écrit
-                      dans le CRM ; compte pour un envoi dans le quota de Resend.
+                      Ce courriel, à ton adresse seulement, avec « [Test] » devant l&apos;objet. Il part de ta boîte
+                      info@ comme l&apos;envoi réel ; rien n&apos;est écrit dans le CRM.
                     </span>
                   </div>
                 )}
@@ -603,7 +593,8 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                   <p className="mt-2 flex items-start gap-2 text-sm text-admin-green">
                     <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                     <span className="min-w-0 break-words">
-                      Test envoyé à {test.a}. Regarde ta boîte de réception (et les indésirables).
+                      Test envoyé à {test.a}. Regarde ta boîte de réception (et les indésirables) ; une copie est aussi
+                      dans Envoyés.
                     </span>
                   </p>
                 )}
@@ -646,11 +637,10 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
           </label>
 
           <p className="mt-3 text-xs text-admin-muted">
-            Quota de Resend : {nombre(verification.quota.quota)} courriels par jour, remis à zéro à {heureRemiseQuota()}{" "}
-            (minuit UTC). L&apos;envoi en gros s&apos;arrête à {nombre(verification.quota.quota - verification.quota.reserve)}{" "}
-            par jour pour en garder {nombre(verification.quota.reserve)} aux avis du formulaire de soumission et aux
-            devis. Chaque destinataire compte pour un envoi (aucune copie à la boîte générale : l&apos;envoi reste noté
-            dans la fiche du CRM de chaque contact).
+            Les courriels partent de ta boîte info@, un à la fois : une copie de chacun est rangée dans Envoyés de ton
+            webmail Hostinger, et l&apos;envoi est noté dans la fiche du CRM de chaque contact.{" "}
+            {nombre(verification.quota.plafond)} courriels par jour au plus, pour protéger la réputation de ta boîte ;
+            remise à zéro à minuit.
             {prets > aujourdhui &&
               ` Aujourd'hui : ${nombre(aujourdhui)} sur ${nombre(prets)} ; relance la même liste demain pour les autres.`}
           </p>
@@ -695,10 +685,9 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                 {bilan.arret && (
                   <Alerte
                     ton={
-                      bilan.arret.motif === "quota_quotidien" ||
-                      bilan.arret.motif === "quota_mensuel" ||
                       bilan.arret.motif === "debit" ||
-                      bilan.arret.motif === "reserve"
+                      bilan.arret.motif === "incertain" ||
+                      bilan.arret.motif === "limite_jour"
                         ? "ambre"
                         : "rouge"
                     }

@@ -6,7 +6,7 @@ import EnvoiEnGros, { type ModeleDepart } from "@/components/admin/crm/EnvoiEnGr
 import { TEMPLATE_TYPE_LABELS, type TemplateType } from "@/lib/crm/types";
 
 export const dynamic = "force-dynamic";
-/** Un lot (100 courriels, fiches et traces) peut prendre plusieurs secondes. */
+/** Un lot (10 courriels envoyés un à un, fiches et traces) prend une vingtaine de secondes. */
 export const maxDuration = 60;
 
 /** Modèles proposés au départ d'un envoi en gros (pas les relances). */
@@ -14,8 +14,9 @@ const TYPES_PROPOSES: TemplateType[] = ["cold_outreach", "post_call_intro"];
 
 /**
  * Envoi en gros : une liste collée ou importée (CSV d'Excel), un objet et un
- * message, vérifiés côté serveur, puis envoyés par lots de 100, un courriel
- * personnalisé par destinataire (aucun ne voit les autres).
+ * message, vérifiés côté serveur, puis envoyés depuis la boîte info@ (Mail
+ * API de Hostinger, copie dans « Envoyés »), un courriel personnalisé par
+ * destinataire (aucun ne voit les autres).
  */
 export default async function EnvoiEnGrosPage() {
   const ctx = await exigerAdminPage("/admin/crm/envoi-en-gros");
@@ -51,7 +52,8 @@ export default async function EnvoiEnGrosPage() {
         <p className="mt-2 max-w-2xl text-sm text-admin-muted">
           Colle une liste d&apos;adresses ou importe un CSV, écris le message, vérifie, puis confirme.
           Chaque destinataire reçoit son propre courriel personnalisé (il ne voit jamais la liste),
-          envoyé par lots de 100 avec la signature et la mention de désabonnement.
+          envoyé depuis ta boîte info@ avec la signature et la mention de désabonnement ; une copie de
+          chacun est rangée dans Envoyés.
         </p>
       </header>
 

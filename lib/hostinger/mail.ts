@@ -26,6 +26,8 @@ const BASE = "https://api.mail.hostinger.com";
 const DELAI_MS = 10_000;
 /** Téléchargement d'une pièce : le délai couvre aussi la lecture du corps en flux. */
 const DELAI_PIECE_MS = 60_000;
+/** Envoi d'un courriel : remise au serveur d'envoi et copie dans « Envoyés » comprises. */
+const DELAI_ENVOI_MS = 20_000;
 
 const TROUVE_TTL_MS = 10 * 60_000;
 const INTROUVABLE_TTL_MS = 2 * 60_000;
@@ -119,6 +121,37 @@ async function idBoite(): Promise<string> {
   }
   boiteEnCache = boite.resourceId;
   return boite.resourceId;
+}
+
+// --- Envoi -----------------------------------------------------------------------
+
+export type CourrielSortant = {
+  to: string[];
+  subject: string;
+  html: string;
+  text: string;
+  /** Nom affiché devant l'adresse de la boîte (« Techno Lot »). */
+  displayName?: string;
+};
+
+/**
+ * Envoyeur lié à la boîte info@ : la boîte est trouvée d'abord (une erreur
+ * ici = rien n'est parti), puis chaque appel envoie UN courriel (POST /send,
+ * réponse 204 sans corps) ; Hostinger en range une copie dans « Envoyés »
+ * (INBOX.Sent). L'API n'accepte ni reply-to ni en-tête personnalisé : les
+ * réponses reviennent à la boîte elle-même. Échec : ErreurHostinger (statut
+ * HTTP, null si Hostinger n'a pas répondu à temps).
+ */
+export async function preparerEnvoyeur(): Promise<(courriel: CourrielSortant) => Promise<void>> {
+  const boite = await idBoite();
+  return async (courriel) => {
+    const res = await appel(
+      `/api/v1/mailboxes/${encodeURIComponent(boite)}/send`,
+      { method: "POST", body: JSON.stringify(courriel) },
+      DELAI_ENVOI_MS,
+    );
+    res.body?.cancel().catch(() => {});
+  };
 }
 
 // --- Recherche -----------------------------------------------------------------

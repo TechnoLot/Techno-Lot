@@ -3,9 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { avecRef, journaliserErreur, type ContexteJournal } from "@/lib/admin/erreurs-admin";
 import { courrielsDesabonnes } from "@/lib/crm/desabonnement";
 import { sendProspectBatch, type MotifArret } from "@/lib/crm/email";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
 import {
   cleCompagnie,
-  debutJourUtc,
+  debutJourQuebec,
   normaliserCourriel,
   normaliserObjet,
   OUTCOME_ENVOI_EN_GROS,
@@ -150,37 +151,19 @@ export async function chargerObjetsRecus(
 }
 
 /**
- * Quota de Resend du jour (depuis minuit UTC) d'après les envois notés en
- * base : traces de l'envoi en gros, courriels du CRM (intro et relances,
- * manuels ou automatiques) et avis du formulaire de soumission (fonction
- * admin_soumissions). Compte seulement (`head`), aucune ligne lue.
+ * Limite du jour (depuis minuit, heure du Québec) d'après les traces de
+ * l'envoi en gros : seuls ces courriels partent par la boîte info@ (le reste
+ * du site envoie par Resend). Compte seulement (`head`), aucune ligne lue.
  */
 export async function chargerQuotaDuJour(supabase: Client): Promise<{ ok: true; quota: QuotaJour } | Echec> {
-  const depuis = debutJourUtc();
-  const [enGros, crm, soumissions] = await Promise.all([
-    supabase
-      .from("outreach_activities")
-      .select("id", { count: "exact", head: true })
-      .eq("activity_type", "manual_note")
-      .eq("outcome", OUTCOME_ENVOI_EN_GROS)
-      .gte("created_at", depuis),
-    supabase
-      .from("outreach_activities")
-      .select("id", { count: "exact", head: true })
-      .in("activity_type", ["intro_email_sent", "followup_sent"])
-      .gte("created_at", depuis),
-    supabase.rpc("admin_soumissions", { p_since: depuis, p_limit: 500 }),
-  ]);
-  const erreur = enGros.error ?? crm.error ?? soumissions.error;
-  if (erreur) return { ok: false, erreur };
-  return {
-    ok: true,
-    quota: quotaDuJour({
-      enGros: enGros.count ?? 0,
-      crm: crm.count ?? 0,
-      soumissions: Array.isArray(soumissions.data) ? soumissions.data.length : 0,
-    }),
-  };
+  const { count, error } = await supabase
+    .from("outreach_activities")
+    .select("id", { count: "exact", head: true })
+    .eq("activity_type", "manual_note")
+    .eq("outcome", OUTCOME_ENVOI_EN_GROS)
+    .gte("created_at", debutJourQuebec());
+  if (error) return { ok: false, erreur: error };
+  return { ok: true, quota: quotaDuJour(count ?? 0) };
 }
 
 export type Preparation =
@@ -190,7 +173,7 @@ export type Preparation =
 /**
  * Plan d'envoi de la liste (lectures seulement) : désabonnements relus
  * (courrielsDesabonnes + unsubscribed_at des fiches), envois déjà faits et
- * quota de Resend du jour. Lecture impossible → aucun envoi.
+ * limite du jour. Lecture impossible → aucun envoi.
  */
 export async function preparerEnvoi(
   supabase: Client,
@@ -350,21 +333,22 @@ async function assurerFiches(ctx: ContexteLot, lot: readonly CourrielPrevu[]): P
   return fiches;
 }
 
-export type ArretLot = { motif: MotifArret | "fiches" | "trace" | "reserve"; message: string };
+export type ArretLot = { motif: MotifArret | "fiches" | "trace" | "limite_jour"; message: string };
 
 export type ResultatLot = {
   envoyes: number;
-  /** Courriels du lot non envoyés (fiche impossible, lot refusé par Resend). */
+  /** Courriels du lot non envoyés (fiche impossible, envoi arrêté par Hostinger). */
   echecs: number;
   /** Arrêt demandé : le navigateur n'enchaîne pas de lot suivant. */
   arret: ArretLot | null;
 };
 
 /**
- * Envoie UN lot (100 courriels au plus) :
+ * Envoie UN lot (10 courriels au plus) :
  *  1. fiches assurées (adresse inconnue → nouveau contact, compagnie réutilisée
  *     ou créée) ;
- *  2. envoi groupé (sendProspectBatch : mêmes éléments que l'envoi manuel) ;
+ *  2. envoi par la boîte info@ (sendProspectBatch : Mail API de Hostinger, un
+ *     courriel à la fois, copie dans « Envoyés ») ;
  *  3. trace de chaque courriel envoyé dans outreach_activities
  *     (`manual_note`, outcome `envoi_en_gros`, objet, 300 premiers caractères)
  *     — jamais `intro_email_sent`, que les relances automatiques suivent ;
@@ -374,11 +358,14 @@ export type ResultatLot = {
  */
 export async function executerLot(ctx: ContexteLot, lot: readonly CourrielPrevu[]): Promise<ResultatLot> {
   // Envoi impossible (clé absente) : aucune fiche créée pour rien.
-  if (!process.env.RESEND_API_KEY) {
+  if (!isMailApiConfigured()) {
     return {
       envoyes: 0,
       echecs: lot.length,
-      arret: { motif: "configuration", message: "Service de courriel non configuré (RESEND_API_KEY manquante)." },
+      arret: {
+        motif: "configuration",
+        message: "Envoi par la boîte info@ impossible : clé de la Mail API de Hostinger absente (HOSTINGER_MAIL_API_TOKEN).",
+      },
     };
   }
 
@@ -399,7 +386,6 @@ export async function executerLot(ctx: ContexteLot, lot: readonly CourrielPrevu[
 
   const bilan = await sendProspectBatch({
     courriels: avecFiche.map((c) => ({ to: c.destinataire.email, subject: c.objet, body: c.corps })),
-    replyTo: ctx.user.email ?? null,
     requestId: ctx.requestId,
   });
   const envoyes = bilan.envoyes.map((e) => avecFiche[e.index]);
@@ -456,7 +442,7 @@ export async function executerLot(ctx: ContexteLot, lot: readonly CourrielPrevu[
  * Verrou simple contre le double envoi : un seul lot à la fois dans ce
  * processus Node, tous admins confondus (rendu en fin de lot ; périmé après
  * 5 minutes). Ne couvre pas plusieurs processus : la déduplication par la
- * trace et la clé d'idempotence de Resend restent la protection principale.
+ * trace reste la protection principale.
  */
 let lotEnCoursDepuis: number | null = null;
 const VERROU_MAX_MS = 5 * 60_000;

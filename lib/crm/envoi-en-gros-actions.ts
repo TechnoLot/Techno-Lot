@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { adminPourAction, type ContexteAdmin } from "@/lib/securite/garde";
 import { limiterSelon, type RegleLimite } from "@/lib/securite/limite";
 import {
+  avecRef,
   echecAction,
   echecValidation,
   journaliserAction,
@@ -12,11 +13,11 @@ import {
   type EchecAction,
 } from "@/lib/admin/erreurs-admin";
 import { LIBELLES_ENVOI_EN_GROS, lotEnGrosSchema, verificationEnGrosSchema } from "@/lib/admin/schemas";
-import { apercuTexteProspect, sendProspectEmail } from "@/lib/crm/email";
+import { apercuTexteProspect, sendProspectBatch } from "@/lib/crm/email";
 import {
   aEnvoyerAujourdhui,
   analyserListe,
-  messageReserve,
+  messageLimiteJour,
   nombreDeLots,
   problemeBloquant,
   TAILLE_LOT,
@@ -43,9 +44,9 @@ import {
 
 /** « Vérifier la liste » : 30 vérifications / 10 min par admin. */
 const LIMITE_VERIFICATION: RegleLimite = { route: "envoi-gros:verif:admin:10min", fenetreSecondes: 600, max: 30 };
-/** Lots envoyés : 15 / h par admin (un envoi de 500 = 5 lots). */
-const LIMITE_LOTS: RegleLimite = { route: "envoi-gros:lot:admin:heure", fenetreSecondes: 3_600, max: 15 };
-/** « M'envoyer un test » : 10 / h par admin (chaque test compte dans le quota de Resend). */
+/** Lots envoyés : 30 / h par admin (la limite du jour, 100 courriels, tient en 10 lots). */
+const LIMITE_LOTS: RegleLimite = { route: "envoi-gros:lot:admin:heure", fenetreSecondes: 3_600, max: 30 };
+/** « M'envoyer un test » : 10 / h par admin (chaque test part de la boîte info@). */
 const LIMITE_TESTS: RegleLimite = { route: "envoi-gros:test:admin:heure", fenetreSecondes: 3_600, max: 10 };
 
 /** Exemples d'adresses exclues renvoyés à l'écran (le reste en nombre seulement). */
@@ -62,11 +63,11 @@ export type ResultatVerification = {
   dejaRecus: { nombre: number; exemples: string[] };
   /** Adresses inconnues du CRM : une fiche sera créée à l'envoi. */
   nouvellesFiches: number;
-  /** Lots de 100 pour la part du jour. */
+  /** Lots de 10 pour la part du jour. */
   lots: number;
-  /** Quota de Resend du jour : déjà utilisé, encore permis à l'envoi en gros, réserve. */
+  /** Limite du jour de l'envoi en gros : déjà envoyés aujourd'hui, encore permis. */
   quota: QuotaJour;
-  /** Destinataires servis aujourd'hui (prêts, dans la limite du quota) ; le reste attend demain. */
+  /** Destinataires servis aujourd'hui (prêts, dans la limite du jour) ; le reste attend demain. */
   aujourdhui: number;
   /** Courriel rendu pour le premier destinataire prêt (version texte envoyée). */
   apercu: { a: string; objet: string; texte: string } | null;
@@ -78,7 +79,7 @@ export type ResultatLotEnGros = {
   echecs: number;
   /** Destinataires encore à servir aujourd'hui après ce lot (lots suivants). */
   restants: number;
-  /** Plus rien à envoyer aujourd'hui (liste finie, ou part du jour épuisée : arrêt « réserve »). */
+  /** Plus rien à envoyer aujourd'hui (liste finie, ou part du jour épuisée : arrêt « limite du jour »). */
   termine: boolean;
   arret: ArretLot | null;
 };
@@ -163,9 +164,9 @@ export async function verifierEnvoiEnGros(entree: {
 /**
  * « M'envoyer un test » : le courriel du premier destinataire prêt (variables
  * remplies, comme l'aperçu), envoyé à l'admin connecté SEULEMENT, objet
- * précédé de « [Test] ». Même mise en page, signature et mention de
- * désabonnement que l'envoi réel ; ni copie cachée, ni écriture dans le CRM
- * (aucune fiche, aucune trace). Compte pour un envoi dans le quota de Resend.
+ * précédé de « [Test] ». Même chemin que l'envoi réel (boîte info@, Mail API
+ * de Hostinger, copie dans « Envoyés ») ; aucune écriture dans le CRM (ni
+ * fiche, ni trace) et hors de la limite du jour.
  */
 export async function envoyerTestEnGros(entree: {
   destinataires: string;
@@ -195,22 +196,22 @@ export async function envoyerTestEnGros(entree: {
     if (!premier) {
       return { ok: false, error: "Aucun destinataire à servir (tous sont exclus) : rien à tester." };
     }
-    if (prep.quota.disponibles <= 0) {
-      return {
-        ok: false,
-        error: "Le quota du jour qui reste est gardé pour les avis de soumission et les devis : test impossible avant demain.",
-      };
-    }
 
-    const envoi = await sendProspectEmail({
-      to: a,
-      subject: `[Test] ${premier.objet}`,
-      body: premier.corps,
-      replyTo: a,
+    const envoi = await sendProspectBatch({
+      courriels: [{ to: a, subject: `[Test] ${premier.objet}`, body: premier.corps }],
       requestId: ctx.requestId,
-      copieCachee: false,
     });
-    if (!envoi.ok) return { ok: false, error: envoi.error };
+    if (envoi.arret) {
+      // Test sans trace : « peut-être parti » se vérifie dans la boîte, sans rien compter.
+      const error =
+        envoi.arret.motif === "incertain"
+          ? avecRef(
+              "Hostinger n'a pas confirmé l'envoi du test (délai dépassé ou panne de son côté). Regarde dans ta boîte dans une minute avant de réessayer.",
+              envoi.arret.ref ?? ctx.requestId,
+            )
+          : envoi.arret.message;
+      return { ok: false, error };
+    }
 
     void journaliserAction("crm.envoi_en_gros_test", ctx);
     return { ok: true, a };
@@ -260,29 +261,32 @@ export async function envoyerLotEnGros(entree: {
     if (!prep.ok) return await echecAction(prep.erreur, prep.operation, ctx, "Lecture du CRM impossible : aucun envoi.");
     const { plan, quota } = prep;
 
-    // Part du jour : les prêts, dans la limite du quota de Resend (réserve gardée au reste du site).
-    // Chaque courriel envoyé quitte les prêts et entre dans le quota : prêts + déjà envoyés reste constant.
+    // Part du jour : les prêts, dans la limite du jour de l'envoi en gros.
+    // Chaque courriel envoyé quitte les prêts et entre dans la limite : prêts + déjà envoyés reste constant.
     const aujourdhui = aEnvoyerAujourdhui(plan.prets.length, quota);
     const attendu = aujourdhui + v.dejaEnvoyes;
     if (attendu !== v.nombre) {
       return {
         ok: false,
-        error: `Le nombre confirmé (${v.nombre}) ne correspond plus à la liste (${attendu} destinataires) : la liste ou le quota du jour a changé. Vérifie la liste de nouveau avant d'envoyer.`,
+        error: `Le nombre confirmé (${v.nombre}) ne correspond plus à la liste (${attendu} destinataires) : la liste ou la limite du jour a changé. Vérifie la liste de nouveau avant d'envoyer.`,
       };
     }
     if (aujourdhui === 0) {
       // Rien à servir aujourd'hui : liste finie, ou part du jour épuisée (le reste attend demain).
-      const arret: ArretLot | null = plan.prets.length > 0 ? { motif: "reserve", message: messageReserve(quota) } : null;
+      const arret: ArretLot | null =
+        plan.prets.length > 0 ? { motif: "limite_jour", message: messageLimiteJour(quota) } : null;
       return { ok: true, envoyes: 0, echecs: 0, restants: 0, termine: true, arret };
     }
 
     const lot = plan.prets.slice(0, Math.min(TAILLE_LOT, aujourdhui));
     const resultat = await executerLot(ctx, lot);
     const restants = aujourdhui - resultat.envoyes;
-    // Part du jour servie, liste pas finie : arrêt « réserve », le reste repart demain.
+    // Part du jour servie, liste pas finie : arrêt « limite du jour », le reste repart demain.
     const arret: ArretLot | null =
       resultat.arret ??
-      (restants === 0 && plan.prets.length > aujourdhui ? { motif: "reserve", message: messageReserve(quota) } : null);
+      (restants === 0 && plan.prets.length > aujourdhui
+        ? { motif: "limite_jour", message: messageLimiteJour(quota) }
+        : null);
 
     void journaliserAction("crm.envoi_en_gros_lot", ctx, {
       envoyes: resultat.envoyes,

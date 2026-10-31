@@ -1,7 +1,8 @@
-import { createHash } from "node:crypto";
+import { setTimeout as attendre } from "node:timers/promises";
 import { Resend, type CreateEmailOptions } from "resend";
 import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
-import { decouperEnLots, TAILLE_LOT } from "@/lib/crm/envoi-en-gros";
+import { isMailApiConfigured } from "@/lib/hostinger/config";
+import { ErreurHostinger, preparerEnvoyeur, type CourrielSortant } from "@/lib/hostinger/mail";
 
 // Moteur des variables : module pur (aussi utilisé par le navigateur pour
 // l'envoi en gros), ré-exporté ici pour les appelants existants.
@@ -166,17 +167,13 @@ function adressesEnvoi(): AdressesEnvoi {
 }
 
 /**
- * Éléments d'un courriel de prospection, identiques pour l'envoi unitaire
- * (sendProspectEmail) et l'envoi groupé (sendProspectBatch) : expéditeur,
- * destinataire seul dans `to`, reply-to, signature, mention de désabonnement
- * et en-tête List-Unsubscribe. Copie cachée à la boîte générale seulement si
- * `copieCachee` : Resend compte chaque copie comme un envoi de plus dans son
- * quota, d'où son absence dans l'envoi en gros.
+ * Courriel de prospection envoyé par Resend (envoi manuel, relances) :
+ * expéditeur, destinataire seul dans `to`, copie cachée à la boîte générale,
+ * reply-to, signature, mention de désabonnement et en-tête List-Unsubscribe.
  */
 function courrielProspect(
   opts: { to: string; subject: string; body: string; replyTo?: string | null },
   { fromAddress, bccAddress }: AdressesEnvoi,
-  copieCachee: boolean,
 ): CreateEmailOptions {
   // LCAP : les demandes de désabonnement arrivent dans la boîte générale
   // (en-tête List-Unsubscribe, plus la mention sous la signature si le
@@ -185,7 +182,7 @@ function courrielProspect(
   return {
     from: `Techno Lot <${fromAddress}>`,
     to: [opts.to],
-    bcc: copieCachee && bccAddress !== opts.to ? [bccAddress] : undefined,
+    bcc: bccAddress !== opts.to ? [bccAddress] : undefined,
     replyTo: opts.replyTo ? [opts.replyTo] : undefined,
     subject: opts.subject,
     html: wrapHtml(opts.body, opts.subject, desabonnement),
@@ -217,8 +214,6 @@ export async function sendProspectEmail(opts: {
   replyTo?: string | null;
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
-  /** Copie cachée à la boîte générale (oui par défaut ; non pour le test de l'envoi en gros). */
-  copieCachee?: boolean;
 }): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -232,7 +227,7 @@ export async function sendProspectEmail(opts: {
 
   try {
     const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send(courrielProspect(opts, adresses, opts.copieCachee ?? true));
+    const { data, error } = await resend.emails.send(courrielProspect(opts, adresses));
     if (error) {
       // Détail de Resend au journal seulement (check 20).
       const ref = await journaliserErreur(error, "crm.resend", { requestId: opts.requestId });
@@ -245,140 +240,118 @@ export async function sendProspectEmail(opts: {
   }
 }
 
-// --- Envoi groupé (envoi en gros du CRM) ------------------------------------------------
+// --- Envoi en gros : boîte info@ (Mail API de Hostinger) ---------------------------------
 
 export type CourrielGroupe = { to: string; subject: string; body: string };
 
 /** Pourquoi un envoi groupé s'est arrêté avant la fin. */
-export type MotifArret = "quota_quotidien" | "quota_mensuel" | "debit" | "configuration" | "erreur";
+export type MotifArret = "debit" | "configuration" | "incertain" | "erreur";
 
 export type BilanEnvoiGroupe = {
-  /** Courriels acceptés par Resend ; `index` = position dans `courriels`. */
-  envoyes: { index: number; to: string; id: string | null }[];
-  /** Lots acceptés (100 courriels au plus chacun). */
-  lotsEnvoyes: number;
-  /** Arrêt avant la fin : lot refusé en entier, lots suivants jamais tentés. */
+  /**
+   * Courriels partis, dans l'ordre ; `index` = position dans `courriels`. Un
+   * arrêt « incertain » y compte aussi son dernier courriel (peut-être parti).
+   */
+  envoyes: { index: number; to: string }[];
+  /** Arrêt avant la fin : les courriels suivants ne sont jamais tentés. */
   arret: { motif: MotifArret; message: string; ref?: string } | null;
 };
 
+/** Pause entre deux envois : rythme modéré pour la boîte info@ et la limite de débit de l'API. */
+export const PAUSE_ENTRE_ENVOIS_MS = 1_000;
+
 const MESSAGES_ARRET: Record<MotifArret, string> = {
-  quota_quotidien:
-    "Quota quotidien de Resend atteint : l'envoi s'est arrêté. Relance demain avec la même liste ; les adresses qui ont déjà reçu ce courriel seront exclues automatiquement.",
-  quota_mensuel:
-    "Quota mensuel de Resend atteint : l'envoi s'est arrêté. Relance après le renouvellement du forfait (ou augmente-le), avec la même liste ; les adresses déjà servies seront exclues.",
-  debit: "Resend limite le nombre d'envois à la seconde : l'envoi s'est arrêté. Réessaie dans une minute avec la même liste.",
-  configuration: "Service de courriel non configuré (RESEND_API_KEY manquante).",
-  erreur: "L'envoi du lot a échoué.",
+  debit:
+    "Hostinger limite le nombre d'envois : l'envoi s'est arrêté. Réessaie dans quelques minutes ; les adresses déjà servies seront exclues.",
+  configuration:
+    "Envoi par la boîte info@ impossible : clé de la Mail API de Hostinger absente ou refusée (HOSTINGER_MAIL_API_TOKEN). Aucun courriel n'est parti.",
+  incertain:
+    "Hostinger n'a pas confirmé un envoi (délai dépassé ou panne de son côté) : l'envoi s'est arrêté par prudence. Ce courriel est peut-être parti (regarde dans Envoyés) ; il est compté comme envoyé pour ne jamais partir deux fois.",
+  erreur:
+    "L'envoi par Hostinger a échoué : l'envoi s'est arrêté. Réessaie dans quelques minutes ; les adresses déjà servies seront exclues.",
 };
 
 /**
- * Motif d'une erreur de Resend. Le type (`name`, ex. « daily_quota_exceeded »,
- * HTTP 429) n'est pas dans les types du SDK : lu à l'exécution, avec repli sur
- * le statut et le message pour un 429 sans type reconnu.
+ * Motif d'une erreur de la Mail API. Sans réponse ou avec une erreur 5xx, le
+ * courriel est PEUT-ÊTRE parti (« incertain »), sauf `avantEnvoi` : l'erreur
+ * est survenue avant toute requête d'envoi (boîte introuvable…), rien n'est
+ * parti. Une erreur qui ne vient pas de Hostinger n'a rien envoyé.
  */
-export function motifErreurResend(erreur: unknown): Exclude<MotifArret, "configuration"> {
-  const e = (erreur && typeof erreur === "object" ? erreur : {}) as {
-    name?: unknown;
-    message?: unknown;
-    statusCode?: unknown;
-  };
-  const nom = typeof e.name === "string" ? e.name : "";
-  if (nom === "daily_quota_exceeded") return "quota_quotidien";
-  if (nom === "monthly_quota_exceeded") return "quota_mensuel";
-  if (nom === "rate_limit_exceeded") return "debit";
-  if (e.statusCode === 429) {
-    const message = typeof e.message === "string" ? e.message : "";
-    if (/daily|quotidien/i.test(message)) return "quota_quotidien";
-    if (/month|mensuel/i.test(message)) return "quota_mensuel";
-    return "debit";
-  }
+export function motifErreurHostinger(erreur: unknown, avantEnvoi = false): MotifArret {
+  if (!(erreur instanceof ErreurHostinger)) return "erreur";
+  const statut = erreur.status;
+  if (statut === 429) return "debit";
+  if (statut === 401 || statut === 403 || statut === 404) return "configuration";
+  if (!avantEnvoi && (statut === null || statut >= 500)) return "incertain";
   return "erreur";
 }
 
 /**
- * Clé d'idempotence d'un lot (en-tête Idempotency-Key, gardée 24 h par
- * Resend) : même lot, même jour UTC (remise à zéro du quota) → même clé, et
- * Resend renvoie la réponse d'origine sans renvoyer les courriels (requête
- * rejouée après une coupure réseau). Deux envois simultanés du même lot :
- * le second est refusé (409).
+ * Courriel de l'envoi en gros, parti de la boîte info@ : nom « Techno Lot »,
+ * même mise en page, signature et mention de désabonnement que l'envoi
+ * manuel. Ni reply-to, ni copie cachée, ni List-Unsubscribe (l'API ne les
+ * accepte pas) : les réponses, « désabonner » compris, reviennent à info@, la
+ * copie est dans « Envoyés » et la mention dans le texte suffit à la LCAP.
  */
-function cleIdempotence(lot: readonly CreateEmailOptions[]): string {
-  const jour = new Date().toISOString().slice(0, 10);
-  const empreinte = createHash("sha256").update(JSON.stringify(lot)).digest("hex");
-  return `envoi-en-gros/${jour}/${empreinte}`;
+function courrielHostinger(c: CourrielGroupe, { bccAddress }: AdressesEnvoi): CourrielSortant {
+  const desabonnement = mentionneDesabonnement(c.body) ? null : bccAddress;
+  return {
+    to: [c.to],
+    displayName: "Techno Lot",
+    subject: c.subject,
+    html: wrapHtml(c.body, c.subject, desabonnement),
+    text: wrapText(c.body, desabonnement),
+  };
 }
 
-const pause = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
 /**
- * Envoie des courriels de prospection par l'envoi groupé de Resend, par
- * tranches de 100 (une requête par tranche). Chaque courriel a les éléments
- * de sendProspectEmail (courrielProspect) : son propre destinataire (aucun ne
- * voit les autres), signature, mention et en-tête de désabonnement. Pas de
- * copie cachée à la boîte générale : chaque copie compterait comme un envoi
- * de plus dans le quota de Resend (la trace de l'envoi est dans la fiche du
- * CRM). Pas de pièce jointe (non prise en charge par l'envoi groupé).
- *
- * Le SDK (resend 4.8) n'offre pas la validation permissive : une seule
- * adresse refusée fait échouer toute la tranche, d'où la validation préalable
- * de chaque adresse (lib/crm/envoi-en-gros.ts). Une tranche refusée arrête
- * l'envoi : les suivantes ne sont jamais tentées (quota quotidien ou mensuel
- * compris) ; une limite de débit est réessayée une fois. Détail de Resend au
- * journal seulement. Vérifier les désabonnements avant d'appeler.
+ * Envoie des courriels de prospection depuis la boîte info@ par la Mail API
+ * de Hostinger, UN à la fois, avec une pause entre deux : chacun a son propre
+ * destinataire (aucun ne voit les autres) et Hostinger en range une copie
+ * dans « Envoyés ». Le premier échec arrête tout, les courriels suivants ne
+ * sont jamais tentés : limite de débit (aucun nouvel essai : des dépassements
+ * répétés peuvent faire bloquer l'adresse IP du site), clé refusée, courriel
+ * refusé, ou pas de réponse (« incertain » : compté comme envoyé, pour ne
+ * jamais envoyer deux fois). Détail de Hostinger au journal seulement.
+ * Vérifier les désabonnements avant d'appeler.
  */
 export async function sendProspectBatch(opts: {
   courriels: readonly CourrielGroupe[];
-  replyTo?: string | null;
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
-  /** Pause avant de réessayer après une limite de débit, en ms (tests : 0). */
-  pauseDebitMs?: number;
 }): Promise<BilanEnvoiGroupe> {
-  const bilan: BilanEnvoiGroupe = { envoyes: [], lotsEnvoyes: 0, arret: null };
+  const bilan: BilanEnvoiGroupe = { envoyes: [], arret: null };
   if (opts.courriels.length === 0) return bilan;
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
+  if (!isMailApiConfigured()) {
     bilan.arret = { motif: "configuration", message: MESSAGES_ARRET.configuration };
     return bilan;
   }
 
+  const arreter = async (erreur: unknown, motif: MotifArret): Promise<BilanEnvoiGroupe> => {
+    // Détail de Hostinger au journal seulement (check 20).
+    const ref = await journaliserErreur(erreur, "crm.envoi_gros.hostinger", { requestId: opts.requestId });
+    bilan.arret = { motif, message: avecRef(MESSAGES_ARRET[motif], ref), ref };
+    return bilan;
+  };
+
+  let envoyer: (courriel: CourrielSortant) => Promise<void>;
+  try {
+    envoyer = await preparerEnvoyeur();
+  } catch (err) {
+    return arreter(err, motifErreurHostinger(err, true));
+  }
+
   const adresses = adressesEnvoi();
-  const resend = new Resend(apiKey);
-  const lots = decouperEnLots(
-    opts.courriels.map((courriel, index) => ({ courriel, index })),
-    TAILLE_LOT,
-  );
-
-  for (const lot of lots) {
-    let erreur: unknown = null;
-    let ids: ({ id?: string } | undefined)[] = [];
+  for (const [index, courriel] of opts.courriels.entries()) {
+    if (index > 0) await attendre(PAUSE_ENTRE_ENVOIS_MS);
     try {
-      const charge = lot.map(({ courriel }) => courrielProspect({ ...courriel, replyTo: opts.replyTo }, adresses, false));
-      const options = { idempotencyKey: cleIdempotence(charge) };
-      let reponse = await resend.batch.send(charge, options);
-      if (reponse.error && motifErreurResend(reponse.error) === "debit") {
-        await pause(opts.pauseDebitMs ?? 1_100);
-        reponse = await resend.batch.send(charge, options);
-      }
-      if (reponse.error) erreur = reponse.error;
-      else ids = reponse.data?.data ?? [];
+      await envoyer(courrielHostinger(courriel, adresses));
     } catch (err) {
-      erreur = err ?? new Error("Échec de l'envoi groupé.");
+      const motif = motifErreurHostinger(err);
+      if (motif === "incertain") bilan.envoyes.push({ index, to: courriel.to });
+      return arreter(err, motif);
     }
-
-    if (erreur) {
-      const motif = motifErreurResend(erreur);
-      // Détail de Resend au journal seulement (check 20).
-      const ref = await journaliserErreur(erreur, "crm.envoi_gros.resend", { requestId: opts.requestId });
-      bilan.arret = { motif, message: avecRef(MESSAGES_ARRET[motif], ref), ref };
-      return bilan;
-    }
-
-    lot.forEach(({ courriel, index }, i) => {
-      bilan.envoyes.push({ index, to: courriel.to, id: ids[i]?.id ?? null });
-    });
-    bilan.lotsEnvoyes++;
+    bilan.envoyes.push({ index, to: courriel.to });
   }
   return bilan;
 }

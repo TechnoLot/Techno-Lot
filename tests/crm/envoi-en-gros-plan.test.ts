@@ -1,29 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
 
-// email.ts (ré-export du moteur) importe Resend : jamais de réseau ici.
+// email.ts (ré-export du moteur) importe Resend et le client de Hostinger : jamais de réseau ici.
 vi.mock("resend", () => ({ Resend: class {} }));
 
 import { renderTemplate as renderTemplateCrm } from "@/lib/crm/email";
 import {
   aEnvoyerAujourdhui,
   cleCompagnie,
-  debutJourUtc,
-  decouperEnLots,
+  debutJourQuebec,
   formaterNombre,
-  messageReserve,
+  messageLimiteJour,
   nombreDeLots,
   normaliserObjet,
+  PLAFOND_QUOTIDIEN,
   planifierEnvoi,
   quotaDuJour,
   renderTemplate,
+  TAILLE_LOT,
   variablesDestinataire,
   type ContactConnu,
   type Destinataire,
 } from "@/lib/crm/envoi-en-gros";
 
 /*
- * Envoi en gros — découpage en lots, rendu des variables et replis, plan
- * d'envoi (exclusion des désabonnés et des adresses qui ont déjà reçu l'objet).
+ * Envoi en gros — lots, rendu des variables et replis, plan d'envoi
+ * (exclusion des désabonnés et des adresses qui ont déjà reçu l'objet),
+ * limite du jour.
  */
 
 const dest = (email: string, champs: Partial<Destinataire> = {}): Destinataire => ({
@@ -49,21 +51,11 @@ const contact = (email: string, champs: Partial<ContactConnu> = {}): ContactConn
   ...champs,
 });
 
-describe("découpage en lots de 100", () => {
-  it("tranches de 100 au plus, dans l'ordre", () => {
-    const n = (k: number) => Array.from({ length: k }, (_, i) => i);
-    expect(decouperEnLots([])).toEqual([]);
-    expect(decouperEnLots(n(100)).map((l) => l.length)).toEqual([100]);
-    expect(decouperEnLots(n(101)).map((l) => l.length)).toEqual([100, 1]);
-    expect(decouperEnLots(n(250)).map((l) => l.length)).toEqual([100, 100, 50]);
-    expect(decouperEnLots(n(500)).map((l) => l.length)).toEqual([100, 100, 100, 100, 100]);
-    expect(decouperEnLots(n(250)).flat()).toEqual(n(250));
-    expect(decouperEnLots(n(5), 2)).toEqual([[0, 1], [2, 3], [4]]);
-  });
-
-  it("taille invalide refusée ; nombre de lots", () => {
-    expect(() => decouperEnLots([1], 0)).toThrow(RangeError);
-    expect([0, 1, 100, 101, 500].map((k) => nombreDeLots(k))).toEqual([0, 1, 1, 2, 5]);
+describe("lots de 10 (un appel au serveur par lot)", () => {
+  it("nombre de lots", () => {
+    expect(TAILLE_LOT).toBe(10);
+    expect([0, 1, 10, 11, 100, 500].map((k) => nombreDeLots(k))).toEqual([0, 1, 1, 2, 10, 50]);
+    expect(nombreDeLots(5, 2)).toBe(3);
   });
 });
 
@@ -185,31 +177,33 @@ describe("petits utilitaires", () => {
   });
 });
 
-describe("quota du jour (forfait gratuit de Resend)", () => {
-  it("un par envoi en gros, deux par courriel du CRM, un par avis de soumission ; réserve de 20 déduite", () => {
-    expect(quotaDuJour({ enGros: 10, crm: 5, soumissions: 3 })).toEqual({
-      utilises: 23,
-      disponibles: 57,
-      quota: 100,
-      reserve: 20,
-    });
-    expect(quotaDuJour({ enGros: 0, crm: 0, soumissions: 0 }).disponibles).toBe(80);
+describe("limite du jour (boîte info@, 100 courriels par jour)", () => {
+  it("envois du jour déduits du plafond", () => {
+    expect(PLAFOND_QUOTIDIEN).toBe(100);
+    expect(quotaDuJour(23)).toEqual({ utilises: 23, disponibles: 77, plafond: 100 });
+    expect(quotaDuJour(0).disponibles).toBe(100);
   });
 
-  it("jamais négatif, même au-delà du quota", () => {
-    expect(quotaDuJour({ enGros: 70, crm: 10, soumissions: 5 }).disponibles).toBe(0);
+  it("jamais négatif, même au-delà du plafond", () => {
+    expect(quotaDuJour(130).disponibles).toBe(0);
   });
 
   it("part du jour : les prêts, dans la limite du disponible", () => {
-    const quota = quotaDuJour({ enGros: 50, crm: 0, soumissions: 0 }); // 30 disponibles
+    const quota = quotaDuJour(70); // 30 disponibles
     expect(aEnvoyerAujourdhui(10, quota)).toBe(10);
     expect(aEnvoyerAujourdhui(150, quota)).toBe(30);
     expect(aEnvoyerAujourdhui(0, quota)).toBe(0);
-    expect(messageReserve(quota)).toMatch(/80 courriels par jour au plus, pour garder 20 envois/);
+    expect(messageLimiteJour(quota)).toMatch(/100 courriels par jour au plus, pour protéger la réputation de ta boîte info@/);
   });
 
-  it("jour civil UTC : 23 h 30 à Montréal le 30 octobre = déjà le 31 en UTC", () => {
-    expect(debutJourUtc(new Date("2026-10-30T23:30:00-04:00"))).toBe("2026-10-31T00:00:00.000Z");
-    expect(debutJourUtc(new Date("2026-10-30T12:00:00Z"))).toBe("2026-10-30T00:00:00.000Z");
+  it("jour du Québec : minuit à Montréal, heure d'été comme d'hiver", () => {
+    // 23 h 30 le 30 octobre à Montréal (HAE) : encore le 30, minuit = 4 h UTC.
+    expect(debutJourQuebec(new Date("2026-10-30T23:30:00-04:00"))).toBe("2026-10-30T04:00:00.000Z");
+    expect(debutJourQuebec(new Date("2026-10-31T01:30:00Z"))).toBe("2026-10-30T04:00:00.000Z");
+    // Hiver (HNE) : minuit = 5 h UTC.
+    expect(debutJourQuebec(new Date("2026-12-15T12:00:00Z"))).toBe("2026-12-15T05:00:00.000Z");
+    // Jours du changement d'heure : minuit est encore à l'heure d'avant.
+    expect(debutJourQuebec(new Date("2026-11-01T15:00:00Z"))).toBe("2026-11-01T04:00:00.000Z");
+    expect(debutJourQuebec(new Date("2026-03-08T18:00:00Z"))).toBe("2026-03-08T05:00:00.000Z");
   });
 });

@@ -1,8 +1,9 @@
 import type { ContactStage } from "@/lib/crm/types";
+import { torontoDay, torontoStartUtc } from "@/lib/ebay/totaux";
 
 /*
  * Envoi en gros du CRM (/admin/crm/envoi-en-gros) : logique PURE, sans import
- * serveur (ni Resend, ni Supabase), donc importable par un composant
+ * serveur (ni Hostinger, ni Supabase), donc importable par un composant
  * « use client ». Le navigateur s'en sert pour le résumé en direct ; le
  * serveur la rejoue sur le texte brut reçu (revalidation complète) avant la
  * vérification et avant chaque lot.
@@ -12,13 +13,17 @@ import type { ContactStage } from "@/lib/crm/types";
  *    en-tête facultatif reconnu par le nom des colonnes ;
  *  - normalisation et validation des courriels (même règle que `courriel`,
  *    lib/securite/schemas.ts), doublons retirés ;
- *  - découpage en lots de 100 (maximum de l'envoi groupé de Resend) ;
+ *  - lots de 10 (un appel au serveur par lot) et limite quotidienne ;
  *  - rendu des variables (moteur du CRM, ré-exporté par lib/crm/email.ts),
  *    replis de l'envoi manuel et plan d'envoi (exclusions).
  */
 
-/** Courriels par requête groupée de Resend (maximum de l'API). */
-export const TAILLE_LOT = 100;
+/**
+ * Courriels par appel au serveur : la Mail API de Hostinger les envoie un à
+ * la fois, avec une pause entre deux (lib/crm/email.ts) ; 10 gardent chaque
+ * appel court (une vingtaine de secondes) et la progression à jour.
+ */
+export const TAILLE_LOT = 10;
 /** Destinataires au plus par envoi : au-delà, découper la liste. */
 export const MAX_DESTINATAIRES = 500;
 /** Lignes utiles (adresses candidates) au plus dans la liste. */
@@ -85,8 +90,8 @@ export function normaliserCourriel(valeur: string): string {
 /**
  * Même expression que `z.email()` de Zod 4 (`courriel`, lib/securite/schemas.ts) :
  * le navigateur et le serveur classent chaque adresse de la même façon, et
- * Resend ne reçoit que des adresses valides (une seule adresse refusée fait
- * échouer tout le lot). Accord vérifié par tests/crm/envoi-en-gros-liste.test.ts.
+ * Hostinger ne reçoit que des adresses valides (une adresse refusée arrête
+ * l'envoi). Accord vérifié par tests/crm/envoi-en-gros-liste.test.ts.
  */
 const COURRIEL_RE =
   /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/;
@@ -491,74 +496,53 @@ export function problemeBloquant(analyse: AnalyseListe): string | null {
 
 // --- Lots -------------------------------------------------------------------------------
 
-/** Découpe en lots de `taille` (100 par défaut, maximum de Resend), dans l'ordre. */
-export function decouperEnLots<T>(elements: readonly T[], taille: number = TAILLE_LOT): T[][] {
-  if (!Number.isInteger(taille) || taille < 1) throw new RangeError("Taille de lot invalide.");
-  const lots: T[][] = [];
-  for (let i = 0; i < elements.length; i += taille) lots.push(elements.slice(i, i + taille));
-  return lots;
-}
-
 /** Nombre de lots pour `n` destinataires. */
 export function nombreDeLots(n: number, taille: number = TAILLE_LOT): number {
   return n > 0 ? Math.ceil(n / taille) : 0;
 }
 
-// --- Quota quotidien de Resend -------------------------------------------------------------
+// --- Limite quotidienne -------------------------------------------------------------------
 
 /**
- * Forfait gratuit de Resend : 100 courriels par jour civil UTC (remis à zéro à
- * minuit UTC), chaque destinataire compté, copies comprises. À changer si le
- * forfait change.
+ * Courriels de l'envoi en gros par jour (heure du Québec), au plus. Ils partent
+ * de la boîte info@ (Mail API de Hostinger, 3 000 envois par jour et par boîte
+ * avec le forfait Business) : rester bien en dessous garde un rythme modéré,
+ * qui protège la réputation de la boîte auprès des fournisseurs de courriel,
+ * et laisse toute la place aux courriels écrits à la main. À relever peu à peu
+ * si les envois se passent bien.
  */
-export const QUOTA_QUOTIDIEN_RESEND = 100;
-/**
- * Courriels du jour gardés au reste du site : avis du formulaire de soumission
- * (un chacun ; quota épuisé = erreur affichée au visiteur), devis de la
- * calculatrice (deux avec la copie cachée), alertes de sécurité, tests.
- */
-export const RESERVE_QUOTIDIENNE = 20;
+export const PLAFOND_QUOTIDIEN = 100;
 
 export type QuotaJour = {
-  /** Courriels du jour déjà comptés (envoi en gros, CRM, avis de soumission). */
+  /** Courriels de l'envoi en gros déjà partis aujourd'hui. */
   utilises: number;
-  /** Encore permis à l'envoi en gros aujourd'hui, réserve déduite. */
+  /** Encore permis aujourd'hui. */
   disponibles: number;
-  quota: number;
-  reserve: number;
+  plafond: number;
 };
 
-/** Début du jour civil UTC (remise à zéro du quota de Resend), en ISO. */
-export function debutJourUtc(maintenant: Date = new Date()): string {
-  return new Date(
-    Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), maintenant.getUTCDate()),
-  ).toISOString();
+/** Début du jour, heure du Québec (minuit, America/Toronto), en ISO UTC : remise à zéro de la limite. */
+export function debutJourQuebec(maintenant: Date = new Date()): string {
+  return torontoStartUtc(torontoDay(maintenant));
 }
 
-/**
- * Quota du jour de l'envoi en gros, d'après les envois notés en base depuis
- * minuit UTC : un par courriel d'envoi en gros, deux par courriel du CRM
- * (copie cachée à la boîte générale), un par avis de soumission. Les devis,
- * alertes et tests ne sont pas notés : la réserve les couvre.
- */
-export function quotaDuJour(envois: { enGros: number; crm: number; soumissions: number }): QuotaJour {
-  const utilises = envois.enGros + 2 * envois.crm + envois.soumissions;
+/** Limite du jour, d'après les courriels de l'envoi en gros notés en base depuis minuit. */
+export function quotaDuJour(envoyesAujourdhui: number): QuotaJour {
   return {
-    utilises,
-    disponibles: Math.max(0, QUOTA_QUOTIDIEN_RESEND - RESERVE_QUOTIDIENNE - utilises),
-    quota: QUOTA_QUOTIDIEN_RESEND,
-    reserve: RESERVE_QUOTIDIENNE,
+    utilises: envoyesAujourdhui,
+    disponibles: Math.max(0, PLAFOND_QUOTIDIEN - envoyesAujourdhui),
+    plafond: PLAFOND_QUOTIDIEN,
   };
 }
 
-/** Destinataires servis aujourd'hui : les prêts, dans la limite du quota disponible ; le reste attend demain. */
+/** Destinataires servis aujourd'hui : les prêts, dans la limite du jour ; le reste attend demain. */
 export function aEnvoyerAujourdhui(prets: number, quota: QuotaJour): number {
   return Math.max(0, Math.min(prets, quota.disponibles));
 }
 
-/** Arrêt « réserve » : la part du jour de l'envoi en gros est épuisée. */
-export function messageReserve(quota: QuotaJour): string {
-  return `Limite du jour atteinte pour l'envoi en gros : ${quota.quota - quota.reserve} courriels par jour au plus, pour garder ${quota.reserve} envois aux autres courriels du site (avis du formulaire de soumission, devis). Relance la même liste demain : les adresses déjà servies seront exclues.`;
+/** Arrêt « limite du jour » : la part du jour de l'envoi en gros est épuisée. */
+export function messageLimiteJour(quota: QuotaJour): string {
+  return `Limite du jour atteinte pour l'envoi en gros : ${quota.plafond} courriels par jour au plus, pour protéger la réputation de ta boîte info@. Relance la même liste demain : les adresses déjà servies seront exclues.`;
 }
 
 // --- Plan d'envoi ---------------------------------------------------------------------------

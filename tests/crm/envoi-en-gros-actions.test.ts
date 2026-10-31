@@ -2,36 +2,37 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /*
  * Actions de l'envoi en gros (lib/crm/envoi-en-gros-actions.ts) avec une base
- * Supabase et un client Resend SIMULÉS (aucun réseau, aucune vraie clé) :
+ * Supabase et la Mail API de Hostinger SIMULÉES (aucun réseau, aucune vraie
+ * clé) :
  *  - « Vérifier la liste » ne fait aucune écriture et aucun envoi ;
  *  - l'envoi exige la case cochée et le nombre exact, revalide côté serveur
  *    (désabonnés, déjà reçu cet objet), crée les fiches inconnues, trace
  *    chaque envoi (manual_note / envoi_en_gros) et ne fait avancer que
  *    l'étape `new` ;
- *  - arrêt propre sur quota, lots de 100, verrou contre le double envoi ;
- *  - « M'envoyer un test » : à l'admin seulement, sans copie cachée ni écriture.
+ *  - arrêts propres (limite de débit, réponse incertaine, limite du jour de
+ *    100), lots de 10, verrou contre le double envoi ;
+ *  - « M'envoyer un test » : à l'admin seulement, par la boîte info@, sans écriture.
  * Le refus sans session est couvert par tests/securite/f8-exhaustivite-admin.
  */
 
 type Ligne = Record<string, unknown>;
 type Filtre = [op: "eq" | "in" | "pas_null" | "is" | "gte", colonne: string, valeur: unknown];
 type Ecriture = { table: string; op: "insert" | "update"; donnees: unknown; filtres: Filtre[] };
-type ReponseResend = { data: unknown; error: unknown } | null;
+type Courriel = { to: string[]; subject: string; text: string; html: string } & Record<string, unknown>;
+type Reponse = { statut: number; corps?: unknown } | "lancer";
 
 const etat = vi.hoisted(() => ({
   ctx: null as unknown,
   tables: {} as Record<string, Ligne[]>,
   ecritures: [] as Ecriture[],
-  envois: [] as { to: string[]; subject: string; text: string }[][],
-  /** Envois unitaires (emails.send : courriel test). */
-  unitaires: [] as (Record<string, unknown> & { to: string[]; subject: string; text: string })[],
-  reponsesResend: [] as ReponseResend[],
-  /** Promesse à attendre dans batch.send (simule un lot lent). */
+  /** Courriels soumis à la Mail API de Hostinger (corps de chaque POST /send), dans l'ordre. */
+  envois: [] as Courriel[],
+  /** Réponses de la Mail API, une par envoi ; 204 par défaut. */
+  reponses: [] as Reponse[],
+  /** Promesse attendue par chaque envoi (simule un lot lent). */
   retenue: null as Promise<void> | null,
   limitePermise: true,
   compteur: 0,
-  /** Avis du formulaire de soumission reçus aujourd'hui (fonction admin_soumissions). */
-  soumissionsDuJour: 0,
 }));
 
 vi.mock("@/lib/securite/garde", () => ({ adminPourAction: async () => etat.ctx }));
@@ -40,25 +41,19 @@ vi.mock("@/lib/securite/limite", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("resend", () => ({
-  Resend: class {
-    batch = {
-      send: async (charge: { to: string[]; subject: string; text: string }[]) => {
-        if (etat.retenue) await etat.retenue;
-        etat.envois.push(charge);
-        const r = etat.reponsesResend.shift();
-        if (r) return r;
-        return { data: { data: charge.map((_, i) => ({ id: `envoi-${i}` })) }, error: null };
-      },
-    };
-    emails = {
-      send: async (charge: Record<string, unknown> & { to: string[]; subject: string; text: string }) => {
-        etat.unitaires.push(charge);
-        return { data: { id: "x" }, error: null };
-      },
-    };
-  },
-}));
+// Aucune pause réelle entre deux envois.
+vi.mock("node:timers/promises", () => ({ setTimeout: async () => undefined }));
+
+/** Mail API de Hostinger simulée : seul POST /send est attendu (boîte fixée par HOSTINGER_MAIL_MAILBOX_ID). */
+async function fauxFetch(url: string | URL | Request, init: RequestInit = {}): Promise<Response> {
+  if (!String(url).endsWith("/api/v1/mailboxes/boite-test/send")) throw new Error(`requête inattendue : ${String(url)}`);
+  if (etat.retenue) await etat.retenue;
+  etat.envois.push(JSON.parse(String(init.body)) as Courriel);
+  const r = etat.reponses.shift();
+  if (r === "lancer") throw new TypeError("fetch failed");
+  if (r) return new Response(r.corps === undefined ? null : JSON.stringify(r.corps), { status: r.statut });
+  return new Response(null, { status: 204 });
+}
 
 import { envoyerLotEnGros, envoyerTestEnGros, verifierEnvoiEnGros } from "@/lib/crm/envoi-en-gros-actions";
 
@@ -79,11 +74,6 @@ function filtrer(lignes: Ligne[], filtres: Filtre[]): Ligne[] {
 
 function fauxSupabase() {
   return {
-    rpc(nom: string) {
-      const data =
-        nom === "admin_soumissions" ? Array.from({ length: etat.soumissionsDuJour }, (_, i) => ({ id: `s-${i}` })) : [];
-      return Promise.resolve({ data, error: null });
-    },
     from(table: string) {
       let op: "select" | "insert" | "update" = "select";
       let donnees: unknown;
@@ -229,28 +219,29 @@ beforeEach(() => {
     journal.push(args.map(String).join(" "));
   });
   vi.spyOn(console, "warn").mockImplementation(() => {});
-  vi.stubEnv("RESEND_API_KEY", "re_test_factice");
+  vi.stubGlobal("fetch", fauxFetch);
+  vi.stubEnv("HOSTINGER_MAIL_API_TOKEN", "jeton-factice");
+  vi.stubEnv("HOSTINGER_MAIL_MAILBOX_ID", "boite-test");
   vi.stubEnv("FROM_EMAIL", "info@technolot.ca");
   vi.stubEnv("CONTACT_EMAIL", "info@technolot.ca");
   vi.stubEnv("SECURITE_RPC_SECRET", "");
   donneesDeDepart();
   etat.ecritures = [];
   etat.envois = [];
-  etat.unitaires = [];
-  etat.reponsesResend = [];
+  etat.reponses = [];
   etat.retenue = null;
   etat.limitePermise = true;
-  etat.soumissionsDuJour = 0;
   etat.ctx = { supabase: fauxSupabase(), user: ADMIN, requestId: "req-test" };
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
-const destinatairesEnvoyes = () => etat.envois.flat().map((c) => c.to[0]);
+const destinatairesEnvoyes = () => etat.envois.map((c) => c.to[0]);
 const ecrituresDe = (table: string) => etat.ecritures.filter((e) => e.table === table);
 
 describe("Vérifier la liste (lecture seule)", () => {
@@ -333,10 +324,10 @@ describe("Envoi d'un lot", () => {
     const r = await envoyerLotEnGros(entree());
     expect(r).toEqual({ ok: true, envoyes: 4, echecs: 0, restants: 0, termine: true, arret: null });
 
-    // Revalidation serveur : ni le désabonné, ni celui qui a déjà reçu l'objet.
-    expect(etat.envois).toHaveLength(1);
+    // Revalidation serveur : ni le désabonné, ni celui qui a déjà reçu l'objet ; un courriel par requête.
     expect(destinatairesEnvoyes()).toEqual(["jean@exemple.ca", "nina@exemple.ca", "ivan@exemple.ca", "ana@exemple.ca"]);
-    expect(etat.envois[0][2].text.startsWith("Bonjour Ivan de ACME INC.,")).toBe(true);
+    expect(etat.envois[2].text.startsWith("Bonjour Ivan de ACME INC.,")).toBe(true);
+    expect(etat.envois[2].displayName).toBe("Techno Lot");
 
     // Compagnie : « ACME INC. » réutilise « Acme inc. » ; « Nouvelle Cie » est créée (forme de createCompany).
     const compagnies = ecrituresDe("companies");
@@ -415,20 +406,39 @@ describe("Envoi d'un lot", () => {
     expect(verif.ok && verif.dejaRecus.nombre).toBe(5);
   });
 
-  it("quota quotidien atteint : arrêt propre, aucune trace, message pour relancer demain", async () => {
-    etat.reponsesResend = [{ data: null, error: { name: "daily_quota_exceeded", statusCode: 429, message: "quota" } }];
+  it("limite de débit de Hostinger (429) : arrêt propre, aucun nouvel essai, aucune trace", async () => {
+    etat.reponses = [{ statut: 429, corps: { error: "Too Many Requests", code: "ERR_TOO_MANY_REQUESTS" } }];
     const r = await envoyerLotEnGros(entree());
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r).toMatchObject({ envoyes: 0, echecs: 4, restants: 4, termine: false });
-    expect(r.arret?.motif).toBe("quota_quotidien");
-    expect(r.arret?.message).toMatch(/Relance demain avec la même liste/);
+    expect(r.arret?.motif).toBe("debit");
+    expect(r.arret?.message).toMatch(/Réessaie dans quelques minutes/);
+    expect(etat.envois).toHaveLength(1);
     expect(ecrituresDe("outreach_activities")).toEqual([]);
     expect(etat.tables.contacts.find((c) => c.id === "c-nina")?.stage).toBe("new");
   });
 
-  it("service de courriel non configuré : arrêt avant toute écriture", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
+  it("réponse incertaine au 3e courriel : tracé comme envoyé, jamais renvoyé ; seul le 4e part à la relance", async () => {
+    etat.reponses = [{ statut: 204 }, { statut: 204 }, "lancer"];
+    const r = await envoyerLotEnGros(entree());
+    expect(r).toMatchObject({ ok: true, envoyes: 3, echecs: 1, restants: 1, termine: false });
+    expect(r.ok && r.arret?.motif).toBe("incertain");
+    const traces = ecrituresDe("outreach_activities");
+    expect(traces).toHaveLength(1);
+    expect((traces[0].donnees as Ligne[]).length).toBe(3);
+
+    // Nouvelle vérification puis relance : le courriel incertain (ivan) n'est jamais renvoyé.
+    etat.envois = [];
+    const verif = await verifierEnvoiEnGros({ destinataires: LISTE, objet: OBJET, corps: CORPS });
+    expect(verif.ok && verif.aujourdhui).toBe(1);
+    const relance = await envoyerLotEnGros(entree({ nombre: 1 }));
+    expect(relance).toEqual({ ok: true, envoyes: 1, echecs: 0, restants: 0, termine: true, arret: null });
+    expect(destinatairesEnvoyes()).toEqual(["ana@exemple.ca"]);
+  });
+
+  it("clé de la Mail API absente : arrêt avant toute écriture", async () => {
+    vi.stubEnv("HOSTINGER_MAIL_API_TOKEN", "");
     const r = await envoyerLotEnGros(entree());
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -438,40 +448,58 @@ describe("Envoi d'un lot", () => {
     expect(etat.envois).toEqual([]);
   });
 
-  it("150 adresses, 80 permises par jour : 80 aujourd'hui, arrêt « réserve », les 70 autres le lendemain", async () => {
-    // Jour fixe (midi UTC) : jamais de passage de minuit pendant le test.
+  /** Enchaîne les lots comme le navigateur (EnvoiEnGros.tsx) jusqu'à la fin ou à un arrêt. */
+  async function envoyerTout(destinataires: string, total: number) {
+    const resultats: Awaited<ReturnType<typeof envoyerLotEnGros>>[] = [];
+    let envoyes = 0;
+    for (let tour = 0; tour <= Math.ceil(total / 10); tour++) {
+      const r = await envoyerLotEnGros(entree({ destinataires, nombre: total, dejaEnvoyes: envoyes }));
+      resultats.push(r);
+      if (!r.ok) break;
+      envoyes += r.envoyes;
+      if (r.arret || r.termine || r.envoyes === 0) break;
+    }
+    return { resultats, envoyes, dernier: resultats[resultats.length - 1] };
+  }
+
+  it("150 adresses, 100 permises par jour : 10 lots de 10, arrêt « limite du jour », les 50 autres le lendemain", async () => {
+    // Jour fixe (10 h à Montréal) : jamais de passage de minuit pendant le test.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-11-02T15:00:00Z"));
     const liste = Array.from({ length: 150 }, (_, i) => `contact${i}@exemple.ca`).join("\n");
 
     const verif = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
     expect(verif.ok && verif.prets).toBe(150);
-    expect(verif.ok && verif.aujourdhui).toBe(80);
-    expect(verif.ok && verif.lots).toBe(1);
+    expect(verif.ok && verif.aujourdhui).toBe(100);
+    expect(verif.ok && verif.lots).toBe(10);
 
-    // Seule la part du jour (80, pas 150) est acceptée à la confirmation.
+    // Seule la part du jour (100, pas 150) est acceptée à la confirmation.
     const refus = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 150 }));
     expect(refus.ok).toBe(false);
     expect(etat.envois).toEqual([]);
 
-    const premier = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 80 }));
-    expect(premier).toMatchObject({ ok: true, envoyes: 80, restants: 0, termine: true });
-    expect(premier.ok && premier.arret?.motif).toBe("reserve");
-    expect(premier.ok && premier.arret?.message).toMatch(/Relance la même liste demain/);
-    expect(etat.envois[0]).toHaveLength(80);
+    const jour1 = await envoyerTout(liste, 100);
+    expect(jour1.envoyes).toBe(100);
+    expect(jour1.resultats.map((r) => r.ok && r.envoyes)).toEqual(Array(10).fill(10));
+    expect(jour1.resultats.slice(0, 9).every((r) => r.ok && !r.termine && r.arret === null)).toBe(true);
+    expect(jour1.dernier).toMatchObject({ ok: true, restants: 0, termine: true });
+    expect(jour1.dernier.ok && jour1.dernier.arret?.motif).toBe("limite_jour");
+    expect(jour1.dernier.ok && jour1.dernier.arret?.message).toMatch(/Relance la même liste demain/);
+    expect(etat.envois).toHaveLength(100);
 
-    // Même jour : la part de l'envoi en gros est épuisée, la réserve de 20 reste.
+    // Même jour : la limite de 100 est atteinte.
     const memeJour = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
-    expect(memeJour.ok && memeJour.quota).toEqual({ utilises: 80, disponibles: 0, quota: 100, reserve: 20 });
+    expect(memeJour.ok && memeJour.quota).toEqual({ utilises: 100, disponibles: 0, plafond: 100 });
     expect(memeJour.ok && memeJour.aujourdhui).toBe(0);
 
-    // Lendemain (minuit UTC passé) : les 70 autres, sans renvoyer les 80 premiers.
+    // Lendemain (minuit passé à Montréal) : les 50 autres, sans renvoyer les 100 premiers.
     vi.setSystemTime(new Date("2026-11-03T15:00:00Z"));
     const lendemain = await verifierEnvoiEnGros({ destinataires: liste, objet: OBJET, corps: CORPS });
-    expect(lendemain.ok && lendemain.prets).toBe(70);
-    expect(lendemain.ok && lendemain.aujourdhui).toBe(70);
-    const second = await envoyerLotEnGros(entree({ destinataires: liste, nombre: 70 }));
-    expect(second).toMatchObject({ ok: true, envoyes: 70, restants: 0, termine: true, arret: null });
+    expect(lendemain.ok && lendemain.prets).toBe(50);
+    expect(lendemain.ok && lendemain.aujourdhui).toBe(50);
+    const jour2 = await envoyerTout(liste, 50);
+    expect(jour2.envoyes).toBe(50);
+    expect(jour2.dernier).toMatchObject({ ok: true, restants: 0, termine: true, arret: null });
     expect(new Set(destinatairesEnvoyes()).size).toBe(150);
   });
 
@@ -488,88 +516,88 @@ describe("Envoi d'un lot", () => {
     if (!second.ok) expect(second.error).toMatch(/déjà en cours/);
     liberer();
     expect((await premier).ok).toBe(true);
-    expect(etat.envois).toHaveLength(1);
+    expect(destinatairesEnvoyes()).toEqual(["jean@exemple.ca", "nina@exemple.ca", "ivan@exemple.ca", "ana@exemple.ca"]);
   });
 });
 
-describe("Quota du jour (forfait gratuit de Resend)", () => {
+describe("Limite du jour (100 par jour, heure du Québec)", () => {
   const champs = { destinataires: LISTE, objet: OBJET, corps: CORPS };
-  /** Courriels du CRM envoyés aujourd'hui : deux envois chacun (copie cachée). */
-  const courrielsCrmDuJour = (n: number) => {
-    const maintenant = new Date().toISOString();
+  /** Courriels de l'envoi en gros déjà partis (autre objet : n'excluent personne de la liste). */
+  const envoisEnGros = (n: number, quand = new Date().toISOString()) => {
     for (let i = 0; i < n; i++) {
       etat.tables.outreach_activities.push({
-        id: `crm-${i}`,
+        id: `gros-${etat.tables.outreach_activities.length}`,
         contact_id: "c-nina",
-        activity_type: i % 2 ? "followup_sent" : "intro_email_sent",
-        created_at: maintenant,
+        activity_type: "manual_note",
+        outcome: "envoi_en_gros",
+        subject: "Autre objet",
+        created_at: quand,
       });
     }
   };
 
-  it("compte l'envoi en gros, les courriels du CRM (deux chacun) et les soumissions du jour ; réserve de 20", async () => {
-    courrielsCrmDuJour(30); // 60
-    etat.soumissionsDuJour = 5; // 5
+  it("compte seulement l'envoi en gros : les courriels du CRM partent par Resend", async () => {
+    envoisEnGros(60);
+    const maintenant = new Date().toISOString();
+    for (let i = 0; i < 30; i++) {
+      etat.tables.outreach_activities.push({ id: `crm-${i}`, contact_id: "c-nina", activity_type: "intro_email_sent", created_at: maintenant });
+    }
     const r = await verifierEnvoiEnGros(champs);
-    expect(r.ok && r.quota).toEqual({ utilises: 65, disponibles: 15, quota: 100, reserve: 20 });
+    expect(r.ok && r.quota).toEqual({ utilises: 60, disponibles: 40, plafond: 100 });
     expect(r.ok && r.aujourdhui).toBe(4);
   });
 
-  it("2 envois permis pour 4 prêts : seuls les 2 premiers partent, arrêt « réserve »", async () => {
-    courrielsCrmDuJour(39); // 78 → 2 permis
+  it("2 envois permis pour 4 prêts : seuls les 2 premiers partent, arrêt « limite du jour »", async () => {
+    envoisEnGros(98);
     const r = await verifierEnvoiEnGros(champs);
     expect(r.ok && r.aujourdhui).toBe(2);
 
     const lot = await envoyerLotEnGros({ ...champs, confirme: true, nombre: 2, dejaEnvoyes: 0 });
     expect(lot).toMatchObject({ ok: true, envoyes: 2, restants: 0, termine: true });
-    expect(lot.ok && lot.arret?.motif).toBe("reserve");
+    expect(lot.ok && lot.arret?.motif).toBe("limite_jour");
     expect(destinatairesEnvoyes()).toEqual(["jean@exemple.ca", "nina@exemple.ca"]);
   });
 
-  it("part du jour épuisée : rien n'est envoyé, le test est refusé", async () => {
-    courrielsCrmDuJour(40); // 80 → plus rien de permis
+  it("limite atteinte : plus rien aujourd'hui, mais le test reste permis (hors limite)", async () => {
+    envoisEnGros(100);
     const r = await verifierEnvoiEnGros(champs);
     expect(r.ok && r.aujourdhui).toBe(0);
 
     const test = await envoyerTestEnGros(champs);
-    expect(test.ok).toBe(false);
-    if (!test.ok) expect(test.error).toMatch(/test impossible avant demain/);
-    expect(etat.unitaires).toEqual([]);
-    expect(etat.envois).toEqual([]);
+    expect(test.ok).toBe(true);
+    expect(destinatairesEnvoyes()).toEqual(["info@technolot.ca"]);
   });
 
-  it("envois d'avant minuit UTC : pas comptés", async () => {
-    etat.tables.outreach_activities.push({
-      id: "ancien",
-      contact_id: "c-nina",
-      activity_type: "intro_email_sent",
-      created_at: "2020-01-01T00:00:00.000Z",
-    });
+  it("minuit à Montréal, pas en UTC : la veille ne compte pas", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-03T03:30:00Z")); // 22 h 30 le 2 novembre à Montréal
+    envoisEnGros(1, "2026-11-02T04:30:00.000Z"); // 23 h 30 le 1er novembre : la veille
+    envoisEnGros(1, "2026-11-02T06:00:00.000Z"); // 1 h le 2 novembre : aujourd'hui
     const r = await verifierEnvoiEnGros(champs);
-    expect(r.ok && r.quota.utilises).toBe(0);
+    expect(r.ok && r.quota.utilises).toBe(1);
   });
 });
 
 describe("M'envoyer un test", () => {
   const champs = { destinataires: LISTE, objet: OBJET, corps: CORPS };
 
-  it("courriel du premier destinataire prêt, à l'admin seulement : « [Test] », sans copie cachée ni écriture", async () => {
+  it("courriel du premier destinataire prêt, à l'admin seulement : « [Test] », par la boîte info@, sans écriture", async () => {
     etat.ctx = { supabase: fauxSupabase(), user: { ...ADMIN, email: "anthony@technolot.ca" }, requestId: "req-test" };
     const r = await envoyerTestEnGros(champs);
     expect(r).toEqual({ ok: true, a: "anthony@technolot.ca" });
 
-    expect(etat.unitaires).toHaveLength(1);
-    const [c] = etat.unitaires;
+    // Même chemin que l'envoi réel : une requête à la Mail API de Hostinger.
+    expect(etat.envois).toHaveLength(1);
+    const [c] = etat.envois;
     expect(c.to).toEqual(["anthony@technolot.ca"]);
     expect(c.bcc).toBeUndefined();
-    expect(c.replyTo).toEqual(["anthony@technolot.ca"]);
+    expect(c.cc).toBeUndefined();
     expect(c.subject).toBe(`[Test] ${OBJET}`);
     // Même rendu que l'aperçu : prénom et compagnie de la fiche du CRM.
     expect(c.text.startsWith("Bonjour Jean de Acme inc.,\nVoici notre offre.")).toBe(true);
 
-    // Ni fiche, ni trace, ni envoi groupé.
+    // Ni fiche, ni trace.
     expect(etat.ecritures).toEqual([]);
-    expect(etat.envois).toEqual([]);
 
     await new Promise((r) => setTimeout(r, 10));
     const texte = journal.join("\n");
@@ -577,18 +605,26 @@ describe("M'envoyer un test", () => {
     expect(texte).not.toMatch(/@exemple\.ca|Offre Techno Lot|Voici notre offre/);
   });
 
+  it("Hostinger ne confirme pas le test : message clair, rien d'écrit", async () => {
+    etat.reponses = ["lancer"];
+    const r = await envoyerTestEnGros(champs);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/n'a pas confirmé l'envoi du test.*\(réf\. req-test\)$/);
+    expect(etat.ecritures).toEqual([]);
+  });
+
   it("tous les destinataires exclus : refus clair, aucun envoi", async () => {
     const r = await envoyerTestEnGros({ ...champs, destinataires: "desabo@exemple.ca\ndeja@exemple.ca" });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/rien à tester/);
-    expect(etat.unitaires).toEqual([]);
+    expect(etat.envois).toEqual([]);
   });
 
   it("compte sans adresse courriel : refus, aucun envoi", async () => {
     etat.ctx = { supabase: fauxSupabase(), user: { id: ADMIN.id, email: null }, requestId: "req-test" };
     const r = await envoyerTestEnGros(champs);
     expect(r.ok).toBe(false);
-    expect(etat.unitaires).toEqual([]);
+    expect(etat.envois).toEqual([]);
   });
 
   it("limite de débit atteinte : refus, aucun envoi", async () => {
@@ -596,6 +632,6 @@ describe("M'envoyer un test", () => {
     const r = await envoyerTestEnGros(champs);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/Réessaie dans 2 minutes/);
-    expect(etat.unitaires).toEqual([]);
+    expect(etat.envois).toEqual([]);
   });
 });
