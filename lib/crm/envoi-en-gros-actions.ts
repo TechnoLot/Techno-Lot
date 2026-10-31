@@ -25,6 +25,7 @@ import {
 } from "@/lib/crm/envoi-en-gros";
 import {
   executerLot,
+  lirePieces,
   preparerEnvoi,
   prendreVerrouEnvoi,
   rendreVerrouEnvoi,
@@ -36,9 +37,11 @@ import {
  * (adminPourAction) en PREMIÈRE instruction, validation stricte
  * (lib/admin/schemas.ts), réanalyse complète de la liste reçue du navigateur
  * (lib/crm/envoi-en-gros.ts), limite de débit par admin, puis lectures du CRM
- * relancées à chaque appel (désabonnements, envois déjà faits). Erreurs : message
- * générique + réf. ; journal : compteurs seulement (jamais d'adresse, d'objet ni
- * de corps).
+ * relancées à chaque appel (désabonnements, envois déjà faits). Le test et
+ * chaque lot reçoivent aussi les pièces jointes (FormData, revérifiées à
+ * chaque appel : lirePieces). Erreurs : message générique + réf. ; journal :
+ * compteurs seulement (jamais d'adresse, d'objet, de corps ni de nom de
+ * fichier).
  */
 
 /** « Vérifier la liste » : 30 vérifications / 10 min par admin. */
@@ -83,8 +86,8 @@ export type ResultatLotEnGros = {
   arret: ArretLot | null;
 };
 
-/** Test envoyé : `a` = adresse de l'admin connecté (seul destinataire). */
-export type ResultatTest = { ok: true; a: string };
+/** Test envoyé : `a` = adresse de l'admin connecté (seul destinataire) ; `pieces` = pièces jointes envoyées. */
+export type ResultatTest = { ok: true; a: string; pieces: number };
 
 async function entetes() {
   try {
@@ -163,20 +166,25 @@ export async function verifierEnvoiEnGros(entree: {
 /**
  * « M'envoyer un test » : le courriel du premier destinataire prêt (variables
  * remplies, comme l'aperçu), envoyé à l'admin connecté SEULEMENT, objet
- * précédé de « [Test] ». Même chemin que l'envoi réel (boîte info@, Mail API
- * de Hostinger, copie dans « Envoyés ») ; aucune écriture dans le CRM (ni
- * fiche, ni trace) et hors de la limite du jour.
+ * précédé de « [Test] », avec les pièces jointes. Même chemin que l'envoi
+ * réel (boîte info@, Mail API de Hostinger, copie dans « Envoyés ») ; aucune
+ * écriture dans le CRM (ni fiche, ni trace) et hors de la limite du jour.
  */
-export async function envoyerTestEnGros(entree: {
-  destinataires: string;
-  objet: string;
-  corps: string;
-}): Promise<ResultatTest | EchecAction> {
+export async function envoyerTestEnGros(
+  entree: {
+    destinataires: string;
+    objet: string;
+    corps: string;
+  },
+  fichiers?: FormData,
+): Promise<ResultatTest | EchecAction> {
   const ctx = await adminPourAction();
   if (!ctx) return REFUS_ACTION;
   const parse = verificationEnGrosSchema.safeParse(entree);
   if (!parse.success) return echecValidation(parse.error, LIBELLES_ENVOI_EN_GROS);
   const v = parse.data;
+  const jointes = await lirePieces(fichiers);
+  if (!jointes.ok) return { ok: false, error: jointes.error };
 
   const a = ctx.user.email?.trim();
   if (!a) return { ok: false, error: "Ton compte n'a pas d'adresse courriel : test impossible." };
@@ -200,12 +208,13 @@ export async function envoyerTestEnGros(entree: {
       to: a,
       subject: `[Test] ${premier.objet}`,
       body: premier.corps,
+      pieces: jointes.pieces,
       requestId: ctx.requestId,
     });
     if (!envoi.ok) return { ok: false, error: envoi.error };
 
-    void journaliserAction("crm.envoi_en_gros_test", ctx);
-    return { ok: true, a };
+    void journaliserAction("crm.envoi_en_gros_test", ctx, { pieces: jointes.pieces.length });
+    return { ok: true, a, pieces: jointes.pieces.length };
   } catch (err) {
     return echecAction(err, "crm.envoi_gros.test", ctx, "Envoi du test impossible. Réessaie plus tard.");
   }
@@ -219,20 +228,26 @@ export async function envoyerTestEnGros(entree: {
  *  - la case de confirmation cochée (`confirme: true`) ;
  *  - prêts restants + déjà envoyés par cet envoi = nombre confirmé à la saisie ;
  *  - aucun autre lot en cours (verrou du processus).
+ * Les pièces jointes (mêmes pour tout l'envoi) accompagnent chaque lot.
  */
-export async function envoyerLotEnGros(entree: {
-  destinataires: string;
-  objet: string;
-  corps: string;
-  confirme: boolean;
-  nombre: number;
-  dejaEnvoyes: number;
-}): Promise<ResultatLotEnGros | EchecAction> {
+export async function envoyerLotEnGros(
+  entree: {
+    destinataires: string;
+    objet: string;
+    corps: string;
+    confirme: boolean;
+    nombre: number;
+    dejaEnvoyes: number;
+  },
+  fichiers?: FormData,
+): Promise<ResultatLotEnGros | EchecAction> {
   const ctx = await adminPourAction();
   if (!ctx) return REFUS_ACTION;
   const parse = lotEnGrosSchema.safeParse(entree);
   if (!parse.success) return echecValidation(parse.error, LIBELLES_ENVOI_EN_GROS);
   const v = parse.data;
+  const jointes = await lirePieces(fichiers);
+  if (!jointes.ok) return { ok: false, error: jointes.error };
 
   const analyse = analyserListe(v.destinataires);
   const probleme = problemeBloquant(analyse);
@@ -270,7 +285,7 @@ export async function envoyerLotEnGros(entree: {
     }
 
     const lot = plan.prets.slice(0, Math.min(TAILLE_LOT, aujourdhui));
-    const resultat = await executerLot(ctx, lot);
+    const resultat = await executerLot(ctx, lot, jointes.pieces);
     const restants = aujourdhui - resultat.envoyes;
     // Part du jour servie, liste pas finie : arrêt « limite du jour », le reste repart demain.
     const arret: ArretLot | null =
@@ -283,6 +298,7 @@ export async function envoyerLotEnGros(entree: {
       envoyes: resultat.envoyes,
       echecs: resultat.echecs,
       restants,
+      pieces: jointes.pieces.length,
       arret: arret?.motif ?? null,
     });
     if (resultat.envoyes > 0) {

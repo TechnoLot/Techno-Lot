@@ -28,6 +28,8 @@ const DELAI_MS = 10_000;
 const DELAI_PIECE_MS = 60_000;
 /** Envoi d'un courriel : remise au serveur d'envoi et copie dans « Envoyés » comprises. */
 const DELAI_ENVOI_MS = 20_000;
+/** Délai ajouté par Mo de requête (pièces jointes encodées) : ~10 Mo → 60 s. */
+const DELAI_ENVOI_PAR_MO_MS = 4_000;
 
 const TROUVE_TTL_MS = 10 * 60_000;
 const INTROUVABLE_TTL_MS = 2 * 60_000;
@@ -125,6 +127,9 @@ async function idBoite(): Promise<string> {
 
 // --- Envoi -----------------------------------------------------------------------
 
+/** Pièce jointe ordinaire (sans `cid`) : contenu en base64, type MIME explicite (jamais déduit du nom par l'API). */
+export type PieceSortante = { filename: string; content: string; contentType: string };
+
 export type CourrielSortant = {
   to: string[];
   subject: string;
@@ -132,6 +137,7 @@ export type CourrielSortant = {
   text: string;
   /** Nom affiché devant l'adresse de la boîte (« Techno Lot »). */
   displayName?: string;
+  attachments?: PieceSortante[];
 };
 
 /**
@@ -140,15 +146,17 @@ export type CourrielSortant = {
  * réponse 204 sans corps) ; Hostinger en range une copie dans « Envoyés »
  * (INBOX.Sent). L'API n'accepte ni reply-to ni en-tête personnalisé : les
  * réponses reviennent à la boîte elle-même. Échec : ErreurHostinger (statut
- * HTTP, null si Hostinger n'a pas répondu à temps).
+ * HTTP, null si Hostinger n'a pas répondu à temps). Le délai d'attente
+ * s'allonge avec le poids de la requête (pièces jointes).
  */
 export async function preparerEnvoyeur(): Promise<(courriel: CourrielSortant) => Promise<void>> {
   const boite = await idBoite();
   return async (courriel) => {
+    const corps = JSON.stringify(courriel);
     const res = await appel(
       `/api/v1/mailboxes/${encodeURIComponent(boite)}/send`,
-      { method: "POST", body: JSON.stringify(courriel) },
-      DELAI_ENVOI_MS,
+      { method: "POST", body: corps },
+      DELAI_ENVOI_MS + Math.floor(corps.length / 1_000_000) * DELAI_ENVOI_PAR_MO_MS,
     );
     res.body?.cancel().catch(() => {});
   };

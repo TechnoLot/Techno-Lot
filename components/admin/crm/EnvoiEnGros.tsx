@@ -1,16 +1,21 @@
 "use client";
 
-import { useDeferredValue, useMemo, useRef, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   CircleAlert,
   CircleCheck,
+  FileSpreadsheet,
+  FileText,
   FileUp,
+  ImagePlus,
   ListChecks,
   Loader2,
   MailCheck,
   Mails,
+  Paperclip,
   Send,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import {
   envoyerLotEnGros,
@@ -30,6 +35,16 @@ import {
   TAILLE_LOT,
   type ChampListe,
 } from "@/lib/crm/envoi-en-gros";
+import {
+  ACCEPT_DOCUMENTS,
+  formaterTaille,
+  MAX_PIECES,
+  MAX_TOTAL_PIECES,
+  nomsUniques,
+  problemeTaillesPieces,
+} from "@/lib/crm/pieces-jointes";
+import { nomAffichable, type TypeFichier } from "@/lib/securite/fichiers";
+import { formDataPieces, preparerPiece, type PieceLocale } from "./pieces-jointes-navigateur";
 
 /** Modèle actif proposé au départ (cold outreach, intro post-appel). */
 export type ModeleDepart = { id: string; libelle: string; objet: string; corps: string };
@@ -52,7 +67,7 @@ type Bilan = {
 };
 
 /** Résultat du bouton « M'envoyer un test ». */
-type EtatTest = { ok: true; a: string } | { ok: false; error: string };
+type EtatTest = { ok: true; a: string; pieces: number } | { ok: false; error: string };
 
 /** Fichier importé : 400 Ko au plus (100 000 caractères, accents compris). */
 const TAILLE_FICHIER_MAX = 400_000;
@@ -122,8 +137,24 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
   const [test, setTest] = useState<EtatTest | null>(null);
   const [testEnCours, demarrerTest] = useTransition();
 
+  const [pieces, setPieces] = useState<PieceLocale[]>([]);
+  const [piecesEnPreparation, setPiecesEnPreparation] = useState(false);
+  const [erreursPieces, setErreursPieces] = useState<string[]>([]);
+  const piecesRef = useRef<PieceLocale[]>([]);
+
   const fichierRef = useRef<HTMLInputElement>(null);
   const corpsRef = useRef<HTMLTextAreaElement>(null);
+
+  // Aperçus des photos libérés en quittant la page.
+  useEffect(() => {
+    piecesRef.current = pieces;
+  }, [pieces]);
+  useEffect(
+    () => () => {
+      for (const p of piecesRef.current) if (p.apercu) URL.revokeObjectURL(p.apercu);
+    },
+    [],
+  );
 
   // Résumé en direct, calculé dans le navigateur (aucun appel serveur).
   const texteDiffere = useDeferredValue(texte);
@@ -139,6 +170,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
   const peutVerifier =
     !verrouille &&
     !verificationEnCours &&
+    !piecesEnPreparation &&
     texte.trim() !== "" &&
     texte === texteDiffere &&
     probleme === null &&
@@ -147,10 +179,12 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
   const prets = verification?.prets ?? 0;
   /** Part du jour : les prêts, dans la limite du jour de l'envoi en gros (le reste attend demain). */
   const aujourdhui = verification?.aujourdhui ?? 0;
+  const totalPieces = pieces.reduce((somme, p) => somme + p.taille, 0);
   const peutEnvoyer =
     verificationAJour &&
     bilan === null &&
     !envoiEnCours &&
+    !piecesEnPreparation &&
     aujourdhui > 0 &&
     confirme &&
     nombreSaisi.trim() === String(aujourdhui);
@@ -203,6 +237,53 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     apresModification();
   }
 
+  /**
+   * Fichiers choisis ou glissés : photos réduites, documents vérifiés, un à la
+   * fois ; ceux qui dépassent les limites ou dont le format est refusé sont
+   * écartés avec un message, les autres sont gardés.
+   */
+  async function ajouterPieces(fichiers: File[]) {
+    if (fichiers.length === 0 || verrouille || piecesEnPreparation) return;
+    setErreursPieces([]);
+    setPiecesEnPreparation(true);
+    const erreurs: string[] = [];
+    let courantes = pieces;
+    try {
+      for (const fichier of fichiers) {
+        if (courantes.length >= MAX_PIECES) {
+          erreurs.push(`${MAX_PIECES} pièces jointes au plus : ${nomAffichable(fichier.name)} et les suivantes n'ont pas été ajoutées.`);
+          break;
+        }
+        const r = await preparerPiece(fichier);
+        if (!r.ok) {
+          erreurs.push(r.error);
+          continue;
+        }
+        const probleme = problemeTaillesPieces([...courantes, r.piece].map((p) => p.taille));
+        if (probleme) {
+          if (r.piece.apercu) URL.revokeObjectURL(r.piece.apercu);
+          erreurs.push(`Fichier non ajouté : ${nomAffichable(fichier.name)}. ${probleme}`);
+          continue;
+        }
+        courantes = nomsUniques([...courantes, r.piece]);
+        setPieces(courantes);
+      }
+    } finally {
+      setPiecesEnPreparation(false);
+      setErreursPieces(erreurs);
+      apresModification();
+    }
+  }
+
+  function retirerPiece(id: string) {
+    const piece = pieces.find((p) => p.id === id);
+    if (!piece || verrouille || piecesEnPreparation) return;
+    if (piece.apercu) URL.revokeObjectURL(piece.apercu);
+    setPieces(pieces.filter((p) => p.id !== id));
+    setErreursPieces([]);
+    apresModification();
+  }
+
   function insererVariable(variable: string) {
     const zone = corpsRef.current;
     const debut = zone?.selectionStart ?? corps.length;
@@ -240,13 +321,14 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
 
   /** Courriel du premier destinataire, à l'admin seulement (le serveur refait tout le rendu). */
   function envoyerTest() {
-    if (!verification || !verificationAJour || testEnCours || envoiEnCours) return;
+    if (!verification || !verificationAJour || testEnCours || envoiEnCours || piecesEnPreparation) return;
     const valeurs = { destinataires: verification.texte, objet: verification.objet, corps: verification.corps };
+    const fichiers = formDataPieces(pieces);
     setTest(null);
     demarrerTest(async () => {
       try {
-        const r = await envoyerTestEnGros(valeurs);
-        setTest(r.ok ? { ok: true, a: r.a } : { ok: false, error: r.error });
+        const r = await envoyerTestEnGros(valeurs, fichiers);
+        setTest(r.ok ? { ok: true, a: r.a, pieces: r.pieces } : { ok: false, error: r.error });
       } catch {
         setTest({ ok: false, error: "Envoi du test impossible (connexion interrompue). Réessaie." });
       }
@@ -259,6 +341,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     setEnvoiEnCours(true);
 
     const v = verification;
+    const fichiers = formDataPieces(pieces);
     const total = v.aujourdhui;
     const lots = nombreDeLots(total);
     let envoyes = 0;
@@ -270,14 +353,17 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
     try {
       // Borne de sécurité : jamais plus de tours que de lots prévus (+1).
       for (let tour = 0; tour <= lots; tour++) {
-        const r = await envoyerLotEnGros({
-          destinataires: v.texte,
-          objet: v.objet,
-          corps: v.corps,
-          confirme,
-          nombre: total,
-          dejaEnvoyes: envoyes,
-        });
+        const r = await envoyerLotEnGros(
+          {
+            destinataires: v.texte,
+            objet: v.objet,
+            corps: v.corps,
+            confirme,
+            nombre: total,
+            dejaEnvoyes: envoyes,
+          },
+          fichiers,
+        );
         if (!r.ok) {
           erreur = r.error;
           break;
@@ -485,6 +571,15 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
           Sans prénom : « bonjour ». Sans compagnie : celle de la fiche du CRM, sinon « votre entreprise ».
           Nom et titre absents : laissés vides. Les valeurs de la liste passent avant celles du CRM.
         </p>
+
+        <PiecesJointes
+          pieces={pieces}
+          enPreparation={piecesEnPreparation}
+          erreurs={erreursPieces}
+          desactive={verrouille}
+          onAjouter={ajouterPieces}
+          onRetirer={retirerPiece}
+        />
       </Etape>
 
       {/* 3. Vérification */}
@@ -568,12 +663,30 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                 <pre className="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap break-words rounded-lg border border-admin-line bg-admin-card p-3 font-sans text-[13px] leading-relaxed text-admin-ink">
                   {verification.apercu.texte}
                 </pre>
+                {pieces.length > 0 && (
+                  <div className="mt-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium text-admin-ink">
+                      <Paperclip className="h-3.5 w-3.5" aria-hidden />
+                      {pluriel(pieces.length, "pièce jointe", "pièces jointes")} ({formaterTaille(totalPieces)})
+                    </p>
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {pieces.map((p) => (
+                        <li
+                          key={p.id}
+                          className="max-w-full truncate rounded-md border border-admin-line bg-admin-card px-2 py-0.5 text-xs text-admin-muted"
+                        >
+                          {p.nom}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {verificationAJour && (
                   <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                     <button
                       type="button"
                       className="btn-secondary !px-4 !py-2"
-                      disabled={testEnCours || envoiEnCours}
+                      disabled={testEnCours || envoiEnCours || piecesEnPreparation}
                       onClick={envoyerTest}
                     >
                       {testEnCours ? (
@@ -584,8 +697,9 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                       M&apos;envoyer un test
                     </button>
                     <span className="min-w-0 text-xs text-admin-muted">
-                      Ce courriel, à ton adresse seulement, avec « [Test] » devant l&apos;objet. Il part de ta boîte
-                      info@ comme l&apos;envoi réel ; rien n&apos;est écrit dans le CRM.
+                      Ce courriel, à ton adresse seulement, avec « [Test] » devant l&apos;objet
+                      {pieces.length > 0 ? " et ses pièces jointes" : ""}. Il part de ta boîte info@ comme l&apos;envoi
+                      réel ; rien n&apos;est écrit dans le CRM.
                     </span>
                   </div>
                 )}
@@ -593,8 +707,9 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
                   <p className="mt-2 flex items-start gap-2 text-sm text-admin-green">
                     <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
                     <span className="min-w-0 break-words">
-                      Test envoyé à {test.a}. Regarde ta boîte de réception (et les indésirables) ; une copie est aussi
-                      dans Envoyés.
+                      Test envoyé à {test.a}
+                      {test.pieces > 0 ? ` avec ${pluriel(test.pieces, "pièce jointe", "pièces jointes")}` : ""}. Regarde
+                      ta boîte de réception (et les indésirables) ; une copie est aussi dans Envoyés.
                     </span>
                   </p>
                 )}
@@ -639,6 +754,8 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
           <p className="mt-3 text-xs text-admin-muted">
             Les courriels partent de ta boîte info@, un à la fois : une copie de chacun est rangée dans Envoyés de ton
             webmail Hostinger, et l&apos;envoi est noté dans la fiche du CRM de chaque contact.{" "}
+            {pieces.length > 0 &&
+              `Chaque courriel part avec ${pluriel(pieces.length, "pièce jointe", "pièces jointes")} (${formaterTaille(totalPieces)}). `}
             {nombre(verification.quota.plafond)} courriels par jour au plus, pour protéger la réputation de ta boîte ;
             remise à zéro à minuit.
             {prets > aujourdhui &&
@@ -710,6 +827,184 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
             )}
           </div>
         </Etape>
+      )}
+    </div>
+  );
+}
+
+const LIBELLES_TYPES: Partial<Record<TypeFichier, string>> = {
+  jpeg: "Photo",
+  png: "Image",
+  pdf: "PDF",
+  xlsx: "Excel",
+  xls: "Excel",
+  csv: "CSV",
+  docx: "Word",
+  doc: "Word",
+};
+
+const TABLEURS: readonly TypeFichier[] = ["xlsx", "xls", "csv"];
+
+/**
+ * Pièces jointes du courriel : photos (réduites dans le navigateur) et
+ * documents, choisis par les boutons ou glissés sur le bloc.
+ */
+function PiecesJointes({
+  pieces,
+  enPreparation,
+  erreurs,
+  desactive,
+  onAjouter,
+  onRetirer,
+}: {
+  pieces: PieceLocale[];
+  enPreparation: boolean;
+  erreurs: string[];
+  desactive: boolean;
+  onAjouter: (fichiers: File[]) => void;
+  onRetirer: (id: string) => void;
+}) {
+  const photosRef = useRef<HTMLInputElement>(null);
+  const documentsRef = useRef<HTMLInputElement>(null);
+  const [survol, setSurvol] = useState(false);
+  const bloque = desactive || enPreparation;
+  const plein = pieces.length >= MAX_PIECES;
+  const total = pieces.reduce((somme, p) => somme + p.taille, 0);
+
+  function choisir(e: React.ChangeEvent<HTMLInputElement>) {
+    const fichiers = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    onAjouter(fichiers);
+  }
+
+  return (
+    <div
+      className={`mt-5 rounded-xl border border-dashed p-4 transition-colors ${
+        survol ? "border-admin-green bg-admin-tint-green" : "border-admin-line"
+      }`}
+      onDragOver={(e) => {
+        if (bloque || !e.dataTransfer.types.includes("Files")) return;
+        e.preventDefault();
+        setSurvol(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setSurvol(false);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        setSurvol(false);
+        if (!bloque) onAjouter(Array.from(e.dataTransfer.files));
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-admin-ink">
+            Pièces jointes <span className="font-normal text-admin-faint">(facultatif)</span>
+          </p>
+          <p className="mt-0.5 text-xs text-admin-muted">
+            Photos du lot, liste en PDF ou Excel : jointes à chaque courriel. Tu peux aussi les glisser ici.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input
+            ref={photosRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={choisir}
+          />
+          <input
+            ref={documentsRef}
+            type="file"
+            accept={ACCEPT_DOCUMENTS}
+            multiple
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden
+            onChange={choisir}
+          />
+          <button
+            type="button"
+            className="btn-secondary !px-3 !py-2"
+            disabled={bloque || plein}
+            onClick={() => photosRef.current?.click()}
+          >
+            <ImagePlus className="h-4 w-4" aria-hidden />
+            Ajouter des photos
+          </button>
+          <button
+            type="button"
+            className="btn-secondary !px-3 !py-2"
+            disabled={bloque || plein}
+            onClick={() => documentsRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4" aria-hidden />
+            Ajouter un fichier
+          </button>
+        </div>
+      </div>
+
+      {pieces.length > 0 && (
+        <ul className="mt-3 divide-y divide-admin-line-soft rounded-lg border border-admin-line bg-admin-card">
+          {pieces.map((p) => {
+            const Icone = TABLEURS.includes(p.type) ? FileSpreadsheet : FileText;
+            return (
+              <li key={p.id} className="flex items-center gap-3 px-3 py-2">
+                {p.apercu ? (
+                  // Aperçu local (URL blob:) : next/image ne s'applique pas.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.apercu} alt="" className="h-10 w-10 shrink-0 rounded-md object-cover" />
+                ) : (
+                  <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-admin-subtle text-admin-muted">
+                    <Icone className="h-5 w-5" aria-hidden />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-admin-ink">{p.nom}</p>
+                  <p className="text-xs text-admin-muted">
+                    {LIBELLES_TYPES[p.type] ?? p.type.toUpperCase()} · {formaterTaille(p.taille)}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={bloque}
+                  onClick={() => onRetirer(p.id)}
+                  aria-label={`Retirer ${p.nom}`}
+                  title="Retirer"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-admin-muted transition-colors hover:bg-admin-subtle hover:text-admin-danger disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {enPreparation && (
+        <p className="mt-3 flex items-center gap-2 text-xs text-admin-muted" role="status">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          Préparation des pièces jointes…
+        </p>
+      )}
+
+      <p className="mt-3 text-xs text-admin-muted">
+        {pieces.length > 0
+          ? `${pluriel(pieces.length, "pièce jointe", "pièces jointes")} · ${formaterTaille(total)} sur ${formaterTaille(MAX_TOTAL_PIECES)}. `
+          : `${MAX_PIECES} pièces au plus, ${formaterTaille(MAX_TOTAL_PIECES)} au total. `}
+        Photos réduites automatiquement, sans leur position GPS. Formats : JPG, PNG, PDF, Excel, CSV et Word.
+      </p>
+      {erreurs.length > 0 && (
+        <Alerte ton="rouge">
+          {erreurs.map((erreur, i) => (
+            <span key={i} className="block">
+              {erreur}
+            </span>
+          ))}
+        </Alerte>
       )}
     </div>
   );

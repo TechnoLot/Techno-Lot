@@ -67,6 +67,12 @@ const nextConfig = {
     // on garde les 30 s de Next 14 pour que l'admin ne recharge pas tout
     // à chaque clic (les actions serveur invalident déjà ce cache).
     staleTimes: { dynamic: 30 },
+    // Pièces jointes de l'envoi en gros du CRM (7 Mo au plus, renvoyées avec
+    // le test et chaque lot ; lib/crm/pieces-jointes.ts). Toutes les actions
+    // serveur sont admin et le middleware refuse /admin/* sans session admin
+    // avant toute lecture du corps (une action postée ailleurs est renvoyée
+    // vers sa page /admin/*, qui repasse par le middleware).
+    serverActions: { bodySizeLimit: "8mb" },
   },
   async headers() {
     // Headers de sécurité appliqués à toutes les réponses.

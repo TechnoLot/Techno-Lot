@@ -56,6 +56,8 @@ async function fauxFetch(url: string | URL | Request, init: RequestInit = {}): P
 }
 
 import { envoyerLotEnGros, envoyerTestEnGros, verifierEnvoiEnGros } from "@/lib/crm/envoi-en-gros-actions";
+import { MAX_TOTAL_PIECES } from "@/lib/crm/pieces-jointes";
+import { JPEG_VALIDE, octets, PDF_VALIDE, XLSX_VALIDE } from "../securite/f2-outils";
 
 // --- Base simulée ---------------------------------------------------------------------
 
@@ -584,7 +586,7 @@ describe("M'envoyer un test", () => {
   it("courriel du premier destinataire prêt, à l'admin seulement : « [Test] », par la boîte info@, sans écriture", async () => {
     etat.ctx = { supabase: fauxSupabase(), user: { ...ADMIN, email: "anthony@technolot.ca" }, requestId: "req-test" };
     const r = await envoyerTestEnGros(champs);
-    expect(r).toEqual({ ok: true, a: "anthony@technolot.ca" });
+    expect(r).toEqual({ ok: true, a: "anthony@technolot.ca", pieces: 0 });
 
     // Même chemin que l'envoi réel : une requête à la Mail API de Hostinger.
     expect(etat.envois).toHaveLength(1);
@@ -592,6 +594,7 @@ describe("M'envoyer un test", () => {
     expect(c.to).toEqual(["anthony@technolot.ca"]);
     expect(c.bcc).toBeUndefined();
     expect(c.cc).toBeUndefined();
+    expect(c.attachments).toBeUndefined();
     expect(c.subject).toBe(`[Test] ${OBJET}`);
     // Même rendu que l'aperçu : prénom et compagnie de la fiche du CRM.
     expect(c.text.startsWith("Bonjour Jean de Acme inc.,\nVoici notre offre.")).toBe(true);
@@ -632,6 +635,80 @@ describe("M'envoyer un test", () => {
     const r = await envoyerTestEnGros(champs);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toMatch(/Réessaie dans 2 minutes/);
+    expect(etat.envois).toEqual([]);
+  });
+});
+
+describe("Pièces jointes", () => {
+  const champs = { destinataires: LISTE, objet: OBJET, corps: CORPS };
+  /** FormData comme celui du navigateur (champ « piece », un fichier par entrée). */
+  const fichiers = (...liste: [nom: string, contenu: Uint8Array<ArrayBuffer>][]) => {
+    const donnees = new FormData();
+    for (const [nom, contenu] of liste) donnees.append("piece", new File([contenu], nom));
+    return donnees;
+  };
+  const base64 = (o: Uint8Array) => Buffer.from(o).toString("base64");
+
+  it("test : la photo et la liste partent avec le courriel (base64, type MIME du contenu réel)", async () => {
+    const r = await envoyerTestEnGros(champs, fichiers(["lot 1.jpg", JPEG_VALIDE()], ["Liste du lot.pdf", PDF_VALIDE()]));
+    expect(r).toEqual({ ok: true, a: "info@technolot.ca", pieces: 2 });
+    expect(etat.envois[0].attachments).toEqual([
+      { filename: "lot 1.jpg", content: base64(JPEG_VALIDE()), contentType: "image/jpeg" },
+      { filename: "Liste du lot.pdf", content: base64(PDF_VALIDE()), contentType: "application/pdf" },
+    ]);
+
+    // Journal : le nombre de pièces, jamais leur nom.
+    await new Promise((r) => setTimeout(r, 10));
+    const texte = journal.join("\n");
+    expect(texte).toContain("crm.envoi_en_gros_test");
+    expect(texte).not.toMatch(/lot 1\.jpg|Liste du lot/);
+  });
+
+  it("lot : chaque courriel porte les mêmes pièces jointes", async () => {
+    const r = await envoyerLotEnGros(
+      { ...champs, confirme: true, nombre: 4, dejaEnvoyes: 0 },
+      fichiers(["photo.jpg", JPEG_VALIDE()], ["inventaire.xlsx", XLSX_VALIDE()]),
+    );
+    expect(r).toMatchObject({ ok: true, envoyes: 4, arret: null });
+    expect(etat.envois).toHaveLength(4);
+    for (const c of etat.envois) {
+      expect((c.attachments as { filename: string }[]).map((p) => p.filename)).toEqual(["photo.jpg", "inventaire.xlsx"]);
+    }
+  });
+
+  it("format refusé (page HTML renommée en PDF) : aucun envoi, aucune écriture", async () => {
+    const piege = octets("<!doctype html><html><script>alert(1)</script></html>");
+    const test = await envoyerTestEnGros(champs, fichiers(["photo.jpg", JPEG_VALIDE()], ["offre.pdf", piege]));
+    expect(test.ok).toBe(false);
+    if (!test.ok) expect(test.error).toMatch(/^Format non accepté : offre\.pdf\./);
+    const lot = await envoyerLotEnGros({ ...champs, confirme: true, nombre: 4, dejaEnvoyes: 0 }, fichiers(["offre.pdf", piege]));
+    expect(lot.ok).toBe(false);
+    expect(etat.envois).toEqual([]);
+    expect(etat.ecritures).toEqual([]);
+  });
+
+  it("plus de 7 Mo : refus avant de lire le contenu, aucun envoi", async () => {
+    const gros = new File([new Uint8Array(MAX_TOTAL_PIECES + 1)], "gros.pdf");
+    const lecture = vi.spyOn(gros, "arrayBuffer");
+    const donnees = new FormData();
+    donnees.append("piece", gros);
+    const r = await envoyerLotEnGros({ ...champs, confirme: true, nombre: 4, dejaEnvoyes: 0 }, donnees);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/7 Mo au total au plus/);
+    expect(lecture).not.toHaveBeenCalled();
+    expect(etat.envois).toEqual([]);
+  });
+
+  it("FormData inattendu (autre champ, texte au lieu d'un fichier, autre type) : refus", async () => {
+    const autreChamp = new FormData();
+    autreChamp.append("fichier", new File([PDF_VALIDE()], "liste.pdf"));
+    const texte = new FormData();
+    texte.append("piece", "pas un fichier");
+    for (const donnees of [autreChamp, texte, { piece: "x" } as never]) {
+      const r = await envoyerTestEnGros(champs, donnees);
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toMatch(/Pièces jointes invalides/);
+    }
     expect(etat.envois).toEqual([]);
   });
 });

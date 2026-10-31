@@ -1,7 +1,8 @@
 import { setTimeout as attendre } from "node:timers/promises";
 import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
+import type { PieceJointe } from "@/lib/crm/pieces-jointes";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
-import { ErreurHostinger, preparerEnvoyeur, type CourrielSortant } from "@/lib/hostinger/mail";
+import { ErreurHostinger, preparerEnvoyeur, type CourrielSortant, type PieceSortante } from "@/lib/hostinger/mail";
 
 // Moteur des variables : module pur (aussi utilisé par le navigateur pour
 // l'envoi en gros), ré-exporté ici pour les appelants existants.
@@ -184,7 +185,7 @@ export function apercuTexteProspect(body: string): string {
 export type CourrielGroupe = { to: string; subject: string; body: string };
 
 /** Pourquoi un envoi s'est arrêté. */
-export type MotifArret = "debit" | "configuration" | "incertain" | "erreur";
+export type MotifArret = "debit" | "configuration" | "incertain" | "trop_lourd" | "erreur";
 
 export type BilanEnvoiGroupe = {
   /**
@@ -207,6 +208,8 @@ const MESSAGES_ARRET: Record<MotifArret, string> = {
     "Envoi par la boîte info@ impossible : clé de la Mail API de Hostinger absente ou refusée (HOSTINGER_MAIL_API_TOKEN). Aucun courriel n'est parti.",
   incertain:
     "Hostinger n'a pas confirmé un envoi (délai dépassé ou panne de son côté) : l'envoi s'est arrêté par prudence. Ce courriel est peut-être parti (regarde dans Envoyés) ; il est compté comme envoyé pour ne jamais partir deux fois.",
+  trop_lourd:
+    "Hostinger refuse un courriel aussi lourd : l'envoi s'est arrêté. Retire des photos ou joins un PDF plus léger, puis réessaie ; les adresses déjà servies seront exclues.",
   erreur:
     "L'envoi par Hostinger a échoué : l'envoi s'est arrêté. Réessaie dans quelques minutes ; les adresses déjà servies seront exclues.",
 };
@@ -218,6 +221,7 @@ const MESSAGES_ENVOI: Record<MotifArret, string> = {
     "Envoi par la boîte info@ impossible : clé de la Mail API de Hostinger absente ou refusée (HOSTINGER_MAIL_API_TOKEN).",
   incertain:
     "Hostinger n'a pas confirmé l'envoi (délai dépassé ou panne de son côté). Regarde dans Envoyés avant de réessayer : le courriel est peut-être parti.",
+  trop_lourd: "Hostinger refuse un courriel aussi lourd : retire des photos ou joins un PDF plus léger, puis réessaie.",
   erreur: "L'envoi par Hostinger a échoué. Réessaie dans quelques minutes.",
 };
 
@@ -231,13 +235,17 @@ export function motifErreurHostinger(erreur: unknown, avantEnvoi = false): Motif
   if (!(erreur instanceof ErreurHostinger)) return "erreur";
   const statut = erreur.status;
   if (statut === 429) return "debit";
+  if (statut === 413) return "trop_lourd";
   if (statut === 401 || statut === 403 || statut === 404) return "configuration";
   if (!avantEnvoi && (statut === null || statut >= 500)) return "incertain";
   return "erreur";
 }
 
-/** Courriel de prospection parti de la boîte info@ : nom « Techno Lot », signature, mention de désabonnement. */
-function courrielHostinger(c: CourrielGroupe): CourrielSortant {
+/**
+ * Courriel de prospection parti de la boîte info@ : nom « Techno Lot »,
+ * signature, mention de désabonnement, pièces jointes éventuelles.
+ */
+function courrielHostinger(c: CourrielGroupe, attachments: readonly PieceSortante[]): CourrielSortant {
   const desabonnement = mentionneDesabonnement(c.body) ? null : boiteDesabonnement();
   return {
     to: [c.to],
@@ -245,6 +253,7 @@ function courrielHostinger(c: CourrielGroupe): CourrielSortant {
     subject: c.subject,
     html: wrapHtml(c.body, c.subject, desabonnement),
     text: wrapText(c.body, desabonnement),
+    ...(attachments.length > 0 ? { attachments: [...attachments] } : {}),
   };
 }
 
@@ -256,16 +265,19 @@ type Envois = {
 /**
  * Envoie les courriels UN à la fois depuis la boîte info@, avec une pause
  * entre deux : chacun a son propre destinataire (aucun ne voit les autres).
- * Le premier échec arrête tout, les suivants ne sont jamais tentés : limite
- * de débit (aucun nouvel essai : des dépassements répétés peuvent faire
- * bloquer l'adresse IP du site), clé refusée, courriel refusé, ou pas de
- * réponse (« incertain » : compté comme envoyé). Détail de Hostinger au
- * journal seulement (`operation`).
+ * Les mêmes pièces jointes (déjà vérifiées, lib/crm/pieces-jointes.ts)
+ * accompagnent chaque courriel. Le premier échec arrête tout, les suivants
+ * ne sont jamais tentés : limite de débit (aucun nouvel essai : des
+ * dépassements répétés peuvent faire bloquer l'adresse IP du site), clé
+ * refusée, courriel trop lourd ou refusé, ou pas de réponse (« incertain » :
+ * compté comme envoyé). Détail de Hostinger au journal seulement
+ * (`operation`).
  */
 async function envoyerDepuisInfo(
   courriels: readonly CourrielGroupe[],
   operation: string,
   requestId?: string,
+  pieces: readonly PieceJointe[] = [],
 ): Promise<Envois> {
   const resultat: Envois = { envoyes: [], echec: null };
   if (courriels.length === 0) return resultat;
@@ -287,10 +299,16 @@ async function envoyerDepuisInfo(
     return echouer(err, motifErreurHostinger(err, true));
   }
 
+  // Encodées une seule fois pour tous les courriels.
+  const attachments: PieceSortante[] = pieces.map((p) => ({
+    filename: p.nom,
+    content: Buffer.from(p.contenu).toString("base64"),
+    contentType: p.mime,
+  }));
   for (const [index, courriel] of courriels.entries()) {
     if (index > 0) await attendre(PAUSE_ENTRE_ENVOIS_MS);
     try {
-      await envoyer(courrielHostinger(courriel));
+      await envoyer(courrielHostinger(courriel, attachments));
     } catch (err) {
       const motif = motifErreurHostinger(err);
       if (motif === "incertain") resultat.envoyes.push({ index, to: courriel.to });
@@ -304,14 +322,16 @@ async function envoyerDepuisInfo(
 /**
  * Envoie UN courriel de prospection (modèle rendu) depuis la boîte info@,
  * avec la signature Techno Lot et la mention de désabonnement (LCAP) :
- * fiche d'un contact, relances automatiques, test de l'envoi en gros.
- * « incertain » : Hostinger n'a pas confirmé, le courriel est peut-être parti
- * (à l'appelant de décider s'il le note comme envoyé).
+ * fiche d'un contact, relances automatiques, test de l'envoi en gros (avec
+ * ses pièces jointes). « incertain » : Hostinger n'a pas confirmé, le
+ * courriel est peut-être parti (à l'appelant de décider s'il le note comme
+ * envoyé).
  */
 export async function sendProspectEmail(opts: {
   to: string;
   subject: string;
   body: string;
+  pieces?: readonly PieceJointe[];
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
 }): Promise<{ ok: true } | { ok: false; motif: MotifArret; error: string }> {
@@ -319,6 +339,7 @@ export async function sendProspectEmail(opts: {
     [{ to: opts.to, subject: opts.subject, body: opts.body }],
     "crm.envoi.hostinger",
     opts.requestId,
+    opts.pieces,
   );
   if (!echec) return { ok: true };
   const message = MESSAGES_ENVOI[echec.motif];
@@ -327,14 +348,21 @@ export async function sendProspectEmail(opts: {
 
 /**
  * Envoi en gros : envoie les courriels de la liste un à la fois depuis la
- * boîte info@ et s'arrête au premier échec (voir envoyerDepuisInfo).
+ * boîte info@, avec les mêmes pièces jointes, et s'arrête au premier échec
+ * (voir envoyerDepuisInfo).
  */
 export async function sendProspectBatch(opts: {
   courriels: readonly CourrielGroupe[];
+  pieces?: readonly PieceJointe[];
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
 }): Promise<BilanEnvoiGroupe> {
-  const { envoyes, echec } = await envoyerDepuisInfo(opts.courriels, "crm.envoi_gros.hostinger", opts.requestId);
+  const { envoyes, echec } = await envoyerDepuisInfo(
+    opts.courriels,
+    "crm.envoi_gros.hostinger",
+    opts.requestId,
+    opts.pieces,
+  );
   if (!echec) return { envoyes, arret: null };
   const message = MESSAGES_ARRET[echec.motif];
   return {

@@ -127,6 +127,24 @@ describe("requêtes et contenu", () => {
     expect(etat.requetes).toEqual([]);
     expect(bilan).toEqual({ envoyes: [], arret: null });
   });
+
+  it("pièces jointes : les mêmes dans chaque courriel, en base64, type MIME du contenu réel, sans cid", async () => {
+    const photo = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3]);
+    const pdf = new TextEncoder().encode("%PDF-1.7\n%%EOF\n");
+    await sendProspectBatch({
+      courriels: courriels(2),
+      pieces: [
+        { nom: "lot.jpg", type: "jpeg", mime: "image/jpeg", contenu: photo },
+        { nom: "liste.pdf", type: "pdf", mime: "application/pdf", contenu: pdf },
+      ],
+    });
+    const attendues = [
+      { filename: "lot.jpg", content: Buffer.from(photo).toString("base64"), contentType: "image/jpeg" },
+      { filename: "liste.pdf", content: Buffer.from(pdf).toString("base64"), contentType: "application/pdf" },
+    ];
+    expect(etat.requetes.map((r) => r.corps?.attachments)).toEqual([attendues, attendues]);
+    expect(etat.requetes.map((r) => r.corps?.to)).toEqual([["dest0@exemple.ca"], ["dest1@exemple.ca"]]);
+  });
 });
 
 describe("arrêts", () => {
@@ -169,6 +187,15 @@ describe("arrêts", () => {
     expect(indices(bilan)).toEqual([0, 1]);
     expect(bilan.arret?.motif).toBe("incertain");
     expect(bilan.arret?.message).toMatch(/peut-être parti \(regarde dans Envoyés\)/);
+  });
+
+  it("courriel trop lourd (413) : arrêt « trop lourd », rien n'est parti, message pour alléger les pièces jointes", async () => {
+    etat.reponses = [{ statut: 413 }];
+    const bilan = await sendProspectBatch({ courriels: courriels(3), requestId: "req-3" });
+    expect(etat.requetes).toHaveLength(1);
+    expect(bilan.envoyes).toEqual([]);
+    expect(bilan.arret?.motif).toBe("trop_lourd");
+    expect(bilan.arret?.message).toMatch(/Retire des photos ou joins un PDF plus léger.*\(réf\. req-3\)$/);
   });
 
   it("erreur 5xx de Hostinger : « incertain » aussi", async () => {
@@ -238,6 +265,7 @@ describe("arrêts", () => {
 
   it("motif de chaque erreur", () => {
     expect(motifErreurHostinger(new ErreurHostinger(429))).toBe("debit");
+    expect(motifErreurHostinger(new ErreurHostinger(413))).toBe("trop_lourd");
     expect(motifErreurHostinger(new ErreurHostinger(401))).toBe("configuration");
     expect(motifErreurHostinger(new ErreurHostinger(403))).toBe("configuration");
     expect(motifErreurHostinger(new ErreurHostinger(404))).toBe("configuration");

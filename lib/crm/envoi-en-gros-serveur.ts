@@ -18,6 +18,13 @@ import {
   type PlanEnvoi,
   type QuotaJour,
 } from "@/lib/crm/envoi-en-gros";
+import {
+  CHAMP_PIECE,
+  problemeTaillesPieces,
+  verifierPieces,
+  type PieceJointe,
+  type VerdictPieces,
+} from "@/lib/crm/pieces-jointes";
 import type { ContactStage } from "@/lib/crm/types";
 
 /*
@@ -209,6 +216,34 @@ export async function preparerEnvoi(
   return { ok: true, plan, quota: quota.quota };
 }
 
+// --- Pièces jointes ------------------------------------------------------------------------
+
+const PIECES_INVALIDES = "Pièces jointes invalides : retire-les et ajoute-les de nouveau.";
+
+/**
+ * Pièces jointes reçues du navigateur (FormData : champ `piece` seulement,
+ * des fichiers seulement). Nombre et poids contrôlés AVANT de lire le
+ * contenu, puis type réel, noms (lib/crm/pieces-jointes.ts). Aucun FormData :
+ * aucune pièce jointe.
+ */
+export async function lirePieces(donnees: unknown): Promise<VerdictPieces> {
+  if (donnees === undefined || donnees === null) return { ok: true, pieces: [] };
+  if (!(donnees instanceof FormData)) return { ok: false, error: PIECES_INVALIDES };
+
+  const fichiers: File[] = [];
+  for (const [cle, valeur] of donnees.entries()) {
+    if (cle !== CHAMP_PIECE || typeof valeur === "string") return { ok: false, error: PIECES_INVALIDES };
+    fichiers.push(valeur);
+  }
+  const probleme = problemeTaillesPieces(fichiers.map((f) => f.size));
+  if (probleme) return { ok: false, error: probleme };
+
+  const lus = await Promise.all(
+    fichiers.map(async (f) => ({ nom: f.name, contenu: new Uint8Array(await f.arrayBuffer()) })),
+  );
+  return verifierPieces(lus);
+}
+
 // --- Exécution d'un lot ------------------------------------------------------------------
 
 export type ContexteLot = ContexteJournal & {
@@ -349,7 +384,8 @@ export type ResultatLot = {
  *  1. fiches assurées (adresse inconnue → nouveau contact, compagnie réutilisée
  *     ou créée) ;
  *  2. envoi par la boîte info@ (sendProspectBatch : Mail API de Hostinger, un
- *     courriel à la fois, copie dans « Envoyés ») ;
+ *     courriel à la fois, mêmes pièces jointes pour tous, copie dans
+ *     « Envoyés ») ;
  *  3. trace de chaque courriel envoyé dans outreach_activities
  *     (`manual_note`, outcome `envoi_en_gros`, objet, 300 premiers caractères)
  *     — jamais `intro_email_sent`, que les relances automatiques suivent ;
@@ -357,7 +393,11 @@ export type ResultatLot = {
  * Tout échec arrête l'enchaînement : une trace manquante empêcherait la
  * déduplication au lot suivant.
  */
-export async function executerLot(ctx: ContexteLot, lot: readonly CourrielPrevu[]): Promise<ResultatLot> {
+export async function executerLot(
+  ctx: ContexteLot,
+  lot: readonly CourrielPrevu[],
+  pieces: readonly PieceJointe[] = [],
+): Promise<ResultatLot> {
   // Envoi impossible (clé absente) : aucune fiche créée pour rien.
   if (!isMailApiConfigured()) {
     return {
@@ -387,6 +427,7 @@ export async function executerLot(ctx: ContexteLot, lot: readonly CourrielPrevu[
 
   const bilan = await sendProspectBatch({
     courriels: avecFiche.map((c) => ({ to: c.destinataire.email, subject: c.objet, body: c.corps })),
+    pieces,
     requestId: ctx.requestId,
   });
   const envoyes = bilan.envoyes.map((e) => avecFiche[e.index]);

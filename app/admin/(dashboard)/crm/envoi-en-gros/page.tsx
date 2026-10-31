@@ -50,7 +50,8 @@ export default async function EnvoiEnGrosPage() {
       <header className="mb-8 mt-4">
         <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">Envoi en gros</h1>
         <p className="mt-2 max-w-2xl text-sm text-admin-muted">
-          Colle une liste d&apos;adresses ou importe un CSV, écris le message, vérifie, puis confirme.
+          Colle une liste d&apos;adresses ou importe un CSV, écris le message, joins au besoin les photos ou
+          la liste du lot, vérifie, puis confirme.
           Chaque destinataire reçoit son propre courriel personnalisé (il ne voit jamais la liste),
           envoyé depuis ta boîte info@ avec la signature et la mention de désabonnement ; une copie de
           chacun est rangée dans Envoyés.
