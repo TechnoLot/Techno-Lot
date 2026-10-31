@@ -1,5 +1,4 @@
 import { setTimeout as attendre } from "node:timers/promises";
-import { Resend, type CreateEmailOptions } from "resend";
 import { avecRef, journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { ErreurHostinger, preparerEnvoyeur, type CourrielSortant } from "@/lib/hostinger/mail";
@@ -157,38 +156,9 @@ Demander une soumission : https://technolot.ca/soumission
 ${mention}`;
 }
 
-type AdressesEnvoi = { fromAddress: string; bccAddress: string };
-
-function adressesEnvoi(): AdressesEnvoi {
-  return {
-    fromAddress: process.env.FROM_EMAIL ?? "info@technolot.ca",
-    bccAddress: process.env.CONTACT_EMAIL ?? "info@technolot.ca",
-  };
-}
-
-/**
- * Courriel de prospection envoyé par Resend (envoi manuel, relances) :
- * expéditeur, destinataire seul dans `to`, copie cachée à la boîte générale,
- * reply-to, signature, mention de désabonnement et en-tête List-Unsubscribe.
- */
-function courrielProspect(
-  opts: { to: string; subject: string; body: string; replyTo?: string | null },
-  { fromAddress, bccAddress }: AdressesEnvoi,
-): CreateEmailOptions {
-  // LCAP : les demandes de désabonnement arrivent dans la boîte générale
-  // (en-tête List-Unsubscribe, plus la mention sous la signature si le
-  // modèle n'a pas déjà la sienne).
-  const desabonnement = mentionneDesabonnement(opts.body) ? null : bccAddress;
-  return {
-    from: `Techno Lot <${fromAddress}>`,
-    to: [opts.to],
-    bcc: bccAddress !== opts.to ? [bccAddress] : undefined,
-    replyTo: opts.replyTo ? [opts.replyTo] : undefined,
-    subject: opts.subject,
-    html: wrapHtml(opts.body, opts.subject, desabonnement),
-    text: wrapText(opts.body, desabonnement),
-    headers: { "List-Unsubscribe": `<mailto:${bccAddress}?subject=desabonner>` },
-  };
+/** Boîte des demandes de désabonnement (LCAP) : la boîte générale, qui reçoit aussi les réponses. */
+function boiteDesabonnement(): string {
+  return process.env.CONTACT_EMAIL ?? "info@technolot.ca";
 }
 
 /**
@@ -196,55 +166,24 @@ function courrielProspect(
  * désabonnement comprises) : aperçu de l'envoi en gros.
  */
 export function apercuTexteProspect(body: string): string {
-  const { bccAddress } = adressesEnvoi();
-  return wrapText(body, mentionneDesabonnement(body) ? null : bccAddress);
+  return wrapText(body, mentionneDesabonnement(body) ? null : boiteDesabonnement());
 }
 
-/**
- * Envoie un courriel de prospection (modèle rendu) via Resend, avec la
- * signature Techno Lot et la mention de désabonnement (LCAP) ajoutées
- * automatiquement. `replyTo` = courriel de l'admin connecté pour que les
- * réponses lui reviennent directement. Vérifier les désabonnements avant
- * d'appeler (lib/crm/desabonnement.ts).
+// --- Envoi depuis la boîte info@ (Mail API de Hostinger) --------------------------------
+
+/*
+ * Tous les courriels du CRM (fiche d'un contact, relances automatiques, envoi
+ * en gros et son test) partent de la boîte info@ par la Mail API de
+ * Hostinger, qui en range une copie dans « Envoyés » : aucune copie cachée,
+ * rien dans la boîte de réception. L'API n'accepte ni reply-to ni en-tête
+ * personnalisé : les réponses, « désabonner » compris, reviennent à info@, et
+ * la mention dans le texte suffit à la LCAP (pas de List-Unsubscribe).
+ * Vérifier les désabonnements avant d'envoyer (lib/crm/desabonnement.ts).
  */
-export async function sendProspectEmail(opts: {
-  to: string;
-  subject: string;
-  body: string;
-  replyTo?: string | null;
-  /** Référence de la requête (journal) ; une nouvelle sinon. */
-  requestId?: string;
-}): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return {
-      ok: false,
-      error: "Service de courriel non configuré (RESEND_API_KEY manquante).",
-    };
-  }
-
-  const adresses = adressesEnvoi();
-
-  try {
-    const resend = new Resend(apiKey);
-    const { data, error } = await resend.emails.send(courrielProspect(opts, adresses));
-    if (error) {
-      // Détail de Resend au journal seulement (check 20).
-      const ref = await journaliserErreur(error, "crm.resend", { requestId: opts.requestId });
-      return { ok: false, error: avecRef("L'envoi du courriel a échoué.", ref) };
-    }
-    return { ok: true, id: data?.id ?? null };
-  } catch (err) {
-    const ref = await journaliserErreur(err, "crm.envoi", { requestId: opts.requestId });
-    return { ok: false, error: avecRef("Erreur inattendue à l'envoi.", ref) };
-  }
-}
-
-// --- Envoi en gros : boîte info@ (Mail API de Hostinger) ---------------------------------
 
 export type CourrielGroupe = { to: string; subject: string; body: string };
 
-/** Pourquoi un envoi groupé s'est arrêté avant la fin. */
+/** Pourquoi un envoi s'est arrêté. */
 export type MotifArret = "debit" | "configuration" | "incertain" | "erreur";
 
 export type BilanEnvoiGroupe = {
@@ -260,6 +199,7 @@ export type BilanEnvoiGroupe = {
 /** Pause entre deux envois : rythme modéré pour la boîte info@ et la limite de débit de l'API. */
 export const PAUSE_ENTRE_ENVOIS_MS = 1_000;
 
+/** Messages de l'envoi en gros (une liste). */
 const MESSAGES_ARRET: Record<MotifArret, string> = {
   debit:
     "Hostinger limite le nombre d'envois : l'envoi s'est arrêté. Réessaie dans quelques minutes ; les adresses déjà servies seront exclues.",
@@ -269,6 +209,16 @@ const MESSAGES_ARRET: Record<MotifArret, string> = {
     "Hostinger n'a pas confirmé un envoi (délai dépassé ou panne de son côté) : l'envoi s'est arrêté par prudence. Ce courriel est peut-être parti (regarde dans Envoyés) ; il est compté comme envoyé pour ne jamais partir deux fois.",
   erreur:
     "L'envoi par Hostinger a échoué : l'envoi s'est arrêté. Réessaie dans quelques minutes ; les adresses déjà servies seront exclues.",
+};
+
+/** Messages d'un envoi unitaire (fiche d'un contact, test de l'envoi en gros). */
+const MESSAGES_ENVOI: Record<MotifArret, string> = {
+  debit: "Hostinger limite le nombre d'envois pour l'instant : réessaie dans quelques minutes.",
+  configuration:
+    "Envoi par la boîte info@ impossible : clé de la Mail API de Hostinger absente ou refusée (HOSTINGER_MAIL_API_TOKEN).",
+  incertain:
+    "Hostinger n'a pas confirmé l'envoi (délai dépassé ou panne de son côté). Regarde dans Envoyés avant de réessayer : le courriel est peut-être parti.",
+  erreur: "L'envoi par Hostinger a échoué. Réessaie dans quelques minutes.",
 };
 
 /**
@@ -286,15 +236,9 @@ export function motifErreurHostinger(erreur: unknown, avantEnvoi = false): Motif
   return "erreur";
 }
 
-/**
- * Courriel de l'envoi en gros, parti de la boîte info@ : nom « Techno Lot »,
- * même mise en page, signature et mention de désabonnement que l'envoi
- * manuel. Ni reply-to, ni copie cachée, ni List-Unsubscribe (l'API ne les
- * accepte pas) : les réponses, « désabonner » compris, reviennent à info@, la
- * copie est dans « Envoyés » et la mention dans le texte suffit à la LCAP.
- */
-function courrielHostinger(c: CourrielGroupe, { bccAddress }: AdressesEnvoi): CourrielSortant {
-  const desabonnement = mentionneDesabonnement(c.body) ? null : bccAddress;
+/** Courriel de prospection parti de la boîte info@ : nom « Techno Lot », signature, mention de désabonnement. */
+function courrielHostinger(c: CourrielGroupe): CourrielSortant {
+  const desabonnement = mentionneDesabonnement(c.body) ? null : boiteDesabonnement();
   return {
     to: [c.to],
     displayName: "Techno Lot",
@@ -304,54 +248,99 @@ function courrielHostinger(c: CourrielGroupe, { bccAddress }: AdressesEnvoi): Co
   };
 }
 
+type Envois = {
+  envoyes: { index: number; to: string }[];
+  echec: { motif: MotifArret; ref?: string } | null;
+};
+
 /**
- * Envoie des courriels de prospection depuis la boîte info@ par la Mail API
- * de Hostinger, UN à la fois, avec une pause entre deux : chacun a son propre
- * destinataire (aucun ne voit les autres) et Hostinger en range une copie
- * dans « Envoyés ». Le premier échec arrête tout, les courriels suivants ne
- * sont jamais tentés : limite de débit (aucun nouvel essai : des dépassements
- * répétés peuvent faire bloquer l'adresse IP du site), clé refusée, courriel
- * refusé, ou pas de réponse (« incertain » : compté comme envoyé, pour ne
- * jamais envoyer deux fois). Détail de Hostinger au journal seulement.
- * Vérifier les désabonnements avant d'appeler.
+ * Envoie les courriels UN à la fois depuis la boîte info@, avec une pause
+ * entre deux : chacun a son propre destinataire (aucun ne voit les autres).
+ * Le premier échec arrête tout, les suivants ne sont jamais tentés : limite
+ * de débit (aucun nouvel essai : des dépassements répétés peuvent faire
+ * bloquer l'adresse IP du site), clé refusée, courriel refusé, ou pas de
+ * réponse (« incertain » : compté comme envoyé). Détail de Hostinger au
+ * journal seulement (`operation`).
  */
-export async function sendProspectBatch(opts: {
-  courriels: readonly CourrielGroupe[];
-  /** Référence de la requête (journal) ; une nouvelle sinon. */
-  requestId?: string;
-}): Promise<BilanEnvoiGroupe> {
-  const bilan: BilanEnvoiGroupe = { envoyes: [], arret: null };
-  if (opts.courriels.length === 0) return bilan;
+async function envoyerDepuisInfo(
+  courriels: readonly CourrielGroupe[],
+  operation: string,
+  requestId?: string,
+): Promise<Envois> {
+  const resultat: Envois = { envoyes: [], echec: null };
+  if (courriels.length === 0) return resultat;
   if (!isMailApiConfigured()) {
-    bilan.arret = { motif: "configuration", message: MESSAGES_ARRET.configuration };
-    return bilan;
+    resultat.echec = { motif: "configuration" };
+    return resultat;
   }
 
-  const arreter = async (erreur: unknown, motif: MotifArret): Promise<BilanEnvoiGroupe> => {
+  const echouer = async (erreur: unknown, motif: MotifArret): Promise<Envois> => {
     // Détail de Hostinger au journal seulement (check 20).
-    const ref = await journaliserErreur(erreur, "crm.envoi_gros.hostinger", { requestId: opts.requestId });
-    bilan.arret = { motif, message: avecRef(MESSAGES_ARRET[motif], ref), ref };
-    return bilan;
+    resultat.echec = { motif, ref: await journaliserErreur(erreur, operation, { requestId }) };
+    return resultat;
   };
 
   let envoyer: (courriel: CourrielSortant) => Promise<void>;
   try {
     envoyer = await preparerEnvoyeur();
   } catch (err) {
-    return arreter(err, motifErreurHostinger(err, true));
+    return echouer(err, motifErreurHostinger(err, true));
   }
 
-  const adresses = adressesEnvoi();
-  for (const [index, courriel] of opts.courriels.entries()) {
+  for (const [index, courriel] of courriels.entries()) {
     if (index > 0) await attendre(PAUSE_ENTRE_ENVOIS_MS);
     try {
-      await envoyer(courrielHostinger(courriel, adresses));
+      await envoyer(courrielHostinger(courriel));
     } catch (err) {
       const motif = motifErreurHostinger(err);
-      if (motif === "incertain") bilan.envoyes.push({ index, to: courriel.to });
-      return arreter(err, motif);
+      if (motif === "incertain") resultat.envoyes.push({ index, to: courriel.to });
+      return echouer(err, motif);
     }
-    bilan.envoyes.push({ index, to: courriel.to });
+    resultat.envoyes.push({ index, to: courriel.to });
   }
-  return bilan;
+  return resultat;
+}
+
+/**
+ * Envoie UN courriel de prospection (modèle rendu) depuis la boîte info@,
+ * avec la signature Techno Lot et la mention de désabonnement (LCAP) :
+ * fiche d'un contact, relances automatiques, test de l'envoi en gros.
+ * « incertain » : Hostinger n'a pas confirmé, le courriel est peut-être parti
+ * (à l'appelant de décider s'il le note comme envoyé).
+ */
+export async function sendProspectEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  /** Référence de la requête (journal) ; une nouvelle sinon. */
+  requestId?: string;
+}): Promise<{ ok: true } | { ok: false; motif: MotifArret; error: string }> {
+  const { echec } = await envoyerDepuisInfo(
+    [{ to: opts.to, subject: opts.subject, body: opts.body }],
+    "crm.envoi.hostinger",
+    opts.requestId,
+  );
+  if (!echec) return { ok: true };
+  const message = MESSAGES_ENVOI[echec.motif];
+  return { ok: false, motif: echec.motif, error: echec.ref ? avecRef(message, echec.ref) : message };
+}
+
+/**
+ * Envoi en gros : envoie les courriels de la liste un à la fois depuis la
+ * boîte info@ et s'arrête au premier échec (voir envoyerDepuisInfo).
+ */
+export async function sendProspectBatch(opts: {
+  courriels: readonly CourrielGroupe[];
+  /** Référence de la requête (journal) ; une nouvelle sinon. */
+  requestId?: string;
+}): Promise<BilanEnvoiGroupe> {
+  const { envoyes, echec } = await envoyerDepuisInfo(opts.courriels, "crm.envoi_gros.hostinger", opts.requestId);
+  if (!echec) return { envoyes, arret: null };
+  const message = MESSAGES_ARRET[echec.motif];
+  return {
+    envoyes,
+    arret: echec.ref
+      ? { motif: echec.motif, message: avecRef(message, echec.ref), ref: echec.ref }
+      : { motif: echec.motif, message },
+  };
 }

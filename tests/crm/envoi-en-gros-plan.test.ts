@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-// email.ts (ré-export du moteur) importe Resend et le client de Hostinger : jamais de réseau ici.
-vi.mock("resend", () => ({ Resend: class {} }));
+// email.ts (ré-export du moteur) importe le client de Hostinger : aucun appel réseau ici.
 
 import { renderTemplate as renderTemplateCrm } from "@/lib/crm/email";
 import {

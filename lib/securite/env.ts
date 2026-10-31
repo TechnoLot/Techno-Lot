@@ -40,7 +40,11 @@ export const VARIABLES_FONCTION: readonly RegleVariable[] = [
     fonction: "limites de débit, journal de sécurité durable, formulaire et suivi des pubs par le serveur",
   },
   { nom: "SITE_URL", url: true, fonction: "contrôle d'origine des requêtes admin (CSRF)" },
-  { nom: "RESEND_API_KEY", fonction: "envoi des courriels (formulaire, CRM, alertes de sécurité)" },
+  { nom: "RESEND_API_KEY", fonction: "envoi des courriels (formulaire, devis, alertes de sécurité)" },
+  {
+    nom: "HOSTINGER_MAIL_API_TOKEN",
+    fonction: "courriels du CRM envoyés depuis info@ (copie dans Envoyés) et « Voir le courriel » des soumissions",
+  },
   { nom: "CONTACT_EMAIL", fonction: "destinataire des soumissions et des alertes de sécurité" },
   { nom: "FROM_EMAIL", fonction: "expéditeur des courriels" },
   { nom: "CRON_SECRET", longueurMin: 32, fonction: "tâches planifiées (Bearer)" },

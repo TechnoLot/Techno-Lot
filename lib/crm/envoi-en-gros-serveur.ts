@@ -152,8 +152,9 @@ export async function chargerObjetsRecus(
 
 /**
  * Limite du jour (depuis minuit, heure du Québec) d'après les traces de
- * l'envoi en gros : seuls ces courriels partent par la boîte info@ (le reste
- * du site envoie par Resend). Compte seulement (`head`), aucune ligne lue.
+ * l'envoi en gros : les courriels envoyés un à un depuis les fiches et les
+ * relances automatiques, peu nombreux, ne comptent pas. Compte seulement
+ * (`head`), aucune ligne lue.
  */
 export async function chargerQuotaDuJour(supabase: Client): Promise<{ ok: true; quota: QuotaJour } | Echec> {
   const { count, error } = await supabase

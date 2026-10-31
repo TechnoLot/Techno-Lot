@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /*
- * sendProspectBatch (lib/crm/email.ts) : envoi en gros par la boîte info@
- * (Mail API de Hostinger) avec un `fetch` SIMULÉ : aucune requête réseau,
- * aucune vraie clé. On vérifie les requêtes (un courriel par requête, un seul
- * destinataire chacun, même contenu que l'envoi manuel), la pause entre deux
- * envois, l'arrêt au premier échec et ses motifs (débit, clé, refus,
- * « incertain »). L'envoi manuel (sendProspectEmail, Resend) garde sa copie
- * cachée et son en-tête List-Unsubscribe.
+ * Courriels du CRM par la boîte info@ (Mail API de Hostinger, lib/crm/email.ts)
+ * avec un `fetch` SIMULÉ : aucune requête réseau, aucune vraie clé. On
+ * vérifie les requêtes (un courriel par requête, un seul destinataire chacun,
+ * même contenu pour l'envoi depuis une fiche et l'envoi en gros, aucune copie
+ * cachée), la pause entre deux envois, l'arrêt au premier échec et ses motifs
+ * (débit, clé, refus, « incertain »), et les messages de l'envoi unitaire.
  */
 
 type Requete = { url: string; methode: string; entetes: Record<string, string>; corps: Record<string, unknown> | null };
@@ -18,23 +17,11 @@ const etat = vi.hoisted(() => ({
   reponses: [] as Reponse[],
   /** Pauses demandées entre deux envois, en ms. */
   attentes: [] as number[],
-  /** Courriels de l'envoi manuel (Resend, emails.send). */
-  unitaires: [] as Record<string, unknown>[],
 }));
 
 vi.mock("node:timers/promises", () => ({
   setTimeout: async (ms: number) => {
     etat.attentes.push(ms);
-  },
-}));
-vi.mock("resend", () => ({
-  Resend: class {
-    emails = {
-      send: async (charge: Record<string, unknown>) => {
-        etat.unitaires.push(charge);
-        return { data: { id: "unitaire" }, error: null };
-      },
-    };
   },
 }));
 
@@ -55,7 +42,6 @@ async function fauxFetch(url: string | URL | Request, init: RequestInit = {}): P
   return new Response(null, { status: 204 });
 }
 
-const ADMIN = "admin@technolot.ca";
 const ENVOI = "https://api.mail.hostinger.com/api/v1/mailboxes/boite-test/send";
 const courriels = (n: number) =>
   Array.from({ length: n }, (_, i) => ({
@@ -76,14 +62,11 @@ beforeEach(() => {
   vi.stubGlobal("fetch", fauxFetch);
   vi.stubEnv("HOSTINGER_MAIL_API_TOKEN", "jeton-factice");
   vi.stubEnv("HOSTINGER_MAIL_MAILBOX_ID", "boite-test");
-  vi.stubEnv("RESEND_API_KEY", "re_test_factice");
-  vi.stubEnv("FROM_EMAIL", "info@technolot.ca");
   vi.stubEnv("CONTACT_EMAIL", "info@technolot.ca");
   vi.stubEnv("SECURITE_RPC_SECRET", ""); // journal : sortie standard seulement
   etat.requetes = [];
   etat.reponses = [];
   etat.attentes = [];
-  etat.unitaires = [];
 });
 
 afterEach(() => {
@@ -114,25 +97,22 @@ describe("requêtes et contenu", () => {
     }
   });
 
-  it("même mise en page, signature et mention de désabonnement que l'envoi manuel (Resend)", async () => {
+  it("envoi depuis une fiche et envoi en gros : exactement le même courriel (signature, désabonnement, sans copie)", async () => {
     const un = { to: "jean@exemple.ca", subject: "Bonjour Jean", body: "Bonjour Jean,\n\nVoici <notre> offre." };
-    await sendProspectEmail({ ...un, replyTo: ADMIN });
+    expect(await sendProspectEmail(un)).toEqual({ ok: true });
     await sendProspectBatch({ courriels: [un] });
 
+    expect(etat.requetes.map((r) => `${r.methode} ${r.url}`)).toEqual([`POST ${ENVOI}`, `POST ${ENVOI}`]);
+    expect(etat.requetes[0].corps).toEqual(etat.requetes[1].corps);
     const c = etat.requetes[0].corps ?? {};
+    expect(Object.keys(c).sort()).toEqual(["displayName", "html", "subject", "text", "to"]);
+    expect(c.to).toEqual(["jean@exemple.ca"]);
     expect(c.displayName).toBe("Techno Lot");
     expect(c.subject).toBe("Bonjour Jean");
-    expect(c.html).toBe(etat.unitaires[0].html);
-    expect(c.text).toBe(etat.unitaires[0].text);
     expect(String(c.html)).toContain("Anthony Després");
     expect(String(c.html)).toContain("Voici &lt;notre&gt; offre.");
     expect(String(c.html)).toContain("désabonner");
     expect(String(c.text)).toContain("répondez « désabonner »");
-
-    // L'envoi manuel garde sa copie cachée à la boîte générale et son en-tête de désabonnement.
-    expect(etat.unitaires[0].bcc).toEqual(["info@technolot.ca"]);
-    expect(etat.unitaires[0].replyTo).toEqual([ADMIN]);
-    expect(etat.unitaires[0].headers).toEqual({ "List-Unsubscribe": "<mailto:info@technolot.ca?subject=desabonner>" });
   });
 
   it("modèle qui a déjà sa mention de désabonnement : pas de seconde mention", async () => {
@@ -229,6 +209,31 @@ describe("arrêts", () => {
     const texte = journal.join("\n");
     expect(texte).toContain("crm.envoi_gros.hostinger");
     expect(texte).not.toMatch(/dest\d@exemple\.ca|Objet test|voici notre offre|jeton-factice/);
+  });
+
+  it("envoi unitaire : messages propres à un seul courriel, référence pour retrouver le détail", async () => {
+    const un = { to: "jean@exemple.ca", subject: "Bonjour", body: "Bonjour Jean.", requestId: "req-u" };
+
+    etat.reponses = [{ statut: 429, corps: { error: "Too Many Requests", code: "ERR_TOO_MANY_REQUESTS" } }];
+    expect(await sendProspectEmail(un)).toEqual({
+      ok: false,
+      motif: "debit",
+      error: "Hostinger limite le nombre d'envois pour l'instant : réessaie dans quelques minutes. (réf. req-u)",
+    });
+
+    etat.reponses = ["lancer"];
+    const incertain = await sendProspectEmail(un);
+    expect(incertain.ok).toBe(false);
+    if (!incertain.ok) {
+      expect(incertain.motif).toBe("incertain");
+      expect(incertain.error).toMatch(/Regarde dans Envoyés avant de réessayer : le courriel est peut-être parti\. \(réf\. req-u\)$/);
+    }
+
+    vi.stubEnv("HOSTINGER_MAIL_API_TOKEN", "");
+    etat.requetes = [];
+    const sansCle = await sendProspectEmail(un);
+    expect(sansCle).toMatchObject({ ok: false, motif: "configuration" });
+    expect(etat.requetes).toEqual([]);
   });
 
   it("motif de chaque erreur", () => {

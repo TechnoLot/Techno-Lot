@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { setTimeout as attendre } from "node:timers/promises";
 import { NextResponse } from "next/server";
 import { bearerCronValide } from "@/lib/securite/garde";
 import { reponseErreur } from "@/lib/securite/erreurs";
 import { EVENEMENTS, journaliser } from "@/lib/securite/journal";
 import { clientServiceCron, refusCron, reponseServiceManquant } from "@/lib/admin/cron";
 import { PRIVE } from "@/lib/admin/requete-admin";
-import { renderTemplate, sendProspectEmail } from "@/lib/crm/email";
+import { PAUSE_ENTRE_ENVOIS_MS, renderTemplate, sendProspectEmail } from "@/lib/crm/email";
 import { courrielsDesabonnes } from "@/lib/crm/desabonnement";
 import type {
   Company,
@@ -24,17 +25,25 @@ export const maxDuration = 120;
  */
 const DELAY_DAYS = 7;
 
+/** Relances au plus par passage (rythme modéré pour la boîte info@) ; les autres partent au passage suivant. */
+const MAX_PAR_PASSAGE = 50;
+
 /**
  * POST seulement (envoie des courriels : jamais en GET) : auto-envoi de la
  * relance 1 aux contacts qui ont reçu un intro (cold outreach ou post-appel)
  * il y a >= 7 jours et qui n'ont pas encore reçu de relance 1. Les contacts
  * désabonnés (LCAP) sont exclus, même quand l'adresse a été désabonnée sur une
  * autre fiche.
+ * Les relances partent de la boîte info@ (Mail API de Hostinger, copie dans
+ * « Envoyés »), une à la fois avec une pause, 50 au plus par passage. Arrêt
+ * du passage si Hostinger limite les envois ou refuse la clé ; réponse
+ * « incertaine » (peut-être partie) : notée comme envoyée, jamais renvoyée.
  * Protégé par l'en-tête `Authorization: Bearer $CRON_SECRET` (comparé en temps
  * constant) ; refus journalisé (`cron.refus`).
  *
- * Réponse : { checked, sent, skipped, errors: [{ contactId, ref }] }
- * (identifiants seulement : aucun courriel ni message d'erreur brut).
+ * Réponse : { checked, sent, skipped, errors: [{ contactId, ref }], arret }
+ * (identifiants seulement : aucun courriel ni message d'erreur brut ; `arret`
+ * = motif d'un passage arrêté avant la fin, sinon null).
  */
 export async function POST(request: Request) {
   if (!bearerCronValide(request)) return refusCron(request);
@@ -79,7 +88,7 @@ export async function POST(request: Request) {
     })[];
 
     if (contacts.length === 0) {
-      return NextResponse.json({ checked: 0, sent: 0, skipped: 0, errors: [] }, { headers: PRIVE });
+      return NextResponse.json({ checked: 0, sent: 0, skipped: 0, errors: [], arret: null }, { headers: PRIVE });
     }
 
     // LCAP : adresses désabonnées (lecture impossible : on n'envoie rien)
@@ -110,6 +119,9 @@ export async function POST(request: Request) {
     const cutoff = Date.now() - DELAY_DAYS * 86_400_000;
     let sent = 0;
     let skipped = 0;
+    let tentatives = 0;
+    /** Passage arrêté avant la fin : limite de débit, clé refusée, réponse incertaine ou plafond atteint. */
+    let arret: "debit" | "configuration" | "incertain" | "plafond" | null = null;
     const errors: { contactId: string; ref: string }[] = [];
 
     for (const contact of contacts) {
@@ -138,22 +150,25 @@ export async function POST(request: Request) {
       const subject = renderTemplate(template.subject, vars);
       const body = renderTemplate(template.body, vars);
 
-      const envoi = await sendProspectEmail({
-        to: contact.email,
-        subject,
-        body,
-        // Le cron n'est associé à aucun admin — replyTo tombe sur la boîte
-        // générale info@technolot.ca (comportement par défaut de Resend).
-        replyTo: null,
-        requestId,
-      });
+      if (sent >= MAX_PAR_PASSAGE) {
+        arret = "plafond";
+        break;
+      }
+      if (tentatives++ > 0) await attendre(PAUSE_ENTRE_ENVOIS_MS);
+      const envoi = await sendProspectEmail({ to: contact.email, subject, body, requestId });
 
       if (!envoi.ok) {
         // Détail déjà au journal (sendProspectEmail) ; référence seulement ici.
         errors.push({ contactId: contact.id, ref: requestId });
-        continue;
+        if (envoi.motif === "debit" || envoi.motif === "configuration") {
+          // Inutile d'insister : les autres relances partiront au passage suivant.
+          arret = envoi.motif;
+          break;
+        }
+        if (envoi.motif !== "incertain") continue;
       }
 
+      // Envoyée, ou peut-être partie (« incertain ») : notée pour ne jamais être renvoyée.
       await supabase.from("outreach_activities").insert({
         contact_id: contact.id,
         activity_type: "followup_sent",
@@ -164,15 +179,19 @@ export async function POST(request: Request) {
         outcome: "auto",
       });
       sent++;
+      if (!envoi.ok) {
+        arret = "incertain";
+        break;
+      }
     }
 
     void journaliser(EVENEMENTS.adminAction, {
       resultat: errors.length ? "echec" : "ok",
       request,
       requestId,
-      details: { action: "crm.relances_auto", verifies: contacts.length, envoyes: sent, erreurs: errors.length },
+      details: { action: "crm.relances_auto", verifies: contacts.length, envoyes: sent, erreurs: errors.length, arret },
     });
-    return NextResponse.json({ checked: contacts.length, sent, skipped, errors }, { headers: PRIVE });
+    return NextResponse.json({ checked: contacts.length, sent, skipped, errors, arret }, { headers: PRIVE });
   } catch (err) {
     return reponseErreur(500, "Relances automatiques impossibles.", { request, err, requestId });
   }

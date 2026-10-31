@@ -5,7 +5,6 @@ import { headers } from "next/headers";
 import { adminPourAction, type ContexteAdmin } from "@/lib/securite/garde";
 import { limiterSelon, type RegleLimite } from "@/lib/securite/limite";
 import {
-  avecRef,
   echecAction,
   echecValidation,
   journaliserAction,
@@ -13,7 +12,7 @@ import {
   type EchecAction,
 } from "@/lib/admin/erreurs-admin";
 import { LIBELLES_ENVOI_EN_GROS, lotEnGrosSchema, verificationEnGrosSchema } from "@/lib/admin/schemas";
-import { apercuTexteProspect, sendProspectBatch } from "@/lib/crm/email";
+import { apercuTexteProspect, sendProspectEmail } from "@/lib/crm/email";
 import {
   aEnvoyerAujourdhui,
   analyserListe,
@@ -197,21 +196,13 @@ export async function envoyerTestEnGros(entree: {
       return { ok: false, error: "Aucun destinataire à servir (tous sont exclus) : rien à tester." };
     }
 
-    const envoi = await sendProspectBatch({
-      courriels: [{ to: a, subject: `[Test] ${premier.objet}`, body: premier.corps }],
+    const envoi = await sendProspectEmail({
+      to: a,
+      subject: `[Test] ${premier.objet}`,
+      body: premier.corps,
       requestId: ctx.requestId,
     });
-    if (envoi.arret) {
-      // Test sans trace : « peut-être parti » se vérifie dans la boîte, sans rien compter.
-      const error =
-        envoi.arret.motif === "incertain"
-          ? avecRef(
-              "Hostinger n'a pas confirmé l'envoi du test (délai dépassé ou panne de son côté). Regarde dans ta boîte dans une minute avant de réessayer.",
-              envoi.arret.ref ?? ctx.requestId,
-            )
-          : envoi.arret.message;
-      return { ok: false, error };
-    }
+    if (!envoi.ok) return { ok: false, error: envoi.error };
 
     void journaliserAction("crm.envoi_en_gros_test", ctx);
     return { ok: true, a };

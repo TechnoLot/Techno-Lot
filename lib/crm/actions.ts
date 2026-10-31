@@ -561,7 +561,7 @@ export async function sendTemplateEmail(
   if (!id) return ID_INVALIDE;
   const type = typeModeleSchema.safeParse(templateType);
   if (!type.success) return echecValidation(type.error, { _: "Modèle" });
-  const { supabase, user } = ctx;
+  const { supabase } = ctx;
 
   try {
     const loaded = await loadContactWithCompany(ctx, id);
@@ -609,11 +609,12 @@ export async function sendTemplateEmail(
     const subject = renderTemplate(template.subject, vars);
     const body = renderTemplate(template.body, vars);
 
+    // Part de la boîte info@ (copie dans « Envoyés ») ; les réponses y reviennent.
+    // « Incertain » : rien n'est noté, le message dit de regarder dans Envoyés avant de réessayer.
     const sent = await sendProspectEmail({
       to: contact.email,
       subject,
       body,
-      replyTo: user.email,
       requestId: ctx.requestId,
     });
     if (!sent.ok) return { ok: false, error: sent.error };
@@ -643,7 +644,6 @@ export async function sendTemplateEmail(
     void journaliserAction("crm.courriel_envoye", ctx, {
       cible: contact.id,
       modele: type.data,
-      envoi: sent.id,
     });
     revalidateCrm(contact.company_id);
     return { ok: true };

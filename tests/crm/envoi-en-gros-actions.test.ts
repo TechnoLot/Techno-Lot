@@ -609,7 +609,7 @@ describe("M'envoyer un test", () => {
     etat.reponses = ["lancer"];
     const r = await envoyerTestEnGros(champs);
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).toMatch(/n'a pas confirmé l'envoi du test.*\(réf\. req-test\)$/);
+    if (!r.ok) expect(r.error).toMatch(/n'a pas confirmé l'envoi.*Regarde dans Envoyés avant de réessayer.*\(réf\. req-test\)$/);
     expect(etat.ecritures).toEqual([]);
   });
 
