@@ -81,6 +81,13 @@ export const FOLLOWUP_DELAY_DAYS: Partial<Record<LeadStatus, number>> = {
   contacted: 7,
 };
 
+/**
+ * Filtre PostgREST (`.or`) des compagnies qui peuvent avoir un suivi : date
+ * notée ou statut à délai. Constante tirée de FOLLOWUP_DELAY_DAYS, jamais
+ * d'une entrée ; sert à l'accueil et à /admin/crm/suivis (même compte).
+ */
+export const FILTRE_SUIVIS_POSSIBLES = `next_followup_on.not.is.null,lead_status.in.(${Object.keys(FOLLOWUP_DELAY_DAYS).join(",")})`;
+
 /** Jours entiers écoulés depuis une date ISO. */
 export function daysSince(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);

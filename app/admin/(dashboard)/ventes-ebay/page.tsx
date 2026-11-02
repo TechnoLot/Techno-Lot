@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const OPTIONS: PeriodeKey[] = ["aujourdhui", "hier", "semaine", "7j", "30j", "90j", "annee", "tout"];
+const OPTIONS: PeriodeKey[] = ["aujourdhui", "hier", "semaine", "mois", "moisdernier", "7j", "30j", "90j", "annee", "tout"];
 const PAR_PAGE = 25;
 
 export default async function VentesEbayPage(

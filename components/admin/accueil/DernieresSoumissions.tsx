@@ -26,7 +26,7 @@ function formatDateHeure(iso: string): string {
 }
 
 /**
- * « Dernières soumissions » : demandes du formulaire public des 30 derniers
+ * « Soumissions à traiter » : demandes du formulaire public des 30 derniers
  * jours qui ne sont liées à aucun lot, par pages (paramètre d'URL `sp`). La
  * liste complète est dans l'onglet Soumissions (/admin/soumissions).
  */
@@ -51,15 +51,15 @@ export default function DernieresSoumissions({
       aria-labelledby="soumissions-titre"
       className="scroll-mt-20 rounded-2xl border border-admin-line bg-admin-card"
     >
-      <div className="flex items-center justify-between gap-3 px-4 pb-2 pt-4 sm:px-5 sm:pt-5">
+      <div className="flex flex-col items-start gap-1.5 px-4 pb-2 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5 sm:pt-5">
         <div className="min-w-0">
           <h2
             id="soumissions-titre"
             className="font-display text-lg font-semibold tracking-tight text-admin-ink"
           >
-            Dernières soumissions
+            Soumissions à traiter
           </h2>
-          <p className="text-[13px] text-admin-muted">À traiter, 30 derniers jours</p>
+          <p className="text-[13px] text-admin-muted">Reçues ces 30 derniers jours, sans lot créé</p>
         </div>
         <Link
           href="/admin/soumissions"

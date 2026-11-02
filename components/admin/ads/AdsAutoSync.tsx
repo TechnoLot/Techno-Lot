@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import type { AdPlatform, AdsSyncState } from "@/lib/ads/types";
 import { messageErreurApi } from "@/lib/admin/message-erreur";
 
@@ -42,6 +43,8 @@ function ago(iso: string | null, now: number): string {
  * depuis la dernière synchro réussie à la première du jour ; le serveur saute
  * si la dernière synchro a moins de 50 s). Une pastille par plateforme ; un clic
  * force la synchro. Rafraîchit la page quand une plateforme a été resynchronisée.
+ * Variante « silencieux » : rien d'affiché, sauf un lien « Réessayer » par
+ * plateforme en échec.
  */
 export default function AdsAutoSync({
   platforms,
@@ -52,7 +55,7 @@ export default function AdsAutoSync({
   platforms: AdPlatform[];
   /** État rendu par le serveur (dernière tentative par plateforme) */
   state: Record<AdPlatform, AdsSyncState>;
-  variant?: "inline" | "badge";
+  variant?: "inline" | "badge" | "silencieux";
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -148,6 +151,34 @@ export default function AdsAutoSync({
     return () => window.clearInterval(id);
   }, []);
 
+  /** Erreur affichée pour une plateforme configurée (null = tout va bien) */
+  const erreur = (p: AdPlatform): string | null => {
+    const s = state[p];
+    return errors[p] ?? (s.ok ? null : s.message ?? "échec de la dernière synchro");
+  };
+
+  if (variant === "silencieux") {
+    if (busy) return null;
+    const enEchec = platforms.filter((p) => state[p].configured && erreur(p));
+    if (enEchec.length === 0) return null;
+    return (
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        {enEchec.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => void sync(false)}
+            title={erreur(p) ?? undefined}
+            className="inline-flex items-center gap-1.5 rounded-md text-[12.5px] font-medium text-admin-danger underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+          >
+            <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Synchro {NAMES[p]} en échec · Réessayer
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   const size = variant === "badge" ? "text-xs" : "text-[13px]";
 
   return (
@@ -162,7 +193,7 @@ export default function AdsAutoSync({
             </p>
           );
         }
-        const error = errors[p] ?? (s.ok ? null : s.message ?? "échec de la dernière synchro");
+        const error = erreur(p);
         const label = busy
           ? `${name} · synchronisation…`
           : error

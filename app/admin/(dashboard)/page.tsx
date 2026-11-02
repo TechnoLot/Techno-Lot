@@ -1,67 +1,64 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import type { createClient } from "@/lib/supabase/server";
 import { exigerAdminPage } from "@/lib/securite/garde";
 import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import { resolvePrenom } from "@/lib/admin/config";
 import { site } from "@/lib/site";
 import type { Lot } from "@/lib/admin/types";
-import { bornesPeriode, legendeDates, nomAnneeFiscale, parsePeriode } from "@/lib/admin/periodes";
+import { bornesPeriode, formatJour, legendeDates, nomAnneeFiscale, parsePeriode } from "@/lib/admin/periodes";
 import { revenusJournaliers } from "@/lib/admin/revenus";
 import { pageDepuisParam, paginer } from "@/lib/admin/pagination";
-import { fusionnerVentes, type LotVendu, type VenteManuelle } from "@/lib/admin/dernieres-ventes";
-import { daysSince, followupOverdueDays, type LeadStatus } from "@/lib/crm/types";
-import { getEbayOrderRows, getEbayTotals, getRecentEbayOrders } from "@/lib/ebay/ventes";
+import {
+  classerSuivis,
+  commandesAExpedier,
+  debutLectureEbay,
+  prochainsAccueil,
+  resumeAccueil,
+  tachesAccueil,
+  ventesEbayAccueil,
+  type SuiviCandidat,
+} from "@/lib/admin/accueil";
+import { FILTRE_SUIVIS_POSSIBLES } from "@/lib/crm/types";
+import { getEbayOrderRows, getEbayOrdersToShip, getEbayTotals } from "@/lib/ebay/ventes";
 import { isEbayConfigured } from "@/lib/ebay/client";
-import { addDays, inTorontoRange, sumEbayOrders, torontoDay } from "@/lib/ebay/totaux";
 import { getAdSpend } from "@/lib/ads/depenses";
 import { getAdsSyncState } from "@/lib/ads/queries";
 import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
-import Aujourdhui from "@/components/admin/accueil/Aujourdhui";
-import DernieresVentes from "@/components/admin/accueil/DernieresVentes";
+import AFaire from "@/components/admin/accueil/AFaire";
+import VentesEbayCarte from "@/components/admin/accueil/VentesEbayCarte";
 import ChiffresTiles, { CHIFFRES_OPTIONS } from "@/components/admin/accueil/ChiffresTiles";
 import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumissions";
 import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soumissions";
 
+/*
+ * Accueil de l'admin : « À faire aujourd’hui » et carte « Ventes eBay », puis
+ * les Chiffres de la période et les soumissions à traiter (calculs purs dans lib/admin/accueil.ts).
+ */
+
 export const dynamic = "force-dynamic";
 
 const TZ = "America/Toronto";
-/** Demandes par page dans « Dernières soumissions » (paramètre `sp`). */
+
+/** Demandes par page dans « Soumissions à traiter » (paramètre `sp`). */
 const SOUMISSIONS_PAR_PAGE = 10;
-/** Rangées de « Dernières ventes ». */
-const NB_VENTES = 8;
 
 type Sale = { sale_price: number | string; sold_at: string };
 type LotPeriode = Pick<Lot, "purchase_price" | "sale_price" | "purchased_at">;
-type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
+type LotTache = { id: string; client_name: string };
 
 /** Date du jour « YYYY-MM-DD » à l'heure de Toronto. */
 function torontoToday(now: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(now);
 }
 
-/** Même règle que /admin/crm/suivis : rappels dus (note ou délai de statut). */
-async function countSuivisAFaire(supabase: SupabaseServer, todayIso: string) {
-  const { data } = await supabase
-    .from("companies")
-    .select("lead_status, lead_status_changed_at, next_followup_on")
-    .eq("is_partner_not_client", false);
-  let count = 0;
-  for (const c of (data ?? []) as {
-    lead_status: LeadStatus;
-    lead_status_changed_at: string;
-    next_followup_on: string | null;
-  }[]) {
-    const planned = c.next_followup_on;
-    if (planned && planned > todayIso) continue;
-    const noteOverdue = planned ? daysSince(planned + "T00:00:00") : null;
-    const statusOverdue = followupOverdueDays(c);
-    if (noteOverdue === null && statusOverdue === null) continue;
-    count++;
-  }
-  return count;
-}
+/** Jour de l'en-tête (« lundi 2 novembre ») : jour « YYYY-MM-DD » formaté en UTC. */
+const jourEnteteFmt = new Intl.DateTimeFormat("fr-CA", {
+  timeZone: "UTC",
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
 
 export default async function AccueilPage(
   props: {
@@ -94,60 +91,50 @@ export default async function AccueilPage(
   if (from) salesQuery = salesQuery.gte("sold_at", from);
   if (to) salesQuery = salesQuery.lte("sold_at", to);
 
-  // eBay aujourd'hui / hier (jours à l'heure de Toronto)
-  const ebayToday = torontoDay(now);
-  const ebayYesterday = addDays(ebayToday, -1);
-
   const [
     { data: lotsRaw, error },
     { data: salesRaw },
-    ebayRecentes,
-    { data: lotsVendusRaw },
-    { data: ventesRaw },
-    { count: negoCount },
-    { count: prixCount },
-    suivisCount,
+    { data: companiesRaw },
+    { data: negoRaw, count: negoCount },
+    { data: prixRaw, count: prixCount },
     soumissions,
     ebay,
     pubs,
-    ebayRecentRows,
+    ebayCarteRows,
+    aExpedier,
     pubsSync,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
-    // Dernières ventes : commandes eBay, lots vendus et ventes manuelles
-    getRecentEbayOrders(NB_VENTES).catch(() => []),
+    // Suivis : seules ces compagnies peuvent en avoir un (date notée ou délai de
+    // statut) ; le filtre évite aussi la limite de 1 000 lignes de l'API.
+    supabase
+      .from("companies")
+      .select("id, name, lead_status, lead_status_changed_at, next_followup_on")
+      .eq("is_partner_not_client", false)
+      .or(FILTRE_SUIVIS_POSSIBLES),
     supabase
       .from("lots")
-      .select("id, client_name, description, purchase_price, sale_price, sold_at")
-      .eq("status", "sold")
-      .order("sold_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(NB_VENTES),
-    supabase
-      .from("sales")
-      .select("id, buyer_name, description, sale_price, sold_at, source")
-      .order("sold_at", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(NB_VENTES),
-    supabase
-      .from("lots")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "negotiating"),
+      .select("id, client_name", { count: "exact" })
+      .eq("status", "negotiating")
+      .order("created_at", { ascending: true })
+      .limit(20),
     // Prix de vente à saisir : même règle que l'ancien bloc « Ventes en attente »
     supabase
       .from("lots")
-      .select("id", { count: "exact", head: true })
+      .select("id, client_name", { count: "exact" })
       .eq("status", "purchased")
-      .is("sale_price", null),
-    countSuivisAFaire(supabase, todayIso),
+      .is("sale_price", null)
+      .order("purchased_at", { ascending: true })
+      .limit(20),
     fetchSoumissions(supabase, {
       since: new Date(now.getTime() - A_TRAITER_JOURS * 86_400_000).toISOString(),
       limit: 200,
     }),
     getEbayTotals(from, to),
     getAdSpend(from, to),
-    getEbayOrderRows(ebayYesterday, ebayToday, [
+    // Carte « Ventes eBay » : du plus ancien début (hier, semaine, mois, année fiscale) à aujourd'hui
+    getEbayOrderRows(debutLectureEbay(todayIso), todayIso, [
       "created_at",
       "total",
       "refunded",
@@ -155,15 +142,9 @@ export default async function AccueilPage(
       "cancelled",
       "payment_status",
     ]).catch(() => []),
+    getEbayOrdersToShip().catch(() => []),
     getAdsSyncState(supabase).catch(() => undefined),
   ]);
-
-  const ebayAujourdhui = sumEbayOrders(
-    ebayRecentRows.filter((r) => inTorontoRange(r.created_at, ebayToday, ebayToday)),
-  );
-  const ebayHier = sumEbayOrders(
-    ebayRecentRows.filter((r) => inTorontoRange(r.created_at, ebayYesterday, ebayYesterday)),
-  );
 
   let achats = 0;
   let ventesLots = 0;
@@ -185,30 +166,36 @@ export default async function AccueilPage(
   const legende =
     periode === "annee" ? `Année fiscale ${nomAnneeFiscale(todayIso)} · ${dates.charAt(0).toLowerCase()}${dates.slice(1)}` : dates;
 
-  const dernieresVentes = fusionnerVentes(
-    ebayRecentes,
-    (lotsVendusRaw ?? []) as LotVendu[],
-    (ventesRaw ?? []) as VenteManuelle[],
-    NB_VENTES,
-  );
-
-  const today = new Intl.DateTimeFormat("fr-CA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    timeZone: TZ,
-  }).format(now);
-
   const soumissionsATraiter = soumissions.rows.filter((s) => estATraiter(s, now));
-  const soumissionsCount = soumissions.error ? null : soumissionsATraiter.length;
   const soumissionsPage = paginer(soumissionsATraiter, pageDepuisParam(searchParams.sp), SOUMISSIONS_PAR_PAGE);
+
+  // « À faire aujourd’hui », « Prochains jours » et carte « Ventes eBay »
+  const negoLots = (negoRaw ?? []) as LotTache[];
+  const prixLots = (prixRaw ?? []) as LotTache[];
+  const { dus, aVenir } = classerSuivis((companiesRaw ?? []) as SuiviCandidat[], now);
+  const taches = tachesAccueil(
+    {
+      expeditions: commandesAExpedier(aExpedier),
+      soumissions: {
+        erreur: Boolean(soumissions.error),
+        liste: soumissionsATraiter.map((s) => ({ nom: s.nom, date: s.date })),
+      },
+      suivis: dus,
+      negociation: { total: negoCount ?? negoLots.length, lots: negoLots },
+      prix: { total: prixCount ?? prixLots.length, lots: prixLots },
+    },
+    now,
+  );
+  const prochains = prochainsAccueil(aVenir, now);
+  const ventesEbayCarte = ventesEbayAccueil(ebayCarteRows, todayIso);
+
+  const jour = formatJour(todayIso, jourEnteteFmt);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
-        eyebrow={today.charAt(0).toUpperCase() + today.slice(1)}
         title={prenom ? `Bonjour ${prenom}` : "Bonjour"}
+        description={`${jour.charAt(0).toUpperCase() + jour.slice(1)} · ${resumeAccueil(taches.length)}`}
         actions={
           <>
             <Link href="/admin/lots/nouveau" className="btn-primary">
@@ -230,28 +217,10 @@ export default async function AccueilPage(
       )}
 
       <div className="flex flex-col gap-8 sm:gap-10">
-        <Aujourdhui
-          ebay={{
-            configured: isEbayConfigured(),
-            lastSync: ebay.lastSync,
-            today: ebayAujourdhui,
-            yesterday: ebayHier,
-          }}
-          soumissions={{
-            count: soumissionsCount,
-            hint: soumissions.error ? "Lecture impossible" : "Reçues ces 30 derniers jours",
-            // Liste complète dans l'onglet Soumissions
-            href:
-              soumissionsATraiter.length > 0
-                ? "/admin/soumissions?statut=a-traiter"
-                : "/admin/soumissions",
-          }}
-          suivis={suivisCount}
-          negociation={negoCount ?? 0}
-          prixASaisir={prixCount ?? 0}
-        />
-
-        <DernieresVentes ventes={dernieresVentes} aujourdhui={todayIso} />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-5">
+          <AFaire taches={taches} prochains={prochains} />
+          <VentesEbayCarte configured={isEbayConfigured()} ventes={ventesEbayCarte} lastSync={ebay.lastSync} />
+        </div>
 
         <ChiffresTiles
           periode={periode}

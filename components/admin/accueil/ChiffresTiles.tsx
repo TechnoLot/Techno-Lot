@@ -24,7 +24,7 @@ export type Chiffres = {
   profit: number;
   pubsConfigured: boolean;
   pubs: number;
-  /** Synchro automatique Meta / Google (pastilles sous la tuile « Pubs ») */
+  /** Synchro automatique Meta / Google (sous la tuile « Pubs », visible seulement en cas d’échec) */
   pubsSync?: Record<AdPlatform, AdsSyncState>;
 };
 
@@ -103,7 +103,7 @@ export default function ChiffresTiles({
             footer={
               data.pubsSync && (
                 <AdsAutoSync
-                  variant="badge"
+                  variant="silencieux"
                   platforms={(["meta", "google"] as const).filter((p) => data.pubsSync?.[p].configured)}
                   state={data.pubsSync}
                 />
@@ -157,7 +157,7 @@ function Tile({
     <div className="flex min-h-[132px] min-w-0 flex-col justify-between gap-3 rounded-2xl border border-admin-line bg-admin-card p-4 sm:p-5">
       <p className="text-[13px] font-medium text-admin-muted">{label}</p>
       <p
-        className={`truncate font-display text-[26px] font-semibold leading-none tracking-tight tabular-nums sm:text-[34px] ${valueClass}`}
+        className={`truncate font-display text-[26px] font-semibold leading-none tracking-tight sm:text-[34px] ${valueClass}`}
       >
         {value}
       </p>

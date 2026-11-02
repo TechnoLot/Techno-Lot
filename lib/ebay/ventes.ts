@@ -101,16 +101,32 @@ export async function getEbaySyncStatus(): Promise<EbaySyncStatus> {
   };
 }
 
-/** Dernières commandes (toutes, y compris annulées) pour l'affichage. */
-export async function getRecentEbayOrders(limit = 20): Promise<EbayOrderRow[]> {
+/** Commandes eBay à expédier des 30 derniers jours (accueil), plus anciennes d'abord. */
+export async function getEbayOrdersToShip(): Promise<
+  Array<Pick<EbayOrderRow, "order_id" | "created_at" | "items" | "cancelled" | "payment_status" | "fulfillment_status">>
+> {
   const supabase = await createClient();
+  const depuis = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const { data, error } = await supabase
     .from("ebay_orders")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) await journaliserErreur(error, "ebay.dernieres_commandes", {}, { durable: false });
-  return (data ?? []).map((r) => normalizeRow(r) as unknown as EbayOrderRow);
+    .select("order_id, created_at, items, cancelled, payment_status, fulfillment_status")
+    .in("fulfillment_status", ["NOT_STARTED", "IN_PROGRESS"])
+    .eq("cancelled", false)
+    .gte("created_at", depuis)
+    .order("created_at", { ascending: true })
+    .limit(50);
+  if (error) {
+    await journaliserErreur(error, "ebay.a_expedier", {}, { durable: false });
+    return [];
+  }
+  return (data ?? []).map((r) => ({
+    order_id: r.order_id as string,
+    created_at: r.created_at as string,
+    items: (r.items as EbayOrderRow["items"] | null) ?? [],
+    cancelled: Boolean(r.cancelled),
+    payment_status: (r.payment_status as string | null) ?? null,
+    fulfillment_status: (r.fulfillment_status as string | null) ?? null,
+  }));
 }
 
 /**

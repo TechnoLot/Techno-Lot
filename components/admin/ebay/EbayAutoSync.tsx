@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { TriangleAlert } from "lucide-react";
 import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type SyncResponse = {
@@ -35,6 +36,8 @@ function ago(iso: string | null, now: number): string {
  * au retour sur l'onglet, POST /api/admin/ebay-sync `{ auto: true }` (le
  * serveur saute si la dernière tentative a moins de 50 s). Un clic force une
  * synchro manuelle. Rafraîchit la page quand une nouvelle synchro a réussi.
+ * Variante « silencieux » : la synchro tourne en fond sans rien afficher, sauf
+ * un lien « Réessayer » quand elle échoue.
  */
 export default function EbayAutoSync({
   configured,
@@ -44,7 +47,7 @@ export default function EbayAutoSync({
   configured: boolean;
   /** Dernière synchro réussie telle que rendue par le serveur */
   lastSync: string | null;
-  variant?: "inline" | "badge";
+  variant?: "inline" | "badge" | "silencieux";
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -112,6 +115,21 @@ export default function EbayAutoSync({
     const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
     return () => window.clearInterval(id);
   }, []);
+
+  if (variant === "silencieux") {
+    if (!configured || busy || !error) return null;
+    return (
+      <button
+        type="button"
+        onClick={() => void sync(false)}
+        title={error}
+        className="inline-flex items-center gap-1.5 rounded-md text-[12.5px] font-medium text-admin-ink underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+      >
+        <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        Synchro eBay en échec · Réessayer
+      </button>
+    );
+  }
 
   const size = variant === "badge" ? "text-xs" : "text-[13px]";
 

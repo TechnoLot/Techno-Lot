@@ -4,11 +4,12 @@ import { exigerAdminPage } from "@/lib/securite/garde";
 import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import FollowupDoneButton from "@/components/admin/crm/FollowupDoneButton";
 import {
+  FILTRE_SUIVIS_POSSIBLES,
   LEAD_STATUS_LABELS,
-  daysSince,
   followupOverdueDays,
   type Company,
 } from "@/lib/crm/types";
+import { joursEntre } from "@/lib/admin/accueil";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,9 @@ export default async function SuivisPage() {
   const { data: companiesRaw, error } = await supabase
     .from("companies")
     .select("*")
-    .eq("is_partner_not_client", false);
+    .eq("is_partner_not_client", false)
+    // Seules ces compagnies peuvent avoir un suivi (même filtre que l’accueil).
+    .or(FILTRE_SUIVIS_POSSIBLES);
   const all = (companiesRaw ?? []) as Company[];
 
   const todayIso = new Intl.DateTimeFormat("en-CA", {
@@ -49,7 +52,7 @@ export default async function SuivisPage() {
       upcomingFollowups.push({ company: c, plannedOn: planned });
       continue;
     }
-    const noteOverdue = planned ? daysSince(planned + "T00:00:00") : null;
+    const noteOverdue = planned ? joursEntre(planned, todayIso) : null;
     const statusOverdue = followupOverdueDays(c);
     if (noteOverdue === null && statusOverdue === null) continue;
     dueFollowups.push({
