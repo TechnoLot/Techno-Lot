@@ -81,6 +81,17 @@ describe("bearerCronValide", () => {
     vi.stubEnv("CRON_SECRET", SECRET);
     expect(bearerCronValide(req(`Bearer ${SECRET}`))).toBe(true);
   });
+
+  it("clé de l'agent Acheteurs : la sienne seulement, jamais CRON_SECRET", () => {
+    const AGENT = "a".repeat(40);
+    vi.stubEnv("CRON_SECRET", SECRET);
+    vi.stubEnv("AGENT_ACHETEURS_SECRET", AGENT);
+    expect(bearerCronValide(req(`Bearer ${AGENT}`), "AGENT_ACHETEURS_SECRET")).toBe(true);
+    expect(bearerCronValide(req(`Bearer ${SECRET}`), "AGENT_ACHETEURS_SECRET")).toBe(false);
+    expect(bearerCronValide(req(`Bearer ${AGENT}`))).toBe(false);
+    vi.stubEnv("AGENT_ACHETEURS_SECRET", "");
+    expect(bearerCronValide(req("Bearer "), "AGENT_ACHETEURS_SECRET")).toBe(false);
+  });
 });
 
 describe("origineValide", () => {

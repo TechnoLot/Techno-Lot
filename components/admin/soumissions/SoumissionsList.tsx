@@ -1,11 +1,24 @@
 import Link from "next/link";
 import { ExternalLink, Package, Paperclip, Phone, Plus } from "lucide-react";
+import AgentAcheteurs from "@/components/admin/soumissions/AgentAcheteurs";
 import MessageApercu from "@/components/admin/soumissions/MessageApercu";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
 import VoirCourriel from "@/components/admin/soumissions/VoirCourriel";
+import { descriptionDuMessage } from "@/lib/acheteurs/articles";
+import type { AcheteurCarnet, RechercheAcheteurs } from "@/lib/acheteurs/types";
 import { WEBMAIL_URL } from "@/lib/admin/config";
 import { formatCount } from "@/lib/admin/format";
 import { A_TRAITER_JOURS, estATraiter, type Soumission } from "@/lib/admin/soumissions";
+
+/** Données de l'agent « Acheteurs » pour les demandes affichées (null : tables illisibles). */
+export type DonneesAcheteurs = {
+  /** Recherche de chaque soumission, par identifiant de soumission. */
+  recherches: Record<string, RechercheAcheteurs>;
+  /** Fiches du carnet, par domaine. */
+  acheteurs: Record<string, AcheteurCarnet>;
+  /** Dernier échange du CRM, par courriel. */
+  contacts: Record<string, string>;
+};
 
 const TZ = "America/Toronto";
 
@@ -75,7 +88,17 @@ function Etat({ s, now }: { s: Soumission; now: Date }) {
   );
 }
 
-function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; courrielApi: boolean }) {
+function SoumissionCard({
+  s,
+  now,
+  courrielApi,
+  agent,
+}: {
+  s: Soumission;
+  now: Date;
+  courrielApi: boolean;
+  agent: DonneesAcheteurs | null;
+}) {
   const nouvelle = !s.lotId && now.getTime() - Date.parse(s.date) < NOUVELLE_MS;
   const sousTitre = [s.entreprise, s.ville].filter(Boolean).join(" · ");
 
@@ -177,6 +200,17 @@ function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; cou
           <SupprimerSoumission id={s.id} nom={s.nom} />
         </div>
       </div>
+
+      {agent && (
+        <AgentAcheteurs
+          soumissionId={s.id}
+          titre={[s.entreprise || s.nom || "Soumission", formatDateHeure(s.date)].join(" · ")}
+          description={descriptionDuMessage(s.message)}
+          recherche={agent.recherches[s.id] ?? null}
+          acheteurs={agent.acheteurs}
+          contacts={agent.contacts}
+        />
+      )}
     </article>
   );
 }
@@ -184,15 +218,18 @@ function SoumissionCard({ s, now, courrielApi }: { s: Soumission; now: Date; cou
 /**
  * Liste des soumissions, regroupées par mois, chacune en carte avec ses actions.
  * `courrielApi` : Mail API Hostinger branchée, le courriel reçu s’ouvre dans l’admin.
+ * `agent` : section « Acheteurs » de chaque carte (null : non affichée).
  */
 export default function SoumissionsList({
   rows,
   now,
   courrielApi,
+  agent = null,
 }: {
   rows: Soumission[];
   now: Date;
   courrielApi: boolean;
+  agent?: DonneesAcheteurs | null;
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -207,7 +244,7 @@ export default function SoumissionsList({
           <ul className="flex flex-col gap-3">
             {groupe.rows.map((s) => (
               <li key={s.id}>
-                <SoumissionCard s={s} now={now} courrielApi={courrielApi} />
+                <SoumissionCard s={s} now={now} courrielApi={courrielApi} agent={agent} />
               </li>
             ))}
           </ul>

@@ -28,7 +28,10 @@ import { getAdsSyncState } from "@/lib/ads/queries";
 import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
 import AFaire from "@/components/admin/accueil/AFaire";
+import AcheteursCarte from "@/components/admin/accueil/AcheteursCarte";
 import VentesEbayCarte from "@/components/admin/accueil/VentesEbayCarte";
+import { nombreNiches } from "@/lib/acheteurs/articles";
+import { resumeAcheteurs } from "@/lib/acheteurs/lecture";
 import ChiffresTiles, { CHIFFRES_OPTIONS } from "@/components/admin/accueil/ChiffresTiles";
 import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumissions";
 import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soumissions";
@@ -109,6 +112,7 @@ export default async function AccueilPage(
     aExpedier,
     pubsSync,
     ramassages,
+    acheteurs,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
@@ -157,6 +161,8 @@ export default async function AccueilPage(
           () => ({ erreur: true, liste: [] }),
         )
       : Promise.resolve(undefined),
+    // Carte « Acheteurs » : recherches demandées et taille du carnet (rien si les tables sont illisibles)
+    resumeAcheteurs(supabase).catch((erreur: unknown) => ({ resume: null, erreur })),
   ]);
 
   let achats = 0;
@@ -202,6 +208,12 @@ export default async function AccueilPage(
   );
   const prochains = prochainsAccueil(aVenir, now, ramassages?.liste);
   const ventesEbayCarte = ventesEbayAccueil(ebayCarteRows, todayIso);
+  if (acheteurs.erreur) await journaliserErreur(acheteurs.erreur, "accueil.acheteurs_lire", ctx);
+  const resumeAch = acheteurs.erreur ? null : acheteurs.resume;
+  // Soumissions à traiter avec des articles nichés et pas encore de recherche d'acheteurs
+  const niches = resumeAch
+    ? soumissionsATraiter.filter((s) => !resumeAch.avecRecherche.has(s.id) && nombreNiches(s.message) > 0).length
+    : 0;
 
   const jour = formatJour(todayIso, jourEnteteFmt);
 
@@ -233,7 +245,17 @@ export default async function AccueilPage(
       <div className="flex flex-col gap-8 sm:gap-10">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-5">
           <AFaire taches={taches} prochains={prochains} />
-          <VentesEbayCarte configured={isEbayConfigured()} ventes={ventesEbayCarte} lastSync={ebay.lastSync} />
+          <div className="flex min-w-0 flex-col gap-4 xl:gap-5">
+            <VentesEbayCarte configured={isEbayConfigured()} ventes={ventesEbayCarte} lastSync={ebay.lastSync} />
+            {resumeAch && (
+              <AcheteursCarte
+                niches={niches}
+                enCours={resumeAch.enCours}
+                carnet={resumeAch.carnet}
+                verifies={resumeAch.verifies}
+              />
+            )}
+          </div>
         </div>
 
         <ChiffresTiles

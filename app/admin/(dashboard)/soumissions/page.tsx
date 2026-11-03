@@ -4,7 +4,9 @@ import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import PageHeader from "@/components/admin/PageHeader";
 import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
-import SoumissionsList from "@/components/admin/soumissions/SoumissionsList";
+import SoumissionsList, { type DonneesAcheteurs } from "@/components/admin/soumissions/SoumissionsList";
+import { derniersContacts, lireAcheteursParDomaines, lireRecherches } from "@/lib/acheteurs/lecture";
+import type { ContexteAdmin } from "@/lib/securite/garde";
 import { formatCount } from "@/lib/admin/format";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
 import { pageDepuisParam, paginer, resumePage } from "@/lib/admin/pagination";
@@ -36,6 +38,30 @@ function correspond(s: Soumission, q: string): boolean {
 }
 
 /**
+ * Agent « Acheteurs » des demandes affichées : recherche de chaque demande,
+ * fiches du carnet citées et dernier échange avec chaque compagnie. null si
+ * les tables sont illisibles (journalisé) : les cartes s'affichent sans la section.
+ */
+async function donneesAcheteurs(ctx: ContexteAdmin, ids: string[]): Promise<DonneesAcheteurs | null> {
+  const { recherches, erreur } = await lireRecherches(ctx.supabase, ids);
+  if (erreur) {
+    await journaliserErreur(erreur, "acheteurs.recherches_lire", ctx);
+    return null;
+  }
+  const domaines = [...recherches.values()].flatMap((r) =>
+    (r.resultats?.familles ?? []).flatMap((f) => f.acheteurs.map((a) => a.domaine)),
+  );
+  const fiches = await lireAcheteursParDomaines(ctx.supabase, domaines);
+  const courriels = [...fiches.values()].map((a) => a.courriel).filter((c): c is string => Boolean(c));
+  const contacts = await derniersContacts(ctx.supabase, courriels);
+  return {
+    recherches: Object.fromEntries(recherches),
+    acheteurs: Object.fromEntries(fiches),
+    contacts: Object.fromEntries(contacts),
+  };
+}
+
+/**
  * Onglet Soumissions : toutes les demandes du formulaire du site (table
  * soumissions, remplie à chaque envoi en même temps que le courriel), avec
  * leur état (à traiter, lot créé) et les actions pour y répondre.
@@ -62,6 +88,7 @@ export default async function SoumissionsPage(
   const parFiltre = filtre === "a-traiter" ? aTraiter : filtre === "lot-cree" ? avecLot : rows;
   const affichees = q ? parFiltre.filter((s) => correspond(s, q)) : parFiltre;
   const pagination = paginer(affichees, pageDepuisParam(searchParams.page), PAR_PAGE);
+  const agent = error ? null : await donneesAcheteurs(ctx, pagination.items.map((s) => s.id));
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -115,6 +142,7 @@ export default async function SoumissionsPage(
                 rows={pagination.items}
                 now={now}
                 courrielApi={isMailApiConfigured()}
+                agent={agent}
               />
               <div className="mt-8 flex flex-col items-center gap-2">
                 <Pagination page={pagination.page} pageCount={pagination.pageCount} />

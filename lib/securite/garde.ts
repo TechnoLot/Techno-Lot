@@ -389,12 +389,17 @@ const empreinte = (s: string) => createHash("sha256").update(s, "utf8").digest()
 
 /**
  * Tâches planifiées : `Authorization: Bearer <CRON_SECRET>` comparé en temps
- * constant (empreintes SHA-256 de même longueur). Refus si CRON_SECRET est
+ * constant (empreintes SHA-256 de même longueur). Refus si le secret est
  * absent ou fait moins de 32 caractères. Journaliser `cron.refus` côté appelant
- * (avec la requête) en cas de refus.
+ * (avec la requête) en cas de refus. `AGENT_ACHETEURS_SECRET` : clé propre à
+ * l'agent Acheteurs de l'ordinateur de l'utilisateur (/api/cron/acheteurs/*),
+ * qui ne permet rien d'autre.
  */
-export function bearerCronValide(request: Request): boolean {
-  const secret = process.env.CRON_SECRET ?? "";
+export function bearerCronValide(
+  request: Request,
+  variable: "CRON_SECRET" | "AGENT_ACHETEURS_SECRET" = "CRON_SECRET",
+): boolean {
+  const secret = process.env[variable] ?? "";
   if (secret.length < 32) return false;
   const recu = request.headers.get("authorization") ?? "";
   return timingSafeEqual(empreinte(recu), empreinte(`Bearer ${secret}`));

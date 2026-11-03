@@ -153,7 +153,12 @@ const ROUTES_PROTEGEES = TOUTES_LES_ROUTES.filter(
 );
 
 /** Routes à Bearer seulement : une session admin n'y suffit pas. */
-const ROUTES_CRON = new Set(["app/api/admin/auto-relances/route.ts", "app/api/cron/sync/route.ts"]);
+const ROUTES_CRON = new Set([
+  "app/api/admin/auto-relances/route.ts",
+  "app/api/cron/sync/route.ts",
+  "app/api/cron/acheteurs/prendre/route.ts",
+  "app/api/cron/acheteurs/reponse/route.ts",
+]);
 
 /**
  * Liste blanche des routes publiques, chacune avec la raison et le test qui

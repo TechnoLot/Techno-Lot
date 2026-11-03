@@ -141,6 +141,8 @@ const CAS: Cas[] = [
 const CAS_CRON: Cas[] = [
   { module: "@/app/api/admin/auto-relances/route", methode: "POST", chemin: "/api/admin/auto-relances", corps: "{}" },
   { module: "@/app/api/cron/sync/route", methode: "POST", chemin: "/api/cron/sync", corps: "{}" },
+  { module: "@/app/api/cron/acheteurs/prendre/route", methode: "POST", chemin: "/api/cron/acheteurs/prendre", corps: "{}" },
+  { module: "@/app/api/cron/acheteurs/reponse/route", methode: "POST", chemin: "/api/cron/acheteurs/reponse", corps: "{}" },
 ];
 
 function requete(c: Cas, origine: string | null = SITE, entetes: Record<string, string> = {}): Request {
