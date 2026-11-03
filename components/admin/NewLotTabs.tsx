@@ -23,6 +23,25 @@ export type FromSoumission = {
 
 type Tab = "manual" | "paste";
 
+/** Valeurs du formulaire tirées d'un lot de la calculatrice (client de la soumission gardé). */
+function depuisCalculatrice(lot: CalcLotWithDesc, fromSoumission?: FromSoumission): LotFormInitial {
+  const noteCalc = [
+    `Depuis la calculatrice « ${lot.name} » — valeur estimée : ${formatMoney(lot.value)}`,
+    lot.offerPrice !== null ? `prix à payer : ${formatMoney(lot.offerPrice)}` : null,
+    `${lot.unitCount} unité(s), ${lot.itemCount} item(s)`,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return {
+    // Le client de la soumission reste ; la calculatrice donne le prix et le détail.
+    ...fromSoumission?.initial,
+    ...(lot.offerPrice !== null ? { purchase_price: lot.offerPrice } : {}),
+    description: lot.description || lot.name,
+    notes: [fromSoumission?.initial.notes, noteCalc].filter(Boolean).join("\n"),
+    status: "negotiating",
+  };
+}
+
 export default function NewLotTabs({
   calcLots = [],
   fromSoumission,
@@ -30,11 +49,16 @@ export default function NewLotTabs({
   calcLots?: CalcLotWithDesc[];
   fromSoumission?: FromSoumission;
 }) {
+  // Lot calculé pour cette soumission (« Ouvrir dans la calculatrice ») : en tête et déjà choisi.
+  const lie = fromSoumission ? calcLots.find((l) => l.soumissionId === fromSoumission.id) : undefined;
+  const lots = lie ? [lie, ...calcLots.filter((l) => l.id !== lie.id)] : calcLots;
   const [tab, setTab] = useState<Tab>("manual");
-  const [initial, setInitial] = useState<LotFormInitial | undefined>(fromSoumission?.initial);
+  const [initial, setInitial] = useState<LotFormInitial | undefined>(
+    lie ? depuisCalculatrice(lie, fromSoumission) : fromSoumission?.initial,
+  );
   const [source, setSource] = useState<LotSource>(fromSoumission ? "form" : "manual");
   const [confidence, setConfidence] = useState<number | null>(null);
-  const [selectedCalcLot, setSelectedCalcLot] = useState<string | null>(null);
+  const [selectedCalcLot, setSelectedCalcLot] = useState<string | null>(lie?.id ?? null);
   const [formKey, setFormKey] = useState(0);
 
   function onExtracted(data: LotFormInitial, conf: number) {
@@ -47,15 +71,7 @@ export default function NewLotTabs({
   }
 
   function onSelectCalcLot(lot: CalcLotWithDesc) {
-    const noteCalc = `Depuis calculatrice « ${lot.name} » — Valeur estimée : ${formatMoney(lot.offerPrice * 2.5)}, ${lot.unitCount} unité(s), ${lot.itemCount} item(s)`;
-    setInitial({
-      // Le client de la soumission reste ; la calculatrice donne le prix et le détail.
-      ...fromSoumission?.initial,
-      purchase_price: lot.offerPrice,
-      description: lot.description || lot.name,
-      notes: [fromSoumission?.initial.notes, noteCalc].filter(Boolean).join("\n"),
-      status: "negotiating",
-    });
+    setInitial(depuisCalculatrice(lot, fromSoumission));
     setSource(fromSoumission ? "form" : "manual");
     setConfidence(null);
     setSelectedCalcLot(lot.id);
@@ -65,18 +81,19 @@ export default function NewLotTabs({
 
   return (
     <div>
-      {calcLots.length > 0 && (
+      {lots.length > 0 && (
         <div className="mb-6">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-admin-ink">
             <Calculator className="h-4 w-4 text-admin-muted" aria-hidden />
             Pré-remplir depuis la calculatrice
           </h3>
           <div className="flex flex-wrap gap-2">
-            {calcLots.map((lot) => (
+            {lots.map((lot) => (
               <button
                 key={lot.id}
                 type="button"
                 onClick={() => onSelectCalcLot(lot)}
+                aria-pressed={selectedCalcLot === lot.id}
                 className={`group rounded-xl border px-4 py-3 text-left transition ${
                   selectedCalcLot === lot.id
                     ? "border-[#6bd63b] bg-admin-tint-green"
@@ -85,9 +102,17 @@ export default function NewLotTabs({
               >
                 <p className="text-sm font-semibold text-admin-ink group-hover:text-admin-green">
                   {lot.name}
+                  {lie?.id === lot.id && (
+                    <span className="ml-2 rounded-full bg-[#6bd63b] px-2 py-0.5 text-[11px] font-semibold text-[#0a0a0a]">
+                      Cette soumission
+                    </span>
+                  )}
                 </p>
                 <p className="mt-0.5 text-xs text-admin-muted">
-                  {formatMoney(lot.offerPrice)} · {lot.unitCount} unité{lot.unitCount > 1 ? "s" : ""}
+                  {lot.offerPrice !== null
+                    ? `Prix à payer ${formatMoney(lot.offerPrice)}`
+                    : `Valeur ${formatMoney(lot.value)}`}{" "}
+                  · {lot.unitCount} unité{lot.unitCount > 1 ? "s" : ""}
                 </p>
               </button>
             ))}

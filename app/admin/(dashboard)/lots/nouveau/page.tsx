@@ -1,20 +1,16 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import NewLotTabs, { type FromSoumission } from "@/components/admin/NewLotTabs";
+import NewLotTabs, { type CalcLotWithDesc, type FromSoumission } from "@/components/admin/NewLotTabs";
 import { exigerAdminPage } from "@/lib/securite/garde";
 import { fetchSoumission, type Soumission } from "@/lib/admin/soumissions";
-import type { CalcLotSummary } from "@/components/admin/SavedCalcLots";
+import { resumeLotCalculatrice } from "@/lib/admin/calculatrice";
 
 export const dynamic = "force-dynamic";
 
 type SavedLotRow = {
   id: string;
   name: string;
-  data: {
-    items?: { desc: string; qte: number; bas: number | null; moyen: number | null }[];
-    usd?: boolean;
-    taux?: number;
-  } | null;
+  data: unknown;
   updated_at: string;
 };
 
@@ -65,42 +61,34 @@ export default async function NewLotPage(
     ? await fetchSoumission(supabase, searchParams.soumission)
     : null;
   const fromSoumission = soumission ? depuisSoumission(soumission) : undefined;
+  // Le lot de calculatrice de cette soumission, même s'il n'est pas parmi les 20 derniers.
+  const lotsCalcul = (savedLotsRaw ?? []) as SavedLotRow[];
+  if (soumission) {
+    const { data: lie } = await supabase
+      .from("saved_lots")
+      .select("id, name, data, updated_at")
+      .eq("data->>soumissionId", soumission.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (lie && !lotsCalcul.some((l) => l.id === (lie as SavedLotRow).id)) lotsCalcul.unshift(lie as SavedLotRow);
+  }
 
-  const calcLots: CalcLotSummary[] = ((savedLotsRaw ?? []) as SavedLotRow[]).map((l) => {
-    const items = l.data?.items ?? [];
-    const usd = l.data?.usd ?? false;
-    const taux = usd ? (l.data?.taux ?? 1.37) : 1;
-    let totalBas = 0;
-    let totalMoyen = 0;
-    let unites = 0;
-    for (const it of items) {
-      unites += it.qte;
-      if (it.bas != null) totalBas += it.bas * it.qte * taux;
-      if (it.moyen != null) totalMoyen += it.moyen * it.qte * taux;
-    }
-    const valeurLot = totalBas > 0 ? totalBas : totalMoyen;
+  // Prix à payer décidé dans la calculatrice (les anciens lots n'en ont pas).
+  const calcLotsWithDesc: CalcLotWithDesc[] = lotsCalcul.map((l) => {
+    const r = resumeLotCalculatrice(l.data);
     return {
       id: l.id,
       name: l.name,
-      offerPrice: Math.round((valeurLot / 2.5) * 100) / 100,
-      itemCount: items.length,
-      unitCount: unites,
+      offerPrice: r.offre,
+      value: r.valeur,
+      itemCount: r.items,
+      unitCount: r.unites,
       updatedAt: l.updated_at,
+      soumissionId: r.soumissionId,
+      description: r.description || l.name,
     };
   });
-
-  const descriptions = ((savedLotsRaw ?? []) as SavedLotRow[]).map((l) => {
-    const items = l.data?.items ?? [];
-    return items
-      .filter((it) => it.desc)
-      .map((it) => `${it.qte}x ${it.desc}`)
-      .join(", ");
-  });
-
-  const calcLotsWithDesc = calcLots.map((lot, i) => ({
-    ...lot,
-    description: descriptions[i] || lot.name,
-  }));
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">

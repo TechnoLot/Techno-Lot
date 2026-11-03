@@ -7,10 +7,15 @@ import { formatMoney } from "@/lib/admin/format";
 export type CalcLotSummary = {
   id: string;
   name: string;
-  offerPrice: number;
+  /** Prix à payer décidé dans la calculatrice ; null pour les lots sans offre. */
+  offerPrice: number | null;
+  /** Valeur du lot (prix de vente × quantité). */
+  value: number;
   unitCount: number;
   itemCount: number;
   updatedAt: string;
+  /** Soumission du site d'où vient le lot, s'il y en a une. */
+  soumissionId: string | null;
 };
 
 export default function SavedCalcLots({
@@ -52,7 +57,7 @@ export default function SavedCalcLots({
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <span className="font-display text-sm font-semibold tabular-nums text-admin-green">
-                  {formatMoney(lot.offerPrice)}
+                  {lot.offerPrice !== null ? formatMoney(lot.offerPrice) : formatMoney(lot.value)}
                 </span>
                 <ExternalLink
                   className="h-3.5 w-3.5 text-admin-muted transition-colors group-hover:text-admin-green"

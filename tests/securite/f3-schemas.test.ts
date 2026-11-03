@@ -175,6 +175,27 @@ describe("calculatrice", () => {
     expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...donnees, items: [{ desc: LONG, qte: 1 }] } }).success).toBe(false);
   });
 
+  it("lot enregistré (version du 2026-11-03) : prix unique, prix à payer, soumission, id, nouveau", () => {
+    const v2 = {
+      nom: "Vidéotron — Jean Tremblay",
+      date: "2026-11-03",
+      usd: false,
+      taux: 1.37,
+      offre: 1500,
+      soumissionId: ID.toUpperCase(),
+      items: [{ desc: "Dell R740", qte: 2, cat: "Serveurs", prix: 450, bas: 450 }, { desc: "GTX 1080", qte: 1, cat: "", prix: null, bas: null }],
+    };
+    const r = lotEnregistreSchema.safeParse({ name: "Vidéotron — Jean Tremblay", data: v2, id: ID });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.data.soumissionId).toBe(ID);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...v2, offre: null }, nouveau: true }).success).toBe(true);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...v2, offre: -1 } }).success).toBe(false);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...v2, soumissionId: "1 or 1=1" } }).success).toBe(false);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...v2, soumissionId: null } }).success).toBe(false);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: v2, id: "../autre" }).success).toBe(false);
+    expect(lotEnregistreSchema.safeParse({ name: "x", data: { ...v2, items: [{ desc: "a", qte: 1, prix: 10_000_001 }] } }).success).toBe(false);
+  });
+
   it("devis : nom du lot sur une ligne (sauts de ligne retirés), message borné", () => {
     const r = devisSchema.safeParse({ to: "a@b.ca", message: "Bonjour", nomLot: "Lot\r\nBcc: x@y.z fin" });
     expect(r.success).toBe(true);

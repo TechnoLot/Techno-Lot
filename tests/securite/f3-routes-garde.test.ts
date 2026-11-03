@@ -133,6 +133,12 @@ const CAS: Cas[] = [
     chemin: "/admin/calculatrice/api/send",
     corps: '{"to":"a@b.ca","message":"x"}',
   },
+  {
+    module: "@/app/admin/(dashboard)/calculatrice/api/soumission/[id]/route",
+    methode: "GET",
+    chemin: `/admin/calculatrice/api/soumission/${UUID}`,
+    props: props({ id: UUID }),
+  },
   { module: "@/app/admin/(dashboard)/calculatrice/embed/route", methode: "GET", chemin: "/admin/calculatrice/embed" },
   { module: "@/app/admin/(dashboard)/ebay/embed/route", methode: "GET", chemin: "/admin/ebay/embed" },
 ];

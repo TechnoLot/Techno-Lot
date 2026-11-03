@@ -35,10 +35,15 @@ export async function GET(request: Request) {
 }
 
 /**
- * POST : enregistre un lot { name, data } (JSON exigé, schéma strict : nom
- * ≤ 120, données ≤ 200 Ko, items validés). Si un lot du même nom (insensible
- * à la casse, sans joker : `%` et `_` échappés) existe déjà, il est écrasé —
- * même comportement que l'ancienne archive localStorage.
+ * POST : enregistre un lot { name, data, id?, nouveau? } (JSON exigé, schéma
+ * strict : nom ≤ 120, données ≤ 200 Ko, items validés), dans cet ordre :
+ *  1. `id` : ce lot-là, même renommé (s'il a été supprimé entre-temps, un
+ *     nouveau lot est créé) ;
+ *  2. `data.soumissionId` : le lot de la même soumission du site ;
+ *  3. sinon, un lot du même nom (insensible à la casse, sans joker : `%` et
+ *     `_` échappés) qui n'est pas lié à une soumission → 409 `conflit` : la
+ *     calculatrice demande « Remplacer » (renvoi avec son `id`) ou « Garder
+ *     les deux » (`nouveau: true`). Jamais d'écrasement en silence.
  */
 export async function POST(request: Request) {
   const garde = await exigerAdminRoute(request);
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
   if (!lu.ok) return lu.reponse;
   const parse = lotEnregistreSchema.safeParse(lu.donnees);
   if (!parse.success) return reponseInvalide(parse.error, garde.requestId);
-  const { name, data } = parse.data;
+  const { name, data, id, nouveau } = parse.data;
   if (JSON.stringify(data).length > MAX_DONNEES_CALCULATRICE) {
     return NextResponse.json({ error: "Lot trop volumineux (200 Ko au plus)." }, { status: 413, headers: PRIVE });
   }
@@ -56,25 +61,55 @@ export async function POST(request: Request) {
   const { supabase, user, requestId } = garde;
   const echec = (err: unknown) =>
     reponseErreur(500, "Enregistrement du lot impossible.", { request, err, requestId, userId: user.id });
+  const now = new Date().toISOString();
+
+  /** Met à jour le lot `cible` ; null s'il n'existe plus. */
+  const mettreAJour = async (cible: string): Promise<string | null> => {
+    const { data: maj, error } = await supabase
+      .from("saved_lots")
+      .update({ name, data, updated_at: now })
+      .eq("id", cible)
+      .select("id")
+      .maybeSingle();
+    if (error) throw error;
+    return maj ? (maj.id as string) : null;
+  };
+  const misAJour = (cible: string) => {
+    void journaliserAction("calculatrice.lot_modifie", garde, { cible }, request);
+    return NextResponse.json({ id: cible, updated: true }, { headers: PRIVE });
+  };
 
   try {
-    const now = new Date().toISOString();
-    const { data: existing, error: erreurLecture } = await supabase
-      .from("saved_lots")
-      .select("id")
-      .ilike("name", echapperLike(name))
-      .limit(1)
-      .maybeSingle();
-    if (erreurLecture) return echec(erreurLecture);
-
-    if (existing) {
-      const { error } = await supabase
+    if (id) {
+      const maj = await mettreAJour(id);
+      if (maj) return misAJour(maj);
+    } else if (data.soumissionId) {
+      const { data: lie, error } = await supabase
         .from("saved_lots")
-        .update({ name, data, updated_at: now })
-        .eq("id", existing.id);
+        .select("id")
+        .eq("data->>soumissionId", data.soumissionId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
       if (error) return echec(error);
-      void journaliserAction("calculatrice.lot_modifie", garde, { cible: existing.id as string }, request);
-      return NextResponse.json({ id: existing.id, updated: true }, { headers: PRIVE });
+      if (lie) {
+        const maj = await mettreAJour(lie.id as string);
+        if (maj) return misAJour(maj);
+      }
+    } else if (!nouveau) {
+      const { data: memes, error } = await supabase
+        .from("saved_lots")
+        .select("id, name, soumission:data->>soumissionId")
+        .ilike("name", echapperLike(name))
+        .limit(10);
+      if (error) return echec(error);
+      const autre = ((memes ?? []) as { id: string; name: string; soumission: string | null }[]).find((l) => !l.soumission);
+      if (autre) {
+        return NextResponse.json(
+          { error: `Un lot nommé « ${autre.name} » existe déjà.`, conflit: { id: autre.id, name: autre.name } },
+          { status: 409, headers: PRIVE },
+        );
+      }
     }
 
     const { data: inserted, error } = await supabase

@@ -351,7 +351,7 @@ async function main() {
     for (const p of [
       "/.env", "/.env.local", "/.env.production", "/.git/config", "/.git/HEAD", "/package.json", "/package-lock.json",
       "/next.config.mjs", "/middleware.ts", "/tsconfig.json", "/supabase/config.toml", "/CLAUDE.md", "/.next/BUILD_ID",
-      "/securite/SECURITY_REVIEW.md", "/securite/SECRETS.md", "/assets/outils/calculatrice.html", "/scripts/sauvegarde-base.ps1",
+      "/securite/SECURITY_REVIEW.md", "/securite/SECRETS.md", "/assets/outils/calculatrice.html", "/assets/outils/calculatrice-analyse.js", "/scripts/sauvegarde-base.ps1",
       "/supabase/migrations/20261030020000_securite_rpc.sql", "/.github/workflows/securite.yml", "/server.js",
     ]) {
       const r = await req(p);

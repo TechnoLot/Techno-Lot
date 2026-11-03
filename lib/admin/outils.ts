@@ -28,14 +28,36 @@ export const CSP_OUTILS = [
   "frame-ancestors 'self'",
 ].join("; ");
 
+/**
+ * Page de chaque outil et scripts insérés à l'envoi : le marqueur
+ * `<script data-inclure="x.js"></script>` de la page est remplacé par le
+ * contenu de assets/outils/x.js (l'analyseur de la calculatrice, testé à part).
+ */
 export const OUTILS = {
-  calculatrice: "calculatrice.html",
-  ebay: "ebay-description.html",
+  calculatrice: { page: "calculatrice.html", scripts: ["calculatrice-analyse.js"] },
+  ebay: { page: "ebay-description.html", scripts: [] },
 } as const;
+
+const DOSSIER = path.join(process.cwd(), "assets", "outils");
+
+/** HTML complet d'un outil, scripts insérés. Lève une erreur si un marqueur manque. */
+export async function pageOutil(outil: keyof typeof OUTILS): Promise<string> {
+  const { page, scripts } = OUTILS[outil];
+  let html = await readFile(path.join(DOSSIER, page), "utf8");
+  for (const nom of scripts as readonly string[]) {
+    const marqueur = `<script data-inclure="${nom}"></script>`;
+    if (!html.includes(marqueur)) throw new Error(`Marqueur absent dans ${page} : ${nom}`);
+    const code = await readFile(path.join(DOSSIER, nom), "utf8");
+    if (/<\/script/i.test(code)) throw new Error(`Script non insérable (</script>) : ${nom}`);
+    // Fonction de remplacement : un « $& » ou « $' » du script resterait tel quel.
+    html = html.replace(marqueur, () => `<script>\n${code}\n</script>`);
+  }
+  return html;
+}
 
 /** Réponse HTML d'un outil, avec CSP imposée, encadrement limité au site et sans cache. */
 export async function reponseOutil(outil: keyof typeof OUTILS): Promise<NextResponse> {
-  const html = await readFile(path.join(process.cwd(), "assets", "outils", OUTILS[outil]), "utf8");
+  const html = await pageOutil(outil);
   return new NextResponse(html, {
     status: 200,
     headers: {

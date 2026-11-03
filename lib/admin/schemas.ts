@@ -228,11 +228,14 @@ export const MAX_DONNEES_CALCULATRICE = 200_000;
 
 const prixCalculatrice = z.number().refine(Number.isFinite, "Prix invalide.").min(0).max(10_000_000).nullable();
 
-/** Un item de la calculatrice (assets/outils/calculatrice.html : donneesLot / chargerLot). */
+/** Un item de la calculatrice (assets/outils/calculatrice.html : donneesLot / chargerDonnees). */
 export const itemCalculatriceSchema = z.strictObject({
   desc: z.string().max(500),
   qte: z.number().int().min(0).max(1_000_000),
   cat: z.string().max(200).optional(),
+  /** Prix de vente unitaire choisi par l'admin (depuis le 2026-11-03). */
+  prix: prixCalculatrice.optional(),
+  /** Anciennes versions : prix le plus bas (copie de `prix` dans les nouveaux lots) et prix moyen. */
   bas: prixCalculatrice.optional(),
   moyen: prixCalculatrice.optional(),
 });
@@ -242,12 +245,20 @@ export const donneesCalculatriceSchema = z.strictObject({
   date: z.string().max(10).optional(),
   usd: z.boolean().optional(),
   taux: z.number().refine(Number.isFinite, "Taux invalide.").min(0).max(1_000).optional(),
+  /** Prix à payer décidé par l'admin. */
+  offre: prixCalculatrice.optional(),
+  /** Soumission du site d'où vient le lot (« Ouvrir dans la calculatrice »). */
+  soumissionId: uuid.optional(),
   items: z.array(itemCalculatriceSchema).max(5_000),
 });
 
 export const lotEnregistreSchema = z.strictObject({
   name: texte(1, 120),
   data: donneesCalculatriceSchema,
+  /** Lot déjà enregistré à mettre à jour (renommage compris). */
+  id: uuid.optional(),
+  /** Créer un autre lot même si un lot porte déjà ce nom (« Garder les deux »). */
+  nouveau: z.boolean().optional(),
 });
 
 /**

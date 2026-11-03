@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Calculator } from "lucide-react";
 import { exigerAdminPage } from "@/lib/securite/garde";
 import { journaliserErreur } from "@/lib/admin/erreurs-admin";
+import { resumeLotCalculatrice } from "@/lib/admin/calculatrice";
 import SavedLotsList from "@/components/admin/SavedLotsList";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 type SavedLotRow = {
   id: string;
   name: string;
-  data: { items?: unknown[]; date?: string } | null;
+  data: unknown;
   created_at: string;
   updated_at: string;
   created_by_email: string | null;
@@ -70,14 +71,19 @@ export default async function LotsEnregistresPage() {
       )}
 
       <SavedLotsList
-        lots={lots.map((l) => ({
-          id: l.id,
-          name: l.name,
-          itemCount: Array.isArray(l.data?.items) ? l.data!.items!.length : 0,
-          savedDate: l.data?.date ?? null,
-          updatedAt: l.updated_at,
-          createdByEmail: l.created_by_email,
-        }))}
+        lots={lots.map((l) => {
+          const r = resumeLotCalculatrice(l.data);
+          return {
+            id: l.id,
+            name: l.name,
+            itemCount: r.items,
+            value: r.valeur,
+            offerPrice: r.offre,
+            fromSoumission: r.soumissionId !== null,
+            updatedAt: l.updated_at,
+            createdByEmail: l.created_by_email,
+          };
+        })}
       />
     </div>
   );

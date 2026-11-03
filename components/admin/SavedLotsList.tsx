@@ -2,14 +2,20 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calculator, Loader2, Trash2 } from "lucide-react";
+import { Calculator, Inbox, Loader2, Trash2 } from "lucide-react";
+import { formatMoney } from "@/lib/admin/format";
 import { messageErreurApi } from "@/lib/admin/message-erreur";
 
 type SavedLot = {
   id: string;
   name: string;
   itemCount: number;
-  savedDate: string | null;
+  /** Valeur du lot (prix de vente × quantité). */
+  value: number;
+  /** Prix à payer décidé dans la calculatrice, ou null. */
+  offerPrice: number | null;
+  /** Lot ouvert depuis une soumission du site. */
+  fromSoumission: boolean;
   updatedAt: string;
   createdByEmail: string | null;
 };
@@ -87,12 +93,20 @@ export default function SavedLotsList({ lots }: { lots: SavedLot[] }) {
           className="glass flex flex-wrap items-center justify-between gap-3 p-4"
         >
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-base font-semibold text-admin-ink">
-              {l.name}
+            <p className="flex min-w-0 items-center gap-2">
+              <span className="truncate font-display text-base font-semibold text-admin-ink">{l.name}</span>
+              {l.fromSoumission && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-admin-tint-green px-2 py-0.5 text-[11px] font-semibold text-admin-green">
+                  <Inbox className="h-3 w-3" aria-hidden />
+                  Soumission
+                </span>
+              )}
             </p>
             <p className="mt-0.5 text-xs text-admin-muted">
               {l.itemCount} item{l.itemCount > 1 ? "s" : ""}
-              {" · "}enregistré {formatDate(l.savedDate ?? l.updatedAt)}
+              {l.value > 0 && ` · valeur ${formatMoney(l.value)}`}
+              {l.offerPrice !== null && ` · prix à payer ${formatMoney(l.offerPrice)}`}
+              {" · "}enregistré {formatDate(l.updatedAt)}
               {l.createdByEmail && ` · par ${l.createdByEmail}`}
             </p>
           </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, Package, Paperclip, Phone, Plus } from "lucide-react";
+import { Calculator, ExternalLink, Package, Paperclip, Phone, Plus } from "lucide-react";
 import AgentAcheteurs from "@/components/admin/soumissions/AgentAcheteurs";
 import MessageApercu from "@/components/admin/soumissions/MessageApercu";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
@@ -185,6 +185,14 @@ function SoumissionCard({
             Appeler
           </a>
         )}
+        <Link
+          href={`/admin/calculatrice?soumission=${s.id}`}
+          className="admin-btn"
+          title="Liste du client, nom du lot et liens eBay prêts : il reste à entrer tes prix"
+        >
+          <Calculator className="h-3.5 w-3.5" aria-hidden />
+          Ouvrir dans la calculatrice
+        </Link>
         {s.lotId ? (
           <Link href={`/admin/lots/${s.lotId}`} className="admin-btn">
             <Package className="h-3.5 w-3.5" aria-hidden />
