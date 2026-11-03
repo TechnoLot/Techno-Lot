@@ -19,6 +19,8 @@ import {
   type SuiviCandidat,
 } from "@/lib/admin/accueil";
 import { FILTRE_SUIVIS_POSSIBLES } from "@/lib/crm/types";
+import { addDays } from "@/lib/ebay/totaux";
+import { agendaConfigure, listerRamassages } from "@/lib/ramassages/google-agenda";
 import { getEbayOrderRows, getEbayOrdersToShip, getEbayTotals } from "@/lib/ebay/ventes";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { getAdSpend } from "@/lib/ads/depenses";
@@ -37,6 +39,9 @@ import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soum
  */
 
 export const dynamic = "force-dynamic";
+
+/** Attente maximale de Google Agenda : au-delà, l'accueil s'affiche avec « Ramassages illisibles ». */
+const DELAI_AGENDA_MS = 4_000;
 
 const TZ = "America/Toronto";
 
@@ -103,6 +108,7 @@ export default async function AccueilPage(
     ebayCarteRows,
     aExpedier,
     pubsSync,
+    ramassages,
   ] = await Promise.all([
     lotsQuery,
     salesQuery,
@@ -144,6 +150,13 @@ export default async function AccueilPage(
     ]).catch(() => []),
     getEbayOrdersToShip().catch(() => []),
     getAdsSyncState(supabase).catch(() => undefined),
+    // Ramassages d'aujourd'hui aux 7 prochains jours (Google Agenda) ; rien si l'agenda n'est pas relié
+    agendaConfigure()
+      ? listerRamassages(todayIso, addDays(todayIso, 7), { delaiMs: DELAI_AGENDA_MS }).then(
+          (liste) => ({ erreur: false, liste }),
+          () => ({ erreur: true, liste: [] }),
+        )
+      : Promise.resolve(undefined),
   ]);
 
   let achats = 0;
@@ -183,10 +196,11 @@ export default async function AccueilPage(
       suivis: dus,
       negociation: { total: negoCount ?? negoLots.length, lots: negoLots },
       prix: { total: prixCount ?? prixLots.length, lots: prixLots },
+      ramassages,
     },
     now,
   );
-  const prochains = prochainsAccueil(aVenir, now);
+  const prochains = prochainsAccueil(aVenir, now, ramassages?.liste);
   const ventesEbayCarte = ventesEbayAccueil(ebayCarteRows, todayIso);
 
   const jour = formatJour(todayIso, jourEnteteFmt);

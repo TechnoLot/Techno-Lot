@@ -13,6 +13,7 @@ import {
   titreCommande,
   ventesEbayAccueil,
   type EntreesTaches,
+  type RamassageAccueil,
   type SuiviAVenir,
   type SuiviCandidat,
   type SuiviDu,
@@ -677,6 +678,7 @@ describe("prochainsAccueil", () => {
     ];
     expect(prochainsAccueil(aVenir, NOW)).toEqual([
       {
+        type: "suivi",
         cle: "a-2026-11-02",
         jour: "2026-11-02",
         quand: "Plus tard aujourd’hui",
@@ -685,6 +687,7 @@ describe("prochainsAccueil", () => {
         href: "/admin/crm/a",
       },
       {
+        type: "suivi",
         cle: "b-2026-11-03",
         jour: "2026-11-03",
         quand: "Demain",
@@ -693,6 +696,7 @@ describe("prochainsAccueil", () => {
         href: "/admin/crm/b",
       },
       {
+        type: "suivi",
         cle: "c-2026-11-05",
         jour: "2026-11-05",
         quand: "Jeudi 5 nov.",
@@ -701,6 +705,7 @@ describe("prochainsAccueil", () => {
         href: "/admin/crm/c",
       },
       {
+        type: "suivi",
         cle: "d-2026-12-01",
         jour: "2026-12-01",
         quand: "Mardi 1er déc.",
@@ -963,5 +968,131 @@ describe("ventesEbayAccueil", () => {
     const b = ventesEbayAccueil(rows, "2026-11-02").periodes[1].barres!;
     expect(b[0]).toMatchObject({ cle: "2026-11-02", courant: true, futur: false });
     expect(b.slice(1).every((x) => x.futur)).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Ramassages (Google Agenda)                                          */
+/* ------------------------------------------------------------------ */
+
+/** Ramassage de novembre (UTC−5) ; `debut` null = toute la journée. */
+function ramassage(
+  id: string,
+  jour: string,
+  debut: string | null,
+  fin: string | null,
+  client = "Info Plus",
+  jourFin = jour,
+): RamassageAccueil {
+  return {
+    id,
+    titre: `Ramassage · ${client}`,
+    client,
+    journee: debut === null,
+    jour,
+    jourFin,
+    heureDebut: debut,
+    heureFin: fin,
+    debut: debut ? `${jour}T${debut}:00-05:00` : jour,
+    fin: fin ? `${jourFin}T${fin}:00-05:00` : jourFin,
+  };
+}
+
+describe("tachesAccueil — ramassages du jour", () => {
+  const avec = (liste: RamassageAccueil[], erreur = false) => tachesAccueil({ ...VIDE, ramassages: { erreur, liste } }, NOW);
+
+  it("agenda non relié ou aucun ramassage aujourd'hui → aucune tâche", () => {
+    expect(tachesAccueil(VIDE, NOW)).toEqual([]);
+    expect(avec([ramassage("demain", "2026-11-03", "09:00", "10:00")])).toEqual([]);
+  });
+
+  it("lecture impossible → ligne d'erreur vers l'onglet Ramassages", () => {
+    expect(avec([], true)).toEqual([
+      {
+        cle: "ramassages",
+        titre: "Ramassages illisibles pour l’instant",
+        detail: "Ouvre l’onglet Ramassages pour réessayer",
+        meta: null,
+        urgent: false,
+        href: "/admin/ramassages",
+        externe: false,
+      },
+    ]);
+  });
+
+  it("heures et clients ; le prochain dans l'heure est urgent (10 h à Toronto)", () => {
+    const [t] = avec([
+      ramassage("b", "2026-11-02", "10:30", "11:30", "Garage Roy"),
+      ramassage("a", "2026-11-02", "08:00", "09:00", "Info Plus"),
+      ramassage("demain", "2026-11-03", "09:00", "10:00", "École X"),
+    ]);
+    expect(t).toEqual({
+      cle: "ramassages",
+      titre: "Faire 2 ramassages",
+      detail: "8 h Info Plus et 10 h 30 Garage Roy",
+      meta: "Prochain à 10 h 30",
+      urgent: true,
+      href: "/admin/ramassages",
+      externe: false,
+    });
+  });
+
+  it("un seul plus tard : « À 15 h », pas urgent ; en cours ; toute la journée ; tous passés", () => {
+    expect(avec([ramassage("a", "2026-11-02", "15:00", "16:00")])[0]).toMatchObject({
+      titre: "Faire 1 ramassage",
+      detail: "15 h Info Plus",
+      meta: "À 15 h",
+      urgent: false,
+    });
+    expect(avec([ramassage("a", "2026-11-02", "09:30", "11:00")])[0].meta).toBe("En cours");
+    expect(avec([ramassage("a", "2026-11-02", null, null)])[0]).toMatchObject({ detail: "Info Plus", meta: "Toute la journée" });
+    expect(avec([ramassage("a", "2026-11-02", "07:00", "08:00")])[0].meta).toBeNull();
+  });
+
+  it("un ramassage de plusieurs jours compte aujourd'hui, sans son heure de départ", () => {
+    const [t] = avec([ramassage("long", "2026-11-01", "09:00", "17:00", "Dépôt Z", "2026-11-03")]);
+    expect(t).toMatchObject({ titre: "Faire 1 ramassage", detail: "Dépôt Z" });
+  });
+
+  it("en tête, avant les commandes eBay", () => {
+    const taches = tachesAccueil(
+      {
+        ...VIDE,
+        expeditions: [exp("1", "2026-11-02T13:00:00Z")],
+        ramassages: { erreur: false, liste: [ramassage("a", "2026-11-02", "15:00", "16:00")] },
+      },
+      NOW,
+    );
+    expect(taches.map((t) => t.cle)).toEqual(["ramassages", "ebay"]);
+  });
+});
+
+describe("prochainsAccueil — ramassages et suivis", () => {
+  it("ramassages de demain à dans 7 jours, avant les suivis du même jour", () => {
+    const aVenir: SuiviAVenir[] = [
+      { id: "s1", name: "Bureautique Laval", lead_status: "contacted", jour: "2026-11-02", note: false },
+      { id: "s2", name: "Info Plus", lead_status: "interested", jour: "2026-11-03", note: false },
+    ];
+    const ramassages = [
+      ramassage("aujourdhui", "2026-11-02", "15:00", "16:00", "Déjà dans À faire"),
+      ramassage("r2", "2026-11-03", "14:00", "15:00", "Garage Roy"),
+      ramassage("r1", "2026-11-03", "09:00", "10:30", "École X"),
+      ramassage("r3", "2026-11-09", null, null, "Clinique Y"),
+      ramassage("trop-loin", "2026-11-10", "09:00", "10:00"),
+    ];
+    const prochains = prochainsAccueil(aVenir, NOW, ramassages);
+    expect(prochains.map((p) => [p.type, p.quand, p.titre, p.detail])).toEqual([
+      ["suivi", "Plus tard aujourd’hui", "Rappeler Bureautique Laval", "Contacté"],
+      ["ramassage", "Demain", "Ramassage · École X", "9 h – 10 h 30"],
+      ["ramassage", "Demain", "Ramassage · Garage Roy", "14 h – 15 h"],
+      ["suivi", "Demain", "Rappeler Info Plus", "Intéressé"],
+      ["ramassage", "Lundi 9 nov.", "Ramassage · Clinique Y", "Toute la journée"],
+    ]);
+    expect(prochains[1]).toMatchObject({ cle: "ramassage-r1", jour: "2026-11-03", href: "/admin/ramassages?date=2026-11-03" });
+  });
+
+  it("titre de Google gardé tel quel (événement créé dans Google)", () => {
+    const r = { ...ramassage("g", "2026-11-04", "09:00", "10:00"), titre: "Livraison Dell", client: "Livraison Dell" };
+    expect(prochainsAccueil([], NOW, [r]).map((p) => p.titre)).toEqual(["Livraison Dell"]);
   });
 });

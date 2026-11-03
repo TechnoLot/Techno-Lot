@@ -4,30 +4,19 @@
  *
  * Authentification : compte de service Google Cloud (méthode actuelle de Google,
  * sans developer token) via GOOGLE_ADS_SERVICE_ACCOUNT_JSON, ou l'ancien trio
- * OAuth (client ID / secret / refresh token) + developer token.
+ * OAuth (client ID / secret / refresh token) + developer token. Lecture de la
+ * clé et jeton signé : lib/google/compte-service.ts (partagé avec Google Agenda).
  */
-import { createSign } from "crypto";
 import type { AdMetricRow } from "./meta";
 import { ErreurAffichable } from "@/lib/admin/erreur-affichable";
+import { demanderJeton, jetonCompteService, lireCompteService, type CompteService } from "@/lib/google/compte-service";
 
 const API_VERSION = "v26";
 const ADWORDS_SCOPE = "https://www.googleapis.com/auth/adwords";
 
-type ServiceAccount = { client_email: string; private_key: string; token_uri?: string };
-
 /** Clé JSON du compte de service : contenu brut du fichier ou encodé en base64. */
-function getServiceAccount(): ServiceAccount | null {
-  const raw = process.env.GOOGLE_ADS_SERVICE_ACCOUNT_JSON?.trim();
-  if (!raw) return null;
-  for (const text of [raw, Buffer.from(raw, "base64").toString("utf8")]) {
-    try {
-      const json = JSON.parse(text) as Partial<ServiceAccount>;
-      if (json.client_email && json.private_key) return json as ServiceAccount;
-    } catch {
-      // essaie le format suivant
-    }
-  }
-  return null;
+function getServiceAccount(): CompteService | null {
+  return lireCompteService(process.env.GOOGLE_ADS_SERVICE_ACCOUNT_JSON);
 }
 
 export function getGoogleCustomerId(): string | null {
@@ -46,68 +35,10 @@ export function isGoogleConfigured(): boolean {
   return Boolean((getServiceAccount() || legacy) && getGoogleCustomerId());
 }
 
-function base64url(input: string | Buffer): string {
-  return Buffer.from(input).toString("base64url");
-}
-
-async function postToken(url: string, body: URLSearchParams): Promise<string> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-      cache: "no-store",
-    });
-  } catch {
-    throw new ErreurAffichable("Impossible de joindre Google OAuth (erreur réseau).");
-  }
-  const json = (await res.json().catch(() => ({}))) as {
-    access_token?: string;
-    error?: string;
-    error_description?: string;
-  };
-  if (!res.ok || !json.access_token) {
-    if (json.error === "invalid_grant") {
-      throw new ErreurAffichable(
-        "Identifiants Google refusés (invalid_grant) : clé du compte de service supprimée, ou refresh token expiré/révoqué.",
-      );
-    }
-    // Description brute de Google : au journal seulement.
-    throw new ErreurAffichable(`Authentification Google refusée (${res.status}).`, {
-      error: json.error,
-      error_description: json.error_description,
-    });
-  }
-  return json.access_token;
-}
-
-/** Jeton d'accès signé avec la clé du compte de service (JWT RS256). */
-async function getServiceAccountToken(sa: ServiceAccount): Promise<string> {
-  const tokenUri = sa.token_uri || "https://oauth2.googleapis.com/token";
-  const now = Math.floor(Date.now() / 1000);
-  const unsigned = `${base64url(JSON.stringify({ alg: "RS256", typ: "JWT" }))}.${base64url(
-    JSON.stringify({ iss: sa.client_email, scope: ADWORDS_SCOPE, aud: tokenUri, iat: now, exp: now + 3600 }),
-  )}`;
-  let signature: string;
-  try {
-    signature = createSign("RSA-SHA256").update(unsigned).sign(sa.private_key, "base64url");
-  } catch {
-    throw new ErreurAffichable("Clé privée du compte de service Google illisible (GOOGLE_ADS_SERVICE_ACCOUNT_JSON).");
-  }
-  return postToken(
-    tokenUri,
-    new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: `${unsigned}.${signature}`,
-    }),
-  );
-}
-
 async function getAccessToken(): Promise<string> {
   const sa = getServiceAccount();
-  if (sa) return getServiceAccountToken(sa);
-  return postToken(
+  if (sa) return jetonCompteService(sa, ADWORDS_SCOPE, "GOOGLE_ADS_SERVICE_ACCOUNT_JSON");
+  const { jeton } = await demanderJeton(
     "https://oauth2.googleapis.com/token",
     new URLSearchParams({
       client_id: process.env.GOOGLE_ADS_CLIENT_ID ?? "",
@@ -116,6 +47,7 @@ async function getAccessToken(): Promise<string> {
       grant_type: "refresh_token",
     }),
   );
+  return jeton;
 }
 
 type GoogleResult = {

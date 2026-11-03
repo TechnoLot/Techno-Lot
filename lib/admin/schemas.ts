@@ -289,3 +289,59 @@ export const synchroPubsSchema = z.strictObject({
 });
 
 export const synchroEbaySchema = z.strictObject({ auto: z.boolean().optional() });
+
+// --- Ramassages (Google Agenda) ---------------------------------------------------
+
+const heure = z
+  .string()
+  .trim()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide (HH:MM).");
+
+/**
+ * Ramassage saisi dans le calendrier (enregistrerRamassage), écrit tel quel dans
+ * Google Agenda. Avec une heure précise, le début et la fin sont requis et la fin
+ * suit le début (pas de ramassage de nuit) ; toute la journée, les heures sont ignorées.
+ */
+export const ramassageSchema = z
+  .strictObject({
+    client: texte(1, 120),
+    adresse: texteFacultatif(300),
+    date: dateIso,
+    journee: z.boolean(),
+    debut: facultatif(heure),
+    fin: facultatif(heure),
+    notes: texteFacultatif(2_000),
+    companyId: facultatif(uuid),
+    lotId: facultatif(uuid),
+  })
+  .superRefine((v, ctx) => {
+    if (v.journee) return;
+    if (!v.debut) ctx.addIssue({ code: "custom", path: ["debut"], message: "Indique l’heure de début." });
+    if (!v.fin) ctx.addIssue({ code: "custom", path: ["fin"], message: "Indique l’heure de fin." });
+    if (v.debut && v.fin && v.fin <= v.debut) {
+      ctx.addIssue({ code: "custom", path: ["fin"], message: "La fin doit suivre le début." });
+    }
+  });
+
+export type RamassageValide = z.infer<typeof ramassageSchema>;
+
+export const LIBELLES_RAMASSAGE: Record<string, string> = {
+  client: "Client",
+  adresse: "Adresse",
+  date: "Date",
+  journee: "Toute la journée",
+  debut: "Début",
+  fin: "Fin",
+  notes: "Notes",
+  companyId: "Fiche client",
+  lotId: "Lot",
+};
+
+/** Identifiant d'un événement Google Agenda (base32hex ; « _ » dans les occurrences d'un événement répété). */
+export const idEvenement = z.string().regex(/^[A-Za-z0-9_-]{1,1024}$/, "Ramassage introuvable.");
+
+/** Version d'un événement (ETag « "3528…" »), renvoyée telle quelle dans l'en-tête If-Match. */
+export const etagEvenement = z
+  .string()
+  .max(200)
+  .regex(/^(W\/)?"[^"\r\n]{1,180}"$/, "Version du ramassage invalide.");

@@ -165,6 +165,7 @@ const content: Record<
                 Anthropic : traitement de certains courriels par intelligence artificielle, pour en extraire les
                 informations utiles (ces données ne servent pas à entraîner ses modèles) ;
               </li>
+              <li>Google : agenda de nos rendez-vous de ramassage (nom de l&apos;entreprise et adresse) ;</li>
               <li>Meta et Google : mesure publicitaire, lorsque leurs pixels sont activés.</li>
             </Ul>
             <p className="mt-3">
@@ -359,6 +360,7 @@ const content: Record<
                 Anthropic: processing of certain emails by artificial intelligence, to extract the useful information
                 (this data is not used to train its models);
               </li>
+              <li>Google: calendar of our pickup appointments (company name and address);</li>
               <li>Meta and Google: ad measurement, when their pixels are enabled.</li>
             </Ul>
             <p className="mt-3">

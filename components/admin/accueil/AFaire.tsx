@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   BellRing,
+  CalendarClock,
   ChevronRight,
   CircleCheck,
   Handshake,
@@ -15,6 +16,8 @@ import type { CleTache, Prochain, Tache } from "@/lib/admin/accueil";
 
 /** Icône et teinte de la pastille de chaque tâche. */
 const STYLE: Record<CleTache, { icon: LucideIcon; tint: string }> = {
+  // Lime plein : le seul rendez-vous à heure fixe de la journée
+  ramassages: { icon: CalendarClock, tint: "bg-[#6bd63b] text-[#0a0a0a]" },
   ebay: { icon: Truck, tint: "bg-admin-tint-amber text-admin-tint-amber-ink" },
   soumissions: { icon: Inbox, tint: "bg-admin-tint-blue text-admin-tint-blue-ink" },
   suivis: { icon: BellRing, tint: "bg-admin-tint-violet text-admin-tint-violet-ink" },
@@ -22,20 +25,23 @@ const STYLE: Record<CleTache, { icon: LucideIcon; tint: string }> = {
   prix: { icon: Tag, tint: "bg-admin-tint-green text-admin-tint-green-ink" },
 };
 
-/** Rappels montrés dans « Prochains jours » (le reste mène aux suivis). */
+/** Rappels montrés dans « Prochains jours » (le reste mène aux suivis ou aux ramassages). */
 const MAX_PROCHAINS = 5;
 
 const LIEN_TACHE =
   "group flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-admin-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6bd63b] sm:px-5";
 
 /**
- * « À faire aujourd’hui » : une ligne cliquable par tâche (commandes eBay à
- * expédier, soumissions, suivis, lots en négociation, prix à saisir), calculées
- * dans lib/admin/accueil.ts, puis les rappels des 7 prochains jours.
+ * « À faire aujourd’hui » : une ligne cliquable par tâche (ramassages du jour,
+ * commandes eBay à expédier, soumissions, suivis, lots en négociation, prix à
+ * saisir), calculées dans lib/admin/accueil.ts, puis les rappels des 7
+ * prochains jours (ramassages et suivis).
  */
 export default function AFaire({ taches, prochains }: { taches: Tache[]; prochains: Prochain[] }) {
   const visibles = prochains.slice(0, MAX_PROCHAINS);
-  const autres = prochains.length - visibles.length;
+  const caches = prochains.slice(MAX_PROCHAINS);
+  const autresSuivis = caches.filter((p) => p.type === "suivi").length;
+  const autresRamassages = caches.length - autresSuivis;
 
   return (
     <section
@@ -97,13 +103,26 @@ export default function AFaire({ taches, prochains }: { taches: Tache[]; prochai
             ))}
           </ul>
         )}
-        {autres > 0 && (
-          <Link
-            href="/admin/crm/suivis"
-            className="admin-focus mt-2 inline-flex rounded-md text-[13px] font-semibold text-admin-green hover:underline"
-          >
-            Et {formatCount(autres)} autre{autres > 1 ? "s" : ""} dans les suivis
-          </Link>
+        {(autresRamassages > 0 || autresSuivis > 0) && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {autresRamassages > 0 && (
+              <Link
+                href="/admin/ramassages"
+                className="admin-focus inline-flex rounded-md text-[13px] font-semibold text-admin-green hover:underline"
+              >
+                Et {formatCount(autresRamassages)} autre{autresRamassages > 1 ? "s" : ""} ramassage
+                {autresRamassages > 1 ? "s" : ""}
+              </Link>
+            )}
+            {autresSuivis > 0 && (
+              <Link
+                href="/admin/crm/suivis"
+                className="admin-focus inline-flex rounded-md text-[13px] font-semibold text-admin-green hover:underline"
+              >
+                Et {formatCount(autresSuivis)} autre{autresSuivis > 1 ? "s" : ""} dans les suivis
+              </Link>
+            )}
+          </div>
         )}
       </div>
     </section>

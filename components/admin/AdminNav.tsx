@@ -8,6 +8,7 @@ import {
   Bell,
   BellRing,
   Calculator,
+  CalendarClock,
   ChevronDown,
   House,
   Inbox,
@@ -51,12 +52,13 @@ type NavItem = Omit<LeafItem, "href"> & {
   children?: LeafItem[];
 };
 
-/** Menu principal : 9 entrées (version B « plus simple »). */
+/** Menu principal : 10 entrées (version B « plus simple »). */
 const items: NavItem[] = [
   { href: "/admin", label: "Accueil", icon: House },
   { href: "/admin/notifications", label: "Notifications", icon: Bell, badge: "notifications" },
   { href: "/admin/soumissions", label: "Soumissions", icon: Inbox },
   { href: "/admin/lots", label: "Lots", icon: Package },
+  { href: "/admin/ramassages", label: "Ramassages", icon: CalendarClock },
   {
     href: "#calculatrice",
     label: "Calculatrice",

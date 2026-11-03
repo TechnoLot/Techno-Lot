@@ -1,11 +1,12 @@
 /**
  * Accueil de l'admin (module pur) : tâches « À faire aujourd’hui », rappels
- * des 7 prochains jours et périodes de la carte « Ventes eBay ». Jours
- * « YYYY-MM-DD » à l'heure de Toronto ; l'instant courant `now` est toujours
- * fourni par l'appelant (aucun Date.now() ici).
+ * des 7 prochains jours (suivis et ramassages) et périodes de la carte
+ * « Ventes eBay ». Jours « YYYY-MM-DD » à l'heure de Toronto ; l'instant
+ * courant `now` est toujours fourni par l'appelant (aucun Date.now() ici).
  */
 
 import { FOLLOWUP_DELAY_DAYS, LEAD_STATUS_LABELS, type LeadStatus } from "@/lib/crm/types";
+import { comparerRamassages, heureCourte, nomRamassage, plageHoraire, type Ramassage } from "@/lib/ramassages/ramassages";
 import {
   addDays,
   dailyEbayRevenue,
@@ -20,7 +21,7 @@ import {
 import { bornesPeriode, debutAnneeFiscale, formatJour, legendeDates, libellePeriode } from "@/lib/admin/periodes";
 
 /** Clé d'une tâche ; l'ordre d'affichage suit l'ordre de ce type. */
-export type CleTache = "ebay" | "soumissions" | "suivis" | "negociation" | "prix";
+export type CleTache = "ramassages" | "ebay" | "soumissions" | "suivis" | "negociation" | "prix";
 
 /** Une ligne de « À faire aujourd’hui ». */
 export type Tache = {
@@ -40,18 +41,26 @@ export type Tache = {
 
 /** Un rappel des 7 prochains jours (« Prochains jours »). */
 export type Prochain = {
+  /** Suivi du CRM ou ramassage (Google Agenda) */
+  type: "suivi" | "ramassage";
   /** Clé React stable */
   cle: string;
   /** Jour « YYYY-MM-DD » (Toronto) */
   jour: string;
   /** « Plus tard aujourd’hui », « Demain », « Jeudi 5 nov. » */
   quand: string;
-  /** « Rappeler Bureautique Laval » */
+  /** « Rappeler Bureautique Laval », « Ramassage · Info Plus » */
   titre: string;
-  /** « Intéressé », « Contacté », « Rappel noté » */
+  /** « Intéressé », « Contacté », « Rappel noté », « 9 h – 10 h » */
   detail: string;
   href: string;
 };
+
+/** Ramassage lu dans Google Agenda pour l'accueil. */
+export type RamassageAccueil = Pick<
+  Ramassage,
+  "id" | "titre" | "client" | "journee" | "jour" | "jourFin" | "heureDebut" | "heureFin" | "debut" | "fin"
+>;
 
 /** Compagnie lue pour les suivis (mêmes règles que /admin/crm/suivis). */
 export type SuiviCandidat = {
@@ -284,12 +293,72 @@ export type EntreesTaches = {
   suivis: SuiviDu[];
   negociation: { total: number; lots: Array<{ id: string; client_name: string }> };
   prix: { total: number; lots: Array<{ id: string; client_name: string }> };
+  /**
+   * Ramassages d'aujourd'hui aux 7 prochains jours (Google Agenda) ; erreur =
+   * lecture impossible ; absent = agenda non relié (aucune tâche).
+   */
+  ramassages?: { erreur: boolean; liste: RamassageAccueil[] };
 };
 
-/** Tâches du jour, dans l'ordre ebay, soumissions, suivis, negociation, prix ; les tâches vides sont omises. */
+/** Une heure, en millisecondes. */
+const HEURE_MS = 3_600_000;
+
+/**
+ * Moment du ramassage à suivre aujourd'hui : « En cours », « À 14 h » (un seul) ou
+ * « Prochain à 14 h », urgent dans l'heure qui vient ; « Toute la journée » s'il
+ * ne reste que ceux-là ; rien quand tous sont passés.
+ */
+function momentRamassages(duJour: RamassageAccueil[], now: Date): { meta: string | null; urgent: boolean } {
+  const t = now.getTime();
+  const precis = duJour.filter((r) => !r.journee && Number.isFinite(Date.parse(r.debut)));
+  if (precis.some((r) => Date.parse(r.debut) <= t && t < Date.parse(r.fin))) return { meta: "En cours", urgent: false };
+  const suivant = precis
+    .filter((r) => Date.parse(r.debut) > t)
+    .sort((a, b) => Date.parse(a.debut) - Date.parse(b.debut))[0];
+  if (suivant?.heureDebut) {
+    return {
+      meta: `${duJour.length === 1 ? "À" : "Prochain à"} ${heureCourte(suivant.heureDebut)}`,
+      urgent: Date.parse(suivant.debut) - t <= HEURE_MS,
+    };
+  }
+  if (duJour.some((r) => r.journee)) return { meta: "Toute la journée", urgent: false };
+  return { meta: null, urgent: false };
+}
+
+/** Tâches du jour, dans l'ordre ramassages, ebay, soumissions, suivis, negociation, prix ; les tâches vides sont omises. */
 export function tachesAccueil(entrees: EntreesTaches, now: Date): Tache[] {
   const taches: Tache[] = [];
   const today = torontoDay(now);
+
+  // Ramassages du jour (Google Agenda), en tête : ils ont une heure fixe
+  const ram = entrees.ramassages;
+  if (ram?.erreur) {
+    taches.push({
+      cle: "ramassages",
+      titre: "Ramassages illisibles pour l’instant",
+      detail: "Ouvre l’onglet Ramassages pour réessayer",
+      meta: null,
+      urgent: false,
+      href: "/admin/ramassages",
+      externe: false,
+    });
+  } else if (ram) {
+    const duJour = ram.liste.filter((r) => r.jour <= today && today <= r.jourFin).sort(comparerRamassages);
+    if (duJour.length > 0) {
+      const n = duJour.length;
+      // « 9 h Bureautique Laval » ; l'heure seulement si le ramassage commence aujourd'hui
+      const libelle = (r: RamassageAccueil) =>
+        !r.journee && r.jour === today && r.heureDebut ? `${heureCourte(r.heureDebut)} ${nomRamassage(r)}` : nomRamassage(r);
+      taches.push({
+        cle: "ramassages",
+        titre: `Faire ${n} ramassage${pluriel(n)}`,
+        detail: listeNoms(duJour.map(libelle), n) || null,
+        ...momentRamassages(duJour, now),
+        href: "/admin/ramassages",
+        externe: false,
+      });
+    }
+  }
 
   // Commandes eBay à expédier
   const exp = entrees.expeditions;
@@ -392,18 +461,44 @@ export function tachesAccueil(entrees: EntreesTaches, now: Date): Tache[] {
   return taches;
 }
 
-/** Rappels des 7 prochains jours, dans l'ordre reçu (classerSuivis(...).aVenir). */
-export function prochainsAccueil(aVenir: SuiviAVenir[], now: Date): Prochain[] {
+/**
+ * Rappels des 7 prochains jours, par jour : d'abord les ramassages de demain à
+ * dans 7 jours (ceux d'aujourd'hui sont dans « À faire »), par heure, puis les
+ * suivis dans l'ordre reçu (classerSuivis(...).aVenir).
+ */
+export function prochainsAccueil(aVenir: SuiviAVenir[], now: Date, ramassages: RamassageAccueil[] = []): Prochain[] {
   const today = torontoDay(now);
   const demain = addDays(today, 1);
-  return aVenir.map((s) => ({
-    cle: `${s.id}-${s.jour}`,
-    jour: s.jour,
-    quand: s.jour === today ? "Plus tard aujourd’hui" : s.jour === demain ? "Demain" : titreJour(s.jour),
-    titre: `Rappeler ${s.name}`,
-    detail: s.note ? "Rappel noté" : LEAD_STATUS_LABELS[s.lead_status],
-    href: `/admin/crm/${s.id}`,
-  }));
+  const horizon = addDays(today, 7);
+  const quand = (jour: string) => (jour === today ? "Plus tard aujourd’hui" : jour === demain ? "Demain" : titreJour(jour));
+
+  const deRamassages = ramassages
+    .filter((r) => r.jour > today && r.jour <= horizon)
+    .sort((a, b) => a.jour.localeCompare(b.jour) || comparerRamassages(a, b))
+    .map(
+      (r): Prochain => ({
+        type: "ramassage",
+        cle: `ramassage-${r.id}`,
+        jour: r.jour,
+        quand: quand(r.jour),
+        titre: r.titre || nomRamassage(r),
+        detail: plageHoraire(r),
+        href: `/admin/ramassages?date=${r.jour}`,
+      }),
+    );
+  const deSuivis = aVenir.map(
+    (s): Prochain => ({
+      type: "suivi",
+      cle: `${s.id}-${s.jour}`,
+      jour: s.jour,
+      quand: quand(s.jour),
+      titre: `Rappeler ${s.name}`,
+      detail: s.note ? "Rappel noté" : LEAD_STATUS_LABELS[s.lead_status],
+      href: `/admin/crm/${s.id}`,
+    }),
+  );
+  // Tri stable : dans une même journée, les ramassages restent avant les suivis.
+  return [...deRamassages, ...deSuivis].sort((a, b) => a.jour.localeCompare(b.jour));
 }
 
 /** Phrase d'en-tête selon le nombre de tâches. */
