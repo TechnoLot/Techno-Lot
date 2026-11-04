@@ -1,4 +1,4 @@
-import type { CourrielSoumission } from "@/lib/admin/courriel-types";
+import type { CourrielSoumission, PieceJointe } from "@/lib/admin/courriel-types";
 import {
   corpsRechercheApproximative,
   corpsRechercheEntete,
@@ -283,4 +283,60 @@ export async function telechargerPiece(dossier: string, uid: number, pieceId: st
     entetes["Content-Length"] = longueur;
   }
   return new Response(res.body, { status: 200, headers: entetes });
+}
+
+/** Pièces jointes visibles d'un message. */
+export async function piecesDuCourriel(dossier: string, uid: number): Promise<PieceJointe[]> {
+  const boite = await idBoite();
+  return piecesVisibles((await lireMessage(boite, dossier, uid)).attachments);
+}
+
+/**
+ * Octets d'une pièce de ce message, `max` octets au plus ; null : absente ou
+ * trop lourde. Le `sizeBytes` annoncé ne fait pas foi : le flux est lu par
+ * morceaux et coupé dès que `max` est dépassé.
+ */
+export async function octetsPiece(
+  dossier: string,
+  uid: number,
+  pieceId: string,
+  max: number,
+): Promise<Uint8Array | null> {
+  const boite = await idBoite();
+  const message = await lireMessage(boite, dossier, uid);
+  const piece = piecesVisibles(message.attachments).find((p) => p.id === pieceId);
+  if (!piece || piece.taille > max) return null;
+
+  const res = await appel(
+    `${cheminDossier(boite, dossier)}/messages/${uid}/attachments/${encodeURIComponent(piece.id)}`,
+    { headers: { Accept: "*/*" } },
+    DELAI_PIECE_MS,
+  );
+  const lecteur = res.body?.getReader();
+  if (!lecteur) return null;
+
+  const morceaux: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await lecteur.read();
+      if (done) break;
+      total += value.length;
+      if (total > max) {
+        lecteur.cancel().catch(() => {});
+        return null;
+      }
+      morceaux.push(value);
+    }
+  } catch {
+    throw new ErreurHostinger(null); // délai dépassé ou connexion coupée en plein téléchargement
+  }
+
+  const octets = new Uint8Array(total);
+  let position = 0;
+  for (const m of morceaux) {
+    octets.set(m, position);
+    position += m.length;
+  }
+  return octets;
 }

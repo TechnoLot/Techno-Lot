@@ -127,6 +127,99 @@ export type RechercheAcheteurs = {
   resultats_le: string | null;
 };
 
+/*
+ * Lecture des pièces jointes d'une soumission : une passe à part, sans aucun
+ * outil, qui propose une liste d'articles (table lectures_soumissions).
+ */
+
+export const STATUTS_LECTURE = ["en_attente", "en_cours", "lue", "echec"] as const;
+export type StatutLecture = (typeof STATUTS_LECTURE)[number];
+
+/** confirme : une photo montre le modèle ; non_vu : écrit, aucune photo ; doute : l'admin doit trancher. */
+export const VERIFICATIONS = ["confirme", "non_vu", "doute"] as const;
+export type Verification = (typeof VERIFICATIONS)[number];
+
+export type EtatArticle = "neuf" | "usage";
+
+/** Article proposé par la lecture des pièces jointes. */
+export type ArticleLu = Article & {
+  etat: EtatArticle | null;
+  verification: Verification;
+  remarque: string | null;
+  photos: number[];
+};
+
+export type RolePiece = "tableur" | "pdf" | "photo" | "aucun";
+
+/** Une pièce jointe du courriel d'une soumission, telle que la lecture l'a classée. */
+export type PieceLue = {
+  nom: string;
+  pieceId: string;
+  type: string;
+  role: RolePiece;
+  /** Numéro de photo donné à Claude (1, 2…) ; null pour le reste. */
+  numero: number | null;
+  lu: boolean;
+  /** Pourquoi elle n'a pas été lue (affiché à l'admin). */
+  raison: string | null;
+};
+
+/** Lecture d'une soumission, telle que la lisent les écrans (table lectures_soumissions). */
+export type LectureSoumission = {
+  id: string;
+  soumission_id: string;
+  statut: StatutLecture;
+  articles: ArticleLu[];
+  articles_ignores: number;
+  pieces: PieceLue[];
+  erreur: string | null;
+  demande_le: string;
+  pris_le: string | null;
+  lue_le: string | null;
+};
+
+/** Lectures prises au plus par 24 h : protège le forfait contre un robot du formulaire. */
+export const LECTURES_PAR_JOUR = 20;
+/** Montré sur une lecture en attente quand le plafond est atteint. */
+export const MESSAGE_PLAFOND_LECTURE = `Plafond de ${LECTURES_PAR_JOUR} lectures par 24 h atteint (il protège votre forfait Claude) : celle-ci partira plus tard, toute seule.`;
+/** Lecture automatique des soumissions reçues depuis cette date (et depuis 30 jours au plus). */
+export const LECTURE_DEPUIS = "2026-11-04T00:00:00Z";
+export const LECTURE_FENETRE_JOURS = 30;
+/** Laisse au courriel de la soumission le temps d'arriver dans la boîte. */
+export const LECTURE_DELAI_COURRIEL_MS = 2 * 60_000;
+
+/** Message affiché à l'admin pour chaque raison d'échec d'une lecture. */
+export const MESSAGES_ECHEC_LECTURE: Record<EchecAgent, string> = {
+  delai: "Claude n'a pas fini de lire à temps. Relisez les pièces jointes.",
+  tours: "Claude n'a pas fini de lire. Relisez les pièces jointes.",
+  connexion:
+    "Claude n'est pas prêt sur votre ordinateur (connexion ou installation) : refaites la connexion (guide de l'agent), puis relisez.",
+  limite: "Limite de votre forfait Claude atteinte pour l'instant. Relisez plus tard.",
+  autre: "La lecture n'a pas abouti. Relisez les pièces jointes.",
+};
+
+export const LIMITES_LECTURE = {
+  /** Feuilles lues par classeur. */
+  feuilles: 6,
+  /** Rangées lues par feuille. */
+  rangees: 5_000,
+  colonnes: 40,
+  /** Caractères par cellule. */
+  cellule: 120,
+  /** Texte de tableur envoyé à Claude (tous fichiers confondus). */
+  texteTableur: 40_000,
+  /** XML décompressé d'une feuille ou des chaînes partagées. */
+  xmlFeuille: 30 * 1024 * 1024,
+  xmlTotal: 60 * 1024 * 1024,
+  /** Entrées lues dans l'archive. */
+  entrees: 2_000,
+  photos: 10,
+  documents: 5,
+  /** Article lu. */
+  description: 160,
+  remarque: 240,
+} as const;
+
 /**
  * Offre habituelle d'un acheteur en gros, en part de la valeur marchande
  * (page « We buy surplus » d'Industrial Automation Co., essai du 2026-11-03).

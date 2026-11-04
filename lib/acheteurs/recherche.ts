@@ -5,6 +5,7 @@ import {
   type Article,
   type FamilleResultat,
   type ResultatRecherche,
+  type StatutLecture,
   type StatutRecherche,
 } from "@/lib/acheteurs/types";
 
@@ -15,10 +16,10 @@ import {
  * aux résultats précédents.
  */
 
-/** Ligne de la file telle que la lit /api/cron/acheteurs/prendre. */
+/** Ligne d'une file (recherche ou lecture) telle que la lisent les routes de l'agent. */
 export type LigneFile = {
   id: string;
-  statut: StatutRecherche;
+  statut: StatutRecherche | StatutLecture;
   demande_le: string;
   pris_le: string | null;
   jeton: string | null;

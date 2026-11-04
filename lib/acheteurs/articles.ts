@@ -1,3 +1,4 @@
+import { masquerClient, sansClient } from "@/lib/acheteurs/identite";
 import { LIMITES, type Article } from "@/lib/acheteurs/types";
 
 /*
@@ -85,8 +86,14 @@ function horsArticle(ligne: string): boolean {
 /** « Quantity: 53 » seule sur sa ligne : la quantité de l'article précédent. */
 const QTE_SEULE = /^\s*(?:quantit[ée]s?|qty|quantity|qt[ée])\s*[:=]?\s*(\d{1,6})\s*$/i;
 
-/** Articles proposés à partir de la description d'une soumission (60 au plus). */
-export function extraireArticles(description: string): Article[] {
+/**
+ * Articles proposés à partir de la description d'une soumission (60 au plus).
+ * `mots` : ce qui désigne le client (`motsDuClient`) ; une ligne qui ne contient
+ * rien d'autre, comme sa signature, n'est pas un article. Une ligne amputée qui
+ * n'a plus aucun chiffre non plus : c'est le reste d'une signature (« Directrice
+ * TI », « Tél »), alors que « Laval : 12 portables » garde sa quantité.
+ */
+export function extraireArticles(description: string, mots: readonly string[] = []): Article[] {
   const articles: Article[] = [];
   for (const ligne of description.split(/\r?\n/)) {
     if (articles.length >= LIMITES.articles) break;
@@ -97,7 +104,11 @@ export function extraireArticles(description: string): Article[] {
       continue;
     }
     if (horsArticle(ligne)) continue;
-    const a = analyserLigne(ligne);
+    const propre = sansClient(ligne, mots);
+    if (propre === null) continue;
+    const ampute = masquerClient(ligne, mots) !== ligne.normalize("NFC");
+    if (ampute && !/\d/.test(propre)) continue;
+    const a = analyserLigne(propre);
     if (a) articles.push(a);
   }
   return articles;
@@ -132,6 +143,6 @@ export function estCourant(description: string): boolean {
 }
 
 /** Articles qui semblent nichés dans le message d'une soumission (indice de l'accueil et de la soumission). */
-export function nombreNiches(message: string | null): number {
-  return extraireArticles(descriptionDuMessage(message)).filter((a) => !estCourant(a.description)).length;
+export function nombreNiches(message: string | null, mots: readonly string[] = []): number {
+  return extraireArticles(descriptionDuMessage(message), mots).filter((a) => !estCourant(a.description)).length;
 }

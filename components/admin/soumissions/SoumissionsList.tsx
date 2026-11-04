@@ -5,7 +5,8 @@ import MessageApercu from "@/components/admin/soumissions/MessageApercu";
 import SupprimerSoumission from "@/components/admin/soumissions/SupprimerSoumission";
 import VoirCourriel from "@/components/admin/soumissions/VoirCourriel";
 import { descriptionDuMessage } from "@/lib/acheteurs/articles";
-import type { AcheteurCarnet, RechercheAcheteurs } from "@/lib/acheteurs/types";
+import { motsDuClient } from "@/lib/acheteurs/identite";
+import type { AcheteurCarnet, LectureSoumission, RechercheAcheteurs } from "@/lib/acheteurs/types";
 import { WEBMAIL_URL } from "@/lib/admin/config";
 import { formatCount } from "@/lib/admin/format";
 import { A_TRAITER_JOURS, estATraiter, type Soumission } from "@/lib/admin/soumissions";
@@ -14,6 +15,8 @@ import { A_TRAITER_JOURS, estATraiter, type Soumission } from "@/lib/admin/soumi
 export type DonneesAcheteurs = {
   /** Recherche de chaque soumission, par identifiant de soumission. */
   recherches: Record<string, RechercheAcheteurs>;
+  /** Lecture des pièces jointes, par identifiant de soumission. */
+  lectures: Record<string, LectureSoumission>;
   /** Fiches du carnet, par domaine. */
   acheteurs: Record<string, AcheteurCarnet>;
   /** Dernier échange du CRM, par courriel. */
@@ -215,6 +218,9 @@ function SoumissionCard({
           titre={[s.entreprise || s.nom || "Soumission", formatDateHeure(s.date)].join(" · ")}
           description={descriptionDuMessage(s.message)}
           recherche={agent.recherches[s.id] ?? null}
+          lecture={agent.lectures[s.id] ?? null}
+          fichiers={s.fichiers}
+          motsClient={motsDuClient(s)}
           acheteurs={agent.acheteurs}
           contacts={agent.contacts}
         />

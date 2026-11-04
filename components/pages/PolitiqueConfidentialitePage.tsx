@@ -42,7 +42,7 @@ const content: Record<
     crumb: "Politique de confidentialité",
     intro:
       "Comment Techno Lot recueille, utilise, conserve et protège vos renseignements personnels, conformément à la Loi sur la protection des renseignements personnels dans le secteur privé du Québec (Loi 25).",
-    updated: "Dernière mise à jour : 30 octobre 2026",
+    updated: "Dernière mise à jour : 4 novembre 2026",
     tocLabel: "Sommaire",
     officerTitle: "Responsable de la protection des renseignements personnels",
     blocks: [
@@ -80,7 +80,7 @@ const content: Record<
               <li>la description de votre lot (votre message) ;</li>
               <li>
                 les fichiers que vous joignez (inventaire, photos). Ils nous sont transmis par courriel ; seuls leurs
-                noms sont conservés dans notre base de données.
+                noms et la liste du matériel qu&apos;ils décrivent sont conservés dans notre base de données.
               </li>
             </Ul>
             <p className="mt-5">
@@ -162,8 +162,9 @@ const content: Record<
               <li>Resend : envoi des courriels ;</li>
               <li>Hostinger : hébergement du site Web et de notre boîte de courriel ;</li>
               <li>
-                Anthropic : traitement de certains courriels par intelligence artificielle, pour en extraire les
-                informations utiles (ces données ne servent pas à entraîner ses modèles) ;
+                Anthropic : traitement de certains courriels et des fichiers joints à vos demandes par intelligence
+                artificielle, pour en extraire les informations utiles (ces données ne servent pas à entraîner ses
+                modèles) ;
               </li>
               <li>Google : agenda de nos rendez-vous de ramassage (nom de l&apos;entreprise et adresse) ;</li>
               <li>Meta et Google : mesure publicitaire, lorsque leurs pixels sont activés.</li>
@@ -243,7 +244,7 @@ const content: Record<
     crumb: "Privacy policy",
     intro:
       "How Techno Lot collects, uses, retains and protects your personal information, in accordance with Québec's Act respecting the protection of personal information in the private sector (Law 25).",
-    updated: "Last updated: October 30, 2026",
+    updated: "Last updated: November 4, 2026",
     tocLabel: "Contents",
     officerTitle: "Person in charge of the protection of personal information",
     blocks: [
@@ -276,8 +277,8 @@ const content: Record<
               <li>your name, email address and phone number;</li>
               <li>the description of your lot (your message);</li>
               <li>
-                the files you attach (inventory, photos). They are sent to us by email; only their file names are kept
-                in our database.
+                the files you attach (inventory, photos). They are sent to us by email; only their file names and the
+                list of equipment they describe are kept in our database.
               </li>
             </Ul>
             <p className="mt-5">
@@ -357,8 +358,8 @@ const content: Record<
               <li>Resend: email delivery;</li>
               <li>Hostinger: website and mailbox hosting;</li>
               <li>
-                Anthropic: processing of certain emails by artificial intelligence, to extract the useful information
-                (this data is not used to train its models);
+                Anthropic: processing of certain emails and of the files attached to your requests by artificial
+                intelligence, to extract the useful information (this data is not used to train its models);
               </li>
               <li>Google: calendar of our pickup appointments (company name and address);</li>
               <li>Meta and Google: ad measurement, when their pixels are enabled.</li>

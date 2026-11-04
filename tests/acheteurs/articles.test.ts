@@ -8,6 +8,7 @@ import {
   lireArticlesSaisis,
   nombreNiches,
 } from "@/lib/acheteurs/articles";
+import { motsDuClient } from "@/lib/acheteurs/identite";
 
 /*
  * Articles d'une soumission : découpage de la description du formulaire en
@@ -85,6 +86,44 @@ describe("extraireArticles", () => {
     const description = Array.from({ length: 80 }, (_, i) => `${i + 1} × Article ${i}`).join("\n");
     expect(extraireArticles(description)).toHaveLength(60);
   });
+
+  it("ne prend pas la signature du client pour un article", () => {
+    const description =
+      "Suite à notre appel, voir les fichiers joints svp.\nLe matériel serait expédié à nos frais.\nMarie, Usine Exemple";
+    const mots = motsDuClient({ nom: "Marie Tremblay", courriel: null, telephone: null, entreprise: "Usine Exemple", ville: null });
+    expect(extraireArticles(description, mots)).toEqual([]);
+    // Sans les mots du client : le bogue d'origine.
+    expect(extraireArticles(description)).toEqual([{ quantite: null, description: "Marie, Usine Exemple" }]);
+  });
+
+  it("ignore le reste d'une signature, sans chiffre", () => {
+    const mots = motsDuClient({ nom: "Marie Tremblay", courriel: null, telephone: null, entreprise: null, ville: "Laval" });
+    expect(extraireArticles("Marie Tremblay, Directrice TI\nTél : 514-555-0123", mots)).toEqual([]);
+    expect(extraireArticles("Tél : 514-555-0123")).toEqual([]);
+  });
+
+  it("garde un article dont la ville est masquée", () => {
+    const mots = motsDuClient({ nom: null, courriel: null, telephone: null, entreprise: null, ville: "Laval" });
+    expect(extraireArticles("Laval : 12 portables", mots)).toEqual([{ quantite: 12, description: "portables" }]);
+  });
+
+  it("garde une ligne sans chiffre si rien n'en a été retiré", () => {
+    expect(extraireArticles("Directrice TI", ["Marie"])).toEqual([{ quantite: null, description: "Directrice TI" }]);
+  });
+
+  it("retire le client d'une ligne d'article", () => {
+    const mots = ["Usine Exemple", "Laval"];
+    expect(extraireArticles("4 × Cisco 2960 Usine Exemple\nLaval : 3 × Ruckus R650", mots)).toEqual([
+      { quantite: 4, description: "Cisco 2960" },
+      { quantite: 3, description: "Ruckus R650" },
+    ]);
+  });
+
+  it("rattache encore « Quantity: 53 » après une ligne ignorée", () => {
+    expect(extraireArticles("Yealink MP56\nMarie, Usine Exemple\nQuantity: 53", ["Marie", "Usine Exemple"])).toEqual([
+      { quantite: 53, description: "Yealink MP56" },
+    ]);
+  });
 });
 
 describe("lireArticlesSaisis et formaterArticle", () => {
@@ -103,6 +142,12 @@ describe("nombreNiches", () => {
       "Entreprise : Exemple\nVille : Laval\n\nDescription :\n28 × Dell Latitude 5500 portable\n4 × Cisco Meraki MR57";
     expect(nombreNiches(message)).toBe(1);
     expect(nombreNiches(null)).toBe(0);
+  });
+
+  it("ne compte pas la signature du client", () => {
+    const message = "Entreprise : Usine Exemple\n\nDescription :\nMarie, Usine Exemple";
+    expect(nombreNiches(message)).toBe(1);
+    expect(nombreNiches(message, ["Marie", "Usine Exemple"])).toBe(0);
   });
 });
 

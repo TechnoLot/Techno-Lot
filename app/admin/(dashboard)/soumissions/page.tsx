@@ -5,7 +5,7 @@ import PageHeader from "@/components/admin/PageHeader";
 import Pagination from "@/components/admin/Pagination";
 import SoumissionsFilters from "@/components/admin/soumissions/SoumissionsFilters";
 import SoumissionsList, { type DonneesAcheteurs } from "@/components/admin/soumissions/SoumissionsList";
-import { derniersContacts, lireAcheteursParDomaines, lireRecherches } from "@/lib/acheteurs/lecture";
+import { derniersContacts, lireAcheteursParDomaines, lireLectures, lireRecherches } from "@/lib/acheteurs/lecture";
 import type { ContexteAdmin } from "@/lib/securite/garde";
 import { formatCount } from "@/lib/admin/format";
 import { isMailApiConfigured } from "@/lib/hostinger/config";
@@ -41,6 +41,7 @@ function correspond(s: Soumission, q: string): boolean {
  * Agent « Acheteurs » des demandes affichées : recherche de chaque demande,
  * fiches du carnet citées et dernier échange avec chaque compagnie. null si
  * les tables sont illisibles (journalisé) : les cartes s'affichent sans la section.
+ * Lectures des pièces jointes illisibles : journalisé, et la section reste, sans elles.
  */
 async function donneesAcheteurs(ctx: ContexteAdmin, ids: string[]): Promise<DonneesAcheteurs | null> {
   const { recherches, erreur } = await lireRecherches(ctx.supabase, ids);
@@ -48,6 +49,8 @@ async function donneesAcheteurs(ctx: ContexteAdmin, ids: string[]): Promise<Donn
     await journaliserErreur(erreur, "acheteurs.recherches_lire", ctx);
     return null;
   }
+  const { lectures, erreur: erreurLectures } = await lireLectures(ctx.supabase, ids);
+  if (erreurLectures) await journaliserErreur(erreurLectures, "acheteurs.lectures_lire", ctx);
   const domaines = [...recherches.values()].flatMap((r) =>
     (r.resultats?.familles ?? []).flatMap((f) => f.acheteurs.map((a) => a.domaine)),
   );
@@ -56,6 +59,7 @@ async function donneesAcheteurs(ctx: ContexteAdmin, ids: string[]): Promise<Donn
   const contacts = await derniersContacts(ctx.supabase, courriels);
   return {
     recherches: Object.fromEntries(recherches),
+    lectures: erreurLectures ? {} : Object.fromEntries(lectures),
     acheteurs: Object.fromEntries(fiches),
     contacts: Object.fromEntries(contacts),
   };

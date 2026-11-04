@@ -1,10 +1,15 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { estCourant } from "@/lib/acheteurs/articles";
+import { lireArticlesLus, lirePiecesLues } from "@/lib/acheteurs/pieces";
 import { lireArticlesStockes, lireResultats } from "@/lib/acheteurs/recherche";
 import {
+  STATUTS_LECTURE,
   STATUTS_RECHERCHE,
   type AcheteurCarnet,
+  type LectureSoumission,
   type RechercheAcheteurs,
+  type StatutLecture,
   type StatutRecherche,
 } from "@/lib/acheteurs/types";
 
@@ -18,6 +23,8 @@ export const COLONNES_ACHETEUR =
   "id, nom, domaine, site, ville, region, pays, categories, modeles, courriel, telephone, formulaire, sources, confiance, verifie, notes, created_at";
 const COLONNES_RECHERCHE =
   "id, soumission_id, statut, articles, domaines_exclus, resultats, lignes_refusees, erreur, demande_le, pris_le, resultats_le";
+/** Jamais `jeton` ni `courriel` : ils ne servent qu'à l'agent de l'ordinateur. */
+const COLONNES_LECTURE = "id, soumission_id, statut, articles, articles_ignores, pieces, erreur, demande_le, pris_le, lue_le";
 
 type RechercheBrute = {
   id: string;
@@ -71,6 +78,56 @@ export async function lireRecherches(
     if (r) recherches.set(r.soumission_id, r);
   }
   return { recherches, erreur: error };
+}
+
+type LectureBrute = {
+  id: string;
+  soumission_id: string;
+  statut: string;
+  articles: unknown;
+  articles_ignores: number | null;
+  pieces: unknown;
+  erreur: string | null;
+  demande_le: string;
+  pris_le: string | null;
+  lue_le: string | null;
+};
+
+const estStatutLecture = (s: string): s is StatutLecture => (STATUTS_LECTURE as readonly string[]).includes(s);
+
+/** Lecture lisible, ou null (statut inconnu). */
+function versLecture(l: LectureBrute): LectureSoumission | null {
+  if (!estStatutLecture(l.statut)) return null;
+  return {
+    id: l.id,
+    soumission_id: l.soumission_id,
+    statut: l.statut,
+    articles: lireArticlesLus(l.articles),
+    articles_ignores: l.articles_ignores ?? 0,
+    pieces: lirePiecesLues(l.pieces),
+    erreur: l.erreur,
+    demande_le: l.demande_le,
+    pris_le: l.pris_le,
+    lue_le: l.lue_le,
+  };
+}
+
+/** Lectures des pièces jointes des soumissions données, par soumission. */
+export async function lireLectures(
+  supabase: SupabaseClient,
+  soumissionIds: string[],
+): Promise<{ lectures: Map<string, LectureSoumission>; erreur: unknown }> {
+  const lectures = new Map<string, LectureSoumission>();
+  if (soumissionIds.length === 0) return { lectures, erreur: null };
+  const { data, error } = await supabase
+    .from("lectures_soumissions")
+    .select(COLONNES_LECTURE)
+    .in("soumission_id", soumissionIds.slice(0, 200));
+  for (const brute of (data ?? []) as LectureBrute[]) {
+    const l = versLecture(brute);
+    if (l) lectures.set(l.soumission_id, l);
+  }
+  return { lectures, erreur: error };
 }
 
 /** Tout le carnet (CRM → Acheteurs), plus récentes d'abord. */
@@ -131,6 +188,8 @@ export async function derniersContacts(supabase: SupabaseClient, courriels: stri
 export type ResumeAcheteurs = {
   /** soumission_id des soumissions qui ont déjà une recherche (en file, en cours, finie ou en échec) */
   avecRecherche: Set<string>;
+  /** soumission_id des soumissions dont la lecture a trouvé au moins un article niché */
+  lecturesNichees: Set<string>;
   /** Recherches en file ou en cours sur l'ordinateur de l'agent */
   enCours: number;
   carnet: number;
@@ -138,15 +197,21 @@ export type ResumeAcheteurs = {
 };
 
 export async function resumeAcheteurs(supabase: SupabaseClient): Promise<{ resume: ResumeAcheteurs; erreur: unknown }> {
-  const [recherches, carnet, verifies] = await Promise.all([
+  const [recherches, carnet, verifies, lectures] = await Promise.all([
     supabase.from("recherches_acheteurs").select("soumission_id, statut").limit(1_000),
     supabase.from("acheteurs").select("id", { count: "exact", head: true }),
     supabase.from("acheteurs").select("id", { count: "exact", head: true }).eq("verifie", true),
+    // Son erreur n'entre pas dans le résumé : sans lectures, la carte reste juste.
+    supabase.from("lectures_soumissions").select("soumission_id, articles").eq("statut", "lue").limit(1_000),
   ]);
   const lignes = (recherches.data ?? []) as { soumission_id: string; statut: string }[];
+  const lues = (lectures.data ?? []) as { soumission_id: string; articles: unknown }[];
   return {
     resume: {
       avecRecherche: new Set(lignes.map((r) => r.soumission_id)),
+      lecturesNichees: new Set(
+        lues.filter((l) => lireArticlesLus(l.articles).some((a) => !estCourant(a.description))).map((l) => l.soumission_id),
+      ),
       enCours: lignes.filter((r) => r.statut === "en_attente" || r.statut === "en_cours").length,
       carnet: carnet.count ?? 0,
       verifies: verifies.count ?? 0,

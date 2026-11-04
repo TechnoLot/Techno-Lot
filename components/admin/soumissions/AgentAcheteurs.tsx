@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   ArrowLeft,
+  Camera,
   Check,
   ChevronDown,
   ChevronRight,
@@ -24,9 +25,10 @@ import {
   X,
 } from "lucide-react";
 import { analyserLigne, estCourant, extraireArticles, formaterArticle } from "@/lib/acheteurs/articles";
-import { annulerRecherche, demanderRecherche, etatRecherche } from "@/lib/acheteurs/actions";
+import { annulerRecherche, demanderRecherche, etatLecture, etatRecherche } from "@/lib/acheteurs/actions";
 import { departEnvoi, type DepartEnvoi } from "@/lib/acheteurs/envoi";
 import { formaterPrix } from "@/lib/acheteurs/format";
+import { articlesDeDepart, echecPerime, lectureEnCours, type ArticlePanneau } from "@/lib/acheteurs/pieces";
 import { domainesDe } from "@/lib/acheteurs/recherche";
 import {
   ATTENTE_LONGUE_MS,
@@ -36,7 +38,9 @@ import {
   langueAcheteur,
   type AcheteurCarnet,
   type Article,
+  type ArticleLu,
   type Langue,
+  type LectureSoumission,
   type RechercheAcheteurs,
   type ResultatRecherche,
 } from "@/lib/acheteurs/types";
@@ -46,6 +50,8 @@ import {
   verifierEnvoiEnGros,
   type ResultatVerification,
 } from "@/lib/crm/envoi-en-gros-actions";
+import { ArticlesAConfirmer, BlocLecture, useMaintenant } from "@/components/admin/soumissions/LecturePieces";
+import { BOUTON_DOUX, BOUTON_PLEIN, LIEN } from "@/components/admin/soumissions/styles-acheteurs";
 
 /*
  * Agent « Acheteurs » d'une soumission : un seul bouton sur la carte, puis un
@@ -53,6 +59,8 @@ import {
  *   1. Les articles (retirer, ajouter), puis « Lancer la recherche » : elle
  *      est mise en file ; l'agent de l'ordinateur de l'utilisateur la prend
  *      dans les 5 minutes et fait chercher Claude (scripts/agent-acheteurs).
+ *      La liste de départ vient de la lecture automatique des pièces jointes,
+ *      sinon de la description du client.
  *   2. L'attente : son état est relu toutes les 15 secondes, même panneau
  *      fermé ; « Relancer » si elle échoue.
  *   3. Les acheteurs, un interrupteur chacun, puis « Écrire à N acheteurs » :
@@ -64,12 +72,6 @@ import {
 
 const SUIVI_MS = 15_000;
 const jourCourtFmt = new Intl.DateTimeFormat("fr-CA", { day: "numeric", month: "short", timeZone: "America/Toronto" });
-
-const BOUTON_DOUX =
-  "admin-focus inline-flex items-center gap-2 rounded-full bg-admin-tint-green px-4 py-2 text-[14px] font-semibold text-admin-green ring-1 ring-inset ring-[#5ECB33]/40 transition hover:ring-[#5ECB33] active:scale-[0.98]";
-const BOUTON_PLEIN =
-  "admin-focus inline-flex items-center justify-center gap-2 rounded-full bg-[#5ECB33] px-5 py-3 text-[15px] font-semibold text-[#0a0a0a] shadow-[0_6px_20px_-6px_rgba(94,203,51,0.7)] transition hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none";
-const LIEN = "admin-focus rounded text-[13px] font-medium text-admin-muted underline-offset-4 hover:text-admin-ink hover:underline";
 
 function lienSur(url: string | null | undefined): string | null {
   return url && url.startsWith("https://") ? url : null;
@@ -85,6 +87,12 @@ type Props = {
   /** Description de la soumission (texte après « Description : »). */
   description: string;
   recherche: RechercheAcheteurs | null;
+  /** Lecture des pièces jointes par Claude. */
+  lecture: LectureSoumission | null;
+  /** Noms des pièces jointes de la soumission. */
+  fichiers: string[];
+  /** Ce qui désigne le client (`motsDuClient`) : jamais un article. */
+  motsClient: string[];
   /** Fiches du carnet, par domaine. */
   acheteurs: Record<string, AcheteurCarnet>;
   /** Dernier échange du CRM, par courriel (minuscules) → date ISO. */
@@ -92,13 +100,14 @@ type Props = {
 };
 
 export default function AgentAcheteurs(props: Props) {
-  const { soumissionId, recherche, acheteurs, contacts, description } = props;
+  const { soumissionId, recherche, lecture, motsClient, acheteurs, contacts, description } = props;
   const [ouvert, setOuvert] = useState(false);
   const niches = useMemo(
-    () => extraireArticles(description).filter((a) => !estCourant(a.description)).length,
-    [description],
+    () => extraireArticles(description, motsClient).filter((a) => !estCourant(a.description)).length,
+    [description, motsClient],
   );
   useSuiviRecherche(soumissionId, recherche);
+  useSuiviLecture(soumissionId, lecture);
 
   // Résumé de la carte : compagnies trouvées, fourchette de prix, offres déjà envoyées.
   const resultats = recherche?.resultats ?? null;
@@ -134,7 +143,7 @@ export default function AgentAcheteurs(props: Props) {
             <ChevronRight className="h-4 w-4" aria-hidden />
           </button>
         </>
-      ) : recherche?.statut === "echec" && !resultats ? (
+      ) : recherche?.statut === "echec" && !resultats && !echecPerime(recherche, lecture) ? (
         <>
           <span className="inline-flex items-center gap-2 text-[14px] text-admin-ink">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-admin-tint-red text-admin-danger">
@@ -170,11 +179,7 @@ export default function AgentAcheteurs(props: Props) {
             <Sparkles className="h-4 w-4" aria-hidden />
             Trouver des acheteurs
           </button>
-          <span className="text-[13px] text-admin-muted">
-            {niches > 0
-              ? `${pluriel(niches, "article")} niché${niches > 1 ? "s" : ""} : Claude cherche qui les rachète, et à quel prix.`
-              : "Articles courants : vous avez peut-être déjà votre acheteur."}
-          </span>
+          <IndiceCarte lecture={lecture} niches={niches} />
         </>
       )}
 
@@ -183,24 +188,64 @@ export default function AgentAcheteurs(props: Props) {
   );
 }
 
+/** Texte à côté de « Trouver des acheteurs » : où en est la lecture, sinon l'indice des articles nichés. */
+function IndiceCarte({ lecture, niches }: { lecture: LectureSoumission | null; niches: number }) {
+  if (lectureEnCours(lecture)) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-[13px] text-admin-muted">
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-admin-green motion-reduce:animate-none" aria-hidden />
+        {lecture?.statut === "en_cours" ? "Claude lit les pièces jointes…" : "Lecture des pièces jointes en file d'attente…"}
+      </span>
+    );
+  }
+  if (lecture?.statut === "lue" && lecture.articles.length > 0) {
+    const lus = lecture.articles.length;
+    const doutes = lecture.articles.filter((a) => a.verification === "doute").length;
+    return (
+      <span className="text-[13px] text-admin-muted">
+        {`${pluriel(lus, "article")} lu${lus > 1 ? "s" : ""} dans les pièces jointes`}
+        {doutes > 0 && (
+          <>
+            {" · "}
+            <span className="font-medium text-admin-warning">{doutes} à confirmer</span>
+          </>
+        )}
+      </span>
+    );
+  }
+  return (
+    <span className="text-[13px] text-admin-muted">
+      {lecture?.statut === "echec"
+        ? "Pièces jointes non lues : ouvrez le panneau pour les relire."
+        : niches > 0
+          ? `${pluriel(niches, "article")} niché${niches > 1 ? "s" : ""} : Claude cherche qui les rachète, et à quel prix.`
+          : "Articles courants : vous avez peut-être déjà votre acheteur."}
+    </span>
+  );
+}
+
 /**
- * Recherche en file ou en cours : son état est relu toutes les 15 secondes (et
- * au retour sur l'onglet), même panneau fermé ; la page se recharge dès qu'il
- * change (prise par l'ordinateur, résultats, échec).
+ * Travail en file ou en cours sur l'ordinateur : son état est relu toutes les
+ * 15 secondes (et au retour sur l'onglet), même panneau fermé ; la page se
+ * recharge dès qu'il change. `lire` rend la signature de l'état (null : illisible)
+ * et doit être stable.
  */
-function useSuiviRecherche(soumissionId: string, recherche: RechercheAcheteurs | null) {
+function useSuivi(
+  soumissionId: string,
+  actif: boolean,
+  signature: string,
+  lire: (soumissionId: string) => Promise<string | null>,
+) {
   const router = useRouter();
-  const actif = enRecherche(recherche);
-  const signature = recherche ? `${recherche.statut}|${recherche.pris_le ?? ""}|${recherche.erreur ?? ""}` : "";
 
   useEffect(() => {
     if (!actif) return;
     let arrete = false;
     async function relire() {
       if (document.hidden) return;
-      const r = await etatRecherche(soumissionId).catch(() => null);
-      if (arrete || !r || !r.ok) return;
-      if (`${r.statut ?? ""}|${r.prisLe ?? ""}|${r.erreur ?? ""}` !== signature) router.refresh();
+      const lue = await lire(soumissionId).catch(() => null);
+      if (arrete || lue === null) return;
+      if (lue !== signature) router.refresh();
     }
     const minuterie = window.setInterval(relire, SUIVI_MS);
     document.addEventListener("visibilitychange", relire);
@@ -209,17 +254,29 @@ function useSuiviRecherche(soumissionId: string, recherche: RechercheAcheteurs |
       window.clearInterval(minuterie);
       document.removeEventListener("visibilitychange", relire);
     };
-  }, [actif, signature, soumissionId, router]);
+  }, [actif, signature, soumissionId, lire, router]);
 }
 
-/** Heure courante, rafraîchie à l'intervalle donné (minutes écoulées). */
-function useMaintenant(intervalle: number): number {
-  const [maintenant, setMaintenant] = useState(() => Date.now());
-  useEffect(() => {
-    const minuterie = window.setInterval(() => setMaintenant(Date.now()), intervalle);
-    return () => window.clearInterval(minuterie);
-  }, [intervalle]);
-  return maintenant;
+async function signatureRecherche(soumissionId: string): Promise<string | null> {
+  const r = await etatRecherche(soumissionId);
+  return r.ok ? `${r.statut ?? ""}|${r.prisLe ?? ""}|${r.erreur ?? ""}` : null;
+}
+
+async function signatureLecture(soumissionId: string): Promise<string | null> {
+  const l = await etatLecture(soumissionId);
+  return l.ok ? `${l.statut ?? ""}|${l.prisLe ?? ""}|${l.lueLe ?? ""}|${l.erreur ?? ""}` : null;
+}
+
+function useSuiviRecherche(soumissionId: string, recherche: RechercheAcheteurs | null) {
+  const signature = recherche ? `${recherche.statut}|${recherche.pris_le ?? ""}|${recherche.erreur ?? ""}` : "";
+  useSuivi(soumissionId, enRecherche(recherche), signature, signatureRecherche);
+}
+
+function useSuiviLecture(soumissionId: string, lecture: LectureSoumission | null) {
+  const signature = lecture
+    ? `${lecture.statut}|${lecture.pris_le ?? ""}|${lecture.lue_le ?? ""}|${lecture.erreur ?? ""}`
+    : "";
+  useSuivi(soumissionId, lectureEnCours(lecture), signature, signatureLecture);
 }
 
 /** « 120 à 580 $ US » sur toutes les lignes qui ont un prix (même devise), sinon « prix à confirmer ». */
@@ -235,9 +292,9 @@ function fourchetteGlobale(r: ResultatRecherche): string {
 
 type Etape = 1 | 2 | 3;
 
-/** Étape qui correspond à l'état de la recherche. */
-function etapeDe(r: RechercheAcheteurs | null): Etape {
-  if (!r) return 1;
+/** Étape qui correspond à l'état de la recherche (une recherche ratée sur une vieille liste ne compte plus). */
+function etapeDe(r: RechercheAcheteurs | null, l: LectureSoumission | null): Etape {
+  if (!r || echecPerime(r, l)) return 1;
   if (r.statut === "resultats") return r.resultats ? 3 : 1;
   return 2;
 }
@@ -247,20 +304,26 @@ function Panneau({
   titre,
   description,
   recherche,
+  lecture,
+  fichiers,
+  motsClient,
   acheteurs,
   contacts,
   ouvert,
   onFermer,
 }: Props & { ouvert: boolean; onFermer: () => void }) {
   const [racine, setRacine] = useState<HTMLElement | null>(null);
-  const [etape, setEtape] = useState<Etape>(() => etapeDe(recherche));
+  const [etape, setEtape] = useState<Etape>(() => etapeDe(recherche, lecture));
   // « Chercher d'autres acheteurs » : la prochaine recherche exclut les compagnies déjà trouvées.
   const [autres, setAutres] = useState(false);
   // Lancée à l'instant : l'attente s'affiche avant que la page soit rechargée.
   const [vientDeLancer, setVientDeLancer] = useState(false);
-  const [articles, setArticles] = useState<Article[]>(() =>
-    recherche && recherche.articles.length > 0 ? recherche.articles : extraireArticles(description),
+  const depart = useMemo(
+    () => articlesDeDepart({ recherche, lecture, description, mots: motsClient }),
+    [recherche, lecture, description, motsClient],
   );
+  const [articles, setArticles] = useState<ArticlePanneau[]>(depart.articles);
+  const [doutes, setDoutes] = useState<ArticleLu[]>(depart.doutes);
   const panneauRef = useRef<HTMLDivElement>(null);
   const resultats = recherche?.resultats ?? null;
 
@@ -271,12 +334,19 @@ function Panneau({
 
   // La recherche change (lancée, prise, résultats, échec) : on va à l'étape qui lui correspond.
   const signature = recherche ? `${recherche.statut}|${recherche.demande_le}|${recherche.resultats_le ?? ""}` : "";
-  const etapeNaturelle = etapeDe(recherche);
+  const etapeNaturelle = etapeDe(recherche, lecture);
   useEffect(() => {
     setEtape(etapeNaturelle);
     setAutres(false);
     setVientDeLancer(false);
   }, [signature, etapeNaturelle]);
+
+  // Nouvelle lecture ou recherche : la liste repart de ce qu'elles proposent.
+  const cleDepart = `${lecture?.lue_le ?? ""}|${recherche?.demande_le ?? ""}|${recherche?.statut ?? ""}`;
+  useEffect(() => {
+    setArticles(depart.articles);
+    setDoutes(depart.doutes);
+  }, [cleDepart]);
 
   useEffect(() => {
     if (!ouvert) return;
@@ -345,8 +415,12 @@ function Panneau({
                   {etape === 1 && (
                     <EtapeArticles
                       soumissionId={soumissionId}
+                      lecture={lecture}
+                      fichiers={fichiers}
                       articles={articles}
                       onArticles={setArticles}
+                      doutes={doutes}
+                      onDoutes={setDoutes}
                       autres={autres}
                       exclus={autres ? domainesDe(resultats).length : 0}
                       occupee={enRecherche(recherche)}
@@ -423,8 +497,12 @@ function Etapes({ etape }: { etape: Etape }) {
 
 function EtapeArticles({
   soumissionId,
+  lecture,
+  fichiers,
   articles,
   onArticles: setArticles,
+  doutes,
+  onDoutes: setDoutes,
   autres,
   exclus,
   occupee,
@@ -432,8 +510,13 @@ function EtapeArticles({
   onRetour,
 }: {
   soumissionId: string;
-  articles: Article[];
-  onArticles: (maj: (avant: Article[]) => Article[]) => void;
+  lecture: LectureSoumission | null;
+  fichiers: string[];
+  articles: ArticlePanneau[];
+  onArticles: (maj: (avant: ArticlePanneau[]) => ArticlePanneau[]) => void;
+  /** Articles dont Claude doute, à confirmer avant la recherche. */
+  doutes: ArticleLu[];
+  onDoutes: (maj: (avant: ArticleLu[]) => ArticleLu[]) => void;
   autres: boolean;
   /** Compagnies déjà trouvées, exclues d'une recherche « d'autres acheteurs ». */
   exclus: number;
@@ -480,6 +563,23 @@ function EtapeArticles({
         </p>
       </div>
 
+      <BlocLecture soumissionId={soumissionId} lecture={lecture} fichiers={fichiers} />
+
+      <ArticlesAConfirmer
+        soumissionId={soumissionId}
+        lecture={lecture}
+        doutes={doutes}
+        onConfirmer={(i, article) => {
+          setDoutes((avant) => avant.filter((_, j) => j !== i));
+          setArticles((avant) => [...avant, article]);
+        }}
+        onRetirer={(i) => setDoutes((avant) => avant.filter((_, j) => j !== i))}
+        onToutConfirmer={(confirmes, restants) => {
+          setDoutes(() => restants);
+          setArticles((avant) => [...avant, ...confirmes]);
+        }}
+      />
+
       <ul className="flex flex-wrap gap-2">
         <AnimatePresence initial={false}>
           {articles.map((a, i) => (
@@ -489,12 +589,14 @@ function EtapeArticles({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
+              title={a.remarque ?? undefined}
               className="group inline-flex max-w-full items-center gap-2 rounded-full border border-admin-line bg-admin-card py-1.5 pl-1.5 pr-2 text-[13px]"
             >
               <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-admin-tint-green px-1.5 text-[11px] font-bold tabular-nums text-admin-green">
                 {a.quantite ?? "?"}
               </span>
               <span className="min-w-0 truncate">{a.description}</span>
+              {a.photo && <Camera className="h-3 w-3 shrink-0 text-admin-green" role="img" aria-label="Vu sur une photo" />}
               <button
                 type="button"
                 onClick={() => setArticles((avant) => avant.filter((_, j) => j !== i))}
@@ -536,7 +638,9 @@ function EtapeArticles({
 
       <p className="flex items-start gap-2 rounded-2xl bg-admin-subtle px-4 py-3 text-[13px] text-admin-muted">
         <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-        Seuls ces articles partent vers Claude : jamais le nom ni les coordonnées du client.
+        {fichiers.length > 0
+          ? "Pour lire les pièces jointes, Claude reçoit le texte des fichiers (coordonnées du client masquées) et les photos, sans leurs métadonnées, mais il n'a aucun accès au Web. Pour la recherche, seuls ces articles partent vers Claude."
+          : "Seuls ces articles partent vers Claude : jamais le nom ni les coordonnées du client."}
       </p>
 
       {erreur && (
@@ -549,16 +653,22 @@ function EtapeArticles({
         <button
           type="button"
           onClick={lancer}
-          disabled={envoi || occupee || articles.length === 0}
+          disabled={envoi || occupee || articles.length === 0 || doutes.length > 0}
           className={BOUTON_PLEIN}
         >
           {envoi ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="h-4 w-4" aria-hidden />}
           Lancer la recherche
         </button>
         <p className="text-[13px] text-admin-muted">
-          {occupee
-            ? "Une recherche est déjà en cours pour cette soumission."
-            : "Claude cherche depuis votre ordinateur, avec votre forfait : rien à payer. Comptez 5 à 15 minutes."}
+          {doutes.length > 0
+            ? `Confirmez ou retirez ${pluriel(doutes.length, "article")} pour lancer la recherche.`
+            : occupee
+              ? "Une recherche est déjà en cours pour cette soumission."
+              : lectureEnCours(lecture)
+                ? articles.length === 0
+                  ? "Attendez la liste de Claude, ou ajoutez des articles à la main."
+                  : "Claude lit encore les pièces jointes : sa liste remplacera celle-ci."
+                : "Claude cherche depuis votre ordinateur, avec votre forfait : rien à payer. Comptez 5 à 15 minutes."}
         </p>
         {onRetour && (
           <button type="button" onClick={onRetour} className={`${LIEN} inline-flex items-center gap-1`}>

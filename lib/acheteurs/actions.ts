@@ -12,9 +12,11 @@ import {
   type EchecAction,
 } from "@/lib/admin/erreurs-admin";
 import { uuid } from "@/lib/admin/schemas";
+import { fetchSoumission } from "@/lib/admin/soumissions";
 import { lireArticlesSaisis } from "@/lib/acheteurs/articles";
+import { articlesSansClient, motsDuClient } from "@/lib/acheteurs/identite";
 import { domainesDe, lireResultats } from "@/lib/acheteurs/recherche";
-import { LIMITES, type StatutRecherche } from "@/lib/acheteurs/types";
+import { LIMITES, type StatutLecture, type StatutRecherche } from "@/lib/acheteurs/types";
 
 /*
  * Actions de l'agent « Acheteurs » (onglet Soumissions, CRM → Acheteurs).
@@ -23,6 +25,9 @@ import { LIMITES, type StatutRecherche } from "@/lib/acheteurs/types";
  * (scripts/agent-acheteurs → /api/cron/acheteurs/*, lib/acheteurs/file.ts) ;
  * l'envoi passe par les actions de l'Envoi en gros
  * (lib/crm/envoi-en-gros-actions.ts : vérification, limite, désabonnés, traces).
+ * La lecture des pièces jointes d'une soumission part toute seule
+ * (lib/acheteurs/file-lecture.ts) ; ici, seulement la relecture demandée par
+ * l'admin et l'état affiché à l'écran.
  */
 
 function revalider() {
@@ -32,6 +37,7 @@ function revalider() {
 }
 
 const TABLE = "recherches_acheteurs";
+const TABLE_LECTURES = "lectures_soumissions";
 
 const demandeSchema = z.strictObject({
   soumissionId: uuid,
@@ -44,6 +50,8 @@ const demandeSchema = z.strictObject({
  * la prend dans les 5 minutes. `autres` (« Chercher d'autres acheteurs ») :
  * les compagnies déjà trouvées sont exclues de la demande, et les nouvelles
  * s'ajoutent aux résultats. Les résultats précédents restent affichés d'ici là.
+ * Le nom, la compagnie, la ville, le courriel et le téléphone du client sont
+ * retirés ici : même saisis à la main, ils ne partent jamais vers le Web.
  */
 export async function demanderRecherche(entree: {
   soumissionId: string;
@@ -54,7 +62,8 @@ export async function demanderRecherche(entree: {
   if (!ctx) return REFUS_ACTION;
   const v = demandeSchema.safeParse(entree);
   if (!v.success) return echecValidation(v.error, { articles: "Articles" });
-  const articles = lireArticlesSaisis(v.data.articles);
+  const soumission = await fetchSoumission(ctx.supabase, v.data.soumissionId);
+  const articles = articlesSansClient(lireArticlesSaisis(v.data.articles), soumission ? motsDuClient(soumission) : []);
   if (articles.length === 0) return { ok: false, error: "Ajoutez au moins un article." };
 
   const verdict = await limiter("acheteurs:demande", ctx.user.id, 3_600, 30);
@@ -160,6 +169,74 @@ export async function etatRecherche(soumissionId: string): Promise<
     ok: true,
     statut: (data?.statut as StatutRecherche | undefined) ?? null,
     prisLe: (data?.pris_le as string | null | undefined) ?? null,
+    erreur: (data?.erreur as string | null | undefined) ?? null,
+  };
+}
+
+/**
+ * « Relire les pièces jointes » : remet la lecture en file ; l'agent de
+ * l'ordinateur la prend dans les 5 minutes. Le jeton est effacé : une réponse
+ * d'une prise précédente est ignorée. La liste précédente reste affichée
+ * jusqu'à la nouvelle lecture.
+ */
+export async function relireSoumission(soumissionId: string): Promise<{ ok: true } | EchecAction> {
+  const ctx = await adminPourAction();
+  if (!ctx) return REFUS_ACTION;
+  const v = uuid.safeParse(soumissionId);
+  if (!v.success) return { ok: false, error: "Soumission introuvable." };
+
+  const verdict = await limiter("acheteurs:relire", ctx.user.id, 3_600, 30);
+  if (!verdict.permis) {
+    return { ok: false, error: "Trop de relectures en peu de temps. Réessayez dans quelques minutes." };
+  }
+
+  try {
+    const { error } = await ctx.supabase.from(TABLE_LECTURES).upsert(
+      {
+        soumission_id: v.data,
+        statut: "en_attente",
+        erreur: null,
+        jeton: null,
+        pris_le: null,
+        courriel: null,
+        demande_le: new Date().toISOString(),
+      },
+      { onConflict: "soumission_id" },
+    );
+    if (error) return echecAction(error, "acheteurs.relire", ctx, "Relecture impossible.");
+  } catch (err) {
+    return echecAction(err, "acheteurs.relire", ctx, "Relecture impossible.");
+  }
+
+  void journaliserAction("acheteurs.relire", ctx, { cible: v.data });
+  revalider();
+  return { ok: true };
+}
+
+/**
+ * État d'une lecture, relu par l'écran pendant qu'elle est en file ou en cours
+ * (la page se recharge quand il change).
+ */
+export async function etatLecture(soumissionId: string): Promise<
+  | { ok: true; statut: StatutLecture | null; prisLe: string | null; lueLe: string | null; erreur: string | null }
+  | EchecAction
+> {
+  const ctx = await adminPourAction();
+  if (!ctx) return REFUS_ACTION;
+  const v = uuid.safeParse(soumissionId);
+  if (!v.success) return { ok: false, error: "Soumission introuvable." };
+
+  const { data, error } = await ctx.supabase
+    .from(TABLE_LECTURES)
+    .select("statut, pris_le, lue_le, erreur")
+    .eq("soumission_id", v.data)
+    .maybeSingle();
+  if (error) return echecAction(error, "acheteurs.etat_lecture", ctx, "État de la lecture illisible.");
+  return {
+    ok: true,
+    statut: (data?.statut as StatutLecture | undefined) ?? null,
+    prisLe: (data?.pris_le as string | null | undefined) ?? null,
+    lueLe: (data?.lue_le as string | null | undefined) ?? null,
     erreur: (data?.erreur as string | null | undefined) ?? null,
   };
 }

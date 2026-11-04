@@ -42,8 +42,36 @@ dans votre compte Claude. Laissez-la désactivée.
    - Une réponse qui n'a pas pu partir (Internet coupé) est gardée et
      renvoyée au passage suivant.
 
-Seules les lignes d'articles, masquées (cartes, NAS), partent vers Claude :
-jamais le nom, les coordonnées ni l'entreprise du client (Loi 25).
+Pour la recherche, seules les lignes d'articles, masquées (cartes, NAS), partent
+vers Claude : jamais le nom, les coordonnées ni l'entreprise du client (Loi 25).
+La lecture des pièces jointes suit ses propres règles (section suivante).
+
+## Lecture des pièces jointes
+
+Quand une soumission arrive avec des fichiers, vous n'avez rien à faire. Dans
+les 10 minutes environ, l'agent les fait lire par Claude. La liste des articles
+est prête quand vous ouvrez « Trouver des acheteurs ». Les articles sur
+lesquels Claude a un doute sont à confirmer un par un, avec la photo.
+
+- **Ce que Claude reçoit** :
+  - le texte des tableurs, sans les coordonnées connues du client ni les noms
+    de fichiers ;
+  - les photos réduites, sans leurs métadonnées (position GPS comprise) ;
+  - les PDF tels quels.
+- **Ce qui peut quand même passer** : une photo ou un PDF peut montrer un nom
+  de compagnie ou de lieu, sur une étiquette par exemple.
+- **Ce qu'il n'a pas** : aucun outil, ni le Web, ni le disque. Il lit, et c'est
+  tout : il n'envoie rien et ne cherche rien. Les pièces restent en mémoire :
+  elles ne sont jamais écrites sur votre ordinateur, ni au journal.
+- **Plafond** : 20 lectures par 24 h. Ce plafond protège votre forfait contre un
+  robot qui remplirait le formulaire.
+- **Ce qui n'est pas lu** : les fichiers `.xls`, HEIC et BMP. Ils sont signalés
+  sur la soumission : ouvrez-les vous-même.
+
+Une lecture dure environ une minute, 5 minutes au plus. Elle ne bloque jamais
+une recherche.
+
+Pour mettre l'agent à jour, relancez `installer.ps1`. La clé est gardée.
 
 ## Installer (une fois, sur l'ordinateur qui reste allumé)
 
@@ -98,8 +126,9 @@ dans `.env.local`, donc les routes de l'agent ne marchent qu'en ligne.
 ## Si quelque chose cloche
 
 - **Le journal** : `%USERPROFILE%\.technolot\agent-acheteurs\journal.log`.
-  - Il contient une ligne par recherche : sa durée et son nombre de tours.
-  - Il ne contient ni la clé ni les articles.
+  - Il contient une ligne par recherche ou par lecture : sa durée et son nombre
+    de tours.
+  - Il ne contient ni la clé, ni les articles, ni les noms de fichiers.
 - **« Votre ordinateur n'a pas encore pris la recherche »** : l'ordinateur est
   éteint, en veille, ou la session Windows est fermée. La recherche partira
   toute seule.
@@ -119,6 +148,8 @@ dans `.env.local`, donc les routes de l'agent ne marchent qu'en ligne.
   ```powershell
   powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\.technolot\agent-acheteurs\agent.ps1" -Essai -Demande demande.txt -Resultat resultat.json
   ```
+
+  Pour essayer une lecture, ajoutez `-Pieces a.jpg,b.pdf`.
 
 - **Retirer l'agent** : `desinstaller.ps1`. Il retire la tâche et le dossier.
   Avec `-GarderDossier`, il retire seulement la tâche.

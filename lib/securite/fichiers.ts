@@ -155,11 +155,23 @@ const MARQUES_AVIF = new Set(["avif", "avis"]);
 const ZIP_MAX_ENTREES = 5_000;
 const ZIP_MAX_DECOMPRESSE = 300 * 1024 * 1024;
 
+/** Une entrée du répertoire central d'une archive ZIP. */
+export type EntreeZip = {
+  nom: string;
+  /** 0 : stockée ; 8 : deflate. */
+  methode: number;
+  tailleCompressee: number;
+  tailleReelle: number;
+  /** Position de l'en-tête local de l'entrée. */
+  decalage: number;
+};
+
 /**
- * Noms des entrées d'une archive ZIP, lus dans le répertoire central (fin du
- * fichier), ou null si l'archive est mal formée ou dépasse les limites.
+ * Entrées d'une archive ZIP, lues dans le répertoire central (fin du fichier),
+ * ou null si l'archive est mal formée ou dépasse les limites. Les tailles sont
+ * celles qu'annonce le fichier : à ne jamais croire pour décompresser.
  */
-export function entreesZip(o: Uint8Array): string[] | null {
+export function repertoireZip(o: Uint8Array): EntreeZip[] | null {
   // Enregistrement de fin de répertoire central : 22 octets + commentaire (≤ 65 535).
   const minFin = Math.max(0, o.length - 22 - 0xffff);
   let fin = -1;
@@ -176,21 +188,33 @@ export function entreesZip(o: Uint8Array): string[] | null {
   if (total === 0xffff || debut === 0xffffffff) return null; // ZIP64 : jamais produit par Office pour ces tailles
   if (total > ZIP_MAX_ENTREES || debut + taille > fin) return null;
 
-  const noms: string[] = [];
+  const entrees: EntreeZip[] = [];
   let decompresse = 0;
   let p = debut;
   for (let n = 0; n < total; n++) {
     if (p + 46 > fin || lireU32(o, p) !== 0x02014b50) return null;
-    decompresse += lireU32(o, p + 24);
+    const tailleReelle = lireU32(o, p + 24);
+    decompresse += tailleReelle;
     if (decompresse > ZIP_MAX_DECOMPRESSE) return null;
     const lgNom = lireU16(o, p + 28);
     const lgExtra = lireU16(o, p + 30);
     const lgCommentaire = lireU16(o, p + 32);
     if (p + 46 + lgNom > fin) return null;
-    noms.push(ascii(o, p + 46, p + 46 + lgNom));
+    entrees.push({
+      nom: ascii(o, p + 46, p + 46 + lgNom),
+      methode: lireU16(o, p + 10),
+      tailleCompressee: lireU32(o, p + 20),
+      tailleReelle,
+      decalage: lireU32(o, p + 42),
+    });
     p += 46 + lgNom + lgExtra + lgCommentaire;
   }
-  return noms;
+  return entrees;
+}
+
+/** Noms des entrées d'une archive ZIP, ou null (voir `repertoireZip`). */
+export function entreesZip(o: Uint8Array): string[] | null {
+  return repertoireZip(o)?.map((e) => e.nom) ?? null;
 }
 
 function typeOffice(o: Uint8Array): TypeFichier | null {

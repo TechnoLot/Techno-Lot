@@ -158,6 +158,9 @@ const ROUTES_CRON = new Set([
   "app/api/cron/sync/route.ts",
   "app/api/cron/acheteurs/prendre/route.ts",
   "app/api/cron/acheteurs/reponse/route.ts",
+  "app/api/cron/acheteurs/lecture/prendre/route.ts",
+  "app/api/cron/acheteurs/lecture/piece/route.ts",
+  "app/api/cron/acheteurs/lecture/reponse/route.ts",
 ]);
 
 /**

@@ -31,6 +31,7 @@ import AFaire from "@/components/admin/accueil/AFaire";
 import AcheteursCarte from "@/components/admin/accueil/AcheteursCarte";
 import VentesEbayCarte from "@/components/admin/accueil/VentesEbayCarte";
 import { nombreNiches } from "@/lib/acheteurs/articles";
+import { motsDuClient } from "@/lib/acheteurs/identite";
 import { resumeAcheteurs } from "@/lib/acheteurs/lecture";
 import ChiffresTiles, { CHIFFRES_OPTIONS } from "@/components/admin/accueil/ChiffresTiles";
 import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumissions";
@@ -212,7 +213,11 @@ export default async function AccueilPage(
   const resumeAch = acheteurs.erreur ? null : acheteurs.resume;
   // Soumissions à traiter avec des articles nichés et pas encore de recherche d'acheteurs
   const niches = resumeAch
-    ? soumissionsATraiter.filter((s) => !resumeAch.avecRecherche.has(s.id) && nombreNiches(s.message) > 0).length
+    ? soumissionsATraiter.filter(
+        (s) =>
+          !resumeAch.avecRecherche.has(s.id) &&
+          (resumeAch.lecturesNichees.has(s.id) || nombreNiches(s.message, motsDuClient(s)) > 0),
+      ).length
     : 0;
 
   const jour = formatJour(todayIso, jourEnteteFmt);

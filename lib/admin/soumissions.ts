@@ -156,6 +156,21 @@ export async function fetchSoumission(supabase: SupabaseClient, id: string): Pro
   return toSoumission(raw, (lot as { id: string } | null)?.id ?? null);
 }
 
+/**
+ * Une demande lue avec la clé service_role (agent de l'ordinateur), jamais avec
+ * une session : admin_soumissions refuserait ce rôle. Le lot n'est pas cherché.
+ * Une erreur de lecture remonte : elle ne doit jamais passer pour « supprimée ».
+ */
+export async function fetchSoumissionService(supabase: SupabaseClient, id: string): Promise<Soumission | null> {
+  const { data, error } = await supabase
+    .from("soumissions")
+    .select("id, DATE, nom, courriel, telephone, message, locale, fichiers")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? toSoumission(data as Raw, null) : null;
+}
+
 /** À traiter : aucun lot et reçue depuis moins de A_TRAITER_JOURS jours. */
 export function estATraiter(s: Soumission, now: Date): boolean {
   return s.lotId === null && now.getTime() - Date.parse(s.date) < A_TRAITER_JOURS * 86_400_000;

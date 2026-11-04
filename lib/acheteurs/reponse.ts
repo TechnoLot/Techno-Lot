@@ -39,7 +39,7 @@ const CONTROLES_SAUF_SAUT = new RegExp(
 );
 
 /** Texte d'une ligne : contrôles retirés, espaces réduits, `max` caractères ; vide → null. */
-function texte(v: unknown, max: number): string | null {
+export function texte(v: unknown, max: number): string | null {
   if (typeof v !== "string" && typeof v !== "number") return null;
   const t = String(v).replace(CONTROLES, " ").replace(/\s+/g, " ").trim();
   return t ? t.slice(0, max).trim() : null;
