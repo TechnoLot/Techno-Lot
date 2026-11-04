@@ -63,7 +63,7 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - Formulaire public (`app/api/soumission/route.ts`, seul point public qui envoie un courriel, pages Soumission et Contact) : IP avant la lecture du corps (3 / 10 min, 5 / 24 h), puis sur les soumissions VALIDES seulement : empreinte (3 / 10 min, 10 / 24 h), courriel et téléphone (3 / 24 h), total (100 / 24 h). Compter l'empreinte avant la validation laisserait un robot griller celle de vrais clients.
 - Écritures publiques seulement par les fonctions SQL à secret (`SECURITE_RPC_SECRET`, `lib/securite/rpc.ts`) : aucune politique `anon` nouvelle.
 - Toute nouvelle table : RLS activée + politiques `(select public.est_admin())`.
-- Jamais de clé secrète en `NEXT_PUBLIC_` ; tout nouveau nom de variable va dans `.env.example` (sans valeur).
+- Jamais de clé secrète en `NEXT_PUBLIC_` ; tout nouveau nom de variable va dans `.env.example` (sans valeur). La clé publishable (`site_prod`, remplacée le 2026-11-04) se traite comme un secret malgré son préfixe : lue côté serveur seulement, jamais dans du code navigateur (aucun `createBrowserClient`) ni dans le dépôt, car elle ouvrirait l'API d'authentification de Supabase hors des limites du site. `tests/securite/http/verifier-build.mjs` et le test des motifs de clé la cherchent. Marche à suivre pour la changer : `securite/SECRETS.md`.
 - CSP imposée : `next.config.mjs` (public) et nonce de `middleware.ts` (admin) ; aucun script en ligne sans nonce, aucun `onclick=` en attribut.
 - Demander avant d'ajouter un paquet npm (vérifier qu'il existe et est maintenu).
 

@@ -56,6 +56,7 @@ for (const [nom, v] of Object.entries(process.env)) {
 const MOTIFS = [
   ["cle Anthropic", /sk-ant-[A-Za-z0-9_-]{20,}/],
   ["cle Supabase secrete", /sb_secret_[A-Za-z0-9_-]{10,}/],
+  ["cle Supabase publishable", /sb_publishable_[A-Za-z0-9_-]{10,}/],
   ["cle privee", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ["jeton GitHub", /gh[pousr]_[A-Za-z0-9]{36}/],
   ["cle Google", /AIza[0-9A-Za-z_-]{35}/],

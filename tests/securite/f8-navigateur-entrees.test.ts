@@ -106,6 +106,7 @@ describe("11/02 — aucun secret dans le code envoyé au navigateur", () => {
     const motifs: [string, RegExp][] = [
       ["Anthropic", /sk-ant-[A-Za-z0-9_-]{10,}/],
       ["Supabase secrète", /sb_secret_[A-Za-z0-9_-]{10,}/],
+      ["Supabase publishable", /sb_publishable_[A-Za-z0-9_-]{10,}/],
       ["JWT", /eyJhbGciOi[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
       ["clé privée", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
       ["Google", /AIza[0-9A-Za-z_-]{35}/],
