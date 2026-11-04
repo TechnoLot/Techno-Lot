@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ErreurHostinger, octetsPiece, piecesDuCourriel } from "@/lib/hostinger/mail";
+import { ErreurHostinger, octetsPiece, piecesDuCourriel, preparerEnvoyeur } from "@/lib/hostinger/mail";
 
 /*
  * Pièces jointes lues par la lecture automatique : fetch simulé (aucun réseau,
@@ -41,6 +41,64 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
+});
+
+/** Rend chaque statut de `statuts` à son tour, puis une réponse normale. */
+function simulerPannes(statuts: number[]) {
+  const appels: { url: string; methode: string }[] = [];
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    appels.push({ url, methode: init?.method ?? "GET" });
+    const statut = statuts.shift();
+    if (statut) return new Response("", { status: statut });
+    return Response.json({ data: { uid: 7, attachments: [PIECE] } });
+  });
+  return appels;
+}
+
+/** Laisse passer les pauses entre les essais, sans attendre pour de vrai. */
+async function sansPauses<T>(travail: Promise<T>): Promise<T> {
+  await vi.advanceTimersByTimeAsync(10_000);
+  return travail;
+}
+
+describe("pannes passagères de la boîte", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("réessaie une lecture après un 503, sans que l'appelant le voie", async () => {
+    const appels = simulerPannes([503, 503]);
+    const lues = await sansPauses(piecesDuCourriel("INBOX", 7));
+    expect(lues).toHaveLength(1);
+    expect(appels).toHaveLength(3);
+  });
+
+  it("abandonne après 4 essais et garde le statut de la panne", async () => {
+    const appels = simulerPannes([503, 503, 503, 503, 503]);
+    const travail = piecesDuCourriel("INBOX", 7).catch((e) => e);
+    const erreur = await sansPauses(travail);
+    expect(erreur).toBeInstanceOf(ErreurHostinger);
+    expect(erreur.status).toBe(503);
+    expect(appels).toHaveLength(4);
+  });
+
+  it.each([429, 404, 401])("ne réessaie pas un %i", async (statut) => {
+    const appels = simulerPannes([statut]);
+    const erreur = await piecesDuCourriel("INBOX", 7).catch((e) => e);
+    expect(erreur.status).toBe(statut);
+    expect(appels).toHaveLength(1);
+  });
+
+  it("ne réessaie JAMAIS un envoi : un doublon partirait", async () => {
+    const appels = simulerPannes([503, 503]);
+    const envoyer = await preparerEnvoyeur();
+    const erreur = await envoyer({ to: ["a@exemple.example"], subject: "s", html: "h", text: "t" }).catch((e) => e);
+    expect(erreur.status).toBe(503);
+    expect(appels.filter((a) => a.url.endsWith("/send"))).toHaveLength(1);
+  });
 });
 
 describe("piecesDuCourriel", () => {

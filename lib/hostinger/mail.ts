@@ -31,6 +31,9 @@ const DELAI_ENVOI_MS = 20_000;
 /** Délai ajouté par Mo de requête (pièces jointes encodées) : ~10 Mo → 60 s. */
 const DELAI_ENVOI_PAR_MO_MS = 4_000;
 
+/** Pauses avant de réessayer une lecture : la boîte rend parfois 503 un court instant. */
+const PAUSES_RELECTURE_MS = [500, 1_000, 2_000];
+
 const TROUVE_TTL_MS = 10 * 60_000;
 const INTROUVABLE_TTL_MS = 2 * 60_000;
 
@@ -84,8 +87,25 @@ async function appel(chemin: string, init: RequestInit = {}, delai = DELAI_MS): 
   return res;
 }
 
+/**
+ * Appel qui ne fait que LIRE : la Mail API rend parfois 503 pendant un instant
+ * (2 appels sur 10 le 2026-11-04, jamais les mêmes), alors on réessaie. Jamais
+ * pour un envoi (un doublon partirait) ni sur un 429 (risque de blocage de l'IP).
+ */
+async function appelLecture(chemin: string, init: RequestInit = {}, delai = DELAI_MS): Promise<Response> {
+  for (let essai = 0; ; essai++) {
+    try {
+      return await appel(chemin, init, delai);
+    } catch (err) {
+      const passager = err instanceof ErreurHostinger && err.status !== null && err.status >= 500;
+      if (!passager || essai >= PAUSES_RELECTURE_MS.length) throw err;
+      await new Promise((suite) => setTimeout(suite, PAUSES_RELECTURE_MS[essai]));
+    }
+  }
+}
+
 async function json<T>(chemin: string, init?: RequestInit): Promise<T> {
-  const res = await appel(chemin, init);
+  const res = await appelLecture(chemin, init);
   try {
     return (await res.json()) as T;
   } catch {
@@ -271,7 +291,7 @@ export async function telechargerPiece(dossier: string, uid: number, pieceId: st
   const piece = piecesVisibles(message.attachments).find((p) => p.id === pieceId);
   if (!piece) return null;
 
-  const res = await appel(
+  const res = await appelLecture(
     `${cheminDossier(boite, dossier)}/messages/${uid}/attachments/${encodeURIComponent(piece.id)}`,
     { headers: { Accept: "*/*" } },
     DELAI_PIECE_MS,
@@ -307,7 +327,7 @@ export async function octetsPiece(
   const piece = piecesVisibles(message.attachments).find((p) => p.id === pieceId);
   if (!piece || piece.taille > max) return null;
 
-  const res = await appel(
+  const res = await appelLecture(
     `${cheminDossier(boite, dossier)}/messages/${uid}/attachments/${encodeURIComponent(piece.id)}`,
     { headers: { Accept: "*/*" } },
     DELAI_PIECE_MS,

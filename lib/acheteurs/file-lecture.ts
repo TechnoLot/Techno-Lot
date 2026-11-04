@@ -334,8 +334,9 @@ export async function pieceDeLecture(
     }
     if (!TYPES_PHOTO.includes(type)) return { etat: "illisible" };
     return { etat: "piece", octets: await preparerPhoto(octets), type: "image/jpeg" };
-  } catch {
+  } catch (err) {
     // Boîte injoignable, image corrompue, HEIC : l'agent passe à la pièce suivante.
+    void journaliserErreur(err, "cron.acheteurs.lecture.piece", {}, { durable: false });
     return { etat: "illisible" };
   }
 }
