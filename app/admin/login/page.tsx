@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import LoginForm from "@/components/admin/LoginForm";
-import { getAdminEmails } from "@/lib/admin/config";
 import { messageErreurConnexion } from "@/lib/admin/messages-connexion";
 import { cheminInterne } from "@/lib/securite/chemin-interne";
 
@@ -16,8 +15,6 @@ export default async function LoginPage(
   }
 ) {
   const searchParams = await props.searchParams;
-  const adminEmails = getAdminEmails();
-  const target = adminEmails[0] ?? "info@technolot.ca";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-admin-page px-4 py-10">
@@ -41,7 +38,6 @@ export default async function LoginPage(
           </div>
           <div className="mt-7">
             <LoginForm
-              email={target}
               next={cheminInterne(searchParams.next)}
               initialError={messageErreurConnexion(searchParams.error)}
             />

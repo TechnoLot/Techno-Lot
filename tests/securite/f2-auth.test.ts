@@ -5,7 +5,6 @@ const s = vi.hoisted(() => ({
   attente: 0,
   exchange: vi.fn(),
   verifyOtp: vi.fn(),
-  signInWithOtp: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
   getUser: vi.fn(),
@@ -17,7 +16,6 @@ vi.mock("@/lib/supabase/server", () => ({
     auth: {
       exchangeCodeForSession: s.exchange,
       verifyOtp: s.verifyOtp,
-      signInWithOtp: s.signInWithOtp,
       signInWithPassword: s.signInWithPassword,
       signOut: s.signOut,
       getUser: s.getUser,
@@ -29,7 +27,6 @@ vi.mock("@supabase/supabase-js", () => ({
 }));
 
 import * as callback from "@/app/admin/auth/callback/route";
-import * as demande from "@/app/admin/auth/request/route";
 import * as motDePasse from "@/app/admin/auth/password/route";
 import * as deconnexion from "@/app/admin/auth/signout/route";
 import { cheminInterne } from "@/lib/securite/chemin-interne";
@@ -50,7 +47,7 @@ beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
   s.attente = 0;
-  for (const f of [s.exchange, s.verifyOtp, s.signInWithOtp, s.signInWithPassword, s.signOut, s.getUser, s.rpc]) {
+  for (const f of [s.exchange, s.verifyOtp, s.signInWithPassword, s.signOut, s.getUser, s.rpc]) {
     f.mockReset();
   }
   s.rpc.mockImplementation(async (nom: string) =>
@@ -60,7 +57,6 @@ beforeEach(() => {
   );
   s.exchange.mockResolvedValue({ data: { user: ADMIN }, error: null });
   s.verifyOtp.mockResolvedValue({ data: { user: ADMIN }, error: null });
-  s.signInWithOtp.mockResolvedValue({ data: {}, error: null });
   s.signInWithPassword.mockResolvedValue({ data: { user: ADMIN }, error: null });
   s.signOut.mockResolvedValue({ error: null });
   s.getUser.mockResolvedValue({ data: { user: ADMIN }, error: null });
@@ -100,20 +96,6 @@ describe("charges de redirection du test T5 contre les vrais appelants", () => {
   it("callback : un chemin /admin légitime est conservé", async () => {
     const r = await callback.GET(new Request(`${SITE}/admin/auth/callback?code=abc&next=/admin/crm?x=1`));
     expect(r.headers.get("location")).toBe(`${SITE}/admin/crm?x=1`);
-  });
-
-  it("request : champ next piégé → lien bâti sur SITE_URL, next = /admin, aucun compte créé", async () => {
-    for (const c of [...CHARGES_DECODEES, "https://evil.com"]) {
-      s.signInWithOtp.mockClear();
-      const r = await demande.POST(
-        requeteTexte(`${SITE}/admin/auth/request`, new URLSearchParams({ next: c }).toString(),
-          "application/x-www-form-urlencoded", { "x-forwarded-host": "evil.com" }),
-      );
-      expect(r.status).toBe(200);
-      const options = s.signInWithOtp.mock.calls[0][0].options;
-      expect(options.emailRedirectTo).toBe(`${SITE}/admin/auth/callback?next=%2Fadmin`);
-      expect(options.shouldCreateUser).toBe(false);
-    }
   });
 
   it("password (formulaire natif) : next piégé → 303 vers /admin du site", async () => {
@@ -244,26 +226,6 @@ describe("password : messages génériques, limites, formes", () => {
     expect((await motDePasse.POST(requeteTexte(`${SITE}/admin/auth/password`, "x", "text/plain"))).status).toBe(415);
     const gros = await motDePasse.POST(json({ username: "info", password: "x".repeat(5000) }));
     expect(gros.status).toBe(413);
-  });
-});
-
-describe("request : erreurs sans détail Supabase", () => {
-  const appel = () =>
-    demande.POST(requeteTexte(`${SITE}/admin/auth/request`, "next=%2Fadmin", "application/x-www-form-urlencoded"));
-
-  it("erreur Supabase → 502 générique", async () => {
-    s.signInWithOtp.mockResolvedValue({ error: { status: 500, code: "unexpected", message: "SMTP password wrong" } });
-    const r = await appel();
-    expect(r.status).toBe(502);
-    expect(JSON.stringify(await r.json())).not.toMatch(/SMTP|unexpected|Supabase/);
-  });
-
-  it("limite 3 / h par IP → 429 + Retry-After, aucun courriel demandé", async () => {
-    s.attente = 1800;
-    const r = await appel();
-    expect(r.status).toBe(429);
-    expect(r.headers.get("retry-after")).toBe("1800");
-    expect(s.signInWithOtp).not.toHaveBeenCalled();
   });
 });
 

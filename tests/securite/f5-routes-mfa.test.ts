@@ -196,13 +196,13 @@ describe("POST /admin/auth/mfa/verification", () => {
     expect(r.headers.get("cache-control")).toBe("no-store");
     expect(await r.json()).toEqual({ ok: true });
     expect(etat.limites).toEqual([
-      { route: "auth-mfa:compte:5min", cle: ADMIN_ID },
-      { route: "auth-mfa:ip:5min", cle: "203.0.113.7" },
+      { route: "auth-mfa:compte:15min", cle: ADMIN_ID },
+      { route: "auth-mfa:ip:15min", cle: "203.0.113.7" },
     ]);
     // La limite passe AVANT la vérification ; jamais est_admin (aal1).
     expect(etat.appels.filter((a) => !a.startsWith("getUser"))).toEqual([
-      "limite:auth-mfa:compte:5min",
-      "limite:auth-mfa:ip:5min",
+      "limite:auth-mfa:compte:15min",
+      "limite:auth-mfa:ip:15min",
       `verify:${FACTEUR_VERIFIE}`,
     ]);
     const journal = lignesJournal();
@@ -212,7 +212,7 @@ describe("POST /admin/auth/mfa/verification", () => {
 
   it("limite dépassée (compte ou IP) → 429 + Retry-After, aucune vérification", async () => {
     etat.user = { id: ADMIN_ID, email: "info@technolot.ca", factors: [facteur(FACTEUR_VERIFIE, "verified")] };
-    for (const route of ["auth-mfa:compte:5min", "auth-mfa:ip:5min"]) {
+    for (const route of ["auth-mfa:compte:15min", "auth-mfa:ip:15min"]) {
       etat.appels = [];
       etat.refuserLimite = route;
       const r = await verifier(post("/admin/auth/mfa/verification", { code: "123456" }));

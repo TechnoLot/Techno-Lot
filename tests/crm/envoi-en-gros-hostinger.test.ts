@@ -97,27 +97,40 @@ describe("requêtes et contenu", () => {
     }
   });
 
-  it("envoi depuis une fiche et envoi en gros : exactement le même courriel (signature, désabonnement, sans copie)", async () => {
+  it("fiche et relances : signature et mention de désabonnement ; même courriel que l'envoi en gros, moins la mention", async () => {
     const un = { to: "jean@exemple.ca", subject: "Bonjour Jean", body: "Bonjour Jean,\n\nVoici <notre> offre." };
     expect(await sendProspectEmail(un)).toEqual({ ok: true });
     await sendProspectBatch({ courriels: [un] });
 
     expect(etat.requetes.map((r) => `${r.methode} ${r.url}`)).toEqual([`POST ${ENVOI}`, `POST ${ENVOI}`]);
-    expect(etat.requetes[0].corps).toEqual(etat.requetes[1].corps);
     const c = etat.requetes[0].corps ?? {};
-    expect(Object.keys(c).sort()).toEqual(["displayName", "html", "subject", "text", "to"]);
-    expect(c.to).toEqual(["jean@exemple.ca"]);
-    expect(c.displayName).toBe("Techno Lot");
-    expect(c.subject).toBe("Bonjour Jean");
-    expect(String(c.html)).toContain("Anthony Després");
-    expect(String(c.html)).toContain("Voici &lt;notre&gt; offre.");
+    const gros = etat.requetes[1].corps ?? {};
+    for (const corps of [c, gros]) {
+      expect(Object.keys(corps).sort()).toEqual(["displayName", "html", "subject", "text", "to"]);
+      expect(corps.to).toEqual(["jean@exemple.ca"]);
+      expect(corps.displayName).toBe("Techno Lot");
+      expect(corps.subject).toBe("Bonjour Jean");
+      expect(String(corps.html)).toContain("Anthony Després");
+      expect(String(corps.html)).toContain("Voici &lt;notre&gt; offre.");
+    }
     expect(String(c.html)).toContain("désabonner");
     expect(String(c.text)).toContain("répondez « désabonner »");
+    expect(String(gros.html)).not.toMatch(/d[ée]sabonn|unsubscribe/i);
+    expect(String(gros.text)).not.toMatch(/d[ée]sabonn|unsubscribe/i);
   });
 
-  it("modèle qui a déjà sa mention de désabonnement : pas de seconde mention", async () => {
-    await sendProspectBatch({
-      courriels: [{ to: "jean@exemple.ca", subject: "Bonjour", body: "Bonjour.\n\nPour vous désabonner, répondez STOP." }],
+  it("test de l'envoi en gros (sansDesabonnement) : identique au vrai envoi", async () => {
+    const un = { to: "jean@exemple.ca", subject: "Bonjour", body: "Bonjour Jean." };
+    await sendProspectEmail({ ...un, sansDesabonnement: true });
+    await sendProspectBatch({ courriels: [un] });
+    expect(etat.requetes[0].corps).toEqual(etat.requetes[1].corps);
+  });
+
+  it("modèle qui a déjà sa mention de désabonnement : pas de seconde mention sur une fiche", async () => {
+    await sendProspectEmail({
+      to: "jean@exemple.ca",
+      subject: "Bonjour",
+      body: "Bonjour.\n\nPour vous désabonner, répondez STOP.",
     });
     expect(String(etat.requetes[0].corps?.text)).not.toContain("Pour ne plus recevoir nos courriels");
   });

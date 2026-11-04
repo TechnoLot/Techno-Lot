@@ -70,9 +70,21 @@ describe("page de la calculatrice servie à l'iframe", () => {
     expect(html.indexOf("racine.AnalyseLot")).toBeLessThan(html.indexOf("const A = window.AnalyseLot"));
   });
 
-  it("l'outil eBay reste servi tel quel", async () => {
+  it("l'outil eBay reste servi tel quel, avec la garde d'inactivité en plus", async () => {
     const brut = readFileSync(join(RACINE, "assets", "outils", "ebay-description.html"), "utf8");
-    expect(await pageOutil("ebay")).toBe(brut);
+    const garde = readFileSync(join(RACINE, "assets", "outils", "garde-activite.js"), "utf8");
+    const marqueur = '<script data-inclure="garde-activite.js"></script>';
+    expect(brut).toContain(marqueur);
+    expect(await pageOutil("ebay")).toBe(brut.replace(marqueur, () => `<script>\n${garde}\n</script>`));
+  });
+
+  it("la garde d'inactivité est insérée dans les deux outils, avant son démarrage", async () => {
+    for (const outil of ["calculatrice", "ebay"] as const) {
+      const html = await pageOutil(outil);
+      expect(html).not.toContain("<script data-inclure=");
+      expect(html.indexOf("racine.GardeActivite")).toBeGreaterThan(-1);
+      expect(html.indexOf("racine.GardeActivite")).toBeLessThan(html.indexOf("<script>GardeActivite.demarrer();</script>"));
+    }
   });
 
   it("chaque élément utilisé par le script existe dans la page, une seule fois", () => {

@@ -18,7 +18,7 @@ describe("origineConfiguree en production", () => {
   it("garde l'hôte sans www quand la demande arrive sans www", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SITE_URL", "https://www.technolot.ca");
-    expect(origineConfiguree(requete("https://technolot.ca/admin/auth/request"))).toBe(
+    expect(origineConfiguree(requete("https://technolot.ca/admin/auth/callback"))).toBe(
       "https://technolot.ca",
     );
   });
@@ -28,7 +28,7 @@ describe("origineConfiguree en production", () => {
     vi.stubEnv("SITE_URL", "https://technolot.ca");
     expect(
       origineConfiguree(
-        requete("http://127.0.0.1:3000/admin/auth/request", { host: "www.technolot.ca" }),
+        requete("http://127.0.0.1:3000/admin/auth/callback", { host: "www.technolot.ca" }),
       ),
     ).toBe("https://www.technolot.ca");
   });
@@ -36,7 +36,7 @@ describe("origineConfiguree en production", () => {
   it("ignore un hôte inventé dans Host ou X-Forwarded-Host", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("SITE_URL", "https://www.technolot.ca");
-    const r = requete("http://127.0.0.1:3000/admin/auth/request", {
+    const r = requete("http://127.0.0.1:3000/admin/auth/callback", {
       host: "evil.example",
       "x-forwarded-host": "technolot.ca.evil.example",
     });

@@ -12,6 +12,10 @@ export const runtime = "nodejs";
  * jetons de rafraîchissement révoqués) puis redirige vers la page de
  * connexion. L'en-tête `Origin` doit être celle du site : un autre site ne
  * peut pas déconnecter l'admin (CSRF).
+ *
+ * `?raison=inactivite` (assets/outils/garde-activite.js) : ferme CETTE session
+ * seulement (portée « local ») : l'utilisateur travaille sur plusieurs
+ * ordinateurs, un onglet oublié ne doit pas fermer les autres.
  */
 export async function POST(request: Request) {
   if (!origineValide(request)) {
@@ -31,14 +35,22 @@ export async function POST(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const { error } = await supabase.auth.signOut({ scope: "global" });
+  const inactivite = new URL(request.url).searchParams.get("raison") === "inactivite";
+  const { error } = await supabase.auth.signOut({ scope: inactivite ? "local" : "global" });
   void journaliser(EVENEMENTS.authDeconnexion, {
     resultat: error ? "echec" : "ok",
     request,
     userId: user?.id ?? null,
     statut: 303,
-    details: error ? { errcode: error.code ?? undefined } : undefined,
+    details:
+      error || inactivite
+        ? {
+            ...(error ? { errcode: error.code ?? undefined } : {}),
+            ...(inactivite ? { motif: "inactivite" } : {}),
+          }
+        : undefined,
   });
 
-  return NextResponse.redirect(new URL("/admin/login", origineConfiguree(request)), { status: 303 });
+  const destination = inactivite ? "/admin/login?error=inactivite" : "/admin/login";
+  return NextResponse.redirect(new URL(destination, origineConfiguree(request)), { status: 303 });
 }

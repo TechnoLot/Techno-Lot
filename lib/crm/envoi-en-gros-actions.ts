@@ -210,6 +210,7 @@ export async function envoyerTestEnGros(
       body: premier.corps,
       pieces: jointes.pieces,
       requestId: ctx.requestId,
+      sansDesabonnement: true, // identique au vrai envoi
     });
     if (!envoi.ok) return { ok: false, error: envoi.error };
 

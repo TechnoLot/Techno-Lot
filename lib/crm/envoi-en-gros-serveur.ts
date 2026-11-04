@@ -26,6 +26,7 @@ import {
   type VerdictPieces,
 } from "@/lib/crm/pieces-jointes";
 import type { ContactStage } from "@/lib/crm/types";
+import { toutesLesLignes } from "@/lib/supabase/toutes-les-lignes";
 
 /*
  * Envoi en gros, côté serveur : lectures du CRM (fiches, désabonnements,
@@ -40,24 +41,6 @@ import type { ContactStage } from "@/lib/crm/types";
 
 type Client = SupabaseClient;
 type Echec = { ok: false; erreur: unknown };
-
-/** Plafond de lignes par requête de PostgREST. */
-const PAGE = 1_000;
-
-/** Toutes les lignes d'une requête, page par page. */
-async function toutesLesLignes<T>(
-  page: (de: number, a: number) => PromiseLike<{ data: unknown; error: unknown }>,
-): Promise<{ ok: true; lignes: T[] } | Echec> {
-  const lignes: T[] = [];
-  for (let de = 0; de < 1_000_000; de += PAGE) {
-    const { data, error } = await page(de, de + PAGE - 1);
-    if (error) return { ok: false, erreur: error };
-    const lot = (Array.isArray(data) ? data : []) as T[];
-    lignes.push(...lot);
-    if (lot.length < PAGE) break;
-  }
-  return { ok: true, lignes };
-}
 
 type LigneContact = {
   id: string;

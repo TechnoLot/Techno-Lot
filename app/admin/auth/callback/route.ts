@@ -11,9 +11,10 @@ export const runtime = "nodejs";
 
 /**
  * GET /admin/auth/callback
- * Point de retour après clic sur un lien magique :
+ * Point de retour des liens d'authentification Supabase au format `code` ou
+ * `token_hash`. Aucun parcours du site n'en envoie plus.
  *   - ?code=…              → PKCE (imposé par @supabase/ssr)
- *   - ?token_hash=…&type=… → OTP (magic link, recovery…)
+ *   - ?token_hash=…&type=… → OTP (recovery, magic link…)
  *
  * Sécurité : 20 appels / 10 min par IP ; `next` filtré par `cheminInterne`
  * (chemins /admin seulement) ; redirections bâties sur l'origine CONFIGURÉE

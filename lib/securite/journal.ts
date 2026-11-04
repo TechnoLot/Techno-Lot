@@ -28,8 +28,8 @@ import { limiter, TABLE_LIMITES } from "./limite";
 export const EVENEMENTS = {
   authConnexion: "auth.connexion",
   authEchec: "auth.echec",
+  authBlocage: "auth.blocage",
   authDeconnexion: "auth.deconnexion",
-  authLienMagique: "auth.lien_magique",
   authMotDePasseChange: "auth.mot_de_passe_change",
   authMfaActive: "auth.mfa_active",
   authMfaEchec: "auth.mfa_echec",
@@ -226,6 +226,9 @@ export type RegleAlerte = {
 export const REGLES_ALERTE: readonly RegleAlerte[] = [
   { type: "auth_echec_ip", evenement: "auth.echec", compteur: "meme_ip_5min", seuil: 10, libelle: "échecs de connexion depuis une même adresse IP" },
   { type: "auth_echec_total", evenement: "auth.echec", compteur: "total_5min", seuil: 20, libelle: "échecs de connexion au total" },
+  // 1 : le blocage est rare et sérieux ; le courriel reste limité à 1 par heure.
+  { type: "auth_blocage", evenement: "auth.blocage", compteur: "total_5min", seuil: 1, libelle: "connexion admin bloquée après plusieurs essais ratés" },
+  { type: "mfa_echec", evenement: "auth.mfa_echec", compteur: "total_5min", seuil: 3, libelle: "codes de double authentification refusés (le mot de passe est peut-être connu)" },
   { type: "limites_depassees", evenement: "limite.depassee", compteur: "total_5min", seuil: 30, libelle: "requêtes refusées par les limites de débit (429)" },
   // 20 (et non 5) : un balayage automatique isolé des routes cron ne doit pas suffire.
   { type: "cron_refus", evenement: "cron.refus", compteur: "total_5min", seuil: 20, libelle: "appels de tâches planifiées refusés (mauvais secret)" },

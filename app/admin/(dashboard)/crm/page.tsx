@@ -5,46 +5,27 @@ import { journaliserErreur } from "@/lib/admin/erreurs-admin";
 import AddCompanyButton from "@/components/admin/crm/AddCompanyButton";
 import CompaniesFilters from "@/components/admin/crm/CompaniesFilters";
 import CompaniesTable from "@/components/admin/crm/CompaniesTable";
+import Pagination from "@/components/admin/Pagination";
+import { pageDepuisParam, paginer, resumePage } from "@/lib/admin/pagination";
 import {
-  daysSince,
-  followupOverdueDays,
-  type Company,
-  type Contact,
-} from "@/lib/crm/types";
-
-/**
- * Mélange déterministe (Fisher-Yates + PRNG mulberry32 dérivé du seed) :
- * l'ordre reste le même tant qu'on ne relance pas le mélange, même si la
- * page se rafraîchit après une action.
- */
-function seededShuffle<T>(items: T[], seed: string): T[] {
-  let h = 1779033703 ^ seed.length;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  let state = h >>> 0;
-  const rand = () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+  COLONNES_LISTE,
+  compagniesAvecAppel,
+  dansOrdreDesIds,
+  filtrerCompagnies,
+  PAR_PAGE,
+  seededShuffle,
+  type CompagnieListe,
+  type ContactListe,
+} from "@/lib/crm/compagnies-liste";
+import { daysSince, followupOverdueDays, type Company } from "@/lib/crm/types";
+import { toutesLesLignes } from "@/lib/supabase/toutes-les-lignes";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Dashboard prospection : compagnies triées par fit_score décroissant,
  * filtres région / score min / statut de recherche, partenaires exclus
- * par défaut (case à cocher pour les inclure).
+ * par défaut (case à cocher pour les inclure), 10 compagnies par page.
  */
 export default async function CrmPage(
   props: {
@@ -58,6 +39,7 @@ export default async function CrmPage(
       appel?: string;
       ordre?: string;
       seed?: string;
+      page?: string;
     }>;
   }
 ) {
@@ -65,49 +47,30 @@ export default async function CrmPage(
   const { supabase } = ctx;
   const searchParams = await props.searchParams;
 
-  const [{ data: companiesRaw, error }, { data: contactsRaw }] =
-    await Promise.all([
+  // Lecture complète par tranches : le plafond de 1 000 lignes de PostgREST
+  // tronquerait la liste et les indicateurs.
+  const [compagniesLues, contactsLus] = await Promise.all([
+    toutesLesLignes<CompagnieListe>((de, a) =>
       supabase
         .from("companies")
-        .select("*")
+        .select(COLONNES_LISTE)
         .order("fit_score", { ascending: false, nullsFirst: false })
-        .order("name"),
-      supabase.from("contacts").select("id, company_id, stage"),
-    ]);
+        .order("name")
+        .order("id")
+        .range(de, a),
+    ),
+    toutesLesLignes<ContactListe>((de, a) =>
+      supabase.from("contacts").select("id, company_id, stage").order("id").range(de, a),
+    ),
+  ]);
 
-  const all = (companiesRaw ?? []) as Company[];
-  const contacts = (contactsRaw ?? []) as Pick<
-    Contact,
-    "id" | "company_id" | "stage"
-  >[];
+  const all = compagniesLues.ok ? compagniesLues.lignes : [];
+  const contacts = contactsLus.ok ? contactsLus.lignes : [];
 
-  // Filtres (appliqués en mémoire : ~100 lignes, pas la peine de multiplier
-  // les requêtes)
-  const q = searchParams.q?.toLowerCase().trim();
-  const minScore = Number(searchParams.score) || null;
-  const region = searchParams.region;
-  const status = searchParams.status;
-  const suivi = searchParams.suivi;
+  // Filtres et mélange en mémoire, sur toutes les compagnies (plus de 2 500 :
+  // lecture légère ci-dessus, colonnes complètes pour la page seulement).
   const includePartners = searchParams.partenaires === "1";
-  const appel = searchParams.appel;
-
-  // Compagnies avec au moins un contact `call_done` (= appel logué)
-  const companiesWithCall = new Set(
-    contacts.filter((ct) => ct.stage === "call_done" && ct.company_id).map((ct) => ct.company_id!),
-  );
-
-  const companies = all.filter((c) => {
-    if (!includePartners && c.is_partner_not_client) return false;
-    if (q && !`${c.name} ${c.domain ?? ""} ${c.industry ?? ""}`.toLowerCase().includes(q))
-      return false;
-    if (minScore && (c.fit_score ?? 0) < minScore) return false;
-    if (region && c.region !== region) return false;
-    if (status && c.research_status !== status) return false;
-    if (suivi && c.lead_status !== suivi) return false;
-    if (appel === "oui" && !companiesWithCall.has(c.id)) return false;
-    if (appel === "non" && companiesWithCall.has(c.id)) return false;
-    return true;
-  });
+  const companies = filtrerCompagnies(all, searchParams, compagniesAvecAppel(contacts));
 
   // Ordre aléatoire demandé : on remplace le tri par score par un mélange
   // stable (seed dans l'URL, relancé par le bouton ↻).
@@ -115,6 +78,22 @@ export default async function CrmPage(
     searchParams.ordre === "aleatoire"
       ? seededShuffle(companies, searchParams.seed ?? "technolot")
       : companies;
+
+  const pagination = paginer(companiesOrdered, pageDepuisParam(searchParams.page), PAR_PAGE);
+
+  const ids = pagination.items.map((c) => c.id);
+  const { data: detailRaw, error: erreurDetail } =
+    ids.length > 0
+      ? await supabase.from("companies").select("*").in("id", ids)
+      : { data: [], error: null };
+  const companiesPage = dansOrdreDesIds(ids, (detailRaw ?? []) as Company[]);
+
+  const error = !compagniesLues.ok
+    ? compagniesLues.erreur
+    : !contactsLus.ok
+      ? contactsLus.erreur
+      : erreurDetail;
+  const ref = error ? await journaliserErreur(error, "crm.liste_lire", ctx) : null;
 
   const regions = Array.from(
     new Set(all.map((c) => c.region).filter((r): r is string => !!r)),
@@ -197,12 +176,12 @@ export default async function CrmPage(
         </div>
       </header>
 
-      {error && (
+      {ref && (
         <div
           role="alert"
           className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
         >
-          Impossible de charger les données. Réf. : {await journaliserErreur(error, "crm.liste_lire", ctx)}
+          Impossible de charger les données. Réf. : {ref}
         </div>
       )}
 
@@ -259,7 +238,16 @@ export default async function CrmPage(
         {!includePartners && " (partenaires masqués)"}
       </p>
 
-      <CompaniesTable companies={companiesOrdered} contactCounts={contactCounts} />
+      <CompaniesTable companies={companiesPage} contactCounts={contactCounts} />
+
+      {pagination.total > 0 && (
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <Pagination page={pagination.page} pageCount={pagination.pageCount} scroll={false} />
+          <p className="text-[13px] tabular-nums text-admin-muted">
+            {resumePage(pagination.page, PAR_PAGE, pagination.total)} compagnies
+          </p>
+        </div>
+      )}
     </div>
   );
 }

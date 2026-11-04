@@ -265,7 +265,8 @@ describe("Vérifier la liste (lecture seule)", () => {
     expect(r.apercu?.objet).toBe(OBJET);
     // Prénom et compagnie absents de la liste : ceux de la fiche du CRM.
     expect(r.apercu?.texte.startsWith("Bonjour Jean de Acme inc.,\nVoici notre offre.")).toBe(true);
-    expect(r.apercu?.texte).toContain("désabonner");
+    expect(r.apercu?.texte).toContain("Anthony Després");
+    expect(r.apercu?.texte).not.toMatch(/d[ée]sabonn|unsubscribe/i);
     expect(etat.ecritures).toEqual([]);
     expect(etat.envois).toEqual([]);
   });
@@ -598,6 +599,7 @@ describe("M'envoyer un test", () => {
     expect(c.subject).toBe(`[Test] ${OBJET}`);
     // Même rendu que l'aperçu : prénom et compagnie de la fiche du CRM.
     expect(c.text.startsWith("Bonjour Jean de Acme inc.,\nVoici notre offre.")).toBe(true);
+    expect(c.text).not.toMatch(/d[ée]sabonn|unsubscribe/i);
 
     // Ni fiche, ni trace.
     expect(etat.ecritures).toEqual([]);

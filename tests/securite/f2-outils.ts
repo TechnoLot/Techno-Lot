@@ -142,5 +142,5 @@ export const CHARGES_REDIRECTION = [
   "javascript:alert(document.cookie)",
 ] as const;
 
-/** Champs déjà décodés (formulaire de /admin/auth/request). */
+/** Champs déjà décodés (formulaire de /admin/auth/password). */
 export const CHARGES_DECODEES = ["/\t/evil.com", "/\n/evil.com", "//evil.com", "/\\evil.com"] as const;

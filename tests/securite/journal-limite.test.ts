@@ -246,6 +246,8 @@ describe("journaliser", () => {
     expect(Object.fromEntries(REGLES_ALERTE.map((r) => [r.type, `${r.compteur}=${r.seuil}`]))).toEqual({
       auth_echec_ip: "meme_ip_5min=10",
       auth_echec_total: "total_5min=20",
+      auth_blocage: "total_5min=1",
+      mfa_echec: "total_5min=3",
       limites_depassees: "total_5min=30",
       cron_refus: "total_5min=20",
       erreurs_5xx: "total_5min=10",
@@ -258,6 +260,11 @@ describe("journaliser", () => {
     expect(alertesFranchies("webhook.signature_invalide", { meme_ip_5min: 1, total_5min: 3 })).toHaveLength(1);
     expect(alertesFranchies("admin.refus", { meme_ip_5min: 10, total_5min: 20 })).toHaveLength(0);
     expect(alertesFranchies("auth.echec", null)).toHaveLength(0);
+    // Le blocage alerte dès le premier refus, les codes MFA à partir du 3e.
+    expect(alertesFranchies("auth.blocage", { meme_ip_5min: 1, total_5min: 1 }).map((r) => r.type)).toEqual(["auth_blocage"]);
+    expect(alertesFranchies("auth.blocage", { meme_ip_5min: 2, total_5min: 2 })).toHaveLength(0);
+    expect(alertesFranchies("auth.mfa_echec", { meme_ip_5min: 3, total_5min: 3 }).map((r) => r.type)).toEqual(["mfa_echec"]);
+    expect(alertesFranchies("auth.mfa_echec", { meme_ip_5min: 2, total_5min: 2 })).toHaveLength(0);
   });
 });
 
@@ -271,9 +278,9 @@ describe("limiter", () => {
 
   it("envoie un HMAC de route:clé, jamais l'IP en clair", async () => {
     m.rpc.mockResolvedValue({ data: 0, error: null });
-    await limiter("auth-mdp:ip:min", "203.0.113.9", 60, 5);
+    await limiter("auth-mdp:ip:1h", "203.0.113.9", 60, 5);
     const params = m.rpc.mock.calls[0][1];
-    const attendu = createHmac("sha256", SECRET_TEST).update("auth-mdp:ip:min:203.0.113.9").digest("hex");
+    const attendu = createHmac("sha256", SECRET_TEST).update("auth-mdp:ip:1h:203.0.113.9").digest("hex");
     expect(params.p_cle).toBe(attendu);
     expect(params.p_cle).not.toContain("203.0.113.9");
     expect(params).toMatchObject({ p_secret: SECRET_TEST, p_fenetre_s: 60, p_max: 5 });
@@ -295,7 +302,7 @@ describe("limiter", () => {
     m.rpc.mockImplementation(async (nom: string) =>
       nom === "limite_debit" ? { data: 30, error: null } : { data: { meme_ip_5min: 1, total_5min: 1 }, error: null },
     );
-    const v = await limiterSelon(TABLE_LIMITES.motDePasseIpMinute, "192.0.2.1");
+    const v = await limiterSelon(TABLE_LIMITES.connexionIpHeure, "192.0.2.1");
     expect(v.permis).toBe(false);
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('"evenement":"limite.depassee"'));
   });
@@ -311,14 +318,23 @@ describe("limiter", () => {
 
   it("TABLE_LIMITES reprend le tableau approuvé (T5)", () => {
     expect(TABLE_LIMITES.soumissionIp10min).toMatchObject({ fenetreSecondes: 600, max: 3 });
-    expect(TABLE_LIMITES.soumissionIpJour).toMatchObject({ fenetreSecondes: 86_400, max: 10 });
+    expect(TABLE_LIMITES.soumissionIpJour).toMatchObject({ fenetreSecondes: 86_400, max: 5 });
+    expect(TABLE_LIMITES.soumissionEmpreinte10min).toMatchObject({ fenetreSecondes: 600, max: 3 });
+    expect(TABLE_LIMITES.soumissionEmpreinteJour).toMatchObject({ fenetreSecondes: 86_400, max: 10 });
+    expect(TABLE_LIMITES.soumissionCourrielJour).toMatchObject({ fenetreSecondes: 86_400, max: 3 });
+    expect(TABLE_LIMITES.soumissionTelephoneJour).toMatchObject({ fenetreSecondes: 86_400, max: 3 });
     expect(TABLE_LIMITES.soumissionGlobaleJour).toMatchObject({ fenetreSecondes: 86_400, max: 100 });
     expect(TABLE_LIMITES.suiviIpMinute).toMatchObject({ fenetreSecondes: 60, max: 120 });
-    expect(TABLE_LIMITES.motDePasseIpMinute).toMatchObject({ fenetreSecondes: 60, max: 5 });
-    expect(TABLE_LIMITES.motDePasseIpHeure).toMatchObject({ fenetreSecondes: 3_600, max: 20 });
-    expect(TABLE_LIMITES.motDePasseCompte15min).toMatchObject({ fenetreSecondes: 900, max: 10 });
-    expect(TABLE_LIMITES.lienMagiqueIpHeure).toMatchObject({ fenetreSecondes: 3_600, max: 3 });
-    expect(TABLE_LIMITES.lienMagiqueGlobalHeure).toMatchObject({ fenetreSecondes: 3_600, max: 5 });
+    expect(TABLE_LIMITES.connexionIpHeure).toMatchObject({ route: "auth-mdp:ip:1h", fenetreSecondes: 3_600, max: 3 });
+    expect(TABLE_LIMITES.connexionIpJour).toMatchObject({ route: "auth-mdp:ip:24h", fenetreSecondes: 86_400, max: 5 });
+    expect(TABLE_LIMITES.connexionEmpreinteHeure).toMatchObject({ route: "auth-mdp:empreinte:1h", fenetreSecondes: 3_600, max: 3 });
+    expect(TABLE_LIMITES.connexionEmpreinteJour).toMatchObject({ route: "auth-mdp:empreinte:24h", fenetreSecondes: 86_400, max: 5 });
+    expect(TABLE_LIMITES.connexionGlobaleHeure).toMatchObject({ route: "auth-mdp:global:1h", fenetreSecondes: 3_600, max: 5 });
+    expect(TABLE_LIMITES.connexionGlobaleJour).toMatchObject({ route: "auth-mdp:global:24h", fenetreSecondes: 86_400, max: 10 });
+    expect(TABLE_LIMITES.connexionAppareil15min).toMatchObject({ route: "auth-mdp:appareil:15min", fenetreSecondes: 900, max: 3 });
+    expect(TABLE_LIMITES.connexionAppareilJour).toMatchObject({ route: "auth-mdp:appareil:24h", fenetreSecondes: 86_400, max: 10 });
+    expect(TABLE_LIMITES.mfaCompte15min).toMatchObject({ fenetreSecondes: 900, max: 3 });
+    expect(TABLE_LIMITES.mfaIp15min).toMatchObject({ fenetreSecondes: 900, max: 3 });
     expect(TABLE_LIMITES.callbackIp10min).toMatchObject({ fenetreSecondes: 600, max: 20 });
     expect(TABLE_LIMITES.ebaySuppressionIpMinute).toMatchObject({ fenetreSecondes: 60, max: 30 });
     const routes = Object.values(TABLE_LIMITES).map((r) => r.route);

@@ -21,6 +21,7 @@ import { ADMIN_PRENOM_EVENT, resolvePrenom } from "@/lib/admin/config";
 import CalculatriceOverlay, {
   OPEN_CALCULATRICE_EVENT,
 } from "@/components/admin/CalculatriceOverlay";
+import GardeInactivite from "@/components/admin/GardeInactivite";
 import { Logo } from "@/components/site/Logo";
 import {
   NotificationsCount,
@@ -175,6 +176,9 @@ export default function AdminShell({
 
         {/* Overlay calculatrice global — ouvert par événement custom */}
         <CalculatriceOverlay />
+
+        {/* Déconnexion après 1 h sans activité réelle */}
+        <GardeInactivite />
 
         {/* Tiroir mobile */}
         <AnimatePresence>

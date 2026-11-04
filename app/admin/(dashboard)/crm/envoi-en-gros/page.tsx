@@ -53,7 +53,7 @@ export default async function EnvoiEnGrosPage() {
           Colle une liste d&apos;adresses ou importe un CSV, écris le message, joins au besoin les photos ou
           la liste du lot, vérifie, puis confirme.
           Chaque destinataire reçoit son propre courriel personnalisé (il ne voit jamais la liste),
-          envoyé depuis ta boîte info@ avec la signature et la mention de désabonnement ; une copie de
+          envoyé depuis ta boîte info@ avec la signature ; une copie de
           chacun est rangée dans Envoyés.
         </p>
       </header>

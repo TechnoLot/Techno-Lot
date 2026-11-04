@@ -3,7 +3,7 @@ import { estRefus, exigerSessionMfaRoute } from "@/lib/securite/garde";
 import { reponseErreur } from "@/lib/securite/erreurs";
 import { ipClient } from "@/lib/securite/ip";
 import { EVENEMENTS, journaliser } from "@/lib/securite/journal";
-import { limiterSelon, reponse429, TABLE_LIMITES } from "@/lib/securite/limite";
+import { effacerLimite, limiterSelon, reponse429, TABLE_LIMITES } from "@/lib/securite/limite";
 import { CODE_TOTP, facteursTotp, type FacteurMfa } from "@/lib/securite/mfa";
 import { lireJson } from "@/lib/securite/requete";
 import { uuid } from "@/lib/securite/schemas";
@@ -33,9 +33,10 @@ export const runtime = "nodejs";
  *     appel à Supabase (session comprise) ;
  *  2. garde de session (origine du site, courriel de ADMIN_EMAILS, < 24 h ;
  *     aal1 suffit) ;
- *  3. limites : 5 essais / 5 min par compte ET par IP, comptés avant la
- *     vérification (5 codes faux → le 6e essai reçoit 429 + Retry-After) ;
- *  4. vérification par Supabase ; code faux → 401 + `auth.mfa_echec`.
+ *  3. limites : 3 essais / 15 min par compte ET par IP, comptés avant la
+ *     vérification (3 codes faux → le 4e essai reçoit 429 + Retry-After) ;
+ *  4. vérification par Supabase ; code faux → 401 + `auth.mfa_echec` ; code
+ *     juste → les deux compteurs sont effacés.
  * Journal : `auth.mfa_active` (activation), `auth.connexion` niveau aal2.
  */
 
@@ -60,10 +61,11 @@ export async function POST(request: Request) {
   if (estRefus(garde)) return garde;
   const { supabase, user, requestId } = garde;
 
-  for (const [regle, cle] of [
-    [TABLE_LIMITES.mfaCompte5min, user.id],
-    [TABLE_LIMITES.mfaIp5min, ipClient(request)],
-  ] as const) {
+  const compteurs = [
+    [TABLE_LIMITES.mfaCompte15min, user.id],
+    [TABLE_LIMITES.mfaIp15min, ipClient(request)],
+  ] as const;
+  for (const [regle, cle] of compteurs) {
     const v = await limiterSelon(regle, cle, { request, requestId, userId: user.id });
     if (!v.permis) return reponse429(v.attente, MESSAGE_TROP_DE_CODES);
   }
@@ -142,6 +144,8 @@ export async function POST(request: Request) {
       userId: user.id,
     });
   }
+
+  await Promise.all(compteurs.map(([regle, cle]) => effacerLimite(regle.route, cle)));
 
   if (activation) {
     void journaliser(EVENEMENTS.authMfaActive, {

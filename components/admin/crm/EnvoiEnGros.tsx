@@ -487,7 +487,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
       </Etape>
 
       {/* 2. Message */}
-      <Etape n={2} titre="Message" description="Texte brut. La signature Techno Lot et la mention de désabonnement (LCAP) sont ajoutées automatiquement.">
+      <Etape n={2} titre="Message" description="Texte brut. La signature Techno Lot est ajoutée automatiquement.">
         {modeles.length > 0 ? (
           <label className="mb-4 block">
             <span className="mb-1.5 block text-sm font-medium text-admin-ink">Partir d&apos;un modèle</span>

@@ -3,8 +3,9 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Accès du serveur aux fonctions SQL protégées par secret (`limite_debit`,
- * `journal_securite_ajouter`, `soumission_enregistrer`, `lead_pub_enregistrer`,
- * `suivi_pub_enregistrer` ; migration 20261030020000_securite_rpc.sql).
+ * `limite_effacer`, `journal_securite_ajouter`, `soumission_enregistrer`, `lead_pub_enregistrer`,
+ * `suivi_pub_enregistrer` ; migration 20261030020000_securite_rpc.sql ;
+ * `session_activite_noter` ; migration 20261104120000_sessions_activite_reelle.sql).
  *
  * Ces fonctions sont appelables avec la clé publishable (publique par nature),
  * mais refusent tout appel sans le secret serveur SECURITE_RPC_SECRET (dont

@@ -984,7 +984,7 @@ function EtapeAcheteurs({
         <div>
           <h3 className="text-[17px] font-semibold">Prêt à envoyer</h3>
           <p className="mt-1 text-[14px] text-admin-muted">
-            Depuis info@, un courriel par compagnie, avec votre signature et la mention de désabonnement.
+            Depuis info@, un courriel par compagnie, avec votre signature.
             {exclus > 0 && ` ${pluriel(exclus, "compagnie")} exclue${exclus > 1 ? "s" : ""} (déjà reçu ou désabonnée).`}
             {reportes > 0 && ` Limite du jour : ${reportes} partira demain.`}
           </p>

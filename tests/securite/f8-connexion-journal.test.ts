@@ -8,9 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *       celui de Supabase Auth (bcrypt), vérifié par le test SQL f8-droits.sql.
  *  08 : un échec de connexion produit UNE ligne `auth.echec` (IP, chemin,
  *       motif) sans secret.
- *  17 : liens magiques usés, expirés ou remplacés → refus avec un code fixe ;
- *       la demande de lien répond pareil quelle que soit l'adresse fournie
- *       (l'adresse est fixée par le serveur).
+ *  17 : liens d'authentification usés, expirés ou remplacés → refus avec un
+ *       code fixe. Aucun parcours du site n'en envoie plus.
  */
 
 const SECRET = "secret-de-test-vitest-0123456789-abcdefghij";
@@ -22,7 +21,6 @@ type Simule = ReturnType<typeof vi.fn<(...a: any[]) => Promise<any>>>;
 const s = vi.hoisted(() => ({
   rpc: [] as { nom: string; args: Record<string, unknown> }[],
   signInWithPassword: null as unknown as Simule,
-  signInWithOtp: null as unknown as Simule,
   verifyOtp: null as unknown as Simule,
   exchange: null as unknown as Simule,
 }));
@@ -41,7 +39,6 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       signInWithPassword: (...a: unknown[]) => s.signInWithPassword(...a),
-      signInWithOtp: (...a: unknown[]) => s.signInWithOtp(...a),
       verifyOtp: (...a: unknown[]) => s.verifyOtp(...a),
       exchangeCodeForSession: (...a: unknown[]) => s.exchange(...a),
     },
@@ -49,7 +46,6 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { POST as motDePasse } from "@/app/admin/auth/password/route";
-import { POST as demandeLien } from "@/app/admin/auth/request/route";
 import { GET as callback } from "@/app/admin/auth/callback/route";
 import { requeteTexte } from "./f2-outils";
 
@@ -73,7 +69,6 @@ beforeEach(() => {
     data: { user: null },
     error: { status: 400, code: "invalid_credentials", message: `Invalid login for ${MOT_DE_PASSE}` },
   });
-  s.signInWithOtp = vi.fn().mockResolvedValue({ data: {}, error: null });
   s.verifyOtp = vi.fn();
   s.exchange = vi.fn();
 });
@@ -164,22 +159,6 @@ describe("08 et 05 — échec de connexion journalisé, sans secret", () => {
 });
 
 describe("17 — liens de connexion", () => {
-  it("demande de lien : réponse identique quelle que soit l'adresse fournie ; le lien part toujours à l'admin", async () => {
-    const reponses: string[] = [];
-    for (const email of ["info@technolot.ca", "pirate@exemple.com", "inexistant@technolot.ca", ""]) {
-      const r = await demandeLien(
-        requeteTexte(`${SITE}/admin/auth/request`, new URLSearchParams({ email }).toString(), "application/x-www-form-urlencoded"),
-      );
-      reponses.push(`${r.status} ${await r.text()}`);
-    }
-    expect(new Set(reponses).size).toBe(1);
-    expect(reponses[0]).toMatch(/^200 /);
-    for (const [arg] of s.signInWithOtp.mock.calls) {
-      expect(arg.email).toBe("info@technolot.ca");
-      expect(arg.options.shouldCreateUser).toBe(false);
-    }
-  });
-
   const cas: [string, string, { code: string; message: string }, string][] = [
     ["lien déjà utilisé", "token_hash=usage&type=magiclink", { code: "otp_expired", message: "DETAIL_SUPABASE_1" }, "lien_expire"],
     ["lien expiré", "token_hash=vieux&type=magiclink", { code: "otp_expired", message: "DETAIL_SUPABASE_2" }, "lien_expire"],

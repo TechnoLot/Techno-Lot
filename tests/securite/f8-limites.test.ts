@@ -44,7 +44,6 @@ vi.mock("@supabase/supabase-js", () => ({
 
 const auth = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
-  signInWithOtp: vi.fn(),
   verifyOtp: vi.fn(),
   exchange: vi.fn(),
 }));
@@ -53,7 +52,6 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: {
       signInWithPassword: auth.signInWithPassword,
-      signInWithOtp: auth.signInWithOtp,
       verifyOtp: auth.verifyOtp,
       exchangeCodeForSession: auth.exchange,
     },
@@ -72,7 +70,6 @@ vi.mock("resend", () => ({
 }));
 
 import { POST as motDePasse } from "@/app/admin/auth/password/route";
-import { POST as demandeLien } from "@/app/admin/auth/request/route";
 import { GET as callback } from "@/app/admin/auth/callback/route";
 import { POST as soumission } from "@/app/api/soumission/route";
 import { POST as suivi } from "@/app/api/track/route";
@@ -107,7 +104,6 @@ beforeEach(() => {
     data: { user: null },
     error: { status: 400, code: "invalid_credentials", message: "Invalid login credentials" },
   });
-  auth.signInWithOtp.mockReset().mockResolvedValue({ data: {}, error: null });
   auth.verifyOtp.mockReset().mockResolvedValue({ data: { user: null }, error: { code: "otp_expired" } });
   auth.exchange.mockReset().mockResolvedValue({ data: { user: null }, error: { code: "bad_code" } });
 });
@@ -118,6 +114,8 @@ afterEach(() => {
 });
 
 const ip = (n: number) => ({ "x-forwarded-for": `203.0.113.${n}` });
+/** Visiteur entièrement différent : autre IP ET autre navigateur. */
+const visiteur = (n: number) => ({ ...ip(n % 250), "user-agent": `Navigateur/${n}` });
 
 describe("limiter (simulation fidèle de limite_debit)", () => {
   it("N permis, N+1 refusé avec une attente ; nouvelle fenêtre → permis", async () => {
@@ -137,9 +135,9 @@ describe("limiter (simulation fidèle de limite_debit)", () => {
 });
 
 describe("12 — la N+1e requête reçoit 429 sur chaque route limitée", () => {
-  it("connexion par mot de passe : 6e essai d'une même IP → 429 + Retry-After, Supabase non appelé", { timeout: 30_000 }, async () => {
+  it("connexion par mot de passe : 4e essai d'une même IP → 429 + Retry-After, Supabase non appelé", { timeout: 30_000 }, async () => {
     const corps = JSON.stringify({ username: "info", password: "mauvais-mot-de-passe" });
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 3; i++) {
       const r = await motDePasse(requeteTexte(`${SITE}/admin/auth/password`, corps, "application/json", ip(1)));
       expect(r.status, `essai ${i}`).toBe(401);
     }
@@ -148,34 +146,6 @@ describe("12 — la N+1e requête reçoit 429 sur chaque route limitée", () => 
     expect(r.status).toBe(429);
     expect(Number(r.headers.get("retry-after"))).toBeGreaterThanOrEqual(1);
     expect(auth.signInWithPassword).not.toHaveBeenCalled();
-  });
-
-  it("connexion : 11e essai sur le MÊME compte depuis des IP différentes → 429 (limite par compte)", { timeout: 30_000 }, async () => {
-    const corps = JSON.stringify({ username: "info", password: "mauvais-mot-de-passe" });
-    for (let i = 1; i <= 10; i++) {
-      const r = await motDePasse(requeteTexte(`${SITE}/admin/auth/password`, corps, "application/json", ip(10 + i)));
-      expect(r.status, `essai ${i}`).toBe(401);
-    }
-    auth.signInWithPassword.mockClear();
-    const r = await motDePasse(requeteTexte(`${SITE}/admin/auth/password`, corps, "application/json", ip(99)));
-    expect(r.status).toBe(429);
-    expect(auth.signInWithPassword).not.toHaveBeenCalled();
-  });
-
-  it("lien magique : 4e demande d'une même IP → 429 ; 6e au total (IP variées) → 429", async () => {
-    const req = (n: number) =>
-      requeteTexte(`${SITE}/admin/auth/request`, "next=%2Fadmin", "application/x-www-form-urlencoded", ip(n));
-    for (let i = 1; i <= 3; i++) expect((await demandeLien(req(1))).status).toBe(200);
-    expect((await demandeLien(req(1))).status).toBe(429);
-    expect(auth.signInWithOtp).toHaveBeenCalledTimes(3);
-
-    s.compteurs.clear();
-    auth.signInWithOtp.mockClear();
-    for (let i = 1; i <= 5; i++) expect((await demandeLien(req(20 + i))).status).toBe(200);
-    const r = await demandeLien(req(40));
-    expect(r.status).toBe(429);
-    expect(r.headers.get("retry-after")).toBeTruthy();
-    expect(auth.signInWithOtp).toHaveBeenCalledTimes(5);
   });
 
   it("callback du lien : 21e appel d'une même IP → trop_de_tentatives, Supabase non appelé", async () => {
@@ -191,13 +161,13 @@ describe("12 — la N+1e requête reçoit 429 sur chaque route limitée", () => 
   });
 
   it("formulaire : par IP, même un envoi invalide compte (4e → 429) ; plafond global = 100 compté seulement sur les vraies soumissions", { timeout: 30_000 }, async () => {
-    const vide = async (n: number) => requeteMultipart(`${SITE}/api/soumission`, new FormData(), ip(n));
+    const vide = async (n: number) => requeteMultipart(`${SITE}/api/soumission`, new FormData(), visiteur(n));
     const valide = async (n: number) => {
       const fd = new FormData();
       fd.set("nom", "Marie Tremblay");
-      fd.set("courriel", "marie@exemple.ca");
-      fd.set("telephone", "514 555-1234");
-      return requeteMultipart(`${SITE}/api/soumission`, fd, ip(n));
+      fd.set("courriel", `marie${n}@exemple.ca`);
+      fd.set("telephone", `514 555-${String(n).padStart(4, "0")}`);
+      return requeteMultipart(`${SITE}/api/soumission`, fd, visiteur(n));
     };
 
     // Par IP : la limite agit tôt (avant le schéma), donc même un envoi invalide compte.
@@ -206,7 +176,7 @@ describe("12 — la N+1e requête reçoit 429 sur chaque route limitée", () => 
     expect(parIp.status).toBe(429);
     expect(parIp.headers.get("retry-after")).toBeTruthy();
 
-    // Des envois INVALIDES depuis plein d'IP n'entament PAS le budget global…
+    // Des envois INVALIDES depuis plein de visiteurs n'entament PAS le budget global…
     s.compteurs.clear();
     for (let i = 1; i <= 60; i++) {
       const r = await soumission(await vide(40 + i));

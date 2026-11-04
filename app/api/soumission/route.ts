@@ -6,8 +6,9 @@ import { ENTETE_SOUMISSION } from "@/lib/hostinger/config";
 import { courriel as schemaCourriel } from "@/lib/securite/schemas";
 import { EVENEMENTS, journaliser } from "@/lib/securite/journal";
 import { reponseErreur } from "@/lib/securite/erreurs";
+import { empreinteNavigateur } from "@/lib/securite/empreinte";
 import { ipClient } from "@/lib/securite/ip";
-import { limiterSelon, reponse429, TABLE_LIMITES } from "@/lib/securite/limite";
+import { limiterSelon, reponse429, TABLE_LIMITES, type RegleLimite } from "@/lib/securite/limite";
 import { verifierTaille } from "@/lib/securite/requete";
 import { clientRpc, secretRpc } from "@/lib/securite/rpc";
 import {
@@ -25,11 +26,17 @@ export const runtime = "nodejs";
  *
  * Ordre des contrôles, AVANT toute écriture ou tout envoi :
  *  1. type multipart + taille annoncée (≤ 16 Mo) avant de lire le corps ;
- *  2. limites de débit : 3 / 10 min et 10 / 24 h par IP, 50 / 24 h au total ;
+ *  2. limites de débit par IP : 3 / 10 min et 5 / 24 h ;
  *  3. champs connus seulement (tout champ en trop → 400), pot de miel ;
  *  4. schéma Zod strict (longueurs, courriel, téléphone, langue) ;
  *  5. pièces jointes : 10 fichiers, 10 Mo chacun, 15 Mo au total, type réel
- *     lu dans les octets (lib/securite/fichiers.ts), nom assaini.
+ *     lu dans les octets (lib/securite/fichiers.ts), nom assaini ;
+ *  6. sur les soumissions valides seulement : 3 / 10 min et 10 / 24 h par
+ *     empreinte de navigateur (survit à un changement d'IP), puis 3 / 24 h par
+ *     courriel et par téléphone, puis plafond global de 100 / 24 h. Les envois
+ *     invalides et le pot de miel ne comptent pas : un robot ne peut pas griller
+ *     l'empreinte de vrais clients avec des requêtes bidon, et un doublon refusé
+ *     n'entame pas le plafond des vraies demandes.
  * Écriture en base PAR LE SERVEUR (fonctions à secret `soumission_enregistrer`
  * et `lead_pub_enregistrer`). Un échec d'écriture ne bloque jamais l'envoi du
  * courriel à info@ : on ne perd pas une demande (l'échec est journalisé).
@@ -231,8 +238,8 @@ export async function POST(request: Request) {
   }
 
   // 2. Limites de débit par IP, AVANT de lire le corps (coupe tout de suite
-  //    quelqu'un qui martèle depuis une même adresse). Le plafond global
-  //    quotidien est vérifié plus bas, seulement sur les soumissions valides.
+  //    quelqu'un qui martèle depuis une même adresse). L'empreinte, les doublons
+  //    et le plafond global sont vérifiés plus bas, sur les soumissions valides.
   const ip = ipClient(request);
   for (const regle of [TABLE_LIMITES.soumissionIp10min, TABLE_LIMITES.soumissionIpJour]) {
     const v = await limiterSelon(regle, ip, { request, requestId });
@@ -306,10 +313,29 @@ export async function POST(request: Request) {
   }
   const pieces = verdict.fichiers;
 
+  // Même navigateur ou même demande répétée, quelle que soit l'adresse IP. Compté
+  // ici seulement : l'empreinte d'un Chrome courant est partagée par de vrais
+  // clients, seule une soumission valide doit l'entamer. Le schéma accepte un
+  // téléphone sans aucun chiffre (« ------- ») : rien à compter dans ce cas.
+  const empreinte = empreinteNavigateur(request);
+  const chiffresTelephone = telephone.replace(/\D/g, "").slice(-10);
+  const compteursDoublons: readonly (readonly [RegleLimite, string])[] = [
+    [TABLE_LIMITES.soumissionEmpreinte10min, empreinte],
+    [TABLE_LIMITES.soumissionEmpreinteJour, empreinte],
+    [TABLE_LIMITES.soumissionCourrielJour, courriel.toLowerCase()],
+    ...(chiffresTelephone
+      ? ([[TABLE_LIMITES.soumissionTelephoneJour, chiffresTelephone]] as const)
+      : []),
+  ];
+  for (const [regle, cle] of compteursDoublons) {
+    const v = await limiterSelon(regle, cle, { request, requestId });
+    if (!v.permis) return reponse429(v.attente, t.rateLimited);
+  }
+
   // Plafond global quotidien : vérifié ICI, une fois la soumission validée (pot
-  // de miel, schéma et fichiers déjà passés) — les robots et les envois invalides
-  // n'entament jamais le budget des vraies demandes. Protège le quota de courriels
-  // (Resend) contre un afflux distribué (plusieurs IP).
+  // de miel, schéma, fichiers et doublons déjà passés) — les robots, les envois
+  // invalides et les doublons n'entament jamais le budget des vraies demandes.
+  // Protège le quota de courriels (Resend) contre un afflux distribué (plusieurs IP).
   const global = await limiterSelon(TABLE_LIMITES.soumissionGlobaleJour, "global", {
     request,
     requestId,

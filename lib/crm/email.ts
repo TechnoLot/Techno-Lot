@@ -75,9 +75,11 @@ function mentionneDesabonnement(body: string): boolean {
 }
 
 /**
- * Mention de désabonnement exigée par la LCAP dans tout courriel commercial :
- * répondre « désabonner » (ou écrire via le lien) suffit. L'équipe marque
- * alors le contact « Désabonné » dans sa fiche, ce qui bloque tout envoi.
+ * Mention de désabonnement (LCAP) des courriels envoyés depuis une fiche et
+ * des relances automatiques : répondre « désabonner » (ou écrire via le lien)
+ * suffit. L'équipe marque alors le contact « Désabonné » dans sa fiche, ce qui
+ * bloque tout envoi. Retirée de l'envoi en gros à la demande de l'utilisateur,
+ * 2026-11-04 ; les adresses désabonnées y restent exclues.
  */
 function desabonnementHtml(adresse: string): string {
   const mailto = `mailto:${adresse}?subject=${encodeURIComponent("Désabonner")}`;
@@ -163,11 +165,11 @@ function boiteDesabonnement(): string {
 }
 
 /**
- * Version texte d'un message, telle qu'envoyée (signature et mention de
- * désabonnement comprises) : aperçu de l'envoi en gros.
+ * Version texte d'un message de l'envoi en gros, telle qu'envoyée (signature
+ * comprise, sans mention de désabonnement) : son aperçu.
  */
 export function apercuTexteProspect(body: string): string {
-  return wrapText(body, mentionneDesabonnement(body) ? null : boiteDesabonnement());
+  return wrapText(body, null);
 }
 
 // --- Envoi depuis la boîte info@ (Mail API de Hostinger) --------------------------------
@@ -177,8 +179,10 @@ export function apercuTexteProspect(body: string): string {
  * en gros et son test) partent de la boîte info@ par la Mail API de
  * Hostinger, qui en range une copie dans « Envoyés » : aucune copie cachée,
  * rien dans la boîte de réception. L'API n'accepte ni reply-to ni en-tête
- * personnalisé : les réponses, « désabonner » compris, reviennent à info@, et
- * la mention dans le texte suffit à la LCAP (pas de List-Unsubscribe).
+ * personnalisé : les réponses, « désabonner » compris, reviennent à info@.
+ * Sur les fiches et les relances, la mention dans le texte suffit à la LCAP
+ * (pas de List-Unsubscribe) ; l'envoi en gros et son test ne la portent pas
+ * (`sansDesabonnement`, demande de l'utilisateur, 2026-11-04).
  * Vérifier les désabonnements avant d'envoyer (lib/crm/desabonnement.ts).
  */
 
@@ -243,10 +247,15 @@ export function motifErreurHostinger(erreur: unknown, avantEnvoi = false): Motif
 
 /**
  * Courriel de prospection parti de la boîte info@ : nom « Techno Lot »,
- * signature, mention de désabonnement, pièces jointes éventuelles.
+ * signature, mention de désabonnement (sauf `sansDesabonnement`), pièces
+ * jointes éventuelles.
  */
-function courrielHostinger(c: CourrielGroupe, attachments: readonly PieceSortante[]): CourrielSortant {
-  const desabonnement = mentionneDesabonnement(c.body) ? null : boiteDesabonnement();
+function courrielHostinger(
+  c: CourrielGroupe,
+  attachments: readonly PieceSortante[],
+  sansDesabonnement: boolean,
+): CourrielSortant {
+  const desabonnement = sansDesabonnement || mentionneDesabonnement(c.body) ? null : boiteDesabonnement();
   return {
     to: [c.to],
     displayName: "Techno Lot",
@@ -278,6 +287,7 @@ async function envoyerDepuisInfo(
   operation: string,
   requestId?: string,
   pieces: readonly PieceJointe[] = [],
+  sansDesabonnement = false,
 ): Promise<Envois> {
   const resultat: Envois = { envoyes: [], echec: null };
   if (courriels.length === 0) return resultat;
@@ -308,7 +318,7 @@ async function envoyerDepuisInfo(
   for (const [index, courriel] of courriels.entries()) {
     if (index > 0) await attendre(PAUSE_ENTRE_ENVOIS_MS);
     try {
-      await envoyer(courrielHostinger(courriel, attachments));
+      await envoyer(courrielHostinger(courriel, attachments, sansDesabonnement));
     } catch (err) {
       const motif = motifErreurHostinger(err);
       if (motif === "incertain") resultat.envoyes.push({ index, to: courriel.to });
@@ -321,11 +331,11 @@ async function envoyerDepuisInfo(
 
 /**
  * Envoie UN courriel de prospection (modèle rendu) depuis la boîte info@,
- * avec la signature Techno Lot et la mention de désabonnement (LCAP) :
- * fiche d'un contact, relances automatiques, test de l'envoi en gros (avec
- * ses pièces jointes). « incertain » : Hostinger n'a pas confirmé, le
- * courriel est peut-être parti (à l'appelant de décider s'il le note comme
- * envoyé).
+ * avec la signature Techno Lot et la mention de désabonnement (LCAP) : fiche
+ * d'un contact, relances automatiques. Le test de l'envoi en gros (avec ses
+ * pièces jointes) passe `sansDesabonnement`, comme le vrai envoi.
+ * « incertain » : Hostinger n'a pas confirmé, le courriel est peut-être parti
+ * (à l'appelant de décider s'il le note comme envoyé).
  */
 export async function sendProspectEmail(opts: {
   to: string;
@@ -334,12 +344,15 @@ export async function sendProspectEmail(opts: {
   pieces?: readonly PieceJointe[];
   /** Référence de la requête (journal) ; une nouvelle sinon. */
   requestId?: string;
+  /** Sans la mention de désabonnement : test de l'envoi en gros seulement. */
+  sansDesabonnement?: boolean;
 }): Promise<{ ok: true } | { ok: false; motif: MotifArret; error: string }> {
   const { echec } = await envoyerDepuisInfo(
     [{ to: opts.to, subject: opts.subject, body: opts.body }],
     "crm.envoi.hostinger",
     opts.requestId,
     opts.pieces,
+    opts.sansDesabonnement,
   );
   if (!echec) return { ok: true };
   const message = MESSAGES_ENVOI[echec.motif];
@@ -348,8 +361,8 @@ export async function sendProspectEmail(opts: {
 
 /**
  * Envoi en gros : envoie les courriels de la liste un à la fois depuis la
- * boîte info@, avec les mêmes pièces jointes, et s'arrête au premier échec
- * (voir envoyerDepuisInfo).
+ * boîte info@, avec les mêmes pièces jointes et sans mention de désabonnement,
+ * et s'arrête au premier échec (voir envoyerDepuisInfo).
  */
 export async function sendProspectBatch(opts: {
   courriels: readonly CourrielGroupe[];
@@ -362,6 +375,7 @@ export async function sendProspectBatch(opts: {
     "crm.envoi_gros.hostinger",
     opts.requestId,
     opts.pieces,
+    true,
   );
   if (!echec) return { envoyes, arret: null };
   const message = MESSAGES_ARRET[echec.motif];

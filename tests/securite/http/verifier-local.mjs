@@ -290,8 +290,9 @@ async function main() {
   await post("06", "connexion de 10 Ko → 413", "/admin/auth/password", { headers: { "content-type": "application/json" }, body: "x".repeat(10_000) }, (r) => [r.status === 413]);
   await post("06/20", "connexion JSON invalide → 400 générique", "/admin/auth/password", { headers: { "content-type": "application/json" }, body: "{pas du json" }, (r) => [r.status === 400 && !FUITE.test(r.texte)]);
   {
+    // Route supprimée : le site n'envoie plus de lien de connexion.
     const r = await req("/admin/auth/request");
-    noter("17", "GET /admin/auth/request → 405 (aucun lien envoyé par GET)", r.status === 405, `HTTP ${r.status}`);
+    noter("17", "GET /admin/auth/request → 404 (route retirée, aucun lien envoyé)", r.status === 404, `HTTP ${r.status}`);
   }
 
   // 17 — liens de connexion faux ou usés → code d'erreur fixe, aucune session

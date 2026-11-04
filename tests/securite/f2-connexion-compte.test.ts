@@ -67,7 +67,7 @@ describe("page de connexion", () => {
 
   it("codes d'erreur connus → message fixe ; texte arbitraire jamais affiché", () => {
     expect(messageErreurConnexion("session_expiree")).toBe("Ta session a expiré : reconnecte-toi (une fois par jour).");
-    expect(messageErreurConnexion("trop_de_tentatives")).toMatch(/Trop de tentatives/);
+    expect(messageErreurConnexion("trop_de_tentatives")).toMatch(/Trop d'essais/);
     expect(messageErreurConnexion("identifiants")).toBe("Identifiants invalides.");
     expect(messageErreurConnexion("Ce courriel n'est pas autorisé à accéder au tableau de bord.")).toBe(
       "Ce courriel n'est pas autorisé à accéder au tableau de bord.",

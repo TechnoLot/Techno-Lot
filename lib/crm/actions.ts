@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { adminPourAction, type ContexteAdmin } from "@/lib/securite/garde";
+import { limiterSelon, type RegleLimite } from "@/lib/securite/limite";
 import {
   echecAction,
   echecValidation,
@@ -48,6 +49,13 @@ import type {
 type Result = { ok: true } | EchecAction;
 
 const ID_INVALIDE: EchecAction = { ok: false, error: "Fiche introuvable (identifiant invalide)." };
+
+/** Courriels envoyés depuis les fiches, par admin : borne une session volée ou un script. */
+const LIMITE_ENVOI_FICHE: RegleLimite = {
+  route: "crm:envoi-fiche:heure",
+  fenetreSecondes: 3_600,
+  max: 60,
+};
 
 function revalidateCrm(companyId?: string | null) {
   revalidatePath("/admin/crm");
@@ -557,6 +565,15 @@ export async function sendTemplateEmail(
 ): Promise<Result> {
   const ctx = await adminPourAction();
   if (!ctx) return REFUS_ACTION;
+  const limite = await limiterSelon(LIMITE_ENVOI_FICHE, ctx.user.id, {
+    requestId: ctx.requestId,
+    userId: ctx.user.id,
+    methode: "ACTION",
+    chemin: "/admin/crm",
+  });
+  if (!limite.permis) {
+    return { ok: false, error: "Trop de courriels envoyés depuis les fiches. Réessaie dans une heure." };
+  }
   const id = idValide(contactId);
   if (!id) return ID_INVALIDE;
   const type = typeModeleSchema.safeParse(templateType);

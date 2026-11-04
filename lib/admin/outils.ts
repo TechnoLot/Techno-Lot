@@ -31,11 +31,12 @@ export const CSP_OUTILS = [
 /**
  * Page de chaque outil et scripts insérés à l'envoi : le marqueur
  * `<script data-inclure="x.js"></script>` de la page est remplacé par le
- * contenu de assets/outils/x.js (l'analyseur de la calculatrice, testé à part).
+ * contenu de assets/outils/x.js (l'analyseur de la calculatrice et la garde
+ * d'inactivité, testés à part).
  */
 export const OUTILS = {
-  calculatrice: { page: "calculatrice.html", scripts: ["calculatrice-analyse.js"] },
-  ebay: { page: "ebay-description.html", scripts: [] },
+  calculatrice: { page: "calculatrice.html", scripts: ["garde-activite.js", "calculatrice-analyse.js"] },
+  ebay: { page: "ebay-description.html", scripts: ["garde-activite.js"] },
 } as const;
 
 const DOSSIER = path.join(process.cwd(), "assets", "outils");

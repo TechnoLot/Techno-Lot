@@ -28,13 +28,16 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
   function push(mutate: (p: URLSearchParams) => void) {
     const p = new URLSearchParams(params?.toString() ?? "");
     mutate(p);
+    p.delete("page"); // Liste changée : on repart de la première page.
     startTransition(() =>
       router.replace(`?${p.toString()}`, { scroll: false }),
     );
   }
 
-  // Recherche débounée
+  // Recherche débounée. S'exécute aussi au montage : si l'URL porte déjà ce
+  // texte, ne rien faire (sinon recharger ?page=3 retomberait à la page 1).
   useEffect(() => {
+    if (q === (params?.get("q") ?? "")) return;
     const timeout = setTimeout(() => {
       push((p) => {
         if (q) p.set("q", q);
