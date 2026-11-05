@@ -17,7 +17,7 @@ import Ramassages from "@/components/admin/ramassages/Ramassages";
 import AgendaNonRelie from "@/components/admin/ramassages/AgendaNonRelie";
 
 export const metadata: Metadata = {
-  title: "Ramassages — Admin",
+  title: "Calendrier — Admin",
   robots: { index: false, follow: false },
 };
 
@@ -44,7 +44,7 @@ export default async function RamassagesPage(props: {
   if (!agendaConfigure()) {
     return (
       <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
-        <PageHeader title="Ramassages" description="Le calendrier des ramassages, relié à Google Agenda." />
+        <PageHeader title="Calendrier" />
         <AgendaNonRelie />
       </div>
     );

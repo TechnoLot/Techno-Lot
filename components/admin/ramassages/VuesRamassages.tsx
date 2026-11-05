@@ -570,7 +570,6 @@ export function VueListe({
           </section>
         );
       })}
-      <p className="text-center text-[13px] text-admin-muted">Les {MOIS_A_VENIR} prochains mois.</p>
     </div>
   );
 }

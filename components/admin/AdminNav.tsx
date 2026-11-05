@@ -59,7 +59,7 @@ const items: NavItem[] = [
   { href: "/admin/notifications", label: "Notifications", icon: Bell, badge: "notifications" },
   { href: "/admin/soumissions", label: "Soumissions", icon: Inbox },
   { href: "/admin/lots", label: "Lots", icon: Package },
-  { href: "/admin/ramassages", label: "Ramassages", icon: CalendarClock },
+  { href: "/admin/ramassages", label: "Calendrier", icon: CalendarClock },
   {
     href: "#calculatrice",
     label: "Calculatrice",

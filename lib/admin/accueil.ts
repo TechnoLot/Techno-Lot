@@ -336,7 +336,7 @@ export function tachesAccueil(entrees: EntreesTaches, now: Date): Tache[] {
     taches.push({
       cle: "ramassages",
       titre: "Ramassages illisibles pour l’instant",
-      detail: "Ouvre l’onglet Ramassages pour réessayer",
+      detail: "Ouvre l’onglet Calendrier pour réessayer",
       meta: null,
       urgent: false,
       href: "/admin/ramassages",

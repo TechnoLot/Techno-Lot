@@ -217,7 +217,7 @@ function Formulaire({
         setChamps(res.champs ?? {});
         return;
       }
-      onTermine(existant ? "Ramassage modifié dans Google Agenda." : "Ramassage ajouté à Google Agenda.");
+      onTermine(existant ? "Ramassage modifié." : "Ramassage ajouté.");
     });
   }
 
@@ -231,7 +231,7 @@ function Formulaire({
         setConfirmer(false);
         return;
       }
-      onTermine("Ramassage retiré de Google Agenda.");
+      onTermine("Ramassage supprimé.");
     });
   }
 
@@ -270,27 +270,23 @@ function Formulaire({
             onSaisie={(texte) => maj("client", texte)}
             onChoix={choisir}
           />
-          <p className="mt-1.5 text-xs text-admin-muted">
-            {fiche && lienFiche ? (
-              <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-admin-green">
-                <Link2 className="h-3.5 w-3.5" aria-hidden />
-                {fiche.type === "compagnie" ? "Lié à la fiche client" : "Lié au lot"}
-                {fiche.nom && <span className="font-semibold">{fiche.nom}</span>}
-                <Link href={lienFiche} className="admin-focus rounded font-semibold underline-offset-2 hover:underline">
-                  Ouvrir
-                </Link>
-                <button
-                  type="button"
-                  onClick={retirerFiche}
-                  className="admin-focus rounded text-admin-muted underline-offset-2 hover:text-admin-ink hover:underline"
-                >
-                  Retirer le lien
-                </button>
-              </span>
-            ) : (
-              "Choisis un client du CRM ou un lot : l’adresse se remplit et le lien est gardé."
-            )}
-          </p>
+          {fiche && lienFiche && (
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-admin-green">
+              <Link2 className="h-3.5 w-3.5" aria-hidden />
+              {fiche.type === "compagnie" ? "Lié à la fiche client" : "Lié au lot"}
+              {fiche.nom && <span className="font-semibold">{fiche.nom}</span>}
+              <Link href={lienFiche} className="admin-focus rounded font-semibold underline-offset-2 hover:underline">
+                Ouvrir
+              </Link>
+              <button
+                type="button"
+                onClick={retirerFiche}
+                className="admin-focus rounded text-admin-muted underline-offset-2 hover:text-admin-ink hover:underline"
+              >
+                Retirer le lien
+              </button>
+            </p>
+          )}
         </div>
 
         <Champ id={`${id}-adresse`} libelle="Adresse" erreur={champs.adresse}>
@@ -375,7 +371,7 @@ function Formulaire({
           id={`${id}-notes`}
           libelle="Notes"
           erreur={champs.notes}
-          aide="Visibles dans Google Agenda : pas de renseignements personnels inutiles."
+          aide="Pas de renseignements personnels inutiles."
         >
           <textarea
             id={`${id}-notes`}
@@ -390,7 +386,7 @@ function Formulaire({
           />
         </Champ>
 
-        {existant?.lienGoogle && (
+        {plusieursJours && existant?.lienGoogle && (
           <a
             href={existant.lienGoogle}
             target="_blank"
@@ -416,7 +412,7 @@ function Formulaire({
       <footer className="border-t border-admin-line px-5 py-3">
         {confirmer ? (
           <div>
-            <p className="text-[13px] font-medium text-admin-ink">Retirer ce ramassage de Google Agenda ?</p>
+            <p className="text-[13px] font-medium text-admin-ink">Supprimer ce ramassage ?</p>
             <div className="mt-2 flex justify-end gap-2">
               <button type="button" onClick={() => setConfirmer(false)} disabled={enCours} className="admin-btn">
                 Annuler

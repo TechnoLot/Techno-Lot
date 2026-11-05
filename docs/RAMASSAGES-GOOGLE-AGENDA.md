@@ -1,6 +1,6 @@
 # Relier le calendrier des ramassages à Google Agenda
 
-Page : `/admin/ramassages` (menu « Ramassages »). L'agenda Google « Ramassages
+Page : `/admin/ramassages` (menu « Calendrier »). L'agenda Google « Ramassages
 Techno Lot » est la seule source de vérité : le tableau de bord le lit à chaque
 affichage et y écrit directement (création, déplacement, suppression). Une
 modification faite dans Google Agenda se voit donc au prochain affichage, ou en

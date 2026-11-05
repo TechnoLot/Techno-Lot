@@ -1006,12 +1006,12 @@ describe("tachesAccueil — ramassages du jour", () => {
     expect(avec([ramassage("demain", "2026-11-03", "09:00", "10:00")])).toEqual([]);
   });
 
-  it("lecture impossible → ligne d'erreur vers l'onglet Ramassages", () => {
+  it("lecture impossible → ligne d'erreur vers l'onglet Calendrier", () => {
     expect(avec([], true)).toEqual([
       {
         cle: "ramassages",
         titre: "Ramassages illisibles pour l’instant",
-        detail: "Ouvre l’onglet Ramassages pour réessayer",
+        detail: "Ouvre l’onglet Calendrier pour réessayer",
         meta: null,
         urgent: false,
         href: "/admin/ramassages",
