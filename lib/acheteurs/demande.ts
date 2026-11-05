@@ -9,7 +9,9 @@ import { masquerDonneesSensibles } from "@/lib/securite/masquage";
  * l'entreprise ou la ville du client (Loi 25, EFVP : compte grand public).
  * Le format de réponse est celui que lit lib/acheteurs/reponse.ts ; il tient
  * compte de l'essai du 2026-11-03 (prix inconnu = null, sources en liste,
- * confiance et notes par compagnie).
+ * confiance et notes par compagnie). « bas » sert à la valeur minimale du lot
+ * (lib/acheteurs/valeur.ts) : la demande exige un prix prudent, et « vendu »
+ * dit si ce prix est prouvé par des ventes conclues.
  */
 
 const FORMAT_REPONSE = `{
@@ -22,7 +24,7 @@ const FORMAT_REPONSE = `{
           "article": "",
           "quantite": 0,
           "etat": "neuf",
-          "prix": { "bas": 0, "haut": 0, "devise": "CAD", "base": "ventes eBay conclues", "sources": ["https://..."] }
+          "prix": { "bas": 0, "haut": 0, "devise": "CAD", "vendu": false, "base": "prix demandés chez un revendeur", "sources": ["https://..."] }
         }
       ],
       "acheteurs": [
@@ -79,7 +81,13 @@ POUR CHAQUE FAMILLE D'ARTICLES (même marque et même série) :
    - Pour chaque compagnie, donne l'adresse exacte de la page qui le prouve.
    - Nous écrivons par courriel : ouvre aussi la page Contact de chaque compagnie (ou le bas de son site) pour y trouver un courriel général (info@, sales@, ventes@…). Sans courriel, donne le téléphone ou la page de formulaire. Ne devine jamais un courriel.
    - N'invente rien : si tu n'as pas vu la page, n'ajoute pas la compagnie. Si une page n'a pas pu s'ouvrir, dis-le dans « notes ». Pas de particuliers ni de sites d'annonces (Kijiji, Marketplace, eBay).${exclusion}
-2. À combien, pour chaque ligne : une fourchette de prix de revente à l'unité, avec la devise et d'où elle vient. Privilégie les ventes conclues sur eBay (filtres « Vendus » et « Terminés »), puis les prix affichés chez des revendeurs. Mets les adresses des pages dans « sources ». Prix inconnu : null.
+2. À combien, pour chaque ligne : une fourchette de prix de revente à l'unité, avec la devise et d'où elle vient. « bas » nous sert à décider combien payer le lot : sois très prudent, mieux vaut sous-estimer que surestimer.
+   - « bas » : le prix le plus bas trouvé pour le modèle exact, dans le même état, hors taxes et hors livraison. Un article d'état inconnu compte comme usagé. Ne prends jamais un prix de neuf, de reconditionné ou de détail pour de l'usagé. Écarte seulement les annonces pour pièces ou brisées.
+   - Privilégie les ventes conclues sur eBay (filtres « Vendus » et « Terminés »), puis les prix affichés chez des revendeurs. « vendu » : true seulement si tu as vu ces ventes conclues ; false pour des prix demandés.
+   - Si la quantité dépasse de loin ce qui se vend (exemple : 400 unités d'un article qui se vend à quelques exemplaires par mois), baisse « bas » au prix qu'il faudrait pour tout écouler, et dis-le dans « base ».
+   - Modèle exact introuvable, modèle seulement proche ou doute sur le modèle : prix null, jamais le prix d'un modèle voisin.
+   - « devise » : CAD, USD ou EUR seulement, celle de la page. Cherche d'abord des prix au Canada, puis aux États-Unis.
+   - Recopie dans « article » le nom de la ligne du lot, sans le changer. Mets les adresses des pages dans « sources ». Prix inconnu : null.
 3. Rare ou courant : dis si la famille est rare (peu de vendeurs, modèle précis) ou courante.
 
 ENSUITE, écris deux courriels courts et professionnels : un en français, pour les compagnies du Québec, et un en anglais, pour les autres. Ils proposent le lot (articles, quantités, état), qui sera disponible sous peu, demandent si la compagnie serait intéressée à racheter tout ou partie du lot, et quelle serait sa meilleure offre. Tu peux dire que le lot est au Québec. Pas de lien, pas de prix, pas de signature (nous ajoutons la nôtre), et aucun nom de client.

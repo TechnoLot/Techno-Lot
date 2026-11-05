@@ -27,7 +27,7 @@ import {
 import { analyserLigne, estCourant, extraireArticles, formaterArticle } from "@/lib/acheteurs/articles";
 import { annulerRecherche, demanderRecherche, etatLecture, etatRecherche } from "@/lib/acheteurs/actions";
 import { departEnvoi, type DepartEnvoi } from "@/lib/acheteurs/envoi";
-import { formaterPrix } from "@/lib/acheteurs/format";
+import { formaterDollars, formaterPrix } from "@/lib/acheteurs/format";
 import { articlesDeDepart, echecPerime, lectureEnCours, type ArticlePanneau } from "@/lib/acheteurs/pieces";
 import { domainesDe } from "@/lib/acheteurs/recherche";
 import {
@@ -44,6 +44,7 @@ import {
   type RechercheAcheteurs,
   type ResultatRecherche,
 } from "@/lib/acheteurs/types";
+import { BAISSE_PRIX_DEMANDE, TAUX_PRUDENTS, minimumLigne, reventeEnGros, valeurLot } from "@/lib/acheteurs/valeur";
 import {
   envoyerLotEnGros,
   envoyerTestEnGros,
@@ -72,6 +73,7 @@ import { BOUTON_DOUX, BOUTON_PLEIN, LIEN } from "@/components/admin/soumissions/
 
 const SUIVI_MS = 15_000;
 const jourCourtFmt = new Intl.DateTimeFormat("fr-CA", { day: "numeric", month: "short", timeZone: "America/Toronto" });
+const tauxFmt = new Intl.NumberFormat("fr-CA", { minimumFractionDigits: 2 });
 
 function lienSur(url: string | null | undefined): string | null {
   return url && url.startsWith("https://") ? url : null;
@@ -109,7 +111,7 @@ export default function AgentAcheteurs(props: Props) {
   useSuiviRecherche(soumissionId, recherche);
   useSuiviLecture(soumissionId, lecture);
 
-  // Résumé de la carte : compagnies trouvées, fourchette de prix, offres déjà envoyées.
+  // Résumé de la carte : compagnies trouvées, valeur minimale du lot, offres déjà envoyées.
   const resultats = recherche?.resultats ?? null;
   const domaines = domainesDe(resultats);
   const depuis = recherche?.resultats_le;
@@ -159,13 +161,17 @@ export default function AgentAcheteurs(props: Props) {
         </>
       ) : resultats ? (
         <>
-          <span className="inline-flex items-center gap-2 text-[14px] text-admin-ink">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-admin-tint-green text-admin-green">
+          <span className="inline-flex min-w-0 items-center gap-2 text-[14px] text-admin-ink">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-admin-tint-green text-admin-green">
               <Check className="h-3.5 w-3.5" aria-hidden />
             </span>
-            <span className="font-semibold">{pluriel(domaines.length, "acheteur")}</span>
-            <span className="text-admin-muted">
-              {envoyees > 0 ? `· offre envoyée à ${envoyees}` : `· ${fourchetteGlobale(resultats)}`}
+            <span className="min-w-0">
+              <span className="font-semibold">{pluriel(domaines.length, "acheteur")}</span>
+              <span className="text-admin-muted">
+                {" "}
+                · {resumeValeur(resultats)}
+                {envoyees > 0 && ` · offre envoyée à ${envoyees}`}
+              </span>
             </span>
           </span>
           <button type="button" onClick={() => setOuvert(true)} className={`${BOUTON_DOUX} ml-auto`}>
@@ -279,15 +285,10 @@ function useSuiviLecture(soumissionId: string, lecture: LectureSoumission | null
   useSuivi(soumissionId, lectureEnCours(lecture), signature, signatureLecture);
 }
 
-/** « 120 à 580 $ US » sur toutes les lignes qui ont un prix (même devise), sinon « prix à confirmer ». */
-function fourchetteGlobale(r: ResultatRecherche): string {
-  const prix = r.familles.flatMap((f) => f.lignes.map((l) => l.prix)).filter((p) => p.bas != null || p.haut != null);
-  if (prix.length === 0) return "prix à confirmer";
-  const devise = prix[0].devise;
-  const memes = prix.filter((p) => p.devise === devise);
-  const bas = Math.min(...memes.map((p) => (p.bas ?? p.haut) as number));
-  const haut = Math.max(...memes.map((p) => (p.haut ?? p.bas) as number));
-  return formaterPrix({ bas, haut, devise, base: null, sources: [] });
+/** « valeur minimale 9 792 $ CA », sinon « prix à confirmer ». */
+function resumeValeur(r: ResultatRecherche): string {
+  const { comptees, total } = valeurLot(r.familles);
+  return comptees > 0 ? `valeur minimale ${formaterDollars(total)}` : "prix à confirmer";
 }
 
 type Etape = 1 | 2 | 3;
@@ -966,6 +967,7 @@ function EtapeAcheteurs({
 
   const selection = fiches.filter((x) => choisis.has(x.fiche.domaine) && x.fiche.courriel).map((x) => x.fiche);
   const surplus = fiches.filter((x) => x.surplus).length;
+  const valeur = valeurLot(familles);
   const total = groupes.reduce((n, g) => n + g.verif.prets, 0);
 
   function basculer(domaine: string) {
@@ -1197,13 +1199,23 @@ function EtapeAcheteurs({
           type="button"
           onClick={() => setPrixOuverts((v) => !v)}
           aria-expanded={prixOuverts}
-          className="admin-focus flex w-full items-center justify-between gap-3 rounded-3xl px-4 py-3 text-left"
+          className="admin-focus flex w-full items-start justify-between gap-3 rounded-3xl px-4 py-3 text-left"
         >
-          <span className="text-[14px]">
-            <span className="font-semibold">Prix du marché</span>
-            <span className="text-admin-muted"> · {fourchetteGlobale(resultats)} l&apos;unité</span>
+          <span className="min-w-0">
+            <span className="block text-[13px] font-semibold text-admin-muted">Valeur minimale du lot</span>
+            <span className="mt-0.5 block font-display text-3xl font-bold leading-tight tabular-nums">
+              {valeur.comptees > 0 ? formaterDollars(valeur.total) : "Prix à confirmer"}
+            </span>
+            {valeur.nonComptees > 0 && (
+              <span className="mt-1 block text-[12px] text-admin-warning">
+                {`${pluriel(valeur.nonComptees, "ligne")} pas comptée${valeur.nonComptees > 1 ? "s" : ""} : prix ou quantité à confirmer`}
+              </span>
+            )}
           </span>
-          <ChevronDown className={`h-4 w-4 shrink-0 text-admin-muted transition-transform ${prixOuverts ? "rotate-180" : ""}`} aria-hidden />
+          <span className="mt-0.5 inline-flex shrink-0 items-center gap-1 text-[13px] font-medium text-admin-muted">
+            Prix du marché
+            <ChevronDown className={`h-4 w-4 transition-transform ${prixOuverts ? "rotate-180" : ""}`} aria-hidden />
+          </span>
         </button>
         <AnimatePresence initial={false}>
           {prixOuverts && (
@@ -1214,45 +1226,78 @@ function EtapeAcheteurs({
               className="overflow-hidden"
             >
               <div className="flex flex-col gap-3 border-t border-admin-line-soft px-4 pb-4 pt-3">
-                {familles.map((f, i) => (
-                  <div key={`${f.nom}-${i}`}>
-                    <p className="text-[12px] font-semibold uppercase tracking-wide text-admin-muted">
-                      {f.nom}
-                      {f.rare && <span className="ml-2 normal-case text-admin-warning">rare</span>}
-                    </p>
-                    <ul className="mt-1 text-[13px]">
-                      {f.lignes.map((l, j) => {
-                        const source = lienSur(l.prix.sources[0]);
-                        return (
-                          <li key={j} className="flex items-baseline justify-between gap-3 py-0.5">
-                            <span className="min-w-0 truncate" title={l.article}>
-                              {l.quantite != null && <span className="tabular-nums text-admin-muted">{l.quantite} × </span>}
-                              {l.article}
-                              {l.etat && <span className="text-admin-muted"> · {l.etat}</span>}
-                            </span>
-                            {source ? (
-                              <a href={source} target="_blank" rel="noopener noreferrer" title={l.prix.base ?? "Source"} className="shrink-0 tabular-nums hover:underline">
-                                {formaterPrix(l.prix)}
-                              </a>
-                            ) : (
-                              <span className="shrink-0 tabular-nums" title={l.prix.base ?? undefined}>
-                                {formaterPrix(l.prix)}
-                              </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                ))}
+                {familles
+                  .filter((f) => f.lignes.length > 0)
+                  .map((f, i) => (
+                    <div key={`${f.nom}-${i}`}>
+                      <p className="text-[12px] font-semibold uppercase tracking-wide text-admin-muted">
+                        {f.nom}
+                        {f.rare && <span className="ml-2 normal-case text-admin-warning">rare</span>}
+                      </p>
+                      <ul className="mt-1 text-[13px]">
+                        {f.lignes.map((l, j) => {
+                          const source = lienSur(l.prix.sources[0]);
+                          const minimum = minimumLigne(l);
+                          const connu = l.prix.bas != null || l.prix.haut != null;
+                          const prix = `${formaterPrix(l.prix)}${connu ? " l'unité" : ""}`;
+                          return (
+                            <li key={j} className="py-1">
+                              <p className="flex items-baseline justify-between gap-3">
+                                <span className="min-w-0 truncate" title={l.article}>
+                                  {l.quantite != null && <span className="tabular-nums text-admin-muted">{l.quantite} × </span>}
+                                  {l.article}
+                                  {l.etat && <span className="text-admin-muted"> · {l.etat}</span>}
+                                </span>
+                                {minimum != null ? (
+                                  <span className="shrink-0 font-semibold tabular-nums">{formaterDollars(minimum)}</span>
+                                ) : (
+                                  <span className="shrink-0 text-admin-warning">pas comptée</span>
+                                )}
+                              </p>
+                              <p className="text-[12px] tabular-nums text-admin-muted">
+                                {source ? (
+                                  <a href={source} target="_blank" rel="noopener noreferrer" title={l.prix.base ?? "Source"} className="hover:underline">
+                                    {prix}
+                                  </a>
+                                ) : (
+                                  <span title={l.prix.base ?? undefined}>{prix}</span>
+                                )}
+                                {connu && (l.prix.vendu ? " · vente conclue" : " · prix demandé")}
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  ))}
                 <p className="text-[12px] text-admin-muted">
-                  Un acheteur en gros offre souvent {Math.round(PART_OFFRE_EN_GROS.min * 100)} à{" "}
-                  {Math.round(PART_OFFRE_EN_GROS.max * 100)} % de ces prix.
+                  Le minimum : le prix le plus bas × la quantité, baissé de {Math.round(BAISSE_PRIX_DEMANDE * 100)} % quand c&apos;est
+                  un prix demandé (une annonce ne prouve pas une vente). Le dollar américain compte pour{" "}
+                  {tauxFmt.format(TAUX_PRUDENTS.USD)} $ CA et l&apos;euro pour {tauxFmt.format(TAUX_PRUDENTS.EUR)} $ CA, sous le taux
+                  réel.
                 </p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
+        {/* Toujours visible : le chiffre qui décide combien payer, même prix du marché repliés. */}
+        {valeur.comptees > 0 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 12, stiffness: 220 }}
+            className="mx-3 mb-3 rounded-2xl border border-[#5ECB33]/60 bg-admin-tint-green px-4 py-3"
+          >
+            <p className="text-[13px] font-semibold text-admin-green">Revente en gros</p>
+            <p className="mt-0.5 font-display text-2xl font-bold leading-tight tabular-nums text-admin-green sm:text-3xl">
+              {formaterPrix({ ...reventeEnGros(valeur.total), devise: "CAD", base: null, sources: [] })}
+            </p>
+            <p className="mt-1 text-[12px] text-admin-ink">
+              Souvent {Math.round(PART_OFFRE_EN_GROS.min * 100)} à {Math.round(PART_OFFRE_EN_GROS.max * 100)} % de la valeur minimale.
+              Pour faire un profit en gros, payez le lot moins que ça.
+            </p>
+          </motion.div>
+        )}
       </div>
 
       <ul className="flex flex-col gap-2.5">

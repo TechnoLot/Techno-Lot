@@ -7,6 +7,7 @@ const nombreFmt = new Intl.NumberFormat("fr-CA", { maximumFractionDigits: 2 });
 function devise(code: string | null): string {
   if (code === "USD") return "$ US";
   if (code === "CAD") return "$ CA";
+  if (code === "EUR") return "€";
   return code ?? "$";
 }
 
@@ -18,4 +19,9 @@ export function formaterPrix(p: Prix): string {
     return `${nombreFmt.format((p.bas ?? p.haut) as number)} ${d}`;
   }
   return `${nombreFmt.format(p.bas)} à ${nombreFmt.format(p.haut)} ${d}`;
+}
+
+/** « 9 792 $ CA », insécable : un montant ne se coupe pas en fin de ligne. */
+export function formaterDollars(montant: number): string {
+  return `${nombreFmt.format(montant)} ${devise("CAD")}`.replace(/ /g, " ");
 }

@@ -4,6 +4,7 @@ import {
   LIMITES,
   type Article,
   type FamilleResultat,
+  type LigneResultat,
   type ResultatRecherche,
   type StatutLecture,
   type StatutRecherche,
@@ -67,8 +68,8 @@ export function lireArticlesStockes(valeur: unknown): Article[] {
   return articles;
 }
 
-/** Nom de famille comparable : minuscules, sans accents ni espaces doublés. */
-function cleFamille(nom: string): string {
+/** Nom comparable : minuscules, sans accents ni espaces doublés. */
+function cleNom(nom: string): string {
   return nom
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -77,12 +78,19 @@ function cleFamille(nom: string): string {
     .trim();
 }
 
+/** Même article, même état : la même ligne du lot. */
+function cleLigne(l: LigneResultat): string {
+  return cleNom(`${l.article} ${l.etat ?? ""}`);
+}
+
 /**
  * « Chercher d'autres acheteurs » : les compagnies trouvées s'ajoutent aux
  * précédentes. Même famille (même nom) : acheteurs ajoutés à la suite (une
  * fois chacun), prix précédents gardés, ou repris de la nouvelle recherche
- * s'il n'y en avait pas ; nouvelle famille : ajoutée à la fin. Les nouveaux
- * brouillons de courriel remplacent les anciens.
+ * s'il n'y en avait pas ; nouvelle famille : ajoutée à la fin, sans ses lignes
+ * déjà présentes ailleurs (Claude peut renommer une famille : une ligne ne
+ * compte jamais deux fois dans la valeur du lot). Les nouveaux brouillons de
+ * courriel remplacent les anciens.
  */
 export function fusionResultats(ancien: ResultatRecherche, nouveau: ResultatRecherche): ResultatRecherche {
   const familles: FamilleResultat[] = ancien.familles.map((f) => ({
@@ -91,9 +99,12 @@ export function fusionResultats(ancien: ResultatRecherche, nouveau: ResultatRech
     acheteurs: [...f.acheteurs],
   }));
   for (const n of nouveau.familles) {
-    const meme = familles.find((f) => cleFamille(f.nom) === cleFamille(n.nom));
+    const meme = familles.find((f) => cleNom(f.nom) === cleNom(n.nom));
     if (!meme) {
-      if (familles.length < LIMITES.familles) familles.push(n);
+      if (familles.length < LIMITES.familles) {
+        const deja = new Set(familles.flatMap((f) => f.lignes.map(cleLigne)));
+        familles.push({ ...n, lignes: n.lignes.filter((l) => !deja.has(cleLigne(l))) });
+      }
       continue;
     }
     const deja = new Set(meme.acheteurs.map((a) => a.domaine));

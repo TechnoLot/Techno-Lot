@@ -118,6 +118,23 @@ describe("fusionResultats", () => {
     expect(fusionResultats(resultat([famille("A", ["un.example"])]), resultat([autrePrix])).familles[0].lignes[0].prix.bas).toBe(99);
   });
 
+  it("ne compte pas deux fois une ligne quand Claude renomme la famille", () => {
+    const prix = { bas: 10, haut: 20, devise: "CAD", base: null, sources: [] };
+    const ancien = famille("Cisco Meraki", ["un.example"], {
+      lignes: [{ article: "Meraki MR57", quantite: 12, etat: "usagé", prix }],
+    });
+    const renommee = famille("Meraki MR", ["deux.example"], {
+      lignes: [
+        { article: "meraki  MR57", quantite: 12, etat: "Usagé", prix },
+        { article: "Meraki MR57", quantite: 3, etat: "neuf", prix },
+      ],
+    });
+    const f = fusionResultats(resultat([ancien]), resultat([renommee]));
+    expect(f.familles.map((x) => x.lignes.map((l) => l.quantite))).toEqual([[12], [3]]);
+    // Ses compagnies restent : c'est pour elles que la recherche a été lancée.
+    expect(domainesDe(f)).toEqual(["un.example", "deux.example"]);
+  });
+
   it("ajoute une nouvelle famille à la fin et garde l'ancien courriel si le nouveau manque", () => {
     const ancien = resultat([famille("A", ["un.example"])], "Ancien");
     const nouveau: ResultatRecherche = { familles: [famille("B", ["deux.example"])], courriels: { fr: null, en: null } };

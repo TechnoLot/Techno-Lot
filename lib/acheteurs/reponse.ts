@@ -191,6 +191,7 @@ function lireLigne(b: unknown, ou: string, refus: Refus[]): LigneResultat | null
       bas,
       haut,
       devise: devise && /^[A-Z]{3}$/.test(devise) ? devise : null,
+      vendu: prix.vendu === true,
       base: texte(prix.base, 300),
       sources: [...new Set([...listeUrls(prix.sources), ...listeUrls(prix.source)])].slice(0, 5),
     },

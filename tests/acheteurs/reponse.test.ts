@@ -83,6 +83,7 @@ describe("lireReponse", () => {
       bas: 175,
       haut: 472,
       devise: "USD",
+      vendu: false,
       base: "ventes eBay",
       sources: ["https://www.ebay.com/sch/x"],
     });
@@ -118,9 +119,24 @@ describe("lireReponse", () => {
       bas: null,
       haut: null,
       devise: null,
+      vendu: false,
       base: null,
       sources: [],
     });
+  });
+
+  it("ne croit à une vente conclue que sur un vrai true", () => {
+    const lu = (vendu: unknown) => {
+      const base = reponse();
+      Object.assign(base.familles[0].lignes[0].prix, { vendu });
+      const r = lireReponse(enBloc(base));
+      return r.ok && r.resultat.familles[0].lignes[0].prix.vendu;
+    };
+    expect(lu(true)).toBe(true);
+    expect(lu(false)).toBe(false);
+    expect(lu("true")).toBe(false);
+    expect(lu(1)).toBe(false);
+    expect(lu(undefined)).toBe(false);
   });
 
   it("refuse une compagnie sans preuve ou sans moyen de la joindre, avec sa raison", () => {

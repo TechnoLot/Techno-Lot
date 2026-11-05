@@ -52,6 +52,8 @@ export type Prix = {
   bas: number | null;
   haut: number | null;
   devise: string | null;
+  /** Vrai seulement si Claude a vu des ventes conclues ; sinon, des prix demandés (absent : recherche plus ancienne). */
+  vendu?: boolean;
   /** D'où vient la fourchette (ventes eBay conclues, prix affichés…). */
   base: string | null;
   sources: string[];

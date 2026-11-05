@@ -26,6 +26,18 @@ describe("construireDemande", () => {
     expect(demande).toContain("Ne devine jamais un courriel.");
   });
 
+  it("exige un prix bas prudent et dit s'il vient de ventes conclues (lot du 2026-11-05 : que des prix demandés)", () => {
+    const demande = construireDemande({ articles });
+    expect(demande).toContain("mieux vaut sous-estimer que surestimer");
+    expect(demande).toContain("hors taxes et hors livraison");
+    expect(demande).toContain("jamais le prix d'un modèle voisin");
+    expect(demande).toContain("baisse « bas » au prix qu'il faudrait pour tout écouler");
+    expect(demande).toContain("CAD, USD ou EUR seulement");
+    // L'exemple du format ne doit pas pousser Claude à répondre « vendu » sans preuve.
+    expect(demande).toContain('"vendu": false');
+    expect(demande).not.toContain('"vendu": true');
+  });
+
   it("n'ajoute la phrase d'exclusion que s'il y a des compagnies déjà trouvées", () => {
     expect(construireDemande({ articles })).not.toContain("déjà trouvées");
     expect(construireDemande({ articles, domainesExclus: ["exemple.com", "autre.ca"] })).toContain(
