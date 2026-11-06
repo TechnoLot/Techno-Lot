@@ -1,0 +1,543 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T13:53:08.635Z",
+  "title": "Design System: Techno Lot",
+  "extensions": {
+    "colorMeta": {
+      "bleu-nuit": {
+        "role": "neutral",
+        "displayName": "Bleu Nuit",
+        "canonical": "#0A0F1C",
+        "tonalRamp": [
+          "#080B12",
+          "#222630",
+          "#3F4552",
+          "#5F6676",
+          "#828999",
+          "#A8AEBC",
+          "#CCD1DD",
+          "#EAEEF9"
+        ]
+      },
+      "bleu-nuit-profond": {
+        "role": "neutral",
+        "displayName": "Bleu Nuit Profond",
+        "canonical": "#060A14",
+        "tonalRamp": [
+          "#090B10",
+          "#23262E",
+          "#40454F",
+          "#606673",
+          "#838996",
+          "#A8AEBA",
+          "#CCD1DB",
+          "#EAEFF7"
+        ]
+      },
+      "bleu-nuit-releve": {
+        "role": "tertiary",
+        "displayName": "Bleu Relevé",
+        "canonical": "#16203A",
+        "tonalRamp": [
+          "#060B17",
+          "#1F2638",
+          "#3B455C",
+          "#596683",
+          "#7C89A6",
+          "#A3AEC8",
+          "#C7D1E7",
+          "#E7EEFF"
+        ]
+      },
+      "lime-signal": {
+        "role": "primary",
+        "displayName": "Lime Signal",
+        "canonical": "#6BD63B",
+        "tonalRamp": [
+          "#011000",
+          "#0D2F00",
+          "#1E5300",
+          "#307901",
+          "#43A205",
+          "#77C55A",
+          "#A5E68E",
+          "#CFFFBE"
+        ]
+      },
+      "vert-soutenu": {
+        "role": "primary",
+        "displayName": "Vert Soutenu",
+        "canonical": "#5ECB33",
+        "tonalRamp": [
+          "#001000",
+          "#0B2F00",
+          "#1B5300",
+          "#2B7A00",
+          "#41A213",
+          "#76C55D",
+          "#A4E690",
+          "#CEFFC0"
+        ]
+      },
+      "emeraude-degrade": {
+        "role": "primary",
+        "displayName": "Émeraude de Dégradé",
+        "canonical": "#34D399",
+        "tonalRamp": [
+          "#001007",
+          "#002F1E",
+          "#005338",
+          "#007954",
+          "#04A271",
+          "#5EC599",
+          "#93E5BF",
+          "#C1FFE0"
+        ]
+      },
+      "vert-texte": {
+        "role": "secondary",
+        "displayName": "Vert Texte",
+        "canonical": "#2B7A10",
+        "tonalRamp": [
+          "#001000",
+          "#083000",
+          "#165400",
+          "#2F7919",
+          "#589D46",
+          "#85C077",
+          "#AFE1A4",
+          "#D2FDC8"
+        ]
+      },
+      "vert-feuille": {
+        "role": "secondary",
+        "displayName": "Vert Feuille",
+        "canonical": "#2E8B14",
+        "tonalRamp": [
+          "#001000",
+          "#063000",
+          "#125400",
+          "#227B03",
+          "#4F9F3E",
+          "#7FC271",
+          "#ABE39F",
+          "#CFFEC5"
+        ]
+      },
+      "vert-profond": {
+        "role": "secondary",
+        "displayName": "Vert Profond",
+        "canonical": "#0E3A20",
+        "tonalRamp": [
+          "#010F05",
+          "#132D1C",
+          "#2D4E37",
+          "#487155",
+          "#6D9478",
+          "#96B89F",
+          "#BDDAC4",
+          "#DDF6E4"
+        ]
+      },
+      "menthe-pale": {
+        "role": "neutral",
+        "displayName": "Menthe Pâle",
+        "canonical": "#E8F5E0",
+        "tonalRamp": [
+          "#080D06",
+          "#22291E",
+          "#40483A",
+          "#5F6A59",
+          "#838D7C",
+          "#A8B1A2",
+          "#CCD4C7",
+          "#EAF1E6"
+        ]
+      },
+      "encre": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "#0A0A0A",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#AEAEAE",
+          "#D1D1D1",
+          "#EEEEEE"
+        ]
+      },
+      "mousse": {
+        "role": "neutral",
+        "displayName": "Mousse",
+        "canonical": "#4F5650",
+        "tonalRamp": [
+          "#090C0A",
+          "#242824",
+          "#414742",
+          "#616862",
+          "#848B85",
+          "#AAB0AB",
+          "#CDD2CE",
+          "#EBF0EC"
+        ]
+      },
+      "blanc": {
+        "role": "neutral",
+        "displayName": "Blanc",
+        "canonical": "#FFFFFF",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#262626",
+          "#454545",
+          "#666666",
+          "#898989",
+          "#AEAEAE",
+          "#D1D1D1",
+          "#EEEEEE"
+        ]
+      },
+      "gris-vert-pale": {
+        "role": "neutral",
+        "displayName": "Gris-Vert Pâle",
+        "canonical": "#F1F5EF",
+        "tonalRamp": [
+          "#0A0C0A",
+          "#252724",
+          "#434642",
+          "#646762",
+          "#878A85",
+          "#ACAFAB",
+          "#CFD2CE",
+          "#EDEFEC"
+        ]
+      },
+      "admin-fond": {
+        "role": "neutral",
+        "displayName": "Fond de l'Admin",
+        "canonical": "#F4F7F2",
+        "tonalRamp": [
+          "#0A0B0A",
+          "#252724",
+          "#444642",
+          "#646763",
+          "#888A86",
+          "#ACAFAB",
+          "#D0D2CE",
+          "#EDEFEC"
+        ]
+      },
+      "admin-filet": {
+        "role": "neutral",
+        "displayName": "Filet",
+        "canonical": "#E3EADF",
+        "tonalRamp": [
+          "#0A0C08",
+          "#242822",
+          "#42473F",
+          "#62685F",
+          "#858B82",
+          "#ABB0A8",
+          "#CED3CC",
+          "#ECF0EA"
+        ]
+      },
+      "admin-filet-fort": {
+        "role": "neutral",
+        "displayName": "Filet Fort",
+        "canonical": "#C9D6C3",
+        "tonalRamp": [
+          "#080D07",
+          "#22291F",
+          "#3F483B",
+          "#5F6A5A",
+          "#828D7D",
+          "#A8B1A3",
+          "#CCD4C8",
+          "#EAF1E7"
+        ]
+      },
+      "admin-vert-action": {
+        "role": "secondary",
+        "displayName": "Vert Action de l'Admin",
+        "canonical": "#257A10",
+        "tonalRamp": [
+          "#001000",
+          "#063000",
+          "#115400",
+          "#2B7A1A",
+          "#549E47",
+          "#83C178",
+          "#AEE2A4",
+          "#D1FDC9"
+        ]
+      },
+      "admin-danger": {
+        "role": "neutral",
+        "displayName": "Danger de l'Admin",
+        "canonical": "#B42318",
+        "tonalRamp": [
+          "#210000",
+          "#500000",
+          "#821109",
+          "#B42D21",
+          "#DB5A4A",
+          "#F98A79",
+          "#FFBFB4",
+          "#FEE9E5"
+        ]
+      },
+      "admin-alerte": {
+        "role": "neutral",
+        "displayName": "Alerte de l'Admin",
+        "canonical": "#B54708",
+        "tonalRamp": [
+          "#1C0200",
+          "#451400",
+          "#752900",
+          "#A84105",
+          "#CE683C",
+          "#ED946F",
+          "#FEC1A8",
+          "#FFE9E1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Titres des en-têtes de pages."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Titres de sections du site public."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Titres de cartes et d'étapes."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Introductions et texte courant du site public."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Boutons publics, en majuscules espacées."
+      },
+      "admin-body": {
+        "displayName": "Admin",
+        "purpose": "Contenu de l'admin."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lueur-bouton",
+        "value": "0 0 0 1px rgba(94,203,51,.35), 0 12px 34px -8px rgba(94,203,51,.55)",
+        "purpose": "Survol et focus du bouton principal seulement."
+      },
+      {
+        "name": "ombre-bleu-nuit",
+        "value": "0 14px 30px -12px rgba(6,10,20,.6)",
+        "purpose": "Survol des boutons foncés."
+      },
+      {
+        "name": "carte-publique",
+        "value": "0 1px 2px rgba(10,10,10,.04), 0 8px 28px rgba(10,10,10,.06)",
+        "purpose": "Cartes posées sur un chapitre clair."
+      },
+      {
+        "name": "fenetre-admin",
+        "value": "inset 0 1px 0 rgba(255,255,255,.06), 0 24px 64px -20px rgba(2,6,16,.9)",
+        "purpose": "Surcouches et menus flottants de l'admin."
+      },
+      {
+        "name": "actif-menu",
+        "value": "0 6px 20px -8px rgba(107,214,59,.6)",
+        "purpose": "Pastille lime de la page en cours."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-sortie",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Boutons, flèches et entrées du site public."
+      },
+      {
+        "name": "ease-reveal",
+        "value": "cubic-bezier(0.21, 0.47, 0.32, 0.98)",
+        "purpose": "Fondus au défilement."
+      },
+      {
+        "name": "duree-admin",
+        "value": "150ms",
+        "purpose": "Changements d'état de l'admin."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      },
+      {
+        "name": "2xl",
+        "value": "1536px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "L'action principale du site public : dégradé lime → émeraude, lueur au survol seulement.",
+      "html": "<button class=\"ds-btn-primary\">Faire une soumission <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12h14M12 5l7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:.6rem;border-radius:9999px;font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.1em;line-height:1.1;font-size:.875rem;padding:.95rem 1.75rem;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .3s ease,background-color .25s ease,filter .25s ease;background:linear-gradient(120deg,#5ecb33,#34d399);color:#0a0a0a}.ds-btn-primary:hover,.ds-btn-primary:focus-visible{filter:brightness(1.06);box-shadow:0 0 0 1px rgba(94,203,51,.35),0 12px 34px -8px rgba(94,203,51,.55)}.ds-btn-primary:focus-visible{outline:2px solid #2b7a10;outline-offset:3px}.ds-btn-primary:active{transform:translateY(1px) scale(.98)}"
+    },
+    {
+      "name": "Bouton encre",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Bouton bleu nuit, et bouton principal sur un aplat lime.",
+      "html": "<button class=\"ds-btn-ink\">Comment ça marche</button>",
+      "css": ".ds-btn-ink{display:inline-flex;align-items:center;gap:.6rem;border-radius:9999px;font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.1em;line-height:1.1;font-size:.875rem;padding:.95rem 1.75rem;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .3s ease,background-color .25s ease,filter .25s ease;background:#0a0f1c;color:#fff}.ds-btn-ink:hover,.ds-btn-ink:focus-visible{background:#16203a;box-shadow:0 14px 30px -12px rgba(6,10,20,.6)}.ds-btn-ink:focus-visible{outline:2px solid #2b7a10;outline-offset:3px}.ds-btn-ink:active{transform:translateY(1px) scale(.98)}"
+    },
+    {
+      "name": "Bouton contour",
+      "kind": "button",
+      "description": "Action secondaire publique, contour qui suit le thème de section.",
+      "html": "<button class=\"ds-btn-ghost\">Comment ça marche</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;gap:.6rem;border-radius:9999px;font-family:'Chakra Petch',sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.1em;line-height:1.1;font-size:.875rem;padding:.95rem 1.75rem;border:0;cursor:pointer;transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .3s ease,background-color .25s ease,filter .25s ease;background:transparent;color:#0a0a0a;border:1.5px solid rgba(10,10,10,.28)}.ds-btn-ghost:hover,.ds-btn-ghost:focus-visible{border-color:#2b7a10;background:rgba(43,122,16,.1)}.ds-btn-ghost:focus-visible{outline:2px solid #2b7a10;outline-offset:3px}"
+    },
+    {
+      "name": "Bouton admin",
+      "kind": "button",
+      "refersTo": "admin-button-primary",
+      "description": "Action principale de l'admin, sans majuscules.",
+      "html": "<button class=\"ds-admin-btn\">Enregistrer</button>",
+      "css": ".ds-admin-btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:9999px;font-family:Inter,sans-serif;font-size:.875rem;font-weight:600;padding:.625rem 1.25rem;cursor:pointer;transition:background-color .15s,border-color .15s;background:#257a10;color:#fff;border:1px solid transparent}.ds-admin-btn:hover{background:#1e6a0b}.ds-admin-btn:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px #6bd63b}.ds-admin-btn:disabled{opacity:.6;cursor:not-allowed}"
+    },
+    {
+      "name": "Bouton admin secondaire",
+      "kind": "button",
+      "refersTo": "admin-button-secondary",
+      "description": "Action secondaire de l'admin.",
+      "html": "<button class=\"ds-admin-btn-2\">Annuler</button>",
+      "css": ".ds-admin-btn-2{display:inline-flex;align-items:center;gap:.5rem;border-radius:9999px;font-family:Inter,sans-serif;font-size:.875rem;font-weight:600;padding:.625rem 1.25rem;cursor:pointer;transition:background-color .15s,border-color .15s;background:#fff;color:#0a0a0a;border:1px solid #c9d6c3}.ds-admin-btn-2:hover{border-color:#a9b8a2;background:#f4f7f2}.ds-admin-btn-2:focus-visible{outline:none;box-shadow:0 0 0 2px #fff,0 0 0 4px #6bd63b}"
+    },
+    {
+      "name": "Champ public",
+      "kind": "input",
+      "refersTo": "champ-public",
+      "description": "Champ du formulaire de soumission.",
+      "html": "<input class=\"ds-champ\" type=\"text\" placeholder=\"Votre nom\" aria-label=\"Votre nom\">",
+      "css": ".ds-champ{display:block;width:100%;min-height:3rem;border-radius:14px;border:1px solid rgba(10,10,10,.14);background:#fff;color:#0a0a0a;padding:.75rem 1rem;font-family:Inter,sans-serif;font-size:1rem}.ds-champ::placeholder{color:#4f5650}.ds-champ:focus-visible{outline:2px solid #2b7a10;outline-offset:3px}"
+    },
+    {
+      "name": "Champ admin",
+      "kind": "input",
+      "refersTo": "admin-champ",
+      "description": "Champ standard de l'admin, focus lime.",
+      "html": "<input class=\"ds-field\" type=\"text\" placeholder=\"Rechercher un lot\" aria-label=\"Rechercher un lot\">",
+      "css": ".ds-field{width:100%;border-radius:10px;border:1px solid #c9d6c3;background:#fff;color:#0a0a0a;padding:.625rem .875rem;font-family:Inter,sans-serif;font-size:.875rem;transition:border-color .15s,box-shadow .15s}.ds-field::placeholder{color:#5f6b62}.ds-field:focus{outline:none;border-color:#6bd63b;box-shadow:0 0 0 2px rgba(107,214,59,.4)}"
+    },
+    {
+      "name": "Statut de lot",
+      "kind": "chip",
+      "description": "Pilule teintée avec point, couleur portée par l'état.",
+      "html": "<span class=\"ds-statut\"><span class=\"ds-point\"></span>Acheté</span>",
+      "css": ".ds-statut{display:inline-flex;align-items:center;gap:.375rem;border-radius:9999px;background:#eaf6e3;color:#257a10;padding:.125rem .625rem;font-family:Inter,sans-serif;font-size:.75rem;font-weight:500;white-space:nowrap}.ds-point{width:6px;height:6px;border-radius:9999px;background:#4fae2a}"
+    },
+    {
+      "name": "Carte admin",
+      "kind": "card",
+      "refersTo": "admin-carte",
+      "description": "Carte blanche à filet, sans ombre ; le filet se renforce au survol.",
+      "html": "<div class=\"ds-carte\" tabindex=\"0\"><h3 class=\"ds-carte-titre\">Soumissions à traiter</h3><p class=\"ds-carte-texte\">3 nouvelles demandes</p></div>",
+      "css": ".ds-carte{border-radius:16px;border:1px solid #e3eadf;background:#fff;color:#0a0a0a;padding:1.25rem;transition:border-color .2s}.ds-carte:hover,.ds-carte:focus-visible{border-color:#c9d6c3;outline:none}.ds-carte-titre{margin:0;font-family:'Chakra Petch',sans-serif;font-size:1rem;font-weight:600;letter-spacing:-.015em}.ds-carte-texte{margin:.375rem 0 0;font-family:Inter,sans-serif;font-size:.875rem;color:#4f5a52}"
+    },
+    {
+      "name": "Navigation admin",
+      "kind": "nav",
+      "description": "Barre latérale bleu nuit, ligne active en pastille lime.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Menu\"><a class=\"ds-nav-actif\" href=\"#\">Accueil</a><a href=\"#\">Lots</a><a href=\"#\">Soumissions</a></nav>",
+      "css": ".ds-nav{display:flex;flex-direction:column;gap:.25rem;width:220px;padding:.75rem;background:#0a0f1c;border-radius:16px}.ds-nav a{padding:.55rem .75rem;border-radius:12px;color:#94a3b8;font-family:Inter,sans-serif;font-size:.875rem;text-decoration:none;transition:color .15s}.ds-nav a:hover{color:#6bd63b}.ds-nav a:focus-visible{outline:2px solid #6bd63b;outline-offset:2px}.ds-nav .ds-nav-actif{background:#6bd63b;color:#0a0a0a;font-weight:600;box-shadow:0 6px 20px -8px rgba(107,214,59,.6)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Le Signal Vert",
+    "overview": "Un feu vert dans la nuit. Le bleu nuit (#0A0F1C) tient le fond, et le lime (#6BD63B) arrive là où quelque chose se confirme : une action à faire, une valeur reconnue, un état réglé. Cette logique vaut pour tout le système. Sur le site public, elle devient spectacle mesuré ; dans l'admin, elle devient repère de travail.\n\nLe système a deux registres. Le site public avance par chapitres de couleur pleine largeur, collés les uns aux autres, avec de très grands titres en Chakra Petch. L'admin est clair et précis par défaut, avec une version sombre en bleu nuit, une barre latérale bleu nuit dans les deux cas, et des filets plutôt que des ombres. Les deux partagent les polices, la pilule et le même vert.\n\nLe ton est franc et rassurant : professionnel, accueillant et premium. Les éléments se voient du premier coup, disent ce qu'ils font et ne cherchent pas à impressionner par la complexité.\n\nLe ciel du héros est un vrai ciel de nuit au-dessus de Montréal (catalogue Yale BSC5), en étoiles vertes. Quadrillages, taches vertes floues et réseaux de points reliés ont été écartés parce qu'ils faisaient « généré par IA ».",
+    "keyCharacteristics": [
+      "Le bleu nuit porte, le lime signale.",
+      "Chapitres d'aplat pleine largeur, sans séparateur, sur le site public.",
+      "Chakra Petch pour la voix, Inter pour le texte.",
+      "La pilule pour tout ce qu'on clique.",
+      "Admin sobre : filets, couleurs d'état, densité."
+    ],
+    "rules": [
+      {
+        "name": "La Règle du Feu Vert",
+        "body": "Le lime dit quelque chose : action, état actif, confirmation, valeur. S'il ne signale rien, il n'a rien à faire là.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle du Bon Vert",
+        "body": "Le vert se choisit selon le fond : lime sur sombre, #2B7A10 sur blanc, #1F630C sur menthe, #0E3A20 sur lime. Les variables de `data-theme` font ce choix : utiliser `text-emerald`, pas une valeur en dur.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle de l'Inversion",
+        "body": "Sur un aplat lime, le bouton principal passe en bleu nuit, texte blanc. Du vert sur du vert ne se lit pas.",
+        "section": "colors"
+      },
+      {
+        "name": "La Règle du Titre Seul",
+        "body": "Sur le site public, aucun surtitre au-dessus d'un titre. Le titre porte seul. Les props `eyebrow` qui restent dans le code sont ignorées et ne doivent pas être réactivées.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle du Français",
+        "body": "Toute échelle se teste avec le vrai texte français et anglais. Les mots québécois sont longs : ce sont eux qui décident si un titre tient.",
+        "section": "typography"
+      },
+      {
+        "name": "La Règle de la Lueur Méritée",
+        "body": "La lueur verte se gagne au survol. Rien ne brille au repos.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** utiliser `text-mist`, `text-moss`, `text-emerald`, `bg-surface` et `border-line` sur le site public pour que le thème de section fasse le travail.",
+      "**Do** utiliser les classes `admin-*` et les variables `--a-*` dans l'admin, pour que les modes clair et sombre tiennent sans effort.",
+      "**Do** garder un contraste de 4,5:1 pour le texte courant ; les ratios sont notés à côté des couleurs dans `app/site.css` et `app/admin/admin.css`.",
+      "**Do** dessiner les icônes avec lucide-react, en une seule épaisseur.",
+      "**Do** respecter `prefers-reduced-motion` : le ciel devient une image fixe.",
+      "**Do** faire les entrées du héros en CSS pur (`.hero-item`, `.hero-word`) : rien n'attend le JavaScript, pour protéger le LCP.",
+      "**Do** livrer la version simple dans l'admin, dans le style existant."
+    ],
+    "donts": [
+      "**Don't** mettre de surtitre au-dessus d'un titre public.",
+      "**Don't** remettre de quadrillage, de taches vertes floues, de réseau de points reliés ni de balayage derrière le héros.",
+      "**Don't** mettre de voie lactée blanche ni d'étoiles blanches.",
+      "**Don't** utiliser de portable en 3D, ni de compteur « N appareils » sur la palette du héros.",
+      "**Don't** masquer l'en-tête au défilement.",
+      "**Don't** utiliser le fond sable : ce n'est pas l'identité de la marque.",
+      "**Don't** appliquer du texte en dégradé ni du verre décoratif.",
+      "**Don't** mettre du texte blanc sur le lime.",
+      "**Don't** ajouter de chandelles ni de tableau complexe aux graphiques de l'admin : ils restent simples."
+    ]
+  }
+}

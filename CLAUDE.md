@@ -73,7 +73,7 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 
 - Toujours répondre à l'utilisateur en français (Québec), même s'il écrit en anglais.
 
-- Thème admin : fond `night-950`, cartes `.glass`, accent vert `#5ECB33` (`.btn-primary`, `.field` dans `app/globals.css`, couleurs dans `tailwind.config.ts`).
+- Thème admin : clair par défaut, sombre avec `data-admin-theme="dark"` ; fond `#f4f7f2`, cartes `.glass` (blanches, à filet), vert d'action `#257a10` (`.btn-primary`, `.field` et couleurs par rôle `--a-*` dans `app/admin/admin.css`). Système visuel complet : `DESIGN.md`.
 - Wording : jamais « paiement avant notre départ » ; dire « paiement rapide et garanti ».
 - Git : messages de commit en français.
 - Sessions Claude Code dans le nuage (claude.ai/code, branche imposée `claude/...`) : l'utilisateur veut que TOUS les changements aillent sur `dev`. Travailler sur `dev` (`git fetch origin dev && git checkout -B dev origin/dev`) et pousser sur `dev`, pas sur la branche `claude/...`. Vercel déploie une prévisualisation de `dev` automatiquement.
