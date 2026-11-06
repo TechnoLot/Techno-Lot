@@ -46,3 +46,9 @@ Sauvegardes-TechnoLot/
 /.impeccable/mocks/
 /.impeccable/surfaces/
 /.impeccable/hook.cache.json
+
+# Agents marketing Léo et Max : chiffres et décisions d'affaires, jamais dans le dépôt public
+/JOURNAL-TECHNOLOT.md
+/.claude/agents/leo.md
+/.claude/agents/max.md
+/marketing/agents/
