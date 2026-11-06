@@ -10,6 +10,12 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/skills/*
 !.claude/skills/scroll-craft/
+!.claude/skills/motion-broll/
+!.claude/skills/object-separation/
+!.claude/skills/explainer-default/
+!.claude/skills/explainer-engaging/
+!.claude/skills/explainer-high-energy/
+!.claude/skills/sound-effects/
 .claude/skills/scroll-craft/.env
 .agents
 skills-lock.json
