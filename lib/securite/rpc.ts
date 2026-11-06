@@ -6,11 +6,16 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * `limite_effacer`, `journal_securite_ajouter`, `soumission_enregistrer`, `lead_pub_enregistrer`,
  * `suivi_pub_enregistrer` ; migration 20261030020000_securite_rpc.sql ;
  * `session_activite_noter` ; migration 20261104120000_sessions_activite_reelle.sql).
+ * Une seule ne passe pas par ce fichier : `soumissions_par_semaine`, qui rend des
+ * nombres seulement à l'export du matin de l'ordinateur de l'utilisateur
+ * (scripts/export-marketing, secret lu dans .env.local ; migration
+ * 20261106200000_soumissions_par_semaine.sql).
  *
  * Ces fonctions sont appelables avec la clé publishable (publique par nature),
  * mais refusent tout appel sans le secret serveur SECURITE_RPC_SECRET (dont
  * seule l'empreinte SHA-256 est en base, table securite.secret_rpc). Le
- * secret ne doit JAMAIS avoir le préfixe NEXT_PUBLIC_ ni quitter le serveur.
+ * secret ne doit JAMAIS avoir le préfixe NEXT_PUBLIC_ ni quitter le serveur et
+ * le .env.local de l'ordinateur de l'utilisateur.
  */
 
 export const LONGUEUR_MIN_SECRET = 32;
