@@ -40,3 +40,6 @@ scrollcraft/builds/*/lab/proto/*.jpg
 # même si une copie est déposée dans le dépôt par erreur
 *.dump
 Sauvegardes-TechnoLot/
+
+# Fiche produit locale (Impeccable) : décisions internes, jamais dans le dépôt public
+/PRODUCT.md
