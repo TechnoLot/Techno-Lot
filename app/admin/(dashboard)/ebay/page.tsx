@@ -14,7 +14,7 @@ export default async function EbayDescriptionPage() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-admin-ink sm:text-3xl">
+          <h1 className="admin-h1">
             Description eBay
           </h1>
           <p className="mt-1 text-sm text-admin-muted">

@@ -30,22 +30,22 @@ export default function TrackingCoverage({ coverage, platform }: { coverage: Cov
           Les leads ci-dessus ne comptent que les formulaires dont la source a pu être enregistrée.
         </p>
 
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-admin-line-soft px-4 py-3">
+        <dl className="admin-stats mt-4 sm:grid-cols-3">
+          <div className="admin-stat">
             <dt className="text-[13px] text-admin-muted">Formulaires reçus sur le site</dt>
-            <dd className="mt-1 font-display text-2xl font-semibold text-admin-ink">
+            <dd className="admin-stat-valeur">
               {siteForms === null ? "—" : siteForms.toLocaleString("fr-CA")}
             </dd>
           </div>
-          <div className="rounded-xl border border-admin-line-soft px-4 py-3">
+          <div className="admin-stat">
             <dt className="text-[13px] text-admin-muted">Rattachés à une pub {SOURCES[platform]}</dt>
-            <dd className="mt-1 font-display text-2xl font-semibold text-admin-ink">
+            <dd className="admin-stat-valeur">
               {attributedLeads.toLocaleString("fr-CA")}
             </dd>
           </div>
-          <div className="rounded-xl border border-admin-line-soft px-4 py-3">
+          <div className="admin-stat">
             <dt className="text-[13px] text-admin-muted">Conversions comptées par {SOURCES[platform]}</dt>
-            <dd className="mt-1 font-display text-2xl font-semibold text-admin-ink">
+            <dd className="admin-stat-valeur">
               {platformConversions === null ? "—" : platformConversions.toLocaleString("fr-CA")}
             </dd>
           </div>

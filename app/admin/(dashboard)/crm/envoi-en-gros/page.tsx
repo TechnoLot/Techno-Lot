@@ -38,7 +38,7 @@ export default async function EnvoiEnGrosPage() {
   }));
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href="/admin/crm"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
@@ -48,8 +48,8 @@ export default async function EnvoiEnGrosPage() {
       </Link>
 
       <header className="mb-8 mt-4">
-        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">Envoi en gros</h1>
-        <p className="mt-2 max-w-2xl text-sm text-admin-muted">
+        <h1 className="admin-h1">Envoi en gros</h1>
+        <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted">
           Colle une liste d&apos;adresses ou importe un CSV, écris le message, joins au besoin les photos ou
           la liste du lot, vérifie, puis confirme.
           Chaque destinataire reçoit son propre courriel personnalisé (il ne voit jamais la liste),

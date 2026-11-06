@@ -88,8 +88,8 @@ export default function AdsTable({
   return (
     <>
       {/* Ordinateur : tableau */}
-      <div className="hidden overflow-x-auto lg:block">
-        <table className="w-full min-w-[760px] border-collapse text-sm">
+      <div className="hidden overflow-x-auto rounded-b-2xl lg:block">
+        <table className="admin-table min-w-[760px]">
           <thead>
             <tr className="border-b border-admin-line-soft">
               <th scope="col" className={`${th} w-[34%] pl-5`}>

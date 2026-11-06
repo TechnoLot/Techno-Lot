@@ -1,29 +1,24 @@
 /**
- * En-tête de page admin commun : sur-titre, titre, description et zone
- * d'actions à droite (empilée sous le titre sur mobile).
+ * En-tête de page admin commun : titre, description et zone d'actions à
+ * droite (empilée sous le titre sur mobile).
  */
 export default function PageHeader({
-  eyebrow,
   title,
   description,
   actions,
 }: {
-  eyebrow?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+    <header className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div className="min-w-0">
-        {eyebrow && (
-          <p className="text-sm font-medium text-admin-muted">{eyebrow}</p>
-        )}
-        <h1 className="mt-1 font-display text-[30px] font-semibold leading-tight tracking-tight text-admin-ink sm:text-[34px]">
+        <h1 className="admin-h1">
           {title}
         </h1>
         {description && (
-          <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-admin-muted [text-wrap:pretty]">
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted [text-wrap:pretty]">
             {description}
           </p>
         )}

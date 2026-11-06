@@ -35,11 +35,9 @@ export default function AcheteursCarte({
       {enCours > 0 && (
         <Link
           href="/admin/soumissions"
-          className="group mx-3 mt-1 flex items-center gap-3 rounded-2xl border border-admin-line px-3 py-3 transition-colors hover:border-[#5ECB33]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] sm:mx-4"
+          className="group flex items-center gap-3 border-t border-admin-line-soft px-4 py-3 transition-colors hover:bg-admin-subtle sm:px-5"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-admin-tint-green text-admin-green">
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          </span>
+          <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin text-admin-green motion-reduce:animate-none" aria-hidden />
           <span className="min-w-0 flex-1 text-[14px] text-admin-ink">
             Claude cherche des acheteurs pour{" "}
             <span className="font-semibold tabular-nums">{formatCount(enCours)}</span> soumission{pluriel(enCours)}
@@ -51,11 +49,9 @@ export default function AcheteursCarte({
       {niches > 0 ? (
         <Link
           href="/admin/soumissions?statut=a-traiter"
-          className="group mx-3 mb-3 mt-2 flex items-center gap-3 rounded-2xl bg-admin-tint-green px-3 py-3 transition hover:brightness-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b] sm:mx-4"
+          className="group flex items-center gap-3 border-t border-admin-line-soft px-4 py-3 transition-colors hover:bg-admin-subtle sm:px-5"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#5ECB33] text-[#0a0a0a]">
-            <Sparkles className="h-4 w-4" aria-hidden />
-          </span>
+          <Sparkles className="h-[18px] w-[18px] shrink-0 text-admin-green" aria-hidden />
           <span className="min-w-0 flex-1 text-[14px] text-admin-ink">
             <span className="font-semibold tabular-nums">{formatCount(niches)}</span> soumission{pluriel(niches)} avec des
             articles nichés : trouver des acheteurs
@@ -63,7 +59,7 @@ export default function AcheteursCarte({
           <ChevronRight className="h-4 w-4 shrink-0 text-admin-green transition-transform group-hover:translate-x-0.5" aria-hidden />
         </Link>
       ) : enCours > 0 ? (
-        <div className="pb-3" />
+        null
       ) : (
         <p className="px-4 pb-3 text-[13px] text-admin-muted sm:px-5">
           Rien à chercher pour l&apos;instant : les soumissions avec des articles nichés apparaîtront ici.

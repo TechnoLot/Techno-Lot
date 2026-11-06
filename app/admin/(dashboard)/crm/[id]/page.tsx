@@ -111,7 +111,7 @@ export default async function CompanyPage(
   ].filter((f) => f.value);
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href="/admin/crm"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
@@ -124,7 +124,7 @@ export default async function CompanyPage(
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <FitScoreBadge score={company.fit_score} />
-            <h1 className="font-display text-2xl font-bold text-admin-ink sm:text-3xl">
+            <h1 className="admin-h1">
               {company.name}
             </h1>
             {company.is_partner_not_client && (

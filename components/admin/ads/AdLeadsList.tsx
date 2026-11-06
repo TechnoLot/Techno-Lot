@@ -45,7 +45,7 @@ export default function AdLeadsList({ leads, clients }: { leads: LeadItem[]; cli
         </p>
       ) : (
         <>
-          <table className="hidden w-full border-collapse text-sm md:table">
+          <table className="admin-table hidden md:table">
             <thead>
               <tr className="border-y border-admin-line-soft">
                 <th scope="col" className={`${th} pl-6`}>

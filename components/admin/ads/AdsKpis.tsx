@@ -56,23 +56,18 @@ export default function AdsKpis({
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+    <dl className="admin-stats grid-cols-2 md:grid-cols-5">
       {tiles.map((t) => (
-        <div
-          key={t.label}
-          className={`min-w-0 rounded-2xl border p-4 last:col-span-2 sm:p-5 md:last:col-span-1 ${
-            t.highlight ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
-          }`}
-        >
-          <dt className={`text-[13px] font-medium ${t.highlight ? "text-admin-ink" : "text-admin-muted"}`}>{t.label}</dt>
+        <div key={t.label} className="admin-stat last:col-span-2 md:last:col-span-1">
+          <dt className="text-[13px] font-medium text-admin-muted">{t.label}</dt>
           <dd
-            className={`mt-1.5 truncate font-display text-[26px] font-semibold leading-none tracking-tight sm:text-[30px] ${
-              t.tone === "pos" ? "text-admin-green" : t.tone === "neg" ? "text-admin-danger" : "text-admin-ink"
+            className={`admin-stat-valeur ${
+              t.highlight || t.tone === "pos" ? "text-admin-green" : t.tone === "neg" ? "text-admin-danger" : ""
             }`}
           >
             {t.value}
           </dd>
-          <dd className={`mt-2 truncate text-[12px] ${t.highlight ? "text-admin-ink/75" : "text-admin-muted"}`}>{t.hint}</dd>
+          <dd className="mt-2 truncate text-[12px] text-admin-muted">{t.hint}</dd>
         </div>
       ))}
     </dl>

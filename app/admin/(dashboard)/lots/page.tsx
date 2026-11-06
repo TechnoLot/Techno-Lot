@@ -50,7 +50,6 @@ export default async function LotsListPage(
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
-        eyebrow="Inventaire"
         title="Lots"
         description={
           <>

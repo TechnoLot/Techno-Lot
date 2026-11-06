@@ -52,8 +52,9 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
     "rounded-[10px] border border-admin-line-strong bg-admin-card px-3 py-2 text-[13px] text-admin-ink focus:border-[#6bd63b] focus:outline-none focus:ring-2 focus:ring-[#6bd63b]/40";
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div className="relative sm:w-72">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+      <div className="relative sm:w-80">
         <Search
           className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted"
           aria-hidden
@@ -66,12 +67,10 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
           className="field pl-10"
         />
       </div>
-
-      <div className="flex flex-wrap items-center gap-2">
         <div
           role="tablist"
           aria-label="Score minimum"
-          className="inline-flex gap-1 rounded-full border border-admin-line bg-admin-card p-1"
+          className="inline-flex self-start gap-1 rounded-full border border-admin-line bg-admin-card p-1 sm:self-auto"
         >
           {SCORE_TABS.map(({ key, label }) => (
             <button
@@ -95,7 +94,9 @@ export default function CompaniesFilters({ regions }: { regions: string[] }) {
             </button>
           ))}
         </div>
+      </div>
 
+      <div className="admin-toolbar">
         <select
           value={suivi}
           onChange={(e) =>

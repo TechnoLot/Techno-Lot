@@ -33,15 +33,18 @@ export default function EbaySalesChart({
   data,
   granularite = "jour",
   label = "Ventes",
+  hauteur = "h-60 sm:h-64",
 }: {
   data: Point[];
   granularite?: "jour" | "mois";
   /** Nom de la série dans l'infobulle */
   label?: string;
+  /** Classes de hauteur de la zone du graphique */
+  hauteur?: string;
 }) {
   const mois = granularite === "mois";
   return (
-    <div className="mt-4 h-60 sm:h-64">
+    <div className={`mt-4 ${hauteur}`}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <CartesianGrid stroke="rgb(var(--a-line-soft))" vertical={false} />
@@ -78,6 +81,7 @@ export default function EbaySalesChart({
             }}
           />
           <Area
+            isAnimationActive={false}
             type="monotone"
             dataKey="total"
             stroke="rgb(var(--a-green))"

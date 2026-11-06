@@ -84,7 +84,7 @@ function CarteRamassage({ r, onOuvrir }: { r: Ramassage; onOuvrir: (r: Ramassage
     <button
       type="button"
       onClick={() => onOuvrir(r)}
-      className="admin-focus block w-full rounded-xl border border-admin-line border-l-[3px] border-l-[#6bd63b] bg-admin-card px-3 py-2 text-left transition-colors hover:border-admin-line-strong hover:border-l-[#6bd63b] hover:bg-admin-subtle"
+      className="admin-focus block w-full rounded-xl border border-admin-tint-green-line bg-admin-tint-green px-3 py-2 text-left transition-colors hover:border-admin-line-strong hover:border-l-[#6bd63b] hover:bg-admin-subtle"
     >
       <span className="block text-[12px] font-semibold tabular-nums text-admin-green">{plageHoraire(r)}</span>
       <span className="mt-0.5 line-clamp-2 text-[13.5px] font-semibold leading-snug text-admin-ink [overflow-wrap:anywhere]">
@@ -235,7 +235,7 @@ function GrilleSemaine({ ramassages, ancre, aujourdhui, onOuvrir, onNouveau }: P
                     type="button"
                     onClick={() => onOuvrir(r)}
                     title={`${plageHoraire(r)} · ${nomRamassage(r)}${ville ? ` · ${ville}` : ""}`}
-                    className={`admin-focus absolute z-[1] overflow-hidden rounded-lg border border-[#6bd63b]/40 border-l-[3px] border-l-[#6bd63b] bg-admin-tint-green py-1 text-left shadow-[0_1px_2px_rgba(10,10,10,0.06)] transition-[filter,box-shadow] hover:z-[3] hover:shadow-[0_4px_12px_-4px_rgba(37,122,16,0.35)] hover:brightness-[0.97] ${
+                    className={`admin-focus absolute z-[1] overflow-hidden rounded-lg border border-[#6bd63b]/50 bg-admin-tint-green py-1 text-left shadow-[0_1px_2px_rgba(10,10,10,0.06)] transition-[filter,box-shadow] hover:z-[3] hover:shadow-[0_4px_12px_-4px_rgba(37,122,16,0.35)] hover:brightness-[0.97] ${
                       etroit ? "px-1" : "px-1.5"
                     }`}
                     style={{

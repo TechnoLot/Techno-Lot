@@ -24,21 +24,22 @@ import {
  * d'une image à l'autre, image sautée si rien ne change : voir Peintre). Le pointeur
  * s'écoute sur le <header> parent ; les canvas restent sous le contenu, sans clic.
  * Démarrage après la première peinture, en fondu ; pause hors écran et onglet caché ;
- * image fixe en mouvement réduit. Rien n'est caché en attendant ce code (LCP).
+ * image fixe en mouvement réduit ou avec `statique`. Rien n'est caché en attendant ce
+ * code (LCP). Hors d'un <header> (fond de l'admin), le pointeur s'écoute sur la page.
  */
-export function CielEtoiles() {
+export function CielEtoiles({ statique = false }: { statique?: boolean }) {
   const fondRef = useRef<HTMLCanvasElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = ref.current;
     const fond = fondRef.current;
-    const root = canvas?.closest<HTMLElement>("header");
+    const root = canvas?.closest<HTMLElement>("header") ?? document.documentElement;
     const ctx = canvas?.getContext("2d");
     const fctx = fond?.getContext("2d");
     if (!canvas || !fond || !root || !ctx || !fctx) return;
 
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = statique || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     let w = 0;
@@ -271,7 +272,7 @@ export function CielEtoiles() {
       io.disconnect();
       ro.disconnect();
     };
-  }, []);
+  }, [statique]);
 
   return (
     <>

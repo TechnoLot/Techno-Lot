@@ -454,7 +454,7 @@ export default function NotificationsFeed({
   );
 }
 
-/** Carte d’une notification : pastille d’icône, liseré vert si nouvelle. */
+/** Carte d’une notification : pastille d’icône, filet vert si nouvelle. */
 function Carte({
   item,
   nouveau,
@@ -470,7 +470,6 @@ function Carte({
         nouveau ? "border-admin-tint-green-line" : "border-admin-line"
       }`}
     >
-      {nouveau && <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[#6bd63b]" />}
       <PastilleIcone item={item} />
       <div className="min-w-0 flex-1">{children}</div>
     </article>

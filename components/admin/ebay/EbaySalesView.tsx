@@ -1,3 +1,4 @@
+import PageHeader from "@/components/admin/PageHeader";
 import { ExternalLink, Info, TriangleAlert } from "lucide-react";
 import EbaySalesChart from "@/components/admin/ebay/EbaySalesChart";
 import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
@@ -89,35 +90,26 @@ export default function EbaySalesView({
   const net = sums.revenue - (sums.fees ?? 0);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-7 text-admin-ink sm:px-8 sm:py-9 lg:px-10">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-display text-[28px] font-semibold leading-tight tracking-tight text-admin-ink sm:text-[32px]">
-            Ventes eBay
-          </h1>
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-admin-muted">
-            Total payé par les acheteurs (articles, livraison et taxes). Les commandes annulées ou entièrement
-            remboursées ne comptent pas.
-          </p>
-          <p className="mt-2 text-xs text-admin-muted">
-            Dernière synchronisation :{" "}
-            <span className="font-medium text-admin-ink">
-              {status.lastSync ? dateTimeFmt.format(new Date(status.lastSync)) : "jamais"}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-wrap items-start gap-3">
-          <a
-            href={SELLER_HUB}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-admin-line-strong bg-admin-card px-4 py-2 text-sm font-medium text-admin-ink transition-colors hover:border-admin-green"
-          >
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-7 text-admin-ink sm:px-8 sm:py-9 lg:px-10 [&>header]:mb-0">
+      <PageHeader
+        title="Ventes eBay"
+        description="Total payé par les acheteurs (articles, livraison et taxes). Les commandes annulées ou entièrement remboursées ne comptent pas."
+        actions={
+          <a href={SELLER_HUB} target="_blank" rel="noopener noreferrer" className="btn-secondary">
             Seller Hub <ExternalLink className="h-4 w-4" aria-hidden />
           </a>
-          <EbayAutoSync configured={configured} lastSync={status.lastSync} />
-        </div>
-      </header>
+        }
+      />
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-admin-muted">
+        <p>
+          Dernière synchronisation :{" "}
+          <span className="font-medium text-admin-ink">
+            {status.lastSync ? dateTimeFmt.format(new Date(status.lastSync)) : "jamais"}
+          </span>
+        </p>
+        <EbayAutoSync configured={configured} lastSync={status.lastSync} />
+      </div>
 
       {!configured && <ConnectEbay env={env} />}
 
@@ -143,7 +135,7 @@ export default function EbaySalesView({
         <p className="text-[13px] text-admin-muted">{legendeDates(from, to)}</p>
       </div>
 
-      <section aria-label="Ventes de la période" className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+      <section aria-label="Ventes de la période" className="admin-stats grid-cols-2 lg:grid-cols-4">
         <Tile label="Ventes" value={formatMoney(sums.revenue)} sub={variation(periode, sums.revenue, prevRevenue)} highlight />
         <Tile label="Commandes" value={formatCount(sums.orders)} sub="annulées et remboursées exclues" />
         <Tile
@@ -197,7 +189,7 @@ export default function EbaySalesView({
         ) : (
           <>
             <div className="-mx-5 mt-4 overflow-x-auto px-5 lg:-mx-6 lg:px-6">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="admin-table min-w-[720px]">
                 <thead className="text-xs text-admin-muted">
                   <tr className="border-b border-admin-line-soft">
                     <th className="py-2 pr-4 font-medium">Date</th>
@@ -239,18 +231,11 @@ function Tile({
   sub?: string | null;
   highlight?: boolean;
 }) {
-  const subTone = highlight ? "text-admin-ink/75" : "text-admin-muted";
   return (
-    <div
-      className={`flex min-w-0 flex-col rounded-2xl p-4 lg:p-5 ${
-        highlight ? "bg-[#6bd63b] text-admin-ink" : "border border-admin-line bg-admin-card"
-      }`}
-    >
-      <p className={`text-xs font-medium ${subTone}`}>{label}</p>
-      <p className="mt-2 truncate font-display text-2xl font-semibold tabular-nums tracking-tight lg:text-[28px]">
-        {value}
-      </p>
-      {sub && <p className={`mt-1 text-xs tabular-nums ${subTone}`}>{sub}</p>}
+    <div className="admin-stat">
+      <p className="text-[13px] font-medium text-admin-muted">{label}</p>
+      <p className={`admin-stat-valeur ${highlight ? "text-admin-green" : ""}`}>{value}</p>
+      {sub && <p className="mt-2 truncate text-xs text-admin-muted">{sub}</p>}
     </div>
   );
 }

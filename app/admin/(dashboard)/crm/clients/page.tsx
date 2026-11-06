@@ -42,7 +42,7 @@ export default async function ClientsPage() {
   const ref = error ? await journaliserErreur(error, "crm.clients_lire", ctx) : null;
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href="/admin/crm"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
@@ -52,10 +52,10 @@ export default async function ClientsPage() {
       </Link>
 
       <header className="mb-8 mt-4">
-        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
+        <h1 className="admin-h1">
           Clients
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-admin-muted">
+        <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted">
           Les prospects convertis en clients, avec leur compagnie et le lot
           lié.
         </p>
@@ -76,7 +76,7 @@ export default async function ClientsPage() {
           <p className="mt-3 font-display text-lg font-semibold text-admin-ink">
             Aucun client converti pour l&apos;instant
           </p>
-          <p className="mt-2 text-sm text-admin-muted">
+          <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
             Utilise « Marquer comme client » sur un contact pour qu&apos;il
             apparaisse ici.
           </p>
@@ -84,7 +84,7 @@ export default async function ClientsPage() {
       ) : (
         <div className="glass overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="admin-table">
               <thead>
                 <tr className="border-b border-admin-line-soft">
                   <Th>Client</Th>

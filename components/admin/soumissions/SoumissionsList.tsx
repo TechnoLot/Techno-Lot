@@ -149,7 +149,7 @@ function SoumissionCard({
         </p>
       )}
 
-      {s.message && <MessageApercu texte={s.message} />}
+      {s.message && <MessageApercu texte={descriptionDuMessage(s.message) || s.message} />}
 
       {s.fichiers.length > 0 && (
         <div className="mt-3">
@@ -170,32 +170,7 @@ function SoumissionCard({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {courrielApi && <VoirCourriel soumissionId={s.id} nom={s.nom} />}
-        <a
-          href={courrielApi ? `/api/admin/soumissions/${s.id}/courriel/hostinger` : WEBMAIL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="admin-btn"
-          title="Ouvre le courriel dans le webmail Hostinger (info@technolot.ca), dans un nouvel onglet"
-        >
-          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-          Ouvrir dans Hostinger
-        </a>
-        {s.telephone && (
-          <a href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`} className="admin-btn">
-            <Phone className="h-3.5 w-3.5" aria-hidden />
-            Appeler
-          </a>
-        )}
-        <Link
-          href={`/admin/calculatrice?soumission=${s.id}`}
-          className="admin-btn"
-          title="Liste du client, nom du lot et liens eBay prêts : il reste à entrer tes prix"
-        >
-          <Calculator className="h-3.5 w-3.5" aria-hidden />
-          Ouvrir dans la calculatrice
-        </Link>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {s.lotId ? (
           <Link href={`/admin/lots/${s.lotId}`} className="admin-btn">
             <Package className="h-3.5 w-3.5" aria-hidden />
@@ -207,8 +182,37 @@ function SoumissionCard({
             Créer le lot
           </Link>
         )}
+        {courrielApi && <VoirCourriel soumissionId={s.id} nom={s.nom} />}
+        <Link
+          href={`/admin/calculatrice?soumission=${s.id}`}
+          className="admin-icon-btn"
+          aria-label="Ouvrir dans la calculatrice"
+          title="Ouvrir dans la calculatrice : liste du client, nom du lot et liens eBay prêts, il reste à entrer tes prix"
+        >
+          <Calculator className="h-4 w-4" aria-hidden />
+        </Link>
+        <a
+          href={courrielApi ? `/api/admin/soumissions/${s.id}/courriel/hostinger` : WEBMAIL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="admin-icon-btn"
+          aria-label="Ouvrir dans Hostinger (nouvel onglet)"
+          title="Ouvrir dans Hostinger"
+        >
+          <ExternalLink className="h-4 w-4" aria-hidden />
+        </a>
+        {s.telephone && (
+          <a
+            href={`tel:${s.telephone.replace(/[^\d+]/g, "")}`}
+            className="admin-icon-btn"
+            aria-label={`Appeler ${s.telephone}`}
+            title={`Appeler ${s.telephone}`}
+          >
+            <Phone className="h-4 w-4" aria-hidden />
+          </a>
+        )}
         <div className="ml-auto">
-          <SupprimerSoumission id={s.id} nom={s.nom} />
+          <SupprimerSoumission id={s.id} nom={s.nom} compact />
         </div>
       </div>
 

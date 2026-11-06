@@ -71,7 +71,7 @@ export default async function RelancesPage() {
     });
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href="/admin/crm"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
@@ -81,10 +81,10 @@ export default async function RelancesPage() {
       </Link>
 
       <header className="mb-8 mt-4">
-        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
+        <h1 className="admin-h1">
           Relances
         </h1>
-        <p className="mt-2 max-w-lg text-sm text-admin-muted">
+        <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted">
           Contacts en séquence active, les plus anciens envois en premier.
           Déclenche les relances 1, 2, 3 manuellement.
         </p>
@@ -95,7 +95,7 @@ export default async function RelancesPage() {
           <p className="font-display text-lg font-semibold text-admin-ink">
             Aucune séquence active
           </p>
-          <p className="mt-2 text-sm text-admin-muted">
+          <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
             Les contacts apparaissent ici après l&apos;envoi de l&apos;email
             d&apos;intro post-appel.
           </p>
@@ -103,7 +103,7 @@ export default async function RelancesPage() {
       ) : (
         <div className="glass overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="admin-table">
               <thead>
                 <tr className="border-b border-admin-line-soft">
                   <Th>Contact</Th>

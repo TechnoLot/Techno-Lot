@@ -174,7 +174,7 @@ export default function LeadQuickActions({
 
         {followupOn && (
           <span
-            className="inline-flex items-center gap-1 rounded-full border border-admin-tint-amber-line bg-admin-tint-amber px-2 py-0.5 text-xs font-semibold text-admin-warning"
+            className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-admin-tint-amber-line bg-admin-tint-amber px-2 py-0.5 text-xs font-semibold text-admin-warning"
             title={`Rappel planifié le ${followupOn}`}
           >
             <CalendarClock className="h-3 w-3" aria-hidden />

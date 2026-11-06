@@ -87,7 +87,7 @@ const items: NavItem[] = [
     icon: Tag,
     children: [
       { href: "/admin/ventes-ebay", label: "Ventes eBay", icon: TrendingUp },
-      { href: "/admin/destruction-donnees", label: "Destruction des données", icon: ShieldCheck },
+      { href: "/admin/destruction-donnees", label: "Destruction", icon: ShieldCheck },
       { href: "/admin/ebay", label: "Description eBay", icon: ShoppingBag },
     ],
   },
@@ -214,15 +214,14 @@ export default function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function rowClass(active: boolean, nested = false) {
-  return `nav-focus group relative flex w-full items-center rounded-[12px] text-left font-medium transition-colors duration-150 ${
-    nested ? "h-9 gap-2 px-2 text-[14px]" : "h-11 gap-3 px-1.5 text-[15px]"
+  return `nav-focus group relative flex w-full items-center rounded-[10px] text-left font-medium transition-colors duration-150 ${
+    nested ? "h-9 gap-2 px-2.5 text-[13.5px]" : "h-10 gap-3 px-3 text-[14.5px]"
   } ${active ? "text-[#0a0a0a]" : "text-[#cbd5e1] hover:bg-white/[0.05] hover:text-white"}`;
 }
 
 /**
- * Icône dans sa pastille + libellé. Au survol, la pastille s'éclaire et
- * l'ensemble glisse légèrement vers la droite (désactivé si mouvement réduit).
- * `tone` « lit » : un enfant du groupe est la page active.
+ * Icône + libellé. Au survol, l'icône passe au lime. `tone` « lit » : un enfant
+ * du groupe est la page active.
  */
 function RowInner({
   icon: Icon,
@@ -239,12 +238,9 @@ function RowInner({
   tone?: "default" | "lit";
   trailing?: React.ReactNode;
 }) {
-  const shift = active
-    ? ""
-    : "motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:translate-x-[3px]";
   if (nested) {
     return (
-      <span className={`relative flex min-w-0 flex-1 items-center gap-2 ${shift}`}>
+      <span className="relative flex min-w-0 flex-1 items-center gap-2">
         <Icon
           className={`h-4 w-4 shrink-0 transition-colors duration-150 ${
             active ? "text-[#0a0a0a]" : "text-[#7c8aa3] group-hover:text-[#6bd63b]"
@@ -255,18 +251,14 @@ function RowInner({
       </span>
     );
   }
-  const chip = active
-    ? "bg-[#0a0a0a]/[0.12] text-[#0a0a0a]"
+  const couleur = active
+    ? "text-[#0a0a0a]"
     : tone === "lit"
-      ? "bg-[#6bd63b]/15 text-[#6bd63b] ring-1 ring-inset ring-[#6bd63b]/25"
-      : "bg-white/[0.06] text-[#94a3b8] ring-1 ring-inset ring-white/[0.06] group-hover:bg-[#6bd63b]/15 group-hover:text-[#6bd63b] group-hover:ring-[#6bd63b]/30";
+      ? "text-[#6bd63b]"
+      : "text-[#94a3b8] group-hover:text-[#6bd63b]";
   return (
-    <span className={`relative flex min-w-0 flex-1 items-center gap-3 ${shift}`}>
-      <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] transition-colors duration-150 ${chip}`}
-      >
-        <Icon className="h-[17px] w-[17px]" aria-hidden />
-      </span>
+    <span className="relative flex min-w-0 flex-1 items-center gap-3">
+      <Icon className={`h-[18px] w-[18px] shrink-0 transition-colors duration-150 ${couleur}`} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {trailing}
     </span>
@@ -279,7 +271,7 @@ function ActiveIndicator({ id }: { id: string }) {
       layoutId={id}
       transition={spring}
       aria-hidden
-      className="absolute inset-0 rounded-[12px] bg-[#6bd63b] shadow-[0_6px_20px_-8px_rgba(107,214,59,0.6)]"
+      className="absolute inset-0 rounded-[10px] bg-[#6bd63b]"
     />
   );
 }
@@ -379,7 +371,7 @@ function NavGroup({
             aria-expanded={open}
             aria-controls={panelId}
             onClick={() => setOpen((v) => !v)}
-            className={`nav-focus inline-flex h-11 w-9 shrink-0 items-center justify-center rounded-[12px] transition-colors hover:bg-white/[0.06] ${
+            className={`nav-focus inline-flex h-10 w-8 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-white/[0.06] ${
               childActive ? "text-[#6bd63b]" : "text-[#94a3b8] hover:text-white"
             }`}
           >
@@ -400,7 +392,7 @@ function NavGroup({
             active={false}
             tone={childActive ? "lit" : "default"}
             trailing={
-              <span className={`pr-1.5 ${childActive ? "text-[#6bd63b]" : "text-[#94a3b8]"}`}>
+              <span className={`${childActive ? "text-[#6bd63b]" : "text-[#94a3b8]"}`}>
                 {chevron}
               </span>
             }
@@ -419,7 +411,7 @@ function NavGroup({
             transition={{ duration: 0.24, ease: [0.21, 0.47, 0.32, 0.98] }}
             className="overflow-hidden"
           >
-            <ul className="relative ml-[21px] flex flex-col gap-0.5 py-1 pl-2 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:rounded-full before:bg-gradient-to-b before:from-white/15 before:via-white/10 before:to-transparent">
+            <ul className="relative ml-[20px] flex flex-col gap-0.5 py-1 pl-2.5 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-px before:rounded-full before:bg-gradient-to-b before:from-white/15 before:via-white/10 before:to-transparent">
               {children.map((child) => (
                 <li key={child.href}>
                   <NavLink

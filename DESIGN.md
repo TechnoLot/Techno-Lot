@@ -183,7 +183,7 @@ Une palette bleu nuit et verts, où chaque vert a un rôle précis selon le fond
 - **Title** (700, 1.375rem, 1.15) : titres de cartes et d'étapes.
 - **Body** (400, 17 à 19 px, 1.6) : introductions et texte courant, 42rem au plus de largeur pour le sous-titre.
 - **Label** (600, 12 à 14 px, 0.1em, majuscules) : boutons publics en Chakra Petch.
-- **Admin** (Inter 14 px pour le contenu, Chakra Petch 16 px semi-gras pour les titres de cartes, 11 px en majuscules à 0.14em pour les petits libellés de l'admin).
+- **Admin** (titre de page `.admin-h1` 28 à 32 px gras, titre de section `.admin-h2` 18 px semi-gras, Inter 13 à 15 px pour le contenu, chiffres alignés partout).
 
 ### Named Rules
 **La Règle du Titre Seul.** Sur le site public, aucun surtitre au-dessus d'un titre. Le titre porte seul. Les props `eyebrow` qui restent dans le code sont ignorées et ne doivent pas être réactivées.
@@ -196,7 +196,7 @@ Conteneur centré commun à tout le site : `max-w-6xl` (72rem), gouttières de 2
 
 L'en-tête public est fixe et toujours visible sur tous les formats : barre noire de 40 px, puis navigation de 72 px (`--site-header-h: 112px`). Il ne se masque jamais au défilement. Les héros passent dessous avec `data-under-header`.
 
-L'admin garde une barre latérale de 264 px dès `lg`, et une barre haute avec menu coulissant plus petit. Les points de rupture sont ceux de Tailwind par défaut. La mise en page change de structure à ces seuils, sans typographie fluide.
+L'admin garde une barre latérale de 248 px dès `lg`, et une barre haute avec menu coulissant plus petit. Ses pages utilisent un conteneur de 1400 px, gouttières 16, 32 puis 40 px, avec le même en-tête (`PageHeader` ou `.admin-h1`). Les points de rupture sont ceux de Tailwind par défaut. La mise en page change de structure à ces seuils, sans typographie fluide.
 
 ## Elevation & Depth
 
@@ -207,7 +207,6 @@ Le système est plat au repos. La profondeur vient d'abord du changement de coul
 - **Ombre Bleu Nuit** (`box-shadow: 0 14px 30px -12px rgba(6,10,20,.6)`) : survol des boutons foncés.
 - **Carte Publique** (`box-shadow: 0 1px 2px rgba(10,10,10,.04), 0 8px 28px rgba(10,10,10,.06)`) : cartes posées sur un chapitre clair.
 - **Fenêtre Admin** (`box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 24px 64px -20px rgba(2,6,16,.9)`) : surcouches et menus flottants de l'admin.
-- **Élément Actif du Menu** (`box-shadow: 0 6px 20px -8px rgba(107,214,59,.6)`) : pastille lime de la page en cours.
 
 ### Named Rules
 **La Règle de la Lueur Méritée.** La lueur verte se gagne au survol. Rien ne brille au repos.
@@ -246,7 +245,13 @@ Francs et rassurants : on les voit tout de suite, et ils disent ce qu'ils font.
 
 ### Navigation
 - **Public :** barre noire supérieure en lime (téléphone, phrase de marque, langue), navigation noire de 72 px, Chakra Petch 15 px ; lien actif en lime ; bouton Soumission toujours présent. Sur téléphone, menu plein écran.
-- **Admin :** barre latérale bleu nuit, ligne active en pastille lime de 12 px de rayon, texte encre dessus ; icônes lucide-react.
+- **Admin :** barre latérale bleu nuit, ligne active en pastille lime de 10 px de rayon, texte encre dessus ; icônes lucide-react sans tuile autour.
+
+### Bande de chiffres
+`.admin-stats` et `.admin-stat` : plusieurs chiffres dans une seule carte, séparés par des filets. Le chiffre clé passe en vert ; aucune tuile lime.
+
+### Ciel et verre de l'admin (composant signature)
+Tout l'admin est posé sur le ciel d'étoiles vertes, fixé derrière le contenu (`.admin-fond`) : matin menthe en clair, nuit en sombre. Il est animé sur l'accueil et fixe ailleurs, pour que le verre reste fluide. Toutes les cartes sont des plaques de verre, réglées d'un seul endroit dans `app/admin/admin.css` ; les fenêtres et les menus flottants restent opaques, et sur téléphone le verre devient plein. L'accueil montre « À faire aujourd’hui », puis « Nos profits » en double contour (`.admin-cadre` + `.admin-verre`), avec le profit comme plus grand chiffre de l'admin.
 
 ### Chapitres (composant signature)
 `Section` et `data-theme` : `night`, `deep`, `lime`, `mint`, `light`, `dark`. Chaque thème redéfinit les variables `--tl-*` pour que texte, surfaces, filets et bouton s'accordent seuls. Les noms `sand` et `cream` sont du passé : ne pas les reprendre.
@@ -272,6 +277,8 @@ Francs et rassurants : on les voit tout de suite, et ils disent ce qu'ils font.
 - **Don't** utiliser de portable en 3D, ni de compteur « N appareils » sur la palette du héros.
 - **Don't** masquer l'en-tête au défilement.
 - **Don't** utiliser le fond sable : ce n'est pas l'identité de la marque.
-- **Don't** appliquer du texte en dégradé ni du verre décoratif.
+- **Don't** appliquer du texte en dégradé, ni du verre sans le ciel derrière lui.
+- **Don't** poser une barre colorée de plus de 1 px sur le côté d'une carte, d'une ligne ou d'un événement.
+- **Don't** aligner des tuiles de chiffres identiques dans l'admin : une seule bande.
 - **Don't** mettre du texte blanc sur le lime.
 - **Don't** ajouter de chandelles ni de tableau complexe aux graphiques de l'admin : ils restent simples.

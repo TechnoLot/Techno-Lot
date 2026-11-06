@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "petch",
+        "createdAt": "2026-11-06T14:47:34.418Z",
+        "reason": "Chakra Petch est la police de DESIGN.md (faux positif sur le nom)"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-06T15:15:32.063Z",
+        "reason": "Inter est la police de texte déclarée dans DESIGN.md, reprise du site existant"
+      }
+    ]
+  }
+}

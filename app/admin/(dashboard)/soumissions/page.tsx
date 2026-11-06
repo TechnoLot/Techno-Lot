@@ -95,9 +95,8 @@ export default async function SoumissionsPage(
   const agent = error ? null : await donneesAcheteurs(ctx, pagination.items.map((s) => s.id));
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
-        eyebrow="Formulaire du site"
         title="Soumissions"
         description={
           !error ? (
@@ -132,7 +131,7 @@ export default async function SoumissionsPage(
           {affichees.length === 0 ? (
             <div className="rounded-2xl border border-admin-line bg-admin-card px-5 py-12 text-center">
               <Inbox className="mx-auto h-7 w-7 text-admin-faint" aria-hidden />
-              <p className="mt-2 text-sm text-admin-muted">
+              <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
                 {q
                   ? `Aucune soumission ne correspond à « ${q} ».`
                   : filtre === "a-traiter"

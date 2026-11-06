@@ -11,8 +11,7 @@ import {
   Truck,
   type LucideIcon,
 } from "lucide-react";
-import { formatCount } from "@/lib/admin/format";
-import type { CleTache, Prochain, Tache } from "@/lib/admin/accueil";
+import type { CleTache, Tache } from "@/lib/admin/accueil";
 
 /** Icône et teinte de la pastille de chaque tâche. */
 const STYLE: Record<CleTache, { icon: LucideIcon; tint: string }> = {
@@ -25,32 +24,23 @@ const STYLE: Record<CleTache, { icon: LucideIcon; tint: string }> = {
   prix: { icon: Tag, tint: "bg-admin-tint-green text-admin-tint-green-ink" },
 };
 
-/** Rappels montrés dans « Prochains jours » (le reste mène aux suivis ou aux ramassages). */
-const MAX_PROCHAINS = 5;
-
 const LIEN_TACHE =
-  "group flex items-center gap-3.5 px-4 py-3.5 transition-colors hover:bg-admin-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6bd63b] sm:px-5";
+  "group flex items-center gap-3.5 rounded-2xl px-3 py-3 transition-colors duration-200 hover:bg-admin-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#6bd63b] sm:px-4";
 
 /**
  * « À faire aujourd’hui » : une ligne cliquable par tâche (ramassages du jour,
  * commandes eBay à expédier, soumissions, suivis, lots en négociation, prix à
- * saisir), calculées dans lib/admin/accueil.ts, puis les rappels des 7
- * prochains jours (ramassages et suivis).
+ * saisir), calculées dans lib/admin/accueil.ts.
  */
-export default function AFaire({ taches, prochains }: { taches: Tache[]; prochains: Prochain[] }) {
-  const visibles = prochains.slice(0, MAX_PROCHAINS);
-  const caches = prochains.slice(MAX_PROCHAINS);
-  const autresSuivis = caches.filter((p) => p.type === "suivi").length;
-  const autresRamassages = caches.length - autresSuivis;
-
+export default function AFaire({ taches }: { taches: Tache[] }) {
   return (
     <section
       aria-labelledby="afaire-titre"
-      className="flex h-full min-w-0 flex-col rounded-2xl border border-admin-line bg-admin-card"
+      className="admin-verre flex min-w-0 flex-col p-2 sm:p-3"
     >
       <h2
         id="afaire-titre"
-        className="px-4 pb-1 pt-4 font-display text-lg font-semibold tracking-tight text-admin-ink sm:px-5 sm:pt-5"
+        className="px-3 pb-2 pt-2 font-display text-[22px] font-bold tracking-[-0.01em] text-admin-ink sm:px-4"
       >
         À faire aujourd’hui
       </h2>
@@ -69,62 +59,15 @@ export default function AFaire({ taches, prochains }: { taches: Tache[]; prochai
           </div>
         </div>
       ) : (
-        <ul className="pb-1">
+        <ul className="grid grid-cols-1 gap-1 lg:grid-cols-2">
           {taches.map((t) => (
-            <li key={t.cle} className="border-t border-admin-line-soft first:border-t-0">
+            <li key={t.cle} className="min-w-0">
               <LigneTache t={t} />
             </li>
           ))}
         </ul>
       )}
 
-      <div className="mt-auto rounded-b-2xl border-t border-admin-line-soft bg-admin-subtle px-4 py-4 sm:px-5">
-        <h3 className="text-[13px] font-semibold text-admin-ink">Prochains jours</h3>
-        {visibles.length === 0 ? (
-          <p className="mt-1 text-[13px] text-admin-muted">Rien de prévu pour les 7 prochains jours.</p>
-        ) : (
-          // Grille : la colonne des jours prend la largeur du plus long, pas plus
-          <ul className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
-            {visibles.map((p) => (
-              <li key={p.cle} className="col-span-2 grid grid-cols-subgrid">
-                <Link
-                  href={p.href}
-                  className="group col-span-2 grid grid-cols-subgrid items-baseline rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6bd63b]"
-                >
-                  <span className="whitespace-nowrap text-[13px] font-medium text-admin-muted">{p.quand}</span>
-                  <span className="flex min-w-0 items-baseline gap-2">
-                    <span className="min-w-0 truncate text-[14px] font-medium text-admin-ink group-hover:text-admin-green group-hover:underline">
-                      {p.titre}
-                    </span>
-                    <span className="hidden shrink-0 text-[13px] text-admin-muted sm:inline">{p.detail}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-        {(autresRamassages > 0 || autresSuivis > 0) && (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-            {autresRamassages > 0 && (
-              <Link
-                href="/admin/ramassages"
-                className="admin-focus inline-flex rounded-md text-[13px] font-semibold text-admin-green hover:underline"
-              >
-                Et {formatCount(autresRamassages)} autre{autresRamassages > 1 ? "s" : ""} ramassage
-                {autresRamassages > 1 ? "s" : ""}
-              </Link>
-            )}
-            {autresSuivis > 0 && (
-              <Link
-                href="/admin/crm/suivis"
-                className="admin-focus inline-flex rounded-md text-[13px] font-semibold text-admin-green hover:underline"
-              >
-                Et {formatCount(autresSuivis)} autre{autresSuivis > 1 ? "s" : ""} dans les suivis
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
     </section>
   );
 }

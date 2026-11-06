@@ -67,7 +67,7 @@ export default async function AcheteursPage(props: {
   const verifies = tous.filter((a) => a.verifie).length;
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <Link
         href="/admin/crm"
         className="inline-flex items-center gap-1.5 text-sm font-medium text-admin-muted transition-colors hover:text-admin-ink"
@@ -77,8 +77,8 @@ export default async function AcheteursPage(props: {
       </Link>
 
       <header className="mb-6 mt-4">
-        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">Acheteurs</h1>
-        <p className="mt-2 max-w-2xl text-sm text-admin-muted">
+        <h1 className="admin-h1">Acheteurs</h1>
+        <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted">
           Les compagnies qui rachètent des lots en gros, trouvées par les recherches d&apos;acheteurs des
           soumissions. {tous.length} au carnet, dont {verifies} vérifiée{verifies > 1 ? "s" : ""}.
         </p>
@@ -136,7 +136,7 @@ export default async function AcheteursPage(props: {
           <p className="mt-3 font-display text-lg font-semibold text-admin-ink">
             {tous.length === 0 ? "Le carnet est vide pour l'instant" : "Aucune compagnie ne correspond"}
           </p>
-          <p className="mt-2 text-sm text-admin-muted">
+          <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
             {tous.length === 0
               ? "Dans l'onglet Soumissions, répondez « Oui, chercher » sur une soumission : les compagnies trouvées arriveront ici."
               : "Essayez un autre mot ou un autre pays."}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { Plus } from "lucide-react";
 import { exigerAdminPage } from "@/lib/securite/garde";
 import { journaliserErreur } from "@/lib/admin/erreurs-admin";
@@ -11,25 +12,22 @@ import { pageDepuisParam, paginer } from "@/lib/admin/pagination";
 import {
   classerSuivis,
   commandesAExpedier,
-  debutLectureEbay,
-  prochainsAccueil,
   resumeAccueil,
   tachesAccueil,
-  ventesEbayAccueil,
   type SuiviCandidat,
 } from "@/lib/admin/accueil";
 import { FILTRE_SUIVIS_POSSIBLES } from "@/lib/crm/types";
 import { addDays } from "@/lib/ebay/totaux";
 import { agendaConfigure, listerRamassages } from "@/lib/ramassages/google-agenda";
-import { getEbayOrderRows, getEbayOrdersToShip, getEbayTotals } from "@/lib/ebay/ventes";
+import { getEbayOrdersToShip, getEbayTotals } from "@/lib/ebay/ventes";
 import { isEbayConfigured } from "@/lib/ebay/client";
 import { getAdSpend } from "@/lib/ads/depenses";
 import { getAdsSyncState } from "@/lib/ads/queries";
-import PageHeader from "@/components/admin/PageHeader";
 import CalculatriceButton from "@/components/admin/CalculatriceButton";
 import AFaire from "@/components/admin/accueil/AFaire";
+import SoumissionsRecentes from "@/components/admin/accueil/SoumissionsRecentes";
 import AcheteursCarte from "@/components/admin/accueil/AcheteursCarte";
-import VentesEbayCarte from "@/components/admin/accueil/VentesEbayCarte";
+import EbayAutoSync from "@/components/admin/ebay/EbayAutoSync";
 import { nombreNiches } from "@/lib/acheteurs/articles";
 import { motsDuClient } from "@/lib/acheteurs/identite";
 import { resumeAcheteurs } from "@/lib/acheteurs/lecture";
@@ -38,8 +36,9 @@ import DernieresSoumissions from "@/components/admin/accueil/DernieresSoumission
 import { A_TRAITER_JOURS, estATraiter, fetchSoumissions } from "@/lib/admin/soumissions";
 
 /*
- * Accueil de l'admin : « À faire aujourd’hui » et carte « Ventes eBay », puis
- * les Chiffres de la période et les soumissions à traiter (calculs purs dans lib/admin/accueil.ts).
+ * Accueil de l'admin : « À faire aujourd’hui » puis
+ * « Nos profits » en panneaux de verre ; dessous, les 3 dernières soumissions,
+ * les acheteurs et les soumissions à traiter et les soumissions à traiter (calculs purs dans lib/admin/accueil.ts).
  */
 
 export const dynamic = "force-dynamic";
@@ -50,7 +49,10 @@ const DELAI_AGENDA_MS = 4_000;
 const TZ = "America/Toronto";
 
 /** Demandes par page dans « Soumissions à traiter » (paramètre `sp`). */
-const SOUMISSIONS_PAR_PAGE = 10;
+const SOUMISSIONS_PAR_PAGE = 5;
+
+/** Demandes montrées dans « Dernières soumissions ». */
+const DERNIERES_SOUMISSIONS = 3;
 
 type Sale = { sale_price: number | string; sold_at: string };
 type LotPeriode = Pick<Lot, "purchase_price" | "sale_price" | "purchased_at">;
@@ -109,7 +111,6 @@ export default async function AccueilPage(
     soumissions,
     ebay,
     pubs,
-    ebayCarteRows,
     aExpedier,
     pubsSync,
     ramassages,
@@ -144,15 +145,6 @@ export default async function AccueilPage(
     }),
     getEbayTotals(from, to),
     getAdSpend(from, to),
-    // Carte « Ventes eBay » : du plus ancien début (hier, semaine, mois, année fiscale) à aujourd'hui
-    getEbayOrderRows(debutLectureEbay(todayIso), todayIso, [
-      "created_at",
-      "total",
-      "refunded",
-      "fees",
-      "cancelled",
-      "payment_status",
-    ]).catch(() => []),
     getEbayOrdersToShip().catch(() => []),
     getAdsSyncState(supabase).catch(() => undefined),
     // Ramassages d'aujourd'hui aux 7 prochains jours (Google Agenda) ; rien si l'agenda n'est pas relié
@@ -189,10 +181,10 @@ export default async function AccueilPage(
   const soumissionsATraiter = soumissions.rows.filter((s) => estATraiter(s, now));
   const soumissionsPage = paginer(soumissionsATraiter, pageDepuisParam(searchParams.sp), SOUMISSIONS_PAR_PAGE);
 
-  // « À faire aujourd’hui », « Prochains jours » et carte « Ventes eBay »
+  // « À faire aujourd’hui »
   const negoLots = (negoRaw ?? []) as LotTache[];
   const prixLots = (prixRaw ?? []) as LotTache[];
-  const { dus, aVenir } = classerSuivis((companiesRaw ?? []) as SuiviCandidat[], now);
+  const { dus } = classerSuivis((companiesRaw ?? []) as SuiviCandidat[], now);
   const taches = tachesAccueil(
     {
       expeditions: commandesAExpedier(aExpedier),
@@ -207,8 +199,6 @@ export default async function AccueilPage(
     },
     now,
   );
-  const prochains = prochainsAccueil(aVenir, now, ramassages?.liste);
-  const ventesEbayCarte = ventesEbayAccueil(ebayCarteRows, todayIso);
   if (acheteurs.erreur) await journaliserErreur(acheteurs.erreur, "accueil.acheteurs_lire", ctx);
   const resumeAch = acheteurs.erreur ? null : acheteurs.resume;
   // Soumissions à traiter avec des articles nichés et pas encore de recherche d'acheteurs
@@ -222,66 +212,89 @@ export default async function AccueilPage(
 
   const jour = formatJour(todayIso, jourEnteteFmt);
 
+  const entree = (s: number) => ({ "--d": `${s}s` }) as CSSProperties;
+
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
-      <PageHeader
-        title={prenom ? `Bonjour ${prenom}` : "Bonjour"}
-        description={`${jour.charAt(0).toUpperCase() + jour.slice(1)} · ${resumeAccueil(taches.length)}`}
-        actions={
-          <>
-            <Link href="/admin/lots/nouveau" className="btn-primary">
-              <Plus className="h-4 w-4" aria-hidden />
-              Nouveau lot
-            </Link>
-            <CalculatriceButton />
-          </>
-        }
-      />
-
-      {error && (
-        <div
-          role="alert"
-          className="mb-6 rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
-        >
-          Impossible de charger les données. Réf. : {await journaliserErreur(error, "accueil.lots_lire", ctx)}
-        </div>
-      )}
-
-      <div className="flex flex-col gap-8 sm:gap-10">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:gap-5">
-          <AFaire taches={taches} prochains={prochains} />
-          <div className="flex min-w-0 flex-col gap-4 xl:gap-5">
-            <VentesEbayCarte configured={isEbayConfigured()} ventes={ventesEbayCarte} lastSync={ebay.lastSync} />
-            {resumeAch && (
-              <AcheteursCarte
-                niches={niches}
-                enCours={resumeAch.enCours}
-                carnet={resumeAch.carnet}
-                verifies={resumeAch.verifies}
-              />
-            )}
+    <div>
+      <div className="admin-ciel text-admin-ink">
+        <div className="mx-auto w-full max-w-[1400px] px-4 pb-2 pt-7 sm:px-8 sm:pt-9 lg:px-10">
+          <div className="admin-entree mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <h1 className="font-display text-[34px] font-bold leading-[1.05] tracking-[-0.02em] sm:text-[44px]">
+                {prenom ? `Bonjour ${prenom}` : "Bonjour"}
+              </h1>
+              <p className="mt-1.5 text-[15px] text-admin-muted">
+                {`${jour.charAt(0).toUpperCase() + jour.slice(1)} · ${resumeAccueil(taches.length)}`}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Link href="/admin/lots/nouveau" className="btn-primary">
+                <Plus className="h-4 w-4" aria-hidden />
+                Nouveau lot
+              </Link>
+              <CalculatriceButton />
+            </div>
           </div>
-        </div>
 
-        <ChiffresTiles
-          periode={periode}
-          legende={legende}
-          revenus={revenus}
-          data={{
-            ventes,
-            ventesLots,
-            ventesManuelles,
-            ventesEbay,
-            ebayConfigured: ebay.configured,
-            achats,
-            nbLots: lotsPeriode.length,
-            fraisEbay: ebay.fees,
-            profit,
-            pubsConfigured: pubs.configured,
-            pubs: pubs.spend,
-            pubsSync,
-          }}
-        />
+          <div className="flex flex-col gap-7">
+            <div className="admin-entree admin-cadre" style={entree(0.08)}>
+              <AFaire taches={taches} />
+            </div>
+
+            <div className="admin-entree" style={entree(0.18)}>
+              <ChiffresTiles
+                periode={periode}
+                legende={legende}
+                revenus={revenus}
+                data={{
+                  ventes,
+                  ventesLots,
+                  ventesManuelles,
+                  ventesEbay,
+                  ebayConfigured: ebay.configured,
+                  achats,
+                  nbLots: lotsPeriode.length,
+                  fraisEbay: ebay.fees,
+                  profit,
+                  pubsConfigured: pubs.configured,
+                  pubsSync,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* La synchro eBay continue en fond : visible seulement en cas d'échec */}
+          {isEbayConfigured() && (
+            <div className="mt-3">
+              <EbayAutoSync variant="silencieux" configured lastSync={ebay.lastSync} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-4 py-7 sm:gap-10 sm:px-8 sm:py-9 lg:px-10">
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-admin-tint-red-line bg-admin-tint-red px-4 py-3 text-sm text-admin-danger"
+          >
+            Impossible de charger les données. Réf. : {await journaliserErreur(error, "accueil.lots_lire", ctx)}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_344px] xl:gap-5">
+          {soumissions.rows.length > 0 && (
+            <SoumissionsRecentes rows={soumissions.rows.slice(0, DERNIERES_SOUMISSIONS)} now={now} />
+          )}
+          {resumeAch && (
+            <AcheteursCarte
+              niches={niches}
+              enCours={resumeAch.enCours}
+              carnet={resumeAch.carnet}
+              verifies={resumeAch.verifies}
+            />
+          )}
+        </div>
 
         {soumissionsATraiter.length > 0 && (
           <DernieresSoumissions

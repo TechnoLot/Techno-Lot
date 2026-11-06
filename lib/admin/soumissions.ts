@@ -7,6 +7,18 @@ export const A_TRAITER_JOURS = 30;
 export const FILTRES_SOUMISSIONS = ["toutes", "a-traiter", "lot-cree"] as const;
 export type FiltreSoumissions = (typeof FILTRES_SOUMISSIONS)[number];
 
+/**
+ * Ce que le client a écrit, sans les lignes « Entreprise : », « Ville : »… que
+ * le formulaire compose au-dessus de « Description : » ; une seule ligne.
+ */
+export function apercuSoumission(message: string | null): string | null {
+  if (!message) return null;
+  const [entete, ...suite] = message.split("\n\nDescription :");
+  const texte = suite.length > 0 ? suite.join(" ") : entete;
+  const net = texte.replace(/\s+/g, " ").trim();
+  return net || null;
+}
+
 /** Demande reçue par le formulaire public (table soumissions, en lecture seule). */
 export type Soumission = {
   id: string;

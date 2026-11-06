@@ -11,7 +11,6 @@ import {
   LogOut,
   Menu,
   Search,
-  UserRound,
   X,
 } from "lucide-react";
 import AdminNav, { ADMIN_ROUTES } from "@/components/admin/AdminNav";
@@ -22,6 +21,7 @@ import CalculatriceOverlay, {
   OPEN_CALCULATRICE_EVENT,
 } from "@/components/admin/CalculatriceOverlay";
 import GardeInactivite from "@/components/admin/GardeInactivite";
+import { CielEtoiles } from "@/components/site/CielEtoiles";
 import { Logo } from "@/components/site/Logo";
 import {
   NotificationsCount,
@@ -124,9 +124,16 @@ export default function AdminShell({
   return (
     <MotionConfig reducedMotion="user">
       <div data-admin-theme={currentTheme} className="min-h-screen bg-admin-page text-admin-ink">
+        {/* Ciel d'étoiles vertes derrière tout l'admin : animé sur l'accueil, fixe
+            ailleurs pour que le verre reste fluide sur les longues listes */}
+        <div aria-hidden className="admin-ciel admin-fond">
+          <div className="admin-ciel-fond" />
+          <CielEtoiles statique={pathname !== "/admin"} />
+        </div>
+
         <div className="relative flex">
           {/* Barre latérale (ordinateur) */}
-          <aside className="relative hidden w-[264px] shrink-0 overflow-hidden bg-[#0a0f1c] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+          <aside className="relative hidden w-[248px] shrink-0 overflow-hidden bg-[#0a0f1c] lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
             <SidebarContent
               email={email}
               prenom={prenom}
@@ -298,27 +305,21 @@ function SidebarContent({
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      {/* Lueur verte de la marque, très douce, dans le coin supérieur */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-24 -top-28 h-72 w-72 rounded-full bg-[radial-gradient(closest-side,rgba(107,214,59,0.22),rgba(107,214,59,0.06)_55%,transparent)]"
-      />
-
-      <div className="relative px-5 pb-5 pt-7">
+      <div className="relative px-4 pb-4 pt-5">
         <Link
           href="/admin"
           onClick={onNavigate}
           className="nav-focus inline-flex items-center rounded-lg"
         >
-          <Logo variant="fonce" layout="horizontal" height={38} priority />
+          <Logo variant="fonce" layout="horizontal" height={32} priority />
         </Link>
       </div>
 
-      <div className="relative px-3 pb-4">
+      <div className="relative px-3 pb-3">
         <button
           type="button"
           onClick={onSearch}
-          className="nav-focus flex h-11 w-full items-center gap-2.5 rounded-[12px] border border-white/10 bg-white/[0.04] px-3 text-left text-[14px] text-[#94a3b8] transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-[#cbd5e1]"
+          className="nav-focus flex h-10 w-full items-center gap-2.5 rounded-[10px] border border-white/10 bg-white/[0.04] px-3 text-left text-[14px] text-[#94a3b8] transition-colors hover:border-white/20 hover:bg-white/[0.06] hover:text-[#cbd5e1]"
         >
           <Search className="h-4 w-4" aria-hidden />
           <span className="flex-1">Aller à…</span>
@@ -333,54 +334,41 @@ function SidebarContent({
         <AdminNav onNavigate={onNavigate} />
       </div>
 
-      <div className="relative flex flex-col gap-2.5 border-t border-white/10 px-3 pb-4 pt-3">
-        {/* Carte utilisateur */}
-        <div className="flex items-center gap-3 rounded-[12px] px-1.5 py-1">
-          <span
-            aria-hidden
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#6bd63b] font-display text-[16px] font-semibold text-[#0a0a0a] shadow-[0_0_0_3px_rgba(107,214,59,0.18)]"
-          >
-            {initial}
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[15px] font-semibold text-white">
-              {displayName}
-            </span>
-            <span className="block truncate text-[12px] text-[#94a3b8]" title={email}>
-              {email}
-            </span>
-          </span>
-        </div>
-
-        <ThemeToggle theme={theme} onChange={onThemeChange} />
-
-        <div className="grid grid-cols-2 gap-1.5">
+      <div className="relative flex flex-col gap-2 border-t border-white/10 px-3 pb-3 pt-2.5">
+        <div className="flex items-center gap-1">
           <Link
             href="/admin/compte"
             onClick={onNavigate}
             aria-current={compteActive ? "page" : undefined}
-            className={`nav-focus flex h-10 items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-medium transition-colors ${
-              compteActive
-                ? "bg-[#6bd63b] text-[#0a0a0a]"
-                : "text-[#cbd5e1] hover:bg-white/[0.06] hover:text-white"
+            title="Mon compte"
+            className={`nav-focus flex min-w-0 flex-1 items-center gap-2.5 rounded-[10px] px-1.5 py-1.5 transition-colors ${
+              compteActive ? "bg-white/[0.1]" : "hover:bg-white/[0.06]"
             }`}
           >
-            <UserRound
-              className={`h-4 w-4 shrink-0 ${compteActive ? "text-[#0a0a0a]" : "text-[#94a3b8]"}`}
+            <span
               aria-hidden
-            />
-            Mon compte
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#6bd63b] font-display text-[14px] font-bold text-[#0a0a0a]"
+            >
+              {initial}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[14px] font-semibold text-white">{displayName}</span>
+              <span className="block truncate text-[12px] text-[#94a3b8]">{email}</span>
+            </span>
           </Link>
           <form action="/admin/auth/signout" method="POST">
             <button
               type="submit"
-              className="nav-focus flex h-10 w-full items-center justify-center gap-2 rounded-[10px] text-[13.5px] font-medium text-[#cbd5e1] transition-colors hover:bg-white/[0.06] hover:text-white"
+              aria-label="Déconnexion"
+              title="Déconnexion"
+              className="nav-focus inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-[#94a3b8] transition-colors hover:bg-white/[0.06] hover:text-white"
             >
-              <LogOut className="h-4 w-4 shrink-0 text-[#94a3b8]" aria-hidden />
-              Déconnexion
+              <LogOut className="h-4 w-4" aria-hidden />
             </button>
           </form>
         </div>
+
+        <ThemeToggle theme={theme} onChange={onThemeChange} />
       </div>
     </div>
   );

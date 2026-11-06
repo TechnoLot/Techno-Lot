@@ -69,9 +69,9 @@ export default function LotsTable({ lots }: { lots: Lot[] }) {
       {/* Desktop : tableau */}
       <div className="rounded-2xl border border-admin-line bg-admin-card hidden overflow-hidden md:block">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="admin-table">
             <thead>
-              <tr className="border-b border-admin-line-soft">
+              <tr>
                 <Th>Date</Th>
                 <Th>Client</Th>
                 <Th>Statut</Th>
@@ -90,7 +90,7 @@ export default function LotsTable({ lots }: { lots: Lot[] }) {
                 return (
                   <tr
                     key={lot.id}
-                    className="group border-b border-admin-line-soft transition-colors last:border-b-0 hover:bg-admin-subtle"
+                    className="group"
                   >
                     <Td>
                       <RowLink id={lot.id}>

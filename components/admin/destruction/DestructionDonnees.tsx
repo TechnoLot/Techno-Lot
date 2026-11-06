@@ -388,7 +388,7 @@ export default function DestructionDonnees({
         </form>
 
         <div className="mx-auto w-full max-w-[560px] xl:sticky xl:top-6">
-          <p className="admin-eyebrow mb-3">Aperçu : ce que le client recevra</p>
+          <h2 className="admin-card-title mb-3">Aperçu : ce que le client recevra</h2>
           <Apercu>
             <CertificatDestruction ref={certificatRef} valeurs={valeurs} />
           </Apercu>

@@ -43,7 +43,6 @@ export default async function NotificationsPage(
   return (
     <div className="mx-auto w-full max-w-[1000px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
-        eyebrow="En direct"
         title="Notifications"
         description="Nouvelles ventes eBay, soumissions du site et leads venus de tes pubs. La page se met à jour toute seule."
         actions={

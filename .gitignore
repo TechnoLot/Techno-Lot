@@ -43,3 +43,6 @@ Sauvegardes-TechnoLot/
 
 # Fiche produit locale (Impeccable) : décisions internes, jamais dans le dépôt public
 /PRODUCT.md
+/.impeccable/mocks/
+/.impeccable/surfaces/
+/.impeccable/hook.cache.json

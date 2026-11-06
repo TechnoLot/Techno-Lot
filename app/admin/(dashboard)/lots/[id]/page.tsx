@@ -27,7 +27,7 @@ export default async function EditLotPage(
   const lot = data as Lot;
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <div className="mb-6">
         <Link
           href="/admin/lots"
@@ -41,12 +41,12 @@ export default async function EditLotPage(
       <header className="mb-8 flex max-w-3xl flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
+            <h1 className="admin-h1">
               {lot.client_name}
             </h1>
             <StatusPill status={lot.status} />
           </div>
-          <p className="mt-2 text-sm text-admin-muted">
+          <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
             Acheté le {formatDate(lot.purchased_at)} • source : {lot.source}
           </p>
         </div>

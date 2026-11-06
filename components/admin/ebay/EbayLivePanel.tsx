@@ -47,7 +47,7 @@ export function EbayLiveList({ data }: { data: EbayLiveData }) {
       hot: (data.awaitingShip ?? 0) > 0,
     },
     {
-      label: "Retours et remboursements",
+      label: "Retours",
       value: data.returns == null ? "—" : `${data.returns} en cours`,
       href: "https://www.ebay.ca/sh/ord/returns",
       icon: RotateCcw,
@@ -77,18 +77,14 @@ export function EbayLiveList({ data }: { data: EbayLiveData }) {
   ];
 
   return (
-    <ul className="mt-4 flex flex-col gap-2">
+    <ul className="mt-3 divide-y divide-admin-line-soft">
       {rows.map((r) => (
         <li key={r.label}>
           <a
             href={r.href}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
-              r.hot
-                ? "border-[#6bd63b] bg-admin-tint-green text-admin-ink"
-                : "border-admin-line bg-admin-card text-admin-ink hover:border-admin-line-strong"
-            }`}
+            className={`group flex items-center gap-3 py-2.5 text-sm text-admin-ink transition-colors hover:text-admin-green ${r.hot ? "font-semibold" : ""}`}
           >
             <r.icon className={`h-4 w-4 shrink-0 ${r.hot ? "text-admin-green" : "text-admin-muted"}`} aria-hidden />
             <span className="min-w-0 flex-1 truncate">{r.label}</span>

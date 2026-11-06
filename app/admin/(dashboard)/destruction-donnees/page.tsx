@@ -77,7 +77,6 @@ export default async function DestructionDonneesPage(
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <PageHeader
-        eyebrow="eBay"
         title="Destruction des données"
         description="Le certificat à remettre au client : données détruites et certifiées avec KillDisk. Remplis le formulaire, puis télécharge-le en PDF ou en photo."
       />

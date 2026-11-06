@@ -457,7 +457,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
 
         {texteDiffere.trim() !== "" && (
           <div className="mt-4 border-t border-admin-line-soft pt-4">
-            <p className="admin-eyebrow mb-2">Résumé de la liste</p>
+            <h3 className="admin-card-title mb-2">Résumé de la liste</h3>
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <Tuile libelle="Adresses valides" valeur={analyse.destinataires.length} ton="vert" />
               <Tuile libelle="Invalides" valeur={analyse.invalides.length} ton={analyse.invalides.length > 0 ? "rouge" : "neutre"} />
@@ -649,7 +649,7 @@ export default function EnvoiEnGros({ modeles }: { modeles: ModeleDepart[] }) {
 
             {verification.apercu ? (
               <div className="mt-4 rounded-xl border border-admin-line bg-admin-subtle p-4">
-                <p className="admin-eyebrow">Aperçu pour le premier destinataire</p>
+                <h3 className="admin-card-title">Aperçu pour le premier destinataire</h3>
                 <dl className="mt-2 grid gap-1 text-sm">
                   <div className="flex min-w-0 gap-2">
                     <dt className="shrink-0 text-admin-muted">À :</dt>

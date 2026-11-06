@@ -28,9 +28,9 @@ export default async function ComptePage() {
   )[0];
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-7 sm:px-8 sm:py-9">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
+      <div className="max-w-xl">
       <PageHeader
-        eyebrow="Sécurité"
         title="Mon compte"
         description="Ton prénom, ton nom d'utilisateur et ton mot de passe pour te connecter au tableau de bord."
       />
@@ -89,6 +89,7 @@ export default async function ComptePage() {
             le facteur, puis reconnecte-toi pour en ajouter un nouveau.
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

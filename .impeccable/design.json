@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-06T13:53:08.635Z",
+  "generatedAt": "2026-11-06T15:52:44.707Z",
   "title": "Design System: Techno Lot",
   "extensions": {
     "colorMeta": {
@@ -535,7 +535,9 @@
       "**Don't** utiliser de portable en 3D, ni de compteur « N appareils » sur la palette du héros.",
       "**Don't** masquer l'en-tête au défilement.",
       "**Don't** utiliser le fond sable : ce n'est pas l'identité de la marque.",
-      "**Don't** appliquer du texte en dégradé ni du verre décoratif.",
+      "**Don't** appliquer du texte en dégradé, ni du verre sans le ciel derrière lui.",
+      "**Don't** poser une barre colorée de plus de 1 px sur le côté d'une carte, d'une ligne ou d'un événement.",
+      "**Don't** aligner des tuiles de chiffres identiques dans l'admin : une seule bande.",
       "**Don't** mettre du texte blanc sur le lime.",
       "**Don't** ajouter de chandelles ni de tableau complexe aux graphiques de l'admin : ils restent simples."
     ]

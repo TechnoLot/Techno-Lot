@@ -148,23 +148,25 @@ export default async function CrmPage(
   ];
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
-            CRM
+          <h1 className="admin-h1">
+            Prospection
           </h1>
-          <p className="mt-2 max-w-lg text-sm text-admin-muted">
+          <p className="mt-1.5 max-w-2xl text-[15px] leading-relaxed text-admin-muted">
             Meilleurs prospects du jour, triés par pertinence. Clique une
             compagnie pour voir ses contacts TI et envoyer l&apos;info Techno Lot.
           </p>
         </div>
+        <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+          <AddCompanyButton />
         <div
-          className="shrink-0 rounded-2xl border border-admin-line bg-admin-card px-4 py-3 sm:max-w-xs sm:text-right"
+          className="shrink-0 sm:text-right"
           role="note"
           aria-label="Rappel motivation"
         >
-          <p className="flex items-center justify-center gap-2 font-display text-sm font-bold text-admin-ink sm:justify-end sm:text-base">
+          <p className="flex items-center justify-center gap-2 font-display text-sm font-semibold text-admin-muted sm:justify-end">
             <DollarSign className="h-4 w-4 text-admin-green" aria-hidden />
             <span>
               Pick up the phone
@@ -173,6 +175,7 @@ export default async function CrmPage(
             </span>
             <PhoneCall className="h-4 w-4 text-admin-green" aria-hidden />
           </p>
+        </div>
         </div>
       </header>
 
@@ -185,52 +188,30 @@ export default async function CrmPage(
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+      <div className="admin-stats mb-6 grid-cols-2 sm:grid-cols-5 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
         {kpis.map((k) => {
           const inner = (
             <>
-              <p
-                className={`text-[13px] font-medium leading-snug ${
-                  k.accent ? "text-admin-ink" : "text-admin-muted"
-                }`}
-              >
-                {k.label}
-              </p>
-              <p className="mt-2 font-display text-3xl font-bold tabular-nums text-admin-ink sm:text-4xl">
+              <p className="text-[13px] font-medium leading-snug text-admin-muted">{k.label}</p>
+              <p className={`admin-stat-valeur ${k.accent ? "text-admin-green" : ""}`}>
                 {k.value}
               </p>
             </>
           );
           return k.href ? (
-            <Link
-              key={k.label}
-              href={k.href}
-              className={`rounded-2xl border p-4 transition-colors sm:p-5 ${
-                k.accent
-                  ? "border-[#6bd63b] bg-[#6bd63b] hover:bg-[#62c936]"
-                  : "border-admin-line bg-admin-card hover:border-admin-tint-green-line"
-              }`}
-            >
+            <Link key={k.label} href={k.href} className="admin-stat">
               {inner}
             </Link>
           ) : (
-            <div
-              key={k.label}
-              className={`rounded-2xl border p-4 sm:p-5 ${
-                k.accent ? "border-[#6bd63b] bg-[#6bd63b]" : "border-admin-line bg-admin-card"
-              }`}
-            >
+            <div key={k.label} className="admin-stat">
               {inner}
             </div>
           );
         })}
       </div>
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex-1">
-          <CompaniesFilters regions={regions} />
-        </div>
-        <AddCompanyButton />
+      <div className="mb-4">
+        <CompaniesFilters regions={regions} />
       </div>
 
       <p className="mb-3 text-[13px] text-admin-muted">

@@ -45,7 +45,7 @@ export default function ThemeToggle({
     <div
       role="radiogroup"
       aria-label="Thème de l'affichage"
-      className="grid grid-cols-2 gap-1 rounded-[12px] border border-white/10 bg-white/[0.04] p-1"
+      className="grid grid-cols-2 gap-1 rounded-[10px] border border-white/10 bg-white/[0.04] p-0.5"
     >
       {OPTIONS.map((o, i) => {
         const active = o.value === theme;
@@ -61,7 +61,7 @@ export default function ThemeToggle({
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`nav-focus relative flex h-9 items-center justify-center gap-2 rounded-[9px] text-[13.5px] font-medium transition-colors duration-150 ${
+            className={`nav-focus relative flex h-8 items-center justify-center gap-2 rounded-[8px] text-[13px] font-medium transition-colors duration-150 ${
               active ? "text-white" : "text-[#94a3b8] hover:text-white"
             }`}
           >
@@ -70,7 +70,7 @@ export default function ThemeToggle({
                 layoutId={layoutId}
                 aria-hidden
                 transition={{ type: "spring", stiffness: 500, damping: 40 }}
-                className="absolute inset-0 rounded-[9px] bg-white/[0.12] ring-1 ring-inset ring-white/15"
+                className="absolute inset-0 rounded-[8px] bg-white/[0.12] ring-1 ring-inset ring-white/15"
               />
             )}
             <o.icon

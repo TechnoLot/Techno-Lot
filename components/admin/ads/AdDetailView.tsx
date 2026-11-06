@@ -55,7 +55,7 @@ export default function AdDetailView({
   const title = unidentified ? "Pub non identifiée" : ad?.name ?? adId;
   const spendKnown = connected || totals.spend > 0;
 
-  const eyebrow = [`Pub ${platformName}`, ad?.campaign ? `Campagne ${ad.campaign}` : null].filter(Boolean).join(" · ");
+  const contexte = [`Pub ${platformName}`, ad?.campaign ? `Campagne ${ad.campaign}` : null].filter(Boolean).join(" · ");
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
@@ -68,10 +68,10 @@ export default function AdDetailView({
       </Link>
 
       <PageHeader
-        eyebrow={eyebrow}
         title={<span className="break-words">{title}</span>}
         description={
           <>
+            {contexte} · {" "}
             {unidentified
               ? "Leads arrivés sans identifiant de pub : vérifiez les paramètres d'URL de vos pubs. "
               : adId !== title

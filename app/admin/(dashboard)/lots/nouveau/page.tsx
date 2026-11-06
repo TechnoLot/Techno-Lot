@@ -91,7 +91,7 @@ export default async function NewLotPage(
   });
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:px-10">
+    <div className="mx-auto w-full max-w-[1400px] px-4 py-7 sm:px-8 sm:py-9 lg:px-10">
       <div className="mb-6">
         <Link
           href={fromSoumission ? "/admin/soumissions" : "/admin/lots"}
@@ -102,10 +102,10 @@ export default async function NewLotPage(
         </Link>
       </div>
       <header className="mb-8 max-w-2xl">
-        <h1 className="font-display text-3xl font-bold text-admin-ink sm:text-4xl">
+        <h1 className="admin-h1">
           Nouveau lot
         </h1>
-        <p className="mt-2 text-sm text-admin-muted">
+        <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
           Saisis les informations manuellement, ou colle un courriel et laisse
           l&apos;IA extraire les données automatiquement.
         </p>

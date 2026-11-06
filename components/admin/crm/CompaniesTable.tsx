@@ -17,7 +17,7 @@ export default function CompaniesTable({
         <p className="font-display text-lg font-semibold text-admin-ink">
           Aucune compagnie
         </p>
-        <p className="mt-2 text-sm text-admin-muted">
+        <p className="mt-1.5 text-[15px] leading-relaxed text-admin-muted">
           Aucun résultat pour ces critères. Ajuste les filtres.
         </p>
       </div>
@@ -74,9 +74,9 @@ export default function CompaniesTable({
       {/* Desktop : tableau */}
     <div className="glass hidden overflow-hidden md:block">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="admin-table">
           <thead>
-            <tr className="border-b border-admin-line-soft">
+            <tr>
               <Th>Score</Th>
               <Th>Compagnie</Th>
               <Th>Suivi</Th>
@@ -90,10 +90,7 @@ export default function CompaniesTable({
           </thead>
           <tbody>
             {companies.map((c) => (
-              <tr
-                key={c.id}
-                className="group border-b border-admin-line-soft transition-colors last:border-b-0 hover:bg-admin-subtle"
-              >
+              <tr key={c.id} className="group">
                 <Td>
                   <RowLink id={c.id}>
                     <FitScoreBadge score={c.fit_score} />
@@ -101,7 +98,7 @@ export default function CompaniesTable({
                 </Td>
                 <Td>
                   <RowLink id={c.id}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-[14rem] items-center gap-2">
                       <p className="text-sm font-medium text-admin-ink">{c.name}</p>
                       {c.is_partner_not_client && (
                         <span
@@ -113,12 +110,8 @@ export default function CompaniesTable({
                         </span>
                       )}
                     </div>
-                    {c.street_address && (
-                      <p className="mt-0.5 text-xs text-admin-muted">
-                        {c.street_address}
-                      </p>
-                    )}
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-admin-muted">
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-admin-muted">
+                      {c.street_address && <span>{c.street_address}</span>}
                       {c.main_phone && (
                         <span className="inline-flex items-center gap-1">
                           <Phone className="h-3 w-3 text-admin-muted" aria-hidden />
@@ -220,12 +213,10 @@ function RowLink({ id, children }: { id: string; children: React.ReactNode }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="whitespace-nowrap px-4 py-3 text-left text-[13px] font-medium text-admin-muted">
-      {children}
-    </th>
+    <th className="whitespace-nowrap">{children}</th>
   );
 }
 
 function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-3.5 align-top">{children}</td>;
+  return <td className="!align-top">{children}</td>;
 }
