@@ -10,6 +10,12 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/skills/*
 !.claude/skills/scroll-craft/
+!.claude/skills/motion-broll/
+!.claude/skills/object-separation/
+!.claude/skills/explainer-default/
+!.claude/skills/explainer-engaging/
+!.claude/skills/explainer-high-energy/
+!.claude/skills/sound-effects/
 .claude/skills/scroll-craft/.env
 .agents
 skills-lock.json
@@ -46,3 +52,12 @@ Sauvegardes-TechnoLot/
 /.impeccable/mocks/
 /.impeccable/surfaces/
 /.impeccable/hook.cache.json
+
+# Agents marketing Léo et Max : chiffres et décisions d'affaires, jamais dans le dépôt public
+/JOURNAL-TECHNOLOT.md
+/.claude/agents/leo.md
+/.claude/agents/max.md
+/marketing/agents/
+
+# Motion graphics : vidéos, rendus et dépendances de travail (dépôt public → jamais versionnés)
+/motion/
