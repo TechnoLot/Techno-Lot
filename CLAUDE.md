@@ -70,6 +70,15 @@ Site vitrine Next.js 15 (App Router, Tailwind, Supabase) + dashboard admin + CRM
 - CSP imposée : `next.config.mjs` (public) et nonce de `middleware.ts` (admin) ; aucun script en ligne sans nonce, aucun `onclick=` en attribut.
 - Demander avant d'ajouter un paquet npm (vérifier qu'il existe et est maintenu).
 
+## Motion graphics (B-roll vidéo)
+
+- Toujours parler à Anthony (l'utilisateur) en français (Québec), y compris pendant tout le travail vidéo (demande de l'utilisateur, 2026-11-07).
+- Skills importés tels quels de https://github.com/Barty-Bart/motion-graphics (MIT, `LICENSE-motion-graphics`) dans `.claude/skills/` : `motion-broll` (principal : vidéo + transcription → B-roll animé calé sur les mots), `sound-effects`, `object-separation`, `explainer-default`, `explainer-engaging`, `explainer-high-energy`. Ne pas les réécrire ; pour une mise à jour, recopier le dossier `skills/<nom>` du dépôt source.
+- Demande de B-roll / motion graphics sur une vidéo : invoquer le skill `motion-broll` et suivre ses étapes dans l'ordre (installation, entrevue, inspection, **plan en tableau approuvé avant tout code**, construction, images de contrôle, rendu, livraison). Lire `.claude/skills/motion-broll/reference/engine-api.md` avant d'écrire le premier clip ; les exemples `examples/opus-aoe2/` donnent le niveau de qualité. Jamais de chiffres, prix ni résultats inventés.
+- Dossier de travail : `motion/` à la racine (`work/`, `clips/`, `dist/`, `out/`, `node_modules/`), ignoré par Git : les vidéos et rendus d'Anthony ne vont jamais dans ce dépôt public. Fichiers reçus dans un fil de projet : `/mnt/project-files/uploads/hearth/` (sans extension : vérifier le type avec `ffprobe`/`file`, puis copier en `motion/work/source.<ext>`). Livrables finaux (clips, `preview.mp4`, `TIMING.md`, `viewer.html`, `compare.html`) : les copier aussi dans `/mnt/project-files/motion/` pour les remettre.
+- Outils : Node 18+, Python 3 + numpy, ffmpeg (avec `prores_ks` pour les panneaux transparents `.mov`). `bash .claude/skills/motion-broll/scripts/setup.sh ./motion` installe Playwright + Chromium dans `motion/node_modules` ; dans le nuage, Chromium et Playwright sont déjà installés (`require('playwright')` marche sans `NODE_PATH`, ne pas lancer `playwright install`).
+- Style par défaut : celui du skill (toile `#E9E7E2`, encre `#0B0B0B`, accent `#FF5A1F`). Pour une vidéo Techno Lot, proposer à l'entrevue les couleurs de la marque (vert d'action `#257a10`, voir `DESIGN.md`) ; textes à l'écran en français.
+
 ## Conventions
 
 - Toujours répondre à l'utilisateur en français (Québec), même s'il écrit en anglais.
